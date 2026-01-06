@@ -25,7 +25,7 @@ su - expenseapp
 
 ```bash
 # Generate SSH key (if not done)
-ssh-keygen -t ed25519 -C "expense-app-server"
+ssh-keygen -t ed25519 -C "trade-show-app-server"
 
 # Edit SSH config
 sudo vim /etc/ssh/sshd_config

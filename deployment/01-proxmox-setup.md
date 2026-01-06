@@ -10,7 +10,7 @@
 
 **General:**
 - CT ID: `100` (or next available)
-- Hostname: `expense-app-prod`
+- Hostname: `trade-show-app-prod`
 - Password: Set a secure root password
 - SSH public key: Add your SSH key
 
@@ -59,7 +59,7 @@ pct enter 100
 
 Repeat above steps with:
 - CT ID: `101`
-- Hostname: `expense-app-sandbox`
+- Hostname: `trade-show-app-sandbox`
 - IPv4: `192.168.1.11/24`
 - Same resources as production
 
@@ -71,7 +71,7 @@ Repeat above steps with:
 # On Proxmox host
 pct create 100 \
   local:vztmpl/debian-12-standard_12.0-1_amd64.tar.zst \
-  --hostname expense-app-prod \
+  --hostname trade-show-app-prod \
   --memory 2048 \
   --swap 512 \
   --cores 2 \

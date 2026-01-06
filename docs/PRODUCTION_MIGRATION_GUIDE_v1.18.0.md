@@ -83,7 +83,7 @@ ssh root@192.168.1.190 "
 ### Step 1: Build Frontend
 
 ```bash
-cd /Users/sahilkhatri/Projects/Work/brands/Haute/expenseApp
+cd /Users/sahilkhatri/Projects/Work/trade-show-app
 
 # Ensure you're on the correct branch
 git checkout v1.6.0

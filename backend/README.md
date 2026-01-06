@@ -1,4 +1,4 @@
-# Trade Show Expense App - Backend
+# Trade Show App - Backend
 
 Production-ready backend API for the Trade Show Expense Management application.
 

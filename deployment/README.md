@@ -1,6 +1,6 @@
 ## Deployment Automation (Proxmox + Debian/Ubuntu)
 
-This folder contains automation scripts and configuration templates to deploy the Expense App on a Proxmox host with LXC containers and Nginx reverse proxy, targeting a secure, production-grade setup with a separate sandbox.
+This folder contains automation scripts and configuration templates to deploy the Trade Show App on a Proxmox host with LXC containers and Nginx reverse proxy, targeting a secure, production-grade setup with a separate sandbox.
 
 ### Overview
 - Proxmox host runs Nginx as reverse proxy + Let's Encrypt
@@ -42,7 +42,7 @@ See `docs/DEPLOYMENT_PROXMOX.md` for end-to-end instructions and commands.
 
 ## Overview
 
-This guide provides complete production deployment instructions for deploying the Trade Show Expense App on Proxmox using LXC containers.
+This guide provides complete production deployment instructions for deploying the Trade Show App on Proxmox using LXC containers.
 
 ### Architecture
 

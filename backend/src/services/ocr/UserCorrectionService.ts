@@ -48,7 +48,7 @@ export class UserCorrectionService {
       // Prepare request body
       // Note: Data Pool will hash user_id automatically - we send unhashed
       const requestBody = {
-        source_app: 'expense-app',
+        source_app: 'trade-show-app',
         source_environment: environment,
         user_id: correction.userId, // Data Pool hashes this automatically
         ocr_provider: ocrProvider,

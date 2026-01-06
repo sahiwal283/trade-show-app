@@ -59,7 +59,7 @@
 - **Production URL:** https://expapp.duckdns.org
 - **Sandbox URL:** http://192.168.1.144
 - **Proxmox Host:** 192.168.1.190
-- **Repository:** https://github.com/sahiwal283/expenseApp
+- **Repository:** https://github.com/sahiwal283/trade-show-app
 
 ---
 
@@ -166,7 +166,7 @@
 - **Fix:** Documented correct paths
 
 **3. Backend Service Path Case Sensitivity**
-- **Failure:** Wrong case in path (`expenseapp` vs `expenseApp`)
+- **Failure:** Wrong case in path (`expenseapp` vs `trade-show-app`)
 - **Result:** Service wouldn't start
 - **Lesson:** Case-sensitive filesystems require exact paths
 - **Fix:** Documented correct path with capital 'A'
@@ -538,7 +538,7 @@ ssh root@192.168.1.190 "pct exec 203 -- ls -la /var/www/trade-show-app"
 
 ### Backend Deployment Path Case Sensitivity
 
-**CRITICAL**: Backend MUST be deployed to `/opt/trade-show-app/backend` (capital 'A' in expenseApp)
+**CRITICAL**: Backend MUST be deployed to `/opt/trade-show-app/backend` (capital 'A' in trade-show-app)
 
 **Why:**
 - Service file references exact path
@@ -781,8 +781,8 @@ pct status 203
 **Quick Start:**
 ```bash
 # Clone repo
-git clone https://github.com/sahiwal283/expenseApp.git
-cd expenseApp
+git clone https://github.com/sahiwal283/trade-show-app.git
+cd trade-show-app
 
 # Frontend
 npm install
@@ -1017,7 +1017,7 @@ type(scope): description
 - **Prevention:** Check Nginx root path before deploying
 
 **3. Backend Service Path Case Sensitivity**
-- **Pitfall:** Using `expenseapp` instead of `expenseApp` (capital 'A')
+- **Pitfall:** Using `expenseapp` instead of `trade-show-app` (capital 'A')
 - **Error:** Service won't start, 500 errors
 - **Fix:** Always use `/opt/trade-show-app/backend` (exact case)
 - **Prevention:** Copy path from service file, never type manually

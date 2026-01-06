@@ -185,7 +185,7 @@ ssh root@192.168.1.190 "pct exec 201 -- sudo -u postgres psql expense_app_produc
 **Step 3: Run Migrations**
 ```bash
 # Connect to production container
-ssh root@192.168.1.190 "pct exec 201 -- bash -c 'cd /root/expenseApp/backend && npm run migrate'"
+ssh root@192.168.1.190 "pct exec 201 -- bash -c 'cd /opt/trade-show-app/backend && npm run migrate'"
 ```
 
 **Step 4: Verify Migration Success**

@@ -202,7 +202,7 @@ ssh root@192.168.1.190 "pct exec 201 -- curl -s http://localhost:3000/api/health
 #### 4.1 Build Frontend (Production Mode)
 ```bash
 # On local machine or CI/CD
-cd /Users/sahilkhatri/Projects/Work/brands/Haute/expenseApp
+cd /Users/sahilkhatri/Projects/Work/trade-show-app
 npm run build:production
 
 # Verify build output

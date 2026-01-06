@@ -1,8 +1,8 @@
 @echo off
-REM Trade Show Expense App - Easy Startup Script for Windows
+REM Trade Show App - Easy Startup Script for Windows
 
 echo =========================================
-echo Trade Show Expense App - Starting...
+echo Trade Show App - Starting...
 echo =========================================
 echo.
 

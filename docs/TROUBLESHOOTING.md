@@ -389,7 +389,7 @@ Expected output:
 === System Check ===
 Node.js: v18.x.x (or higher)
 npm: 8.x.x (or higher)
-Current directory: /path/to/expenseApp
+Current directory: /path/to/trade-show-app
 package.json exists: Yes
 node_modules exists: Yes (after npm install)
 ```

@@ -154,7 +154,7 @@ Updated main README.md with:
 **From fresh clone:**
 ```bash
 git clone <repo>
-cd expenseApp
+cd trade-show-app
 git checkout v1.27.15
 ./scripts/local-deploy.sh
 ```
@@ -214,7 +214,7 @@ npm run test:run
 ## 📂 File Structure
 
 ```
-expenseApp/
+trade-show-app/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                 # CI/CD pipeline

@@ -319,7 +319,7 @@ jobs:
 **Solution:**
 ```bash
 # Ensure you're in the project root
-cd /path/to/expenseApp
+cd /path/to/trade-show-app
 
 # Verify migrations exist
 ls -la backend/src/database/migrations/

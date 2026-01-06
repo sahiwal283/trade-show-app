@@ -1,6 +1,6 @@
 ## Proxmox Production Deployment Guide
 
-This guide deploys the Expense App on a Proxmox host with LXC containers, Nginx reverse proxy with TLS, PostgreSQL, and automation for backups.
+This guide deploys the Trade Show App on a Proxmox host with LXC containers, Nginx reverse proxy with TLS, PostgreSQL, and automation for backups.
 
 ### 0) Prerequisites
 - Proxmox host reachable via SSH
@@ -12,7 +12,7 @@ This guide deploys the Expense App on a Proxmox host with LXC containers, Nginx 
 pct enter <host>  # or SSH to the Proxmox host
 cd /root
 # Clone the repo if not available: git clone https://github.com/sahiwal283/expenseApp.git
-cd expenseApp/deployment/proxmox
+cd trade-show-app/deployment/proxmox
 ./create-lxcs.sh
 ```
 

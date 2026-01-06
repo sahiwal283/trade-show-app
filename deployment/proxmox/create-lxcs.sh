@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Proxmox LXC provisioning for Expense App
+# Proxmox LXC provisioning for Trade Show App
 # Creates three containers: prod-backend, prod-frontend, sandbox
 # Requires running on Proxmox host as root with access to `pct` and templates.
 

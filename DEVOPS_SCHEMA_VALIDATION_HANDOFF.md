@@ -450,7 +450,7 @@ Automatic cleanup on exit (via trap):
 ## 📁 File Structure
 
 ```
-expenseApp/
+trade-show-app/
 ├── scripts/
 │   ├── validate-schema.sh           # Main validation script
 │   └── parse-migration-columns.sh   # Column parser helper

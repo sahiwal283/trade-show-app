@@ -1,5 +1,5 @@
 /**
- * Date Utilities for Trade Show Expense App
+ * Date Utilities for Trade Show App
  * 
  * IMPORTANT: These utilities prevent timezone conversion bugs that occur when
  * using `new Date()` with YYYY-MM-DD strings. JavaScript treats such strings

@@ -68,7 +68,7 @@ python3 -c "import cv2; print('OpenCV OK')"
 
 ```bash
 # On local machine - checkout v1.6.0 branch
-cd /Users/sahilkhatri/Projects/Haute/expenseApp
+cd /Users/sahilkhatri/Projects/Work/trade-show-app
 git checkout v1.6.0
 git pull origin v1.6.0
 

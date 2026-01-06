@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Trade Show Expense App - Frontend Only Startup
+# Trade Show App - Frontend Only Startup
 # Quick start for frontend testing without backend
 
 echo "========================================="
-echo "Trade Show Expense App - Frontend Only"
+echo "Trade Show App - Frontend Only"
 echo "Version: 0.5.0-alpha (Pre-release)"
 echo "========================================="
 echo ""

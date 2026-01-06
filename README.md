@@ -177,7 +177,7 @@ See [docs/BOOMIN_CREDENTIALS.md](docs/BOOMIN_CREDENTIALS.md) for production cred
 
 **Architecture:**
 ```
-Expense App (192.168.1.144)
+Trade Show App Sandbox (192.168.1.144)
     ↓ Receipt Upload
 External OCR Service (192.168.1.195:8000)
     → Tesseract OCR (15-20s)

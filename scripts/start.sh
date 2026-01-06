@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Trade Show Expense App - Easy Startup Script
+# Trade Show App - Easy Startup Script
 # This script sets up and runs both frontend and backend
 
 echo "========================================="
-echo "Trade Show Expense App - Starting..."
+echo "Trade Show App - Starting..."
 echo "========================================="
 echo ""
 

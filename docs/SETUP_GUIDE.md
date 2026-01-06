@@ -1,4 +1,4 @@
-# Trade Show Expense App - Complete Setup Guide
+# Trade Show App - Complete Setup Guide
 
 ## What Was Done
 
@@ -230,7 +230,7 @@ For production:
 ## File Structure
 
 ```
-expenseApp/
+trade-show-app/
 ├── backend/
 │   ├── src/
 │   │   ├── config/database.ts

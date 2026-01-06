@@ -1,4 +1,4 @@
-# Trade Show Expense App - Architecture Documentation
+# Trade Show Trade Show App - Architecture Documentation
 
 **Last Updated:** November 10, 2025  
 **Status:** Production Active | Sandbox Event Checklist + Full Codebase Refactor (v1.28.0)
@@ -97,7 +97,7 @@ Each Environment Contains:
                         └────────┬─────────┘
                                  │
                    ┌─────────────▼──────────────┐
-                   │    Expense App (203)       │
+                   │    Trade Show App (203)       │
                    │   192.168.1.144            │
                    │ ┌────────────────────────┐ │
                    │ │  Frontend (React)      │ │
@@ -195,7 +195,7 @@ Each Environment Contains:
 
 | Service | Container | URL | Purpose |
 |---------|-----------|-----|---------|
-| **Expense App** | 203 | http://192.168.1.144 | Main application, receipt upload, corrections |
+| **Trade Show App** | 203 | http://192.168.1.144 | Main application, receipt upload, corrections |
 | **OCR Service** | 202 | http://192.168.1.195:8000 | Tesseract + LLM enhancement |
 | **Data Pool** | 205 | http://192.168.1.196:5000 | Correction storage, quality scoring |
 | **Model Training** | 206 | http://192.168.1.197:5001 | Pattern analysis, prompt improvement |
@@ -226,11 +226,11 @@ Ollama (Container 191)
 
 ### Data Flow: Receipt Processing
 
-1. **Upload** (Expense App Frontend)
+1. **Upload** (Trade Show App Frontend)
    - User selects receipt image
    - Multipart form upload to `/api/ocr/v2/process`
 
-2. **Health Check** (Expense App Backend)
+2. **Health Check** (Trade Show App Backend)
    - Check OCR Service: `GET /health/ready`
    - Fail fast if unavailable (5s timeout)
 
@@ -290,7 +290,7 @@ Ollama (Container 191)
 
 ### Configuration
 
-**Expense App Backend** (`backend/.env`):
+**Trade Show App Backend** (`backend/.env`):
 ```bash
 # External OCR Service
 OCR_SERVICE_URL=http://192.168.1.195:8000
@@ -444,7 +444,7 @@ location /api/ {
 
 **Manual Override:** Accountants/admins can manually set status in detail modal
 
-#### **Expense Approval** (Admin, Accountant, Developer)
+#### **Trade Show Approval** (Admin, Accountant, Developer)
 
 **Approval Cards** (top of Expenses page):
 - **Pending Approval** - Count of expenses awaiting review
