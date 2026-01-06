@@ -9,7 +9,7 @@ echo ""
 
 # Container paths
 SANDBOX_BACKEND_PATH="/opt/trade-show-app/backend"
-SANDBOX_FRONTEND_PATH="/var/www/trade-show-app"
+SANDBOX_FRONTEND_PATH="/var/www/trade-show-app/current"
 PROXMOX_IP="192.168.1.190"
 SANDBOX_CONTAINER="203"
 
