@@ -9,7 +9,7 @@
 
 ## Overview
 
-This guide covers the setup and operation of Ollama Lite for LLM-powered OCR field enhancement in the expenseApp. Ollama provides local, privacy-preserving AI inference without external API dependencies.
+This guide covers the setup and operation of Ollama Lite for LLM-powered OCR field enhancement in the trade-show-app. Ollama provides local, privacy-preserving AI inference without external API dependencies.
 
 ---
 
@@ -171,10 +171,10 @@ OLLAMA_TIMEOUT=30000
 
 ```bash
 # On Container 203
-systemctl restart expenseapp-backend
+systemctl restart trade-show-app-backend
 
 # Check logs
-journalctl -u expenseapp-backend -f
+journalctl -u trade-show-app-backend -f
 
 # Look for:
 # [OCRService] Initializing LLM provider: ollama

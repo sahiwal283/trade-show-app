@@ -86,7 +86,7 @@ BACKUP_FILE="production_backup_$(date +%Y%m%d_%H%M%S).sql"
 
 echo "Creating production database backup..."
 ssh root@$PROXMOX_IP "pct exec $PRODUCTION_BACKEND_CT -- bash -c '
-    cd /opt/expenseApp/backend &&
+    cd /opt/trade-show-app/backend &&
     pg_dump -U expenseapp expenseapp > /tmp/$BACKUP_FILE
 '" || {
     echo -e "${RED}❌ Database backup failed!${NC}"
@@ -126,7 +126,7 @@ fi
 
 echo "Pulling latest code on production..."
 ssh root@$PROXMOX_IP "pct exec $PRODUCTION_BACKEND_CT -- bash -c '
-    cd /opt/expenseApp &&
+    cd /opt/trade-show-app &&
     git fetch origin &&
     git checkout main &&
     git pull origin main
@@ -139,7 +139,7 @@ echo ""
 echo "Running migrations..."
 
 ssh root@$PROXMOX_IP "pct exec $PRODUCTION_BACKEND_CT -- bash -c '
-    cd /opt/expenseApp/backend/src/database/migrations &&
+    cd /opt/trade-show-app/backend/src/database/migrations &&
     
     echo \"Running migration 017...\" &&
     psql -U expenseapp -d expenseapp -f 017_add_event_checklist.sql &&
@@ -179,7 +179,7 @@ echo ""
 
 echo "Building backend..."
 ssh root@$PROXMOX_IP "pct exec $PRODUCTION_BACKEND_CT -- bash -c '
-    cd /opt/expenseApp/backend &&
+    cd /opt/trade-show-app/backend &&
     npm install &&
     npm run build
 '" || {
@@ -191,7 +191,7 @@ echo -e "${GREEN}✓ Backend built successfully${NC}"
 echo ""
 
 echo "Restarting backend service..."
-ssh root@$PROXMOX_IP "pct exec $PRODUCTION_BACKEND_CT -- systemctl restart expenseapp-backend" || {
+ssh root@$PROXMOX_IP "pct exec $PRODUCTION_BACKEND_CT -- systemctl restart trade-show-app-backend" || {
     echo -e "${RED}❌ Backend restart failed!${NC}"
     exit 1
 }
@@ -200,7 +200,7 @@ echo "Waiting for backend to start..."
 sleep 5
 
 echo "Checking backend status..."
-ssh root@$PROXMOX_IP "pct exec $PRODUCTION_BACKEND_CT -- systemctl status expenseapp-backend --no-pager | head -10"
+ssh root@$PROXMOX_IP "pct exec $PRODUCTION_BACKEND_CT -- systemctl status trade-show-app-backend --no-pager | head -10"
 
 echo -e "${GREEN}✓ Backend deployed${NC}"
 echo ""
@@ -243,7 +243,7 @@ scp $FRONTEND_PACKAGE root@$PROXMOX_IP:/tmp/production-frontend.tar.gz || {
 echo "Deploying to Container 202..."
 ssh root@$PROXMOX_IP "
     pct push $PRODUCTION_FRONTEND_CT /tmp/production-frontend.tar.gz /tmp/production-frontend.tar.gz &&
-    pct exec $PRODUCTION_FRONTEND_CT -- bash -c 'cd /var/www/expenseapp && rm -rf * && tar -xzf /tmp/production-frontend.tar.gz && systemctl restart nginx'
+    pct exec $PRODUCTION_FRONTEND_CT -- bash -c 'cd /var/www/trade-show-app && rm -rf * && tar -xzf /tmp/production-frontend.tar.gz && systemctl restart nginx'
 " || {
     echo -e "${RED}❌ Frontend deployment failed!${NC}"
     exit 1
@@ -287,7 +287,7 @@ fi
 
 echo ""
 echo "Verifying frontend deployment..."
-ssh root@$PROXMOX_IP "pct exec $PRODUCTION_FRONTEND_CT -- bash -c 'grep \"Version:\" /var/www/expenseapp/service-worker.js | head -1'"
+ssh root@$PROXMOX_IP "pct exec $PRODUCTION_FRONTEND_CT -- bash -c 'grep \"Version:\" /var/www/trade-show-app/service-worker.js | head -1'"
 
 echo ""
 echo "Checking database tables..."
@@ -338,13 +338,13 @@ echo "  4. Check user reports"
 echo ""
 
 echo "Monitoring Commands:"
-echo "  Backend logs:  ssh root@$PROXMOX_IP 'pct exec 201 -- journalctl -u expenseapp-backend -f'"
-echo "  Backend status: ssh root@$PROXMOX_IP 'pct exec 201 -- systemctl status expenseapp-backend'"
+echo "  Backend logs:  ssh root@$PROXMOX_IP 'pct exec 201 -- journalctl -u trade-show-app-backend -f'"
+echo "  Backend status: ssh root@$PROXMOX_IP 'pct exec 201 -- systemctl status trade-show-app-backend'"
 echo "  Health check:  curl https://expapp.duckdns.org/api/health"
 echo ""
 
 echo "Rollback (if needed):"
-echo "  Backend:  ssh root@$PROXMOX_IP 'pct exec 201 -- bash -c \"cd /opt/expenseApp && git checkout v1.5.1 && cd backend && npm install && npm run build && systemctl restart expenseapp-backend\"'"
+echo "  Backend:  ssh root@$PROXMOX_IP 'pct exec 201 -- bash -c \"cd /opt/trade-show-app && git checkout v1.5.1 && cd backend && npm install && npm run build && systemctl restart trade-show-app-backend\"'"
 echo "  Database: ssh root@$PROXMOX_IP 'pct exec 201 -- psql -U expenseapp expenseapp < /tmp/$BACKUP_FILE'"
 echo ""
 

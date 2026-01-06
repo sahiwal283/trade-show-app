@@ -160,7 +160,7 @@
 - **Fix:** Schema validation process created
 
 **2. Frontend Deployment Directory**
-- **Failure:** Deployed to wrong directory (`/var/www/html` instead of `/var/www/expenseapp`)
+- **Failure:** Deployed to wrong directory (`/var/www/html` instead of `/var/www/trade-show-app`)
 - **Result:** 404 errors, broken frontend
 - **Lesson:** Always verify deployment paths
 - **Fix:** Documented correct paths
@@ -524,21 +524,21 @@ pct exec 203 -- su - postgres -c 'psql -d expense_app -c "\dt"'
 
 ### Frontend Deployment Directory
 
-**CRITICAL**: Frontend MUST be deployed to `/var/www/expenseapp` (NOT `/var/www/html`)
+**CRITICAL**: Frontend MUST be deployed to `/var/www/trade-show-app` (NOT `/var/www/html`)
 
 **Why:**
-- Nginx is configured to serve from `/var/www/expenseapp`
+- Nginx is configured to serve from `/var/www/trade-show-app`
 - `/var/www/html` is used by other services
 - Wrong directory = 404 errors
 
 **Verify:**
 ```bash
-ssh root@192.168.1.190 "pct exec 203 -- ls -la /var/www/expenseapp"
+ssh root@192.168.1.190 "pct exec 203 -- ls -la /var/www/trade-show-app"
 ```
 
 ### Backend Deployment Path Case Sensitivity
 
-**CRITICAL**: Backend MUST be deployed to `/opt/expenseApp/backend` (capital 'A' in expenseApp)
+**CRITICAL**: Backend MUST be deployed to `/opt/trade-show-app/backend` (capital 'A' in expenseApp)
 
 **Why:**
 - Service file references exact path
@@ -743,7 +743,7 @@ src/
 
 **Reset Sandbox Passwords:**
 ```bash
-ssh root@192.168.1.190 "pct exec 203 -- bash -c 'cd /opt/expenseApp/backend && node reset-sandbox-passwords.js'"
+ssh root@192.168.1.190 "pct exec 203 -- bash -c 'cd /opt/trade-show-app/backend && node reset-sandbox-passwords.js'"
 ```
 
 ### Proxmox Access
@@ -832,14 +832,14 @@ tar -czf frontend-v1.0.X-$(date +%H%M%S).tar.gz -C dist .
 TARFILE=$(ls -t frontend-v1.0.*-*.tar.gz | head -1)
 scp "$TARFILE" root@192.168.1.190:/tmp/sandbox-deploy.tar.gz
 
-# 2. Deploy to /var/www/expenseapp (NOT /var/www/html!)
+# 2. Deploy to /var/www/trade-show-app (NOT /var/www/html!)
 ssh root@192.168.1.190 "
   pct push 203 /tmp/sandbox-deploy.tar.gz /tmp/sandbox-deploy.tar.gz &&
   pct exec 203 -- bash -c '
-    cd /var/www/expenseapp &&
+    cd /var/www/trade-show-app &&
     rm -rf * &&
     tar -xzf /tmp/sandbox-deploy.tar.gz &&
-    chown -R 501:staff /var/www/expenseapp &&
+    chown -R 501:staff /var/www/trade-show-app &&
     systemctl restart nginx &&
     echo \"✓ Deployed\"
   '
@@ -853,10 +853,10 @@ ssh root@192.168.1.190 "pct stop 104 && sleep 3 && pct start 104 && echo '✓ NP
 ```bash
 ssh root@192.168.1.190 "pct exec 203 -- bash -c '
   echo \"=== Service Worker ===\"
-  head -3 /var/www/expenseapp/service-worker.js
+  head -3 /var/www/trade-show-app/service-worker.js
   echo
   echo \"=== Build ID ===\"
-  grep \"Build:\" /var/www/expenseapp/index.html
+  grep \"Build:\" /var/www/trade-show-app/index.html
 '"
 ```
 
@@ -1011,15 +1011,15 @@ type(scope): description
 - **Prevention:** Run schema validation before every deployment
 
 **2. Frontend Deployment Directory Wrong**
-- **Pitfall:** Deploying to `/var/www/html` or `/var/www/expenseapp/` instead of `/var/www/expenseapp/current/`
+- **Pitfall:** Deploying to `/var/www/html` or `/var/www/trade-show-app/` instead of `/var/www/trade-show-app/current/`
 - **Error:** 404 Not Found errors, frontend doesn't load
-- **Fix:** Always deploy to `/var/www/expenseapp/current/` (production) or `/var/www/expenseapp/` (sandbox)
+- **Fix:** Always deploy to `/var/www/trade-show-app/current/` (production) or `/var/www/trade-show-app/` (sandbox)
 - **Prevention:** Check Nginx root path before deploying
 
 **3. Backend Service Path Case Sensitivity**
 - **Pitfall:** Using `expenseapp` instead of `expenseApp` (capital 'A')
 - **Error:** Service won't start, 500 errors
-- **Fix:** Always use `/opt/expenseApp/backend` (exact case)
+- **Fix:** Always use `/opt/trade-show-app/backend` (exact case)
 - **Prevention:** Copy path from service file, never type manually
 
 **4. Forgetting to Restart NPMplus Proxy**
@@ -1511,7 +1511,7 @@ kill -9 <PID>
 **5. OCR Not Working**
 - Check OCR service status
 - Verify image quality
-- Check backend logs: `journalctl -u expenseapp-backend -f`
+- Check backend logs: `journalctl -u trade-show-app-backend -f`
 - Verify OCR service endpoint is accessible
 
 **6. Service Worker Issues**
@@ -1524,12 +1524,12 @@ kill -9 <PID>
 
 **Check Backend Logs:**
 ```bash
-ssh root@192.168.1.190 "pct exec 201 -- journalctl -u expenseapp-backend -f"
+ssh root@192.168.1.190 "pct exec 201 -- journalctl -u trade-show-app-backend -f"
 ```
 
 **Check Frontend Files:**
 ```bash
-ssh root@192.168.1.190 "pct exec 202 -- ls -la /var/www/expenseapp"
+ssh root@192.168.1.190 "pct exec 202 -- ls -la /var/www/trade-show-app"
 ```
 
 **Check Database:**
@@ -1539,7 +1539,7 @@ ssh root@192.168.1.190 "pct exec 201 -- su - postgres -c 'psql -d expense_app_pr
 
 **Check Service Status:**
 ```bash
-ssh root@192.168.1.190 "pct exec 201 -- systemctl status expenseapp-backend"
+ssh root@192.168.1.190 "pct exec 201 -- systemctl status trade-show-app-backend"
 ```
 
 ---

@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install and serve the Expense App frontend in an LXC/VM
+# Install and serve the Trade Show App frontend in an LXC/VM
 # - Installs Node.js 18
 # - Builds the React app
 # - Serves static files with 'serve' on port 8080 via systemd
 
-: "${REPO_URL:=https://github.com/sahiwal283/expenseApp.git}"
+: "${REPO_URL:=https://github.com/sahiwal283/trade-show-app.git}"
 : "${BRANCH:=main}"
-: "${APP_USER:=expenseapp}"
-: "${APP_DIR:=/opt/expenseapp}"
-: "${WEB_DIR:=/opt/expenseapp/frontend}"
+: "${APP_USER:=trade-show-app}"
+: "${APP_DIR:=/opt/trade-show-app}"
+: "${WEB_DIR:=/opt/trade-show-app/frontend}"
 : "${PORT:=8080}"
 
 export DEBIAN_FRONTEND=noninteractive
@@ -46,12 +46,12 @@ chown -R "$APP_USER":"$APP_USER" "$WEB_DIR"
 
 npm install -g serve
 
-SERVICE_SRC="${APP_DIR}/deployment/frontend/expenseapp-frontend.service"
-SERVICE_DST="/etc/systemd/system/expenseapp-frontend.service"
+SERVICE_SRC="${APP_DIR}/deployment/frontend/trade-show-app-frontend.service"
+SERVICE_DST="/etc/systemd/system/trade-show-app-frontend.service"
 if [[ -f "$SERVICE_SRC" ]]; then
   sed "s|__WEB_DIR__|$WEB_DIR|g; s|__PORT__|$PORT|g; s|__USER__|$APP_USER|g" "$SERVICE_SRC" > "$SERVICE_DST"
   systemctl daemon-reload
-  systemctl enable --now expenseapp-frontend.service
+  systemctl enable --now trade-show-app-frontend.service
 fi
 
 echo "Frontend installed and serving on port ${PORT}."

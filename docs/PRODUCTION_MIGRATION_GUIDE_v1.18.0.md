@@ -51,7 +51,7 @@ ssh root@192.168.1.190 "
 # Backup production frontend
 ssh root@192.168.1.190 "
   pct exec 201 -- bash -c '
-    cd /var/www/expenseapp &&
+    cd /var/www/trade-show-app &&
     tar -czf /tmp/frontend_backup_pre_v1.18.0_$(date +%Y%m%d_%H%M%S).tar.gz current/
   '
 "
@@ -59,7 +59,7 @@ ssh root@192.168.1.190 "
 # Backup production backend
 ssh root@192.168.1.190 "
   pct exec 201 -- bash -c '
-    cd /opt/expenseApp/backend &&
+    cd /opt/trade-show-app/backend &&
     tar -czf /tmp/backend_backup_pre_v1.18.0_$(date +%Y%m%d_%H%M%S).tar.gz dist/
   '
 "
@@ -142,10 +142,10 @@ scp frontend-v1.18.0-*.tar.gz root@192.168.1.190:/tmp/frontend-v1.18.0.tar.gz
 ssh root@192.168.1.190 "
   pct push 201 /tmp/frontend-v1.18.0.tar.gz /tmp/frontend-v1.18.0.tar.gz &&
   pct exec 201 -- bash -c '
-    cd /var/www/expenseapp/current &&
+    cd /var/www/trade-show-app/current &&
     rm -rf * &&
     tar -xzf /tmp/frontend-v1.18.0.tar.gz &&
-    chown -R www-data:www-data /var/www/expenseapp/current &&
+    chown -R www-data:www-data /var/www/trade-show-app/current &&
     systemctl reload nginx
   '
 "
@@ -163,12 +163,12 @@ scp backend/backend-v1.16.0-*.tar.gz root@192.168.1.190:/tmp/backend-v1.16.0.tar
 ssh root@192.168.1.190 "
   pct push 201 /tmp/backend-v1.16.0.tar.gz /tmp/backend-v1.16.0.tar.gz &&
   pct exec 201 -- bash -c '
-    cd /opt/expenseApp/backend &&
+    cd /opt/trade-show-app/backend &&
     rm -rf dist &&
     mkdir -p dist &&
     tar -xzf /tmp/backend-v1.16.0.tar.gz -C dist &&
-    chown -R node:node /opt/expenseApp/backend &&
-    pm2 restart expenseapp-backend
+    chown -R node:node /opt/trade-show-app/backend &&
+    pm2 restart trade-show-app-backend
   '
 "
 
@@ -198,13 +198,13 @@ curl -s http://192.168.1.138 | grep -o 'v1.18.0'
 
 # Check backend health
 ssh root@192.168.1.190 "
-  pct exec 201 -- pm2 list | grep expenseapp-backend
+  pct exec 201 -- pm2 list | grep trade-show-app-backend
 "
 # Should show: online
 
 # Check backend logs (last 20 lines)
 ssh root@192.168.1.190 "
-  pct exec 201 -- pm2 logs expenseapp-backend --lines 20 --nostream
+  pct exec 201 -- pm2 logs trade-show-app-backend --lines 20 --nostream
 "
 # Should show no errors
 
@@ -288,7 +288,7 @@ If critical issues are discovered post-deployment:
 # Rollback frontend
 ssh root@192.168.1.190 "
   pct exec 201 -- bash -c '
-    cd /var/www/expenseapp/current &&
+    cd /var/www/trade-show-app/current &&
     rm -rf * &&
     tar -xzf /tmp/frontend_backup_pre_v1.18.0_*.tar.gz &&
     systemctl reload nginx
@@ -298,10 +298,10 @@ ssh root@192.168.1.190 "
 # Rollback backend
 ssh root@192.168.1.190 "
   pct exec 201 -- bash -c '
-    cd /opt/expenseApp/backend &&
+    cd /opt/trade-show-app/backend &&
     rm -rf dist &&
     tar -xzf /tmp/backend_backup_pre_v1.18.0_*.tar.gz &&
-    pm2 restart expenseapp-backend
+    pm2 restart trade-show-app-backend
   '
 "
 
@@ -350,7 +350,7 @@ Deployment is considered successful when:
 
 1. **Check logs immediately**:
    ```bash
-   ssh root@192.168.1.190 "pct exec 201 -- pm2 logs expenseapp-backend --lines 50"
+   ssh root@192.168.1.190 "pct exec 201 -- pm2 logs trade-show-app-backend --lines 50"
    ```
 
 2. **Check browser console** (F12 in Chrome):

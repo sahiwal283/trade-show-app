@@ -182,7 +182,7 @@ if [ $MISSING_RECENT -gt 0 ]; then
     echo ""
     echo -e "${BLUE}To fix:${NC}"
     echo "  ssh root@192.168.1.190"
-    echo "  pct exec 201 -- bash -c 'cd /opt/expenseApp/backend && npm run migrate'"
+    echo "  pct exec 201 -- bash -c 'cd /opt/trade-show-app/backend && npm run migrate'"
     echo ""
 fi
 

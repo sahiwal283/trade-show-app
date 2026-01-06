@@ -22,7 +22,7 @@
 
 ### Backend Service (Container 203)
 - ✅ **Status:** Running (PID: 305540)
-- ✅ **Service:** `expenseapp-backend.service` - Active
+- ✅ **Service:** `trade-show-app-backend.service` - Active
 - ✅ **Health Endpoint:** Responding correctly (`/api/health` returns 200 OK)
 - ✅ **Version:** 1.28.16
 - ✅ **Database:** Connected
@@ -32,7 +32,7 @@
 - ✅ **Status:** Deployed and accessible
 - ✅ **Nginx:** Running and serving files correctly
 - ✅ **HTTP Status:** 200 OK
-- ✅ **Location:** `/var/www/expenseapp/current/`
+- ✅ **Location:** `/var/www/trade-show-app/current/`
 
 ### Network Configuration
 - ✅ **Nginx Proxy:** Correctly configured (`/api/` → `http://localhost:3000/api/`)
@@ -63,7 +63,7 @@ this.baseURL="https://expapp.duckdns.org/api"
 **Evidence:**
 ```bash
 # Found in deployed bundle:
-/var/www/expenseapp/current/assets/index-COejtCia.js:
+/var/www/trade-show-app/current/assets/index-COejtCia.js:
 this.baseURL="https://expapp.duckdns.org/api"
 ```
 
@@ -101,7 +101,7 @@ Set `CORS_ORIGIN=http://192.168.1.144` in sandbox `.env` file.
 
 ### 1. Backend Service Status ✅
 ```
-Service: expenseapp-backend.service
+Service: trade-show-app-backend.service
 Status: Active (running)
 PID: 305540
 Uptime: ~6 minutes (restarted at 23:31:09 UTC)
@@ -111,7 +111,7 @@ CPU: 809ms
 
 ### 2. Frontend Deployment ✅
 ```
-Location: /var/www/expenseapp/current/
+Location: /var/www/trade-show-app/current/
 HTTP Status: 200 OK
 Nginx: Active and serving files
 ```
@@ -182,7 +182,7 @@ grep -r "expapp.duckdns.org" dist/
 ### Fix #2: Set CORS_ORIGIN in Backend (RECOMMENDED)
 
 **Action Required:**
-1. Add to `/opt/expenseApp/backend/.env`:
+1. Add to `/opt/trade-show-app/backend/.env`:
    ```
    CORS_ORIGIN=http://192.168.1.144
    ```
@@ -251,8 +251,8 @@ fi
 4. ⏳ Manager Agent: Coordinate fixes and verify resolution
 
 ### Files Modified/Checked:
-- `/opt/expenseApp/backend/.env` - Missing CORS_ORIGIN
-- `/var/www/expenseapp/current/assets/index-COejtCia.js` - Contains production URL
+- `/opt/trade-show-app/backend/.env` - Missing CORS_ORIGIN
+- `/var/www/trade-show-app/current/assets/index-COejtCia.js` - Contains production URL
 - Frontend build process - Needs validation
 
 ---

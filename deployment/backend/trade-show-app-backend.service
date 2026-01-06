@@ -1,0 +1,26 @@
+[Unit]
+Description=Trade Show App Backend API
+After=network.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/trade-show-app/backend.env
+WorkingDirectory=/opt/trade-show-app/backend
+ExecStart=/usr/bin/node /opt/trade-show-app/backend/dist/server.js
+Restart=always
+RestartSec=5
+User=trade-show-app
+Group=trade-show-app
+AmbientCapabilities=
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/trade-show-app/uploads
+TimeoutStartSec=30
+
+[Install]
+WantedBy=multi-user.target
+
+

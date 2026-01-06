@@ -983,7 +983,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Logic After**: 3 simple, sequential checks (regressions → approvals → no-op)
 - **Result**: Bulletproof, easy to understand, impossible to miss edge cases
 
-**⚠️ DEPLOYMENT ISSUE DISCOVERED**: This update revealed a critical deployment path mismatch. Backend service runs from `/opt/expenseApp/backend/` (capital A), but deployments were going to `/opt/expenseapp/` (lowercase). See AI_MASTER_GUIDE.md → Critical Debugging Sessions for full details.
+**⚠️ DEPLOYMENT ISSUE DISCOVERED**: This update revealed a critical deployment path mismatch. Backend service runs from `/opt/trade-show-app/backend/` (capital A), but deployments were going to `/opt/expenseapp/` (lowercase). See AI_MASTER_GUIDE.md → Critical Debugging Sessions for full details.
 
 ## [1.4.10] - 2025-10-16 (Frontend v1.4.10)
 **Branch: v1.2.0 (Sandbox Only)**

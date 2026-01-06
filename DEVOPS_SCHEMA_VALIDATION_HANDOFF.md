@@ -610,7 +610,7 @@ git commit -m "feat: add new_feature table"
 
 # 2. Run migrations on sandbox
 ssh root@192.168.1.190
-pct exec 203 -- bash -c 'cd /opt/expenseApp/backend && npm run migrate'
+pct exec 203 -- bash -c 'cd /opt/trade-show-app/backend && npm run migrate'
 exit
 
 # 3. Validate sandbox schema
@@ -649,7 +649,7 @@ echo "✅ Schema validation PASSED"
 
 # Proceed with deployment
 echo "Running migrations..."
-ssh root@192.168.1.190 "pct exec 201 -- bash -c 'cd /opt/expenseApp/backend && npm run migrate'"
+ssh root@192.168.1.190 "pct exec 201 -- bash -c 'cd /opt/trade-show-app/backend && npm run migrate'"
 
 echo "Deploying backend..."
 # ... backend deployment steps ...

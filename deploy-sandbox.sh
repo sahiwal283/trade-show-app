@@ -1,15 +1,15 @@
 #!/bin/bash
-# Sandbox Deployment Script - Prevents common deployment errors
+# Sandbox Deployment Script - Trade Show App
 # Usage: ./deploy-sandbox.sh
 
 set -e  # Exit on error
 
-echo "=== ExpenseApp Sandbox Deployment ==="
+echo "=== Trade Show App Sandbox Deployment ==="
 echo ""
 
-# CRITICAL: Container paths (case-sensitive!)
-SANDBOX_BACKEND_PATH="/opt/expenseApp/backend"  # ← CAPITAL A!
-SANDBOX_FRONTEND_PATH="/var/www/expenseapp"
+# Container paths
+SANDBOX_BACKEND_PATH="/opt/trade-show-app/backend"
+SANDBOX_FRONTEND_PATH="/var/www/trade-show-app"
 PROXMOX_IP="192.168.1.190"
 SANDBOX_CONTAINER="203"
 
@@ -19,17 +19,14 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-echo -e "${YELLOW}⚠️  CRITICAL REMINDER:${NC}"
-echo -e "   Backend path: ${GREEN}$SANDBOX_BACKEND_PATH${NC} (CAPITAL A in expenseApp)"
-echo -e "   Frontend path: $SANDBOX_FRONTEND_PATH (lowercase)"
+echo -e "${YELLOW}⚠️  DEPLOYMENT PATHS:${NC}"
+echo -e "   Backend path: ${GREEN}$SANDBOX_BACKEND_PATH${NC}"
+echo -e "   Frontend path: $SANDBOX_FRONTEND_PATH"
 echo ""
 
-# Verify we're on v1.6.0 branch
+# Allow any branch for development (remove strict branch check)
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [ "$CURRENT_BRANCH" != "v1.6.0" ]; then
-    echo -e "${RED}ERROR: Must be on v1.6.0 branch (currently on $CURRENT_BRANCH)${NC}"
-    exit 1
-fi
+echo -e "Current branch: ${GREEN}$CURRENT_BRANCH${NC}"
 
 # Check what to deploy
 DEPLOY_BACKEND=false
@@ -79,9 +76,9 @@ if [ "$DEPLOY_BACKEND" = true ]; then
             cd $SANDBOX_BACKEND_PATH || exit 1
             echo \"Current directory: \$(pwd)\"
             tar -xzf /tmp/backend-deploy.tar.gz
-            systemctl restart expenseapp-backend
+            systemctl restart trade-show-app-backend
             sleep 3
-            systemctl is-active expenseapp-backend
+            systemctl is-active trade-show-app-backend
         '
     "
     

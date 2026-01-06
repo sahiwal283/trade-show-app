@@ -393,7 +393,7 @@ cat $(ls -t schema-validation-*.txt | head -1)
 
 # 2. If passed, apply new migration to production
 ssh root@192.168.1.190
-pct exec 201 -- bash -c 'cd /opt/expenseApp/backend && npm run migrate'
+pct exec 201 -- bash -c 'cd /opt/trade-show-app/backend && npm run migrate'
 
 # 3. Validate again
 ./scripts/validate-schema.sh production

@@ -284,8 +284,8 @@ Back to OCR Service (Continuous Learning)
 
 ### 📝 Lessons Learned
 - **Database schema constraints** must be updated BEFORE deploying code that uses new values
-- **Frontend deployment directory** is `/var/www/expenseapp/current/` not root
-- **Backend service path** is `/opt/expenseApp/backend/` (capital A in expenseApp)
+- **Frontend deployment directory** is `/var/www/trade-show-app/current/` not root
+- **Backend service path** is `/opt/trade-show-app/backend/`
 - **Always create version tags** after production deployment
 - **One branch per development session**, not per individual change
 - **Separate Zoho credentials** for sandbox/production is intentional (data isolation)
@@ -448,8 +448,8 @@ Back to OCR Service (Continuous Learning)
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/sahiwal283/expenseApp.git
-cd expenseApp
+git clone https://github.com/sahiwal283/trade-show-app.git
+cd trade-show-app
 ```
 
 ### 2. Database Setup
@@ -632,7 +632,7 @@ scp frontend-v1.0.X-*.tar.gz root@192.168.1.190:/tmp/frontend-v1.0.X.tar.gz
 # Extract and restart
 ssh root@192.168.1.190 "
   pct push 203 /tmp/frontend-v1.0.X.tar.gz /tmp/frontend-v1.0.X.tar.gz &&
-  pct exec 203 -- bash -c 'cd /var/www/expenseapp && rm -rf * && tar -xzf /tmp/frontend-v1.0.X.tar.gz && systemctl restart nginx' &&
+  pct exec 203 -- bash -c 'cd /var/www/trade-show-app && rm -rf * && tar -xzf /tmp/frontend-v1.0.X.tar.gz && systemctl restart nginx' &&
   pct stop 104 && sleep 3 && pct start 104 && sleep 2
 "
 ```
@@ -646,7 +646,7 @@ scp backend-v1.0.X.tar.gz root@192.168.1.190:/tmp/backend-v1.0.X.tar.gz
 
 ssh root@192.168.1.190 "
   pct push 203 /tmp/backend-v1.0.X.tar.gz /tmp/backend-v1.0.X.tar.gz &&
-  pct exec 203 -- bash -c 'cd /opt/expenseApp/backend && rm -rf dist && tar -xzf /tmp/backend-v1.0.X.tar.gz -C dist && systemctl restart expenseapp-backend'
+  pct exec 203 -- bash -c 'cd /opt/trade-show-app/backend && rm -rf dist && tar -xzf /tmp/backend-v1.0.X.tar.gz -C dist && systemctl restart trade-show-app-backend'
 "
 ```
 
@@ -681,7 +681,7 @@ PGPASSWORD=sandbox123 psql -h localhost -U expense_sandbox -d expense_app_sandbo
 
 ### Backend Logs
 ```bash
-ssh root@192.168.1.190 "pct exec 203 -- journalctl -u expenseapp-backend -n 50 --no-pager"
+ssh root@192.168.1.190 "pct exec 203 -- journalctl -u trade-show-app-backend -n 50 --no-pager"
 ```
 
 ---

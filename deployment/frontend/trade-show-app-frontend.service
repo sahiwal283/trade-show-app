@@ -1,5 +1,5 @@
 [Unit]
-Description=Expense App Frontend (static)
+Description=Trade Show App Frontend (static)
 After=network.target
 
 [Service]

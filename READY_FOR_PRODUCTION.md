@@ -149,7 +149,7 @@ All pre-deployment requirements have been met!
 
 **Backend Rollback:**
 ```bash
-ssh root@192.168.1.190 'pct exec 201 -- bash -c "cd /opt/expenseApp && git checkout v1.5.1 && cd backend && npm install && npm run build && systemctl restart expenseapp-backend"'
+ssh root@192.168.1.190 'pct exec 201 -- bash -c "cd /opt/trade-show-app && git checkout v1.5.1 && cd backend && npm install && npm run build && systemctl restart trade-show-app-backend"'
 ```
 
 **Frontend Rollback:**
@@ -175,7 +175,7 @@ ssh root@192.168.1.190 'pct exec 201 -- psql -U expenseapp expenseapp < /tmp/pro
 - [ ] Test checklist feature (create event, add checklist item)
 
 ### First Hour:
-- [ ] Monitor backend logs: `ssh root@192.168.1.190 'pct exec 201 -- journalctl -u expenseapp-backend -f'`
+- [ ] Monitor backend logs: `ssh root@192.168.1.190 'pct exec 201 -- journalctl -u trade-show-app-backend -f'`
 - [ ] Check for errors in dev dashboard
 - [ ] Verify Zoho integration still works
 - [ ] Test receipt upload

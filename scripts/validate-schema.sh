@@ -43,7 +43,7 @@ SHIELD="🛡️"
 
 # Script configuration
 MIGRATIONS_DIR="backend/src/database/migrations"
-TEMP_DIR="/tmp/expenseapp-schema-validation-$$"
+TEMP_DIR="/tmp/trade-show-app-schema-validation-$$"
 REPORT_FILE="$TEMP_DIR/validation-report.txt"
 ERRORS_FOUND=0
 

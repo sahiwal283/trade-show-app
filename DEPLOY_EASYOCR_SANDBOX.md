@@ -30,7 +30,7 @@ ssh root@192.168.1.190
 pct exec 203 -- bash
 
 # Run automated installation script
-cd /opt/expenseApp/backend
+cd /opt/trade-show-app/backend
 bash install-easyocr.sh
 
 # Or install manually:
@@ -87,10 +87,10 @@ scp backend-v1.10.0-${BUILD_ID}.tar.gz root@192.168.1.190:/tmp/backend-deploy.ta
 ssh root@192.168.1.190 "
   pct push 203 /tmp/backend-deploy.tar.gz /tmp/backend-deploy.tar.gz &&
   pct exec 203 -- bash -c '
-    cd /opt/expenseApp/backend &&
+    cd /opt/trade-show-app/backend &&
     tar -xzf /tmp/backend-deploy.tar.gz &&
-    chown -R 501:staff /opt/expenseApp/backend &&
-    systemctl restart expenseapp-backend &&
+    chown -R 501:staff /opt/trade-show-app/backend &&
+    systemctl restart trade-show-app-backend &&
     echo \"✓ Backend deployed and restarted\"
   '
 "
@@ -119,10 +119,10 @@ scp frontend-v1.10.0-${BUILD_ID}.tar.gz root@192.168.1.190:/tmp/frontend-deploy.
 ssh root@192.168.1.190 "
   pct push 203 /tmp/frontend-deploy.tar.gz /tmp/frontend-deploy.tar.gz &&
   pct exec 203 -- bash -c '
-    cd /var/www/expenseapp &&
+    cd /var/www/trade-show-app &&
     rm -rf * &&
     tar -xzf /tmp/frontend-deploy.tar.gz &&
-    chown -R 501:staff /var/www/expenseapp &&
+    chown -R 501:staff /var/www/trade-show-app &&
     systemctl restart nginx &&
     echo \"✓ Frontend deployed and restarted\"
   ' &&
@@ -140,7 +140,7 @@ ssh root@192.168.1.190 "
 ### Check Backend Logs
 
 ```bash
-ssh root@192.168.1.190 "pct exec 203 -- journalctl -u expenseapp-backend -n 50 --no-pager"
+ssh root@192.168.1.190 "pct exec 203 -- journalctl -u trade-show-app-backend -n 50 --no-pager"
 ```
 
 **Look for:**
@@ -250,7 +250,7 @@ Run these tests and record results:
 
 **Solution:**
 ```bash
-pct exec 203 -- bash -c 'cd /opt/expenseApp/backend && pip3 install -r requirements.txt'
+pct exec 203 -- bash -c 'cd /opt/trade-show-app/backend && pip3 install -r requirements.txt'
 ```
 
 ### Issue: "poppler not installed" (PDF error)
@@ -264,14 +264,14 @@ pct exec 203 -- apt-get install -y poppler-utils
 
 **Check logs:**
 ```bash
-pct exec 203 -- journalctl -u expenseapp-backend -n 100 --no-pager
+pct exec 203 -- journalctl -u trade-show-app-backend -n 100 --no-pager
 ```
 
 **Common fixes:**
-- Check /opt/expenseApp/backend path (capital A!)
+- Check /opt/trade-show-app/backend path (capital A!)
 - Verify dist/ directory exists
 - Check node_modules are installed
-- Restart: `systemctl restart expenseapp-backend`
+- Restart: `systemctl restart trade-show-app-backend`
 
 ### Issue: Old version showing in browser
 

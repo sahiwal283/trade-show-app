@@ -35,8 +35,8 @@ bash /opt/expenseapp/deployment/backend/install-backend.sh \
   REPO_URL=https://github.com/sahiwal283/expenseApp.git BRANCH=main RUN_SEED=false
 
 # Edit /etc/expenseapp/backend.env for DB credentials and JWT secret
-systemctl restart expenseapp-backend
-systemctl status expenseapp-backend --no-pager -l
+systemctl restart trade-show-app-backend
+systemctl status trade-show-app-backend --no-pager -l
 ```
 
 ### 4.5) Database Schema Validation ⚠️ CRITICAL
@@ -159,7 +159,7 @@ DOMAIN=expense.example.com EMAIL=admin@example.com \
 
 ### 6) Frontend Build & Publish (on Nginx host or CI)
 ```
-WEB_ROOT=/var/www/expenseapp/current \
+WEB_ROOT=/var/www/trade-show-app/current \
   bash deployment/frontend/build-and-deploy.sh
 systemctl reload nginx
 ```

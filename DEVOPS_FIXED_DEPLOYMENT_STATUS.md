@@ -25,13 +25,13 @@
 
 ### 2. Frontend Deployment ✅
 - ✅ **Action:** Deployed fixed frontend to Container 203 (sandbox)
-- ✅ **Location:** `/var/www/expenseapp/current/`
+- ✅ **Location:** `/var/www/trade-show-app/current/`
 - ✅ **Nginx:** Reloaded successfully
 - ✅ **Verification:** No production URLs in deployed files
 
 ### 3. CORS Configuration ✅
 - ✅ **Action:** Set `CORS_ORIGIN=http://192.168.1.144` in backend `.env`
-- ✅ **Location:** `/opt/expenseApp/backend/.env`
+- ✅ **Location:** `/opt/trade-show-app/backend/.env`
 - ✅ **Backend Service:** Restarted successfully
 - ✅ **Status:** Running (PID: 305540)
 
@@ -57,7 +57,7 @@
 
 ### Frontend Status
 - ✅ **HTTP Status:** 200 OK
-- ✅ **Location:** `/var/www/expenseapp/current/`
+- ✅ **Location:** `/var/www/trade-show-app/current/`
 - ✅ **API Configuration:** Uses relative `/api` path ✅
 - ✅ **No Production URLs:** Verified ✅
 
@@ -86,13 +86,13 @@
 ### Frontend Deployment
 - **Build:** Rebuilt without `VITE_API_BASE_URL`
 - **Tarball:** `frontend-fixed-v1.28.16.tar.gz`
-- **Deployed To:** `/var/www/expenseapp/current/`
+- **Deployed To:** `/var/www/trade-show-app/current/`
 - **Nginx:** Reloaded successfully
 - **Verification:** No production URLs found ✅
 
 ### Backend Configuration
 - **CORS_ORIGIN:** `http://192.168.1.144`
-- **Service:** `expenseapp-backend.service`
+- **Service:** `trade-show-app-backend.service`
 - **Status:** Active (running)
 - **Restart:** Completed successfully
 

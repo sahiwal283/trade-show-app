@@ -48,14 +48,14 @@
 
 ### Container 201: Production Backend
 - **IP:** 192.168.1.138
-- **Path:** `/opt/expenseApp/backend`
-- **Service:** `expenseapp-backend` (systemd)
+- **Path:** `/opt/trade-show-app/backend`
+- **Service:** `trade-show-app-backend` (systemd)
 - **Port:** 3000
 - **Database:** `expense_app_production` (PostgreSQL 15)
 
 ### Container 202: Production Frontend
 - **IP:** 192.168.1.138
-- **Path:** `/var/www/expenseapp/current`
+- **Path:** `/var/www/trade-show-app/current`
 - **Service:** Nginx
 - **Port:** 80
 
@@ -83,13 +83,13 @@ ssh root@192.168.1.190 "ls -lh /backup/pre-deployment-v1.29.0-*.sql | tail -1"
 #### 1.2 Current State Verification
 ```bash
 # Check current backend version
-ssh root@192.168.1.190 "pct exec 201 -- bash -c 'cd /opt/expenseApp/backend && cat package.json | grep version'"
+ssh root@192.168.1.190 "pct exec 201 -- bash -c 'cd /opt/trade-show-app/backend && cat package.json | grep version'"
 
 # Check current frontend version
-ssh root@192.168.1.190 "pct exec 202 -- bash -c 'cat /var/www/expenseapp/current/manifest.json | grep version || echo \"No manifest.json found\"'"
+ssh root@192.168.1.190 "pct exec 202 -- bash -c 'cat /var/www/trade-show-app/current/manifest.json | grep version || echo \"No manifest.json found\"'"
 
 # Check backend service status
-ssh root@192.168.1.190 "pct exec 201 -- systemctl status expenseapp-backend --no-pager | head -10"
+ssh root@192.168.1.190 "pct exec 201 -- systemctl status trade-show-app-backend --no-pager | head -10"
 ```
 
 **Expected Result:** Current versions documented, service running
@@ -110,7 +110,7 @@ ssh root@192.168.1.190 "pct exec 201 -- sudo -u postgres psql expense_app_produc
 ```bash
 # Connect to production container and run migrations
 ssh root@192.168.1.190 "pct exec 201 -- bash -c '
-  cd /opt/expenseApp
+  cd /opt/trade-show-app
   git fetch origin
   git pull origin main
   cd backend
@@ -139,7 +139,7 @@ ssh root@192.168.1.190 "pct exec 201 -- sudo -u postgres psql expense_app_produc
 #### 3.1 Pull Latest Code
 ```bash
 ssh root@192.168.1.190 "pct exec 201 -- bash -c '
-  cd /opt/expenseApp
+  cd /opt/trade-show-app
   git fetch origin
   git pull origin main
   echo \"Current commit: \$(git rev-parse --short HEAD)\"
@@ -151,7 +151,7 @@ ssh root@192.168.1.190 "pct exec 201 -- bash -c '
 #### 3.2 Install Dependencies
 ```bash
 ssh root@192.168.1.190 "pct exec 201 -- bash -c '
-  cd /opt/expenseApp/backend
+  cd /opt/trade-show-app/backend
   npm install
 '"
 ```
@@ -161,7 +161,7 @@ ssh root@192.168.1.190 "pct exec 201 -- bash -c '
 #### 3.3 Build Backend
 ```bash
 ssh root@192.168.1.190 "pct exec 201 -- bash -c '
-  cd /opt/expenseApp/backend
+  cd /opt/trade-show-app/backend
   npm run build
 '"
 ```
@@ -171,9 +171,9 @@ ssh root@192.168.1.190 "pct exec 201 -- bash -c '
 #### 3.4 Restart Backend Service
 ```bash
 ssh root@192.168.1.190 "pct exec 201 -- bash -c '
-  systemctl restart expenseapp-backend
+  systemctl restart trade-show-app-backend
   sleep 5
-  systemctl status expenseapp-backend --no-pager -l | head -20
+  systemctl status trade-show-app-backend --no-pager -l | head -20
 '"
 ```
 
@@ -228,13 +228,13 @@ scp frontend-production-v1.29.0.tar.gz root@192.168.1.190:/tmp/
 
 # Extract to production directory
 ssh root@192.168.1.190 "pct exec 202 -- bash -c '
-  cd /var/www/expenseapp
+  cd /var/www/trade-show-app
   cp -r current current.backup.$(date +%Y%m%d-%H%M%S)
   cd current
   rm -rf *
   tar -xzf /tmp/frontend-production-v1.29.0.tar.gz
-  chown -R www-data:www-data /var/www/expenseapp/current
-  chmod -R 755 /var/www/expenseapp/current
+  chown -R www-data:www-data /var/www/trade-show-app/current
+  chmod -R 755 /var/www/trade-show-app/current
 '"
 ```
 
@@ -298,7 +298,7 @@ curl -s http://192.168.1.138/api/health | jq .
 #### 6.3 Version Verification
 ```bash
 # Check backend version
-ssh root@192.168.1.190 "pct exec 201 -- bash -c 'cd /opt/expenseApp/backend && cat package.json | grep version'"
+ssh root@192.168.1.190 "pct exec 201 -- bash -c 'cd /opt/trade-show-app/backend && cat package.json | grep version'"
 
 # Check frontend version in browser console or manifest
 # Should show: 1.29.0
@@ -317,7 +317,7 @@ ssh root@192.168.1.190 "pct exec 201 -- bash -c 'cd /opt/expenseApp/backend && c
 #### 6.5 Error Monitoring
 ```bash
 # Check backend logs for errors
-ssh root@192.168.1.190 "pct exec 201 -- journalctl -u expenseapp-backend --since '10 minutes ago' | grep -i error"
+ssh root@192.168.1.190 "pct exec 201 -- journalctl -u trade-show-app-backend --since '10 minutes ago' | grep -i error"
 
 # Check nginx logs for errors
 ssh root@192.168.1.190 "pct exec 202 -- tail -50 /var/log/nginx/error.log"
@@ -334,18 +334,18 @@ ssh root@192.168.1.190 "pct exec 202 -- tail -50 /var/log/nginx/error.log"
 #### Rollback Backend
 ```bash
 ssh root@192.168.1.190 "pct exec 201 -- bash -c '
-  cd /opt/expenseApp
+  cd /opt/trade-show-app
   git reset --hard HEAD~1
   cd backend
   npm run build
-  systemctl restart expenseapp-backend
+  systemctl restart trade-show-app-backend
 '"
 ```
 
 #### Rollback Frontend
 ```bash
 ssh root@192.168.1.190 "pct exec 202 -- bash -c '
-  cd /var/www/expenseapp
+  cd /var/www/trade-show-app
   rm -rf current/*
   cp -r current.backup.*/current/* current/
   systemctl reload nginx

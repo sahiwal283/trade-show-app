@@ -4,7 +4,7 @@ set -euo pipefail
 # PostgreSQL logical backup with rotation
 # Configure via environment or systemd service EnvironmentFile
 
-: "${BACKUP_DIR:=/var/backups/expenseapp}"
+: "${BACKUP_DIR:=/var/backups/trade-show-app}"
 : "${DB_NAME:=expense_app}"
 : "${DB_HOST:=127.0.0.1}"
 : "${DB_PORT:=5432}"

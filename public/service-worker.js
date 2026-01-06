@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'expenseapp-v1.28.0';  // BUMPED VERSION for Download Expense PDF & Toast Notification Fix
-const STATIC_CACHE = 'expenseapp-static-v1.28.0';
+const CACHE_NAME = 'trade-show-app-v1.29.5';  // Updated for project rename
+const STATIC_CACHE = 'trade-show-app-static-v1.29.5';
 const urlsToCache = [
   '/',
   '/index.html',

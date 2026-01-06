@@ -4,13 +4,11 @@
       "container": 203,
       "ip": "192.168.1.144",
       "backend": {
-        "path": "/opt/expenseApp/backend",
-        "note": "⚠️ CRITICAL: Capital 'A' in expenseApp!",
-        "service": "expenseapp-backend"
+        "path": "/opt/trade-show-app/backend",
+        "service": "trade-show-app-backend"
       },
       "frontend": {
-        "path": "/var/www/expenseapp/current",
-        "note": "lowercase 'a' in expenseapp",
+        "path": "/var/www/trade-show-app/current",
         "proxy": "192.168.1.160"
       },
       "database": {
@@ -22,13 +20,11 @@
       "container": 201,
       "ip": "192.168.1.129",
       "backend": {
-        "path": "/opt/expenseApp/backend",
-        "note": "⚠️ CRITICAL: Capital 'A' in expenseApp!",
-        "service": "expenseapp-backend"
+        "path": "/opt/trade-show-app/backend",
+        "service": "trade-show-app-backend"
       },
       "frontend": {
-        "path": "/var/www/expenseapp/current",
-        "note": "lowercase 'a' in expenseapp",
+        "path": "/var/www/trade-show-app/current",
         "proxy": "192.168.1.160"
       },
       "database": {
@@ -37,34 +33,16 @@
       }
     }
   },
-  "common_mistakes": [
-    {
-      "mistake": "Deploying to /opt/expenseapp/ (lowercase)",
-      "correct": "/opt/expenseApp/ (capital A)",
-      "impact": "404 errors on all new routes"
-    },
-    {
-      "mistake": "Deploying frontend to /var/www/expenseapp/",
-      "correct": "/var/www/expenseapp/current/",
-      "impact": "404 errors due to Nginx config"
-    },
-    {
-      "mistake": "Forgetting to bump version in service-worker.js",
-      "correct": "Update CACHE_NAME and version comment",
-      "impact": "Cached old frontend, users don't see updates"
-    }
-  ],
   "deployment_checklist": [
-    "✓ On correct branch (v1.x.x)",
+    "✓ On correct branch",
     "✓ Version bumped in backend/package.json",
     "✓ Version bumped in package.json",
     "✓ Version bumped in public/service-worker.js",
     "✓ Build succeeds locally",
-    "✓ Deploy to correct path (/opt/expenseApp/backend)",
-    "✓ Restart service (systemctl restart expenseapp-backend)",
+    "✓ Deploy to correct path (/opt/trade-show-app/backend)",
+    "✓ Restart service (systemctl restart trade-show-app-backend)",
     "✓ Verify version (/api/health endpoint)",
     "✓ Test critical routes",
     "✓ Check frontend cache bust (NPMplus restart if needed)"
   ]
 }
-

@@ -85,7 +85,7 @@ ssh root@192.168.1.190 <<'ENDSSH'
     
     pct exec 201 -- bash -c '
         set -e
-        cd /opt/expenseApp
+        cd /opt/trade-show-app
         
         echo "Current commit: $(git rev-parse --short HEAD)"
         
@@ -113,14 +113,14 @@ ssh root@192.168.1.190 <<'ENDSSH'
         
         echo ""
         echo "Restarting backend service..."
-        systemctl restart expenseapp-backend
+        systemctl restart trade-show-app-backend
         
         echo "Waiting for service to start..."
         sleep 5
         
         echo ""
         echo "Service status:"
-        systemctl status expenseapp-backend --no-pager -l | head -20
+        systemctl status trade-show-app-backend --no-pager -l | head -20
     '
 ENDSSH
 
@@ -141,7 +141,7 @@ if echo "$HEALTH_CHECK" | grep -q '"status":"ok"'; then
     echo "✓ Backend is healthy"
 else
     echo "⚠️  WARNING: Backend health check failed"
-    echo "Check logs: ssh root@192.168.1.190 'pct exec 201 -- journalctl -u expenseapp-backend -n 50'"
+    echo "Check logs: ssh root@192.168.1.190 'pct exec 201 -- journalctl -u trade-show-app-backend -n 50'"
     exit 1
 fi
 
@@ -157,6 +157,6 @@ echo "3. Test approval workflow"
 echo "4. Monitor logs for errors"
 echo ""
 echo "Rollback (if needed):"
-echo "  ssh root@192.168.1.190 'pct exec 201 -- bash -c \"cd /opt/expenseApp && git reset --hard c45b160 && cd backend && npm run build && systemctl restart expenseapp-backend\"'"
+echo "  ssh root@192.168.1.190 'pct exec 201 -- bash -c \"cd /opt/trade-show-app && git reset --hard c45b160 && cd backend && npm run build && systemctl restart trade-show-app-backend\"'"
 echo ""
 

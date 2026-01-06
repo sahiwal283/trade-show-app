@@ -725,7 +725,7 @@ curl -X POST http://sandbox/api/training/sync/export \
   -d '{"minQualityScore": 0.7, "limit": 1000}'
 
 # Verify export
-ls /opt/expenseApp/training_data/dataset_*.jsonl
+ls /opt/trade-show-app/training_data/dataset_*.jsonl
 ```
 
 ### Future (v1.9.0)

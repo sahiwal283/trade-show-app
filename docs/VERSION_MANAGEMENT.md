@@ -69,10 +69,10 @@ Instead of `patch`, you can use:
 
 ### Frontend Version
 - **Header tag** (top right): Reads from `/package.json` at build time
-- **Dev Dashboard**: Backend API reads from `/opt/expenseApp/package.json` at runtime
+- **Dev Dashboard**: Backend API reads from `/opt/trade-show-app/package.json` at runtime
 
 ### Backend Version
-- **Dev Dashboard**: Backend API reads from `/opt/expenseApp/backend/package.json` at runtime
+- **Dev Dashboard**: Backend API reads from `/opt/trade-show-app/backend/package.json` at runtime
 
 ---
 
@@ -136,8 +136,8 @@ res.json({
 ### Deployment
 
 Both package.json files must be on the server:
-- `/opt/expenseApp/package.json` → Frontend version
-- `/opt/expenseApp/backend/package.json` → Backend version
+- `/opt/trade-show-app/package.json` → Frontend version
+- `/opt/trade-show-app/backend/package.json` → Backend version
 
 ---
 

@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # Build the React frontend and publish to a web root (on Nginx host)
-# Usage: WEB_ROOT=/var/www/expenseapp/current ./build-and-deploy.sh
+# Usage: WEB_ROOT=/var/www/trade-show-app/current ./build-and-deploy.sh
 
-: "${WEB_ROOT:=/var/www/expenseapp/current}"
+: "${WEB_ROOT:=/var/www/trade-show-app/current}"
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT_DIR"

@@ -63,14 +63,14 @@ This comprehensive checklist includes:
 
 ### Container 201: Production Backend
 - **IP:** 192.168.1.138
-- **Path:** `/opt/expenseApp/backend`
-- **Service:** `expenseapp-backend` (systemd)
+- **Path:** `/opt/trade-show-app/backend`
+- **Service:** `trade-show-app-backend` (systemd)
 - **Port:** 3000
 - **Database:** `expense_app_production`
 
 ### Container 202: Production Frontend
 - **IP:** 192.168.1.138
-- **Path:** `/var/www/expenseapp/current`
+- **Path:** `/var/www/trade-show-app/current`
 - **Service:** Nginx
 - **Port:** 80
 

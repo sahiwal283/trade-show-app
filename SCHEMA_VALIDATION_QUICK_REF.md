@@ -85,7 +85,7 @@ psql -h 127.0.0.1 -U sahil -d expense_app_production
 ```bash
 # Run migrations on production
 ssh root@192.168.1.190
-pct exec 201 -- bash -c 'cd /opt/expenseApp/backend && npm run migrate'
+pct exec 201 -- bash -c 'cd /opt/trade-show-app/backend && npm run migrate'
 
 # Validate again
 ./scripts/validate-schema.sh production

@@ -36,7 +36,7 @@ Production deployment of version 1.29.0 has been completed successfully. All com
 - ✅ **Code Pulled:** Latest code from `main` branch (commit: 8b62b9f)
 - ✅ **Dependencies Installed:** npm install completed successfully
 - ✅ **Backend Built:** TypeScript compilation successful
-- ✅ **Service Restarted:** `expenseapp-backend.service` restarted and running
+- ✅ **Service Restarted:** `trade-show-app-backend.service` restarted and running
 - ✅ **Health Check:** Backend health endpoint returns version 1.29.0
   ```json
   {
@@ -52,7 +52,7 @@ Production deployment of version 1.29.0 has been completed successfully. All com
 ### Phase 4: Frontend Deployment ✅
 - ✅ **Frontend Built:** Production build completed successfully
 - ✅ **Tarball Created:** `frontend-production-v1.29.0.tar.gz` (196KB)
-- ✅ **Files Deployed:** Frontend files deployed to `/var/www/expenseapp/current`
+- ✅ **Files Deployed:** Frontend files deployed to `/var/www/trade-show-app/current`
 - ✅ **Backup Created:** Previous version backed up
 - ✅ **Permissions Set:** www-data ownership and 755 permissions applied
 - ✅ **Nginx Reloaded:** Nginx service reloaded successfully
@@ -108,14 +108,14 @@ All fixes have been committed to `main` branch and are available for future depl
 
 ### Container 201: Production Backend ✅
 - **IP:** 192.168.1.138
-- **Path:** `/opt/expenseApp/backend`
-- **Service:** `expenseapp-backend` (systemd)
+- **Path:** `/opt/trade-show-app/backend`
+- **Service:** `trade-show-app-backend` (systemd)
 - **Status:** ✅ Running (version 1.29.0)
 - **Port:** 3000
 
 ### Container 202: Production Frontend ✅
 - **IP:** 192.168.1.138
-- **Path:** `/var/www/expenseapp/current`
+- **Path:** `/var/www/trade-show-app/current`
 - **Service:** Nginx
 - **Status:** ✅ Deployed and serving
 - **Port:** 80

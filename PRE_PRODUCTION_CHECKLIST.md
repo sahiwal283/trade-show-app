@@ -175,12 +175,12 @@
 ```bash
 # Rollback Backend (Container 201)
 ssh root@192.168.1.190 'pct exec 201 -- bash -c "
-  cd /opt/expenseApp &&
+  cd /opt/trade-show-app &&
   git checkout v1.5.1-production-tag &&
   cd backend &&
   npm install &&
   npm run build &&
-  systemctl restart expenseapp-backend
+  systemctl restart trade-show-app-backend
 "'
 
 # Rollback Frontend (Container 202)

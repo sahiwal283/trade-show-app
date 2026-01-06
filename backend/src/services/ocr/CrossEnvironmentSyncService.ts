@@ -25,7 +25,7 @@ export class CrossEnvironmentSyncService {
 
   constructor() {
     // Configure training data storage path
-    this.trainingDataPath = process.env.TRAINING_DATA_PATH || '/opt/expenseApp/training_data';
+    this.trainingDataPath = process.env.TRAINING_DATA_PATH || '/opt/trade-show-app/training_data';
   }
 
   /**

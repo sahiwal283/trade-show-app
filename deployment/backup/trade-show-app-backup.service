@@ -1,0 +1,13 @@
+[Unit]
+Description=Trade Show App PostgreSQL Backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/trade-show-app/backup.env
+ExecStart=/usr/bin/bash /opt/trade-show-app/deployment/backup/backup.sh
+User=root
+Group=root
+
+

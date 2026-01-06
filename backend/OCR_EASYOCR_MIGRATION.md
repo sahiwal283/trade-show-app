@@ -272,7 +272,7 @@ apt-get install -y poppler-utils python3-pip libgl1-mesa-glx libglib2.0-0
 
 ```bash
 # Navigate to backend directory
-cd /opt/expenseApp/backend
+cd /opt/trade-show-app/backend
 
 # Install Python dependencies
 pip3 install -r requirements.txt
@@ -312,9 +312,9 @@ scp backend-v1.6.0-easyocr.tar.gz root@192.168.1.190:/tmp/
 ssh root@192.168.1.190 "
   pct push 203 /tmp/backend-v1.6.0-easyocr.tar.gz /tmp/backend-deploy.tar.gz &&
   pct exec 203 -- bash -c '
-    cd /opt/expenseApp/backend &&
+    cd /opt/trade-show-app/backend &&
     tar -xzf /tmp/backend-deploy.tar.gz &&
-    systemctl restart expenseapp-backend &&
+    systemctl restart trade-show-app-backend &&
     echo \"Backend deployed and restarted\"
   '
 "
@@ -324,7 +324,7 @@ ssh root@192.168.1.190 "
 
 ```bash
 # Check backend logs
-ssh root@192.168.1.190 "pct exec 203 -- journalctl -u expenseapp-backend -n 50 --no-pager"
+ssh root@192.168.1.190 "pct exec 203 -- journalctl -u trade-show-app-backend -n 50 --no-pager"
 
 # Should see:
 # [EasyOCR] Provider initialized
@@ -541,7 +541,7 @@ this.config = {
 ### Contact
 
 For issues or questions about the EasyOCR migration:
-- Check logs: `journalctl -u expenseapp-backend -n 100`
+- Check logs: `journalctl -u trade-show-app-backend -n 100`
 - Review this guide: `backend/OCR_EASYOCR_MIGRATION.md`
 - Check master guide: `docs/AI_MASTER_GUIDE.md`
 

@@ -1170,20 +1170,20 @@ Proxmox Host (192.168.1.190)
 │   ├── Debian 12
 │   ├── Node.js 18
 │   ├── PostgreSQL 15 (expense_app_sandbox database)
-│   ├── Nginx (frontend on :80, root: /var/www/expenseapp)
-│   ├── PM2 (backend on :3000, path: /opt/expenseApp/backend)
+│   ├── Nginx (frontend on :80, root: /var/www/trade-show-app)
+│   ├── PM2 (backend on :3000, path: /opt/trade-show-app/backend)
 │   ├── Version: Frontend v1.13.4 / Backend v1.13.4
 │   └── Features: Production + AI Pipeline (OCR, Data Pool, Model Training)
 │
 ├── LXC 201: Production Backend (192.168.1.138)
 │   ├── Node.js 18
 │   ├── PostgreSQL 15 (expense_app_production database)
-│   ├── PM2 (backend on :3000, path: /opt/expenseApp/backend)
+│   ├── PM2 (backend on :3000, path: /opt/trade-show-app/backend)
 │   └── Version: Backend v1.5.1
 │
 └── LXC 202: Production Frontend (192.168.1.138)
     ├── Nginx (frontend on :80)
-    ├── Path: /var/www/expenseapp/current
+    ├── Path: /var/www/trade-show-app/current
     └── Version: Frontend v1.4.13
 
 Deployment Process (Sandbox - Automated via deploy-sandbox.sh):
@@ -1193,16 +1193,16 @@ Deployment Process (Sandbox - Automated via deploy-sandbox.sh):
 4. Create tarballs with version and timestamp
 5. SCP to Proxmox host
 6. Push to LXC 203 container
-7. Extract frontend to /var/www/expenseapp
-8. Extract backend to /opt/expenseApp/backend
-9. Restart services: nginx, expenseapp-backend
+7. Extract frontend to /var/www/trade-show-app
+8. Extract backend to /opt/trade-show-app/backend
+9. Restart services: nginx, trade-show-app-backend
 10. ⚠️ CRITICAL: Restart NPMplus proxy (LXC 104) to clear cache!
 
 Deployment Process (Production - Manual):
 1. Test thoroughly in sandbox first!
 2. Tag release in git
-3. Deploy frontend to LXC 202: /var/www/expenseapp/current
-4. Deploy backend to LXC 201: /opt/expenseApp/backend
+3. Deploy frontend to LXC 202: /var/www/trade-show-app/current
+4. Deploy backend to LXC 201: /opt/trade-show-app/backend
 5. Run database migrations if needed
 6. Restart services
 7. Verify health endpoints

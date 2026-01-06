@@ -212,7 +212,7 @@ npm run build:sandbox
 
 **Output Location:**
 - `dist/` directory
-- Deployed to Container 203 at `/var/www/expenseapp`
+- Deployed to Container 203 at `/var/www/trade-show-app`
 
 ### Production Build
 
@@ -234,7 +234,7 @@ npm run build:production
 
 **Output Location:**
 - `dist/` directory
-- Deployed to Container 202 at `/var/www/expenseapp`
+- Deployed to Container 202 at `/var/www/trade-show-app`
 
 ### Build-Time Validation
 

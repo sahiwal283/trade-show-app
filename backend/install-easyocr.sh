@@ -25,8 +25,8 @@ fi
 
 # Check if running inside container 203
 echo "[1/6] Verifying environment..."
-if [ ! -d "/opt/expenseApp" ]; then
-    echo "WARNING: /opt/expenseApp not found. Are you in container 203?"
+if [ ! -d "/opt/trade-show-app" ]; then
+    echo "WARNING: /opt/trade-show-app not found. Are you in container 203?"
     read -p "Continue anyway? (y/n) " -n 1 -r
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -63,7 +63,7 @@ echo "[4/6] Installing Python packages..."
 echo "  This may take 5-10 minutes on first install..."
 echo ""
 
-cd /opt/expenseApp/backend
+cd /opt/trade-show-app/backend
 
 pip3 install --quiet --upgrade pip
 
@@ -145,12 +145,12 @@ echo "  ✓ poppler-utils (PDF utilities)"
 echo ""
 echo "Next steps:"
 echo "  1. Deploy backend code with EasyOCR provider"
-echo "  2. Restart backend service: systemctl restart expenseapp-backend"
+echo "  2. Restart backend service: systemctl restart trade-show-app-backend"
 echo "  3. Test OCR endpoint with sample receipt"
 echo ""
 echo "Documentation:"
-echo "  - Backend: /opt/expenseApp/backend/OCR_EASYOCR_MIGRATION.md"
-echo "  - Master Guide: /opt/expenseApp/docs/AI_MASTER_GUIDE.md"
+echo "  - Backend: /opt/trade-show-app/backend/OCR_EASYOCR_MIGRATION.md"
+echo "  - Master Guide: /opt/trade-show-app/docs/AI_MASTER_GUIDE.md"
 echo ""
 echo "========================================="
 

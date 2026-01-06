@@ -1,5 +1,5 @@
 [Unit]
-Description=Run Expense App Backup Daily
+Description=Run Trade Show App Backup Daily
 
 [Timer]
 OnCalendar=daily

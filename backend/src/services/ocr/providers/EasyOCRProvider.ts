@@ -219,8 +219,8 @@ export class EasyOCRProvider implements OCRProvider {
       // Disable CPU optimizations that require AVX2 (for older CPUs like Sandy Bridge)
       const env = {
         ...process.env,
-        HOME: process.env.HOME || '/var/lib/expenseapp',
-        EASYOCR_MODULE_PATH: '/var/lib/expenseapp/.EasyOCR',
+        HOME: process.env.HOME || '/var/lib/trade-show-app',
+        EASYOCR_MODULE_PATH: '/var/lib/trade-show-app/.EasyOCR',
         // Disable PyTorch optimizations that cause SIGILL on older CPUs
         MKL_THREADING_LAYER: 'GNU',
         MKL_SERVICE_FORCE_INTEL: '0',

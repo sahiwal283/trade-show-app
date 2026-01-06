@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Install and configure Expense App backend on Debian/Ubuntu LXC/VM
+# Install and configure Trade Show App backend on Debian/Ubuntu LXC/VM
 # - Installs Node.js 18
 # - Clones repo and builds backend
 # - Installs Tesseract OCR
@@ -9,14 +9,14 @@ set -euo pipefail
 # - Configures systemd service
 # - Runs DB migrations and optional seed
 
-: "${REPO_URL:=https://github.com/sahiwal283/expenseApp.git}"
+: "${REPO_URL:=https://github.com/sahiwal283/trade-show-app.git}"
 : "${BRANCH:=main}"
-: "${APP_USER:=expenseapp}"
-: "${APP_DIR:=/opt/expenseapp}"
+: "${APP_USER:=trade-show-app}"
+: "${APP_DIR:=/opt/trade-show-app}"
 : "${BACKEND_DIR:=${APP_DIR}/backend}"
-: "${ENV_DIR:=/etc/expenseapp}"
+: "${ENV_DIR:=/etc/trade-show-app}"
 : "${ENV_FILE:=${ENV_DIR}/backend.env}"
-: "${UPLOAD_DIR:=/var/lib/expenseapp/uploads}"
+: "${UPLOAD_DIR:=/var/lib/trade-show-app/uploads}"
 : "${RUN_SEED:=false}"
 
 export DEBIAN_FRONTEND=noninteractive
@@ -63,7 +63,7 @@ DB_NAME=expense_app
 DB_USER=expense_user
 DB_PASSWORD=change_me
 JWT_SECRET=replace_with_strong_random_secret
-UPLOAD_DIR=/var/lib/expenseapp/uploads
+UPLOAD_DIR=/var/lib/trade-show-app/uploads
 MAX_FILE_SIZE=5242880
 #CORS_ORIGIN=https://your-frontend-domain
 EOF
@@ -72,12 +72,12 @@ fi
 chown -R "$APP_USER":"$APP_USER" "$ENV_DIR"
 
 # Systemd service install
-SERVICE_SRC="${APP_DIR}/deployment/backend/expenseapp-backend.service"
-SERVICE_DST="/etc/systemd/system/expenseapp-backend.service"
+SERVICE_SRC="${APP_DIR}/deployment/backend/trade-show-app-backend.service"
+SERVICE_DST="/etc/systemd/system/trade-show-app-backend.service"
 if [[ -f "$SERVICE_SRC" ]]; then
   cp "$SERVICE_SRC" "$SERVICE_DST"
   systemctl daemon-reload
-  systemctl enable expenseapp-backend.service
+  systemctl enable trade-show-app-backend.service
 fi
 
 # Run DB migrations and optional seed as app user
@@ -87,8 +87,8 @@ if [[ "$RUN_SEED" == "true" ]]; then
   sudo -u "$APP_USER" bash -c "cd '$BACKEND_DIR' && npm run seed"
 fi
 
-systemctl restart expenseapp-backend.service || systemctl start expenseapp-backend.service
-systemctl status expenseapp-backend.service --no-pager -l || true
+systemctl restart trade-show-app-backend.service || systemctl start trade-show-app-backend.service
+systemctl status trade-show-app-backend.service --no-pager -l || true
 
 echo "Backend installation complete. Edit ${ENV_FILE} and restart service if needed."
 
