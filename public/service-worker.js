@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.29.4 - Production Release
+// Version: 1.30.0 - Project Rename Release
 // Date: November 4, 2025
 //
 // New Features:
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.29.5';  // Updated for project rename
-const STATIC_CACHE = 'trade-show-app-static-v1.29.5';
+const CACHE_NAME = 'trade-show-app-v1.30.0';  // Updated for project rename
+const STATIC_CACHE = 'trade-show-app-static-v1.30.0';
 const urlsToCache = [
   '/',
   '/index.html',
