@@ -14,9 +14,7 @@
 | Environment | Version | Port | Collation |
 |-------------|---------|------|-----------|
 | Production (2320) | 16.11 | 5432 | C (POSIX) |
-| Sandbox (2300) | 15.14 | 5432 | C (POSIX) |
-
-> ⚠️ **Version Note:** Sandbox runs PostgreSQL 15, production runs PostgreSQL 16. Migrations tested in sandbox may behave slightly differently in production. Consider upgrading sandbox to PostgreSQL 16 for full parity.
+| Sandbox (2300) | 16.11 | 5432 | C (POSIX) |
 
 > ⚠️ **IP Note:** Do not assume IPs from historical plans — always verify with `pct config <container_id>` or `ip addr show eth0`.
 
