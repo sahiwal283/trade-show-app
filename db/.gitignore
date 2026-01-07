@@ -1,0 +1,8 @@
+# Schema dumps are generated artifacts, not source of truth
+schema/*.sql
+
+# Never commit actual backups
+backups/*.dump
+backups/*.sql
+backups/*.gz
+

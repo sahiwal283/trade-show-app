@@ -12,8 +12,9 @@
         "proxy": "192.168.1.160"
       },
       "database": {
-        "container": 209,
-        "host": "192.168.1.148"
+        "container": 2300,
+        "host": "192.168.1.151",
+        "name": "expense_app_sandbox"
       }
     },
     "production": {
@@ -28,8 +29,9 @@
         "proxy": "192.168.1.160"
       },
       "database": {
-        "container": 208,
-        "host": "192.168.1.147"
+        "container": 2320,
+        "host": "192.168.1.152",
+        "name": "expense_app_production"
       }
     }
   },
