@@ -9,6 +9,7 @@ import { NotFoundError } from '../../utils/errors';
 
 export interface User {
   id: string;
+  username: string;
   name: string;
   email: string;
   password?: string;
@@ -17,7 +18,9 @@ export interface User {
   updated_at: string;
 }
 
-export interface UserWithoutPassword extends Omit<User, 'password'> {}
+export interface UserWithoutPassword extends Omit<User, 'password'> {
+  username: string;
+}
 
 export class UserRepository extends BaseRepository<User> {
   protected tableName = 'users';
@@ -38,7 +41,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findByEmailSafe(email: string): Promise<UserWithoutPassword | null> {
     const result = await this.executeQuery<UserWithoutPassword>(
-      `SELECT id, name, email, role, created_at, updated_at 
+      `SELECT id, username, name, email, role, created_at, updated_at 
        FROM ${this.tableName} 
        WHERE email = $1`,
       [email]
@@ -51,7 +54,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findByRole(role: string): Promise<UserWithoutPassword[]> {
     const result = await this.executeQuery<UserWithoutPassword>(
-      `SELECT id, name, email, role, created_at, updated_at 
+      `SELECT id, username, name, email, role, created_at, updated_at 
        FROM ${this.tableName} 
        WHERE role = $1 
        ORDER BY name ASC`,
@@ -65,7 +68,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findAllSafe(): Promise<UserWithoutPassword[]> {
     const result = await this.executeQuery<UserWithoutPassword>(
-      `SELECT id, name, email, role, created_at, updated_at 
+      `SELECT id, username, name, email, role, created_at, updated_at 
        FROM ${this.tableName} 
        ORDER BY name ASC`
     );
@@ -76,16 +79,17 @@ export class UserRepository extends BaseRepository<User> {
    * Create new user
    */
   async create(data: {
+    username: string;
     name: string;
     email: string;
     password: string;
     role: string;
   }): Promise<UserWithoutPassword> {
     const result = await this.executeQuery<User>(
-      `INSERT INTO ${this.tableName} (name, email, password, role)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, email, role, created_at, updated_at`,
-      [data.name, data.email, data.password, data.role]
+      `INSERT INTO ${this.tableName} (username, name, email, password, role)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id, username, name, email, role, created_at, updated_at`,
+      [data.username, data.name, data.email, data.password, data.role]
     );
     return result.rows[0];
   }
@@ -125,7 +129,7 @@ export class UserRepository extends BaseRepository<User> {
       `UPDATE ${this.tableName} 
        SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
        WHERE id = $${paramIndex}
-       RETURNING id, name, email, role, created_at, updated_at`,
+       RETURNING id, username, name, email, role, created_at, updated_at`,
       values
     );
 

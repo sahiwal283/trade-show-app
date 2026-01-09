@@ -60,6 +60,7 @@ router.post('/', authorize('admin', 'developer'), async (req: AuthRequest, res) 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await userRepository.create({
+      username,
       name,
       email,
       password: hashedPassword,
