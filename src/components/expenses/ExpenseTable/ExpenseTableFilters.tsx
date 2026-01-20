@@ -37,6 +37,7 @@ interface ExpenseTableFiltersProps {
 
   // Display options
   hasApprovalPermission: boolean;
+  showFilters: boolean;
 }
 
 export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
@@ -61,7 +62,13 @@ export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
   uniqueCategories,
   uniqueCards,
   hasApprovalPermission,
+  showFilters,
 }) => {
+  // Hide filters when showFilters is false
+  if (!showFilters) {
+    return null;
+  }
+
   return (
     <tr className="border-t border-gray-100">
       {/* Date Filter (Month Dropdown) */}
