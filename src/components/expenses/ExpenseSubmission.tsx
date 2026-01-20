@@ -447,6 +447,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         }
         
         console.log(`[Entity Assignment] SUCCESS: Entity is now "${updatedExpense.zohoEntity}"`);
+        
+        // Update viewingExpense if we're viewing this expense in the modal
+        if (viewingExpense && viewingExpense.id === expense.id) {
+          setViewingExpense(updatedExpense);
+        }
       }
 
       // Remove from pushedExpenses set to allow re-push
