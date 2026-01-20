@@ -173,28 +173,40 @@ function App() {
     if (user) {
       console.log('[App] Initializing offline sync system');
 
-      // Listen for sync events
+      // Track notification IDs to prevent duplicates
+      let syncingNotificationId: string | null = null;
+      let offlineNotificationId: string | null = null;
+      let degradedNotificationId: string | null = null;
+
+      // Listen for sync events (with deduplication)
       const unsubscribeSync = syncManager.addEventListener((event) => {
         console.log('[App] Sync event:', event.type);
         
         if (event.type === 'sync-start') {
-          notifications.showSyncing('Syncing your changes...');
-        } else if (event.type === 'sync-complete') {
-          const { synced, failed } = event.data;
-          if (synced > 0) {
-            notifications.showSuccess('Sync Complete', `${synced} item(s) synced successfully`);
+          // Only show one syncing notification at a time
+          if (!syncingNotificationId) {
+            syncingNotificationId = notifications.showSyncing('Syncing your changes...');
           }
+        } else if (event.type === 'sync-complete') {
+          // Always dismiss the syncing notification
+          if (syncingNotificationId) {
+            notifications.removeNotification(syncingNotificationId);
+            syncingNotificationId = null;
+          }
+          const { failed } = event.data;
+          // Only show notification if something failed (success is silent)
           if (failed > 0) {
             notifications.showWarning('Partial Sync', `${failed} item(s) failed to sync. Check Pending Actions.`);
           }
         } else if (event.type === 'sync-error') {
+          // Dismiss syncing notification on error too
+          if (syncingNotificationId) {
+            notifications.removeNotification(syncingNotificationId);
+            syncingNotificationId = null;
+          }
           notifications.showError('Sync Failed', event.data.error || 'Unknown error occurred', false);
         }
       });
-
-      // Track notification IDs to prevent duplicates
-      let offlineNotificationId: string | null = null;
-      let degradedNotificationId: string | null = null;
 
       // Listen for network status changes
       const unsubscribeNetwork = networkMonitor.addListener((state) => {
@@ -250,6 +262,10 @@ function App() {
         console.log('[App] Cleaning up offline sync system');
         unsubscribeSync();
         unsubscribeNetwork();
+        // Clean up any lingering notifications
+        if (syncingNotificationId) {
+          notifications.removeNotification(syncingNotificationId);
+        }
       };
     }
   }, [user, notifications]);
