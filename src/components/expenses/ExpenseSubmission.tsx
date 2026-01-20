@@ -561,7 +561,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <ExpenseSubmissionHeader
         hasApprovalPermission={hasApprovalPermission}
         hasActiveFilters={hasActiveFilters}
