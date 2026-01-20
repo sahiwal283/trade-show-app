@@ -29,34 +29,27 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
   const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Listen for network changes (notify immediately to display current state)
+    // Listen for network changes - only show bar if offline
     const unsubscribeNetwork = networkMonitor.addListener((state) => {
       setNetworkState(state);
-      // Show bar only if there's actual activity (not just initial state)
-      if (!state.isOnline || state.status === 'degraded') {
-        setIsVisible(true);
-      }
-    }, true); // Notify immediately to get current state
+    }, true);
 
-    // Listen for sync events
+    // Listen for sync events - track state but don't force visibility
     const unsubscribeSync = syncManager.addEventListener((event) => {
       if (event.type === 'sync-start') {
         setIsSyncing(true);
-        setIsVisible(true);
       } else if (event.type === 'sync-complete' || event.type === 'sync-error') {
         setIsSyncing(false);
-        setIsVisible(true);
       }
-      
-      // Refresh sync status
+      // Refresh sync status to check for pending/failed items
       refreshSyncStatus();
     });
 
     // Initial status load
     refreshSyncStatus();
 
-    // Periodic status refresh
-    const interval = setInterval(refreshSyncStatus, 5000);
+    // Periodic status refresh (less frequent - 30 seconds)
+    const interval = setInterval(refreshSyncStatus, 30000);
 
     return () => {
       unsubscribeNetwork();
@@ -66,11 +59,10 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
     };
   }, [hideTimeout]);
 
-  // Auto-hide logic based on status
+  // Auto-hide logic - ONLY show for actual problems, NOT routine syncs
   useEffect(() => {
-    const needsAttention = 
+    const hasProblems = 
       !networkState.isOnline || // Show when offline
-      isSyncing || // Show when syncing
       (syncStatus && syncStatus.pendingCount > 0) || // Show when items pending
       (syncStatus && syncStatus.failedCount > 0); // Show when items failed
 
@@ -80,14 +72,14 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
       setHideTimeout(null);
     }
 
-    if (needsAttention) {
+    if (hasProblems) {
       // Show immediately when there's something that needs attention
       setIsVisible(true);
     } else {
-      // Nothing needs attention - hide immediately (don't even show "All Synced")
+      // Nothing needs attention - hide immediately
       setIsVisible(false);
     }
-  }, [networkState.isOnline, isSyncing, syncStatus?.pendingCount, syncStatus?.failedCount]);
+  }, [networkState.isOnline, syncStatus?.pendingCount, syncStatus?.failedCount]);
 
   const refreshSyncStatus = async () => {
     const status = await syncManager.getStatus();
