@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.30.9 - Add submitted by user to all expense modals
+// Version: 1.30.10 - Fix mobile file picker to allow camera or gallery choice
 // Date: November 4, 2025
 //
 // New Features:

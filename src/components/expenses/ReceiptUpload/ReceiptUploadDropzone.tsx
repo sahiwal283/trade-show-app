@@ -36,7 +36,6 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
         ref={fileInputRef}
         type="file"
         accept="image/*,.heic,.heif,application/pdf,.pdf"
-        capture="environment"
         onChange={(e) => e.target.files && onFilesSelected(e.target.files)}
         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
       />
