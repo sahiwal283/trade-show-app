@@ -5,7 +5,7 @@
  */
 
 // ========== APPLICATION INFO ==========
-export const APP_VERSION = '1.30.6';
+export const APP_VERSION = '1.30.7';
 export const APP_NAME = 'Trade Show Expense Management App';
 
 // ========== DEMO CREDENTIALS (Development Only) ==========
@@ -389,13 +389,25 @@ export const formatDate = (date: string | Date, format: keyof typeof DATE_FORMAT
 
 /**
  * Validate file upload
+ * Checks both MIME type and file extension for better compatibility
+ * (some phones report empty or non-standard MIME types)
  */
 export const validateFile = (file: File): { valid: boolean; error?: string } => {
   if (file.size > FILE_UPLOAD.MAX_SIZE) {
     return { valid: false, error: ERROR_MESSAGES.FILE_TOO_LARGE };
   }
   
-  if (!FILE_UPLOAD.ALLOWED_TYPES.includes(file.type)) {
+  // Check MIME type first
+  const mimeTypeValid = FILE_UPLOAD.ALLOWED_TYPES.includes(file.type) || 
+                        file.type.startsWith('image/'); // Accept any image/* type
+  
+  // Also check file extension as fallback (some phones have empty/wrong MIME types)
+  const fileName = file.name.toLowerCase();
+  const extensionValid = FILE_UPLOAD.ALLOWED_EXTENSIONS.some(ext => fileName.endsWith(ext));
+  
+  // Accept if either MIME type OR extension is valid
+  if (!mimeTypeValid && !extensionValid) {
+    console.warn(`[File Validation] Rejected: ${file.name} (type: ${file.type || 'empty'})`);
     return { valid: false, error: ERROR_MESSAGES.INVALID_FILE_TYPE };
   }
   
