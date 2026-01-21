@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Receipt, FileText, MapPin } from 'lucide-react';
+import { X, Receipt, FileText, MapPin, User } from 'lucide-react';
 import { Expense } from '../../../App';
 import { StatusBadge, CategoryBadge } from '../../common';
 import { formatLocalDate } from '../../../utils/dateUtils';
@@ -88,6 +88,16 @@ export const ApprovalViewModal: React.FC<ApprovalViewModalProps> = ({
                       Location
                     </p>
                     <p className="text-sm text-gray-900">{expense.location}</p>
+                  </div>
+                )}
+
+                {expense.user_name && (
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="text-xs font-medium text-gray-500 mb-1 flex items-center">
+                      <User className="w-3 h-3 mr-1" />
+                      Submitted By
+                    </p>
+                    <p className="text-sm text-gray-900">{expense.user_name}</p>
                   </div>
                 )}
 

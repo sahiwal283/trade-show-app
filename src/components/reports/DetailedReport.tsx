@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Calendar, MapPin, User, DollarSign, Eye, X } from 'lucide-react';
+import { FileText, Calendar, MapPin, User, DollarSign, Eye, X, Store, CreditCard } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { CATEGORY_COLORS } from '../../constants/appConstants';
@@ -346,7 +346,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
                 <div className="flex items-start space-x-3">
                   <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <User className="w-5 h-5 text-orange-600" />
+                    <Store className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Merchant</p>
@@ -356,7 +356,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
                 <div className="flex items-start space-x-3">
                   <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <DollarSign className="w-5 h-5 text-indigo-600" />
+                    <CreditCard className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Card Used</p>
@@ -372,6 +372,18 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <div>
                       <p className="text-sm text-gray-500">Location</p>
                       <p className="font-semibold text-gray-900">{viewingExpense.location}</p>
+                    </div>
+                  </div>
+                )}
+
+                {viewingExpense.user_name && (
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <User className="w-5 h-5 text-teal-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Submitted By</p>
+                      <p className="font-semibold text-gray-900">{viewingExpense.user_name}</p>
                     </div>
                   </div>
                 )}

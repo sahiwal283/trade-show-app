@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.30.8 - Add submitted by user to expense details modal
+// Version: 1.30.9 - Add submitted by user to all expense modals
 // Date: November 4, 2025
 //
 // New Features:

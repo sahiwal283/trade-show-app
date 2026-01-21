@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Calendar, DollarSign, FileText, Receipt, CreditCard, MapPin, Building2, CheckCircle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Calendar, DollarSign, FileText, Receipt, CreditCard, MapPin, Building2, CheckCircle, User } from 'lucide-react';
 import { Expense } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { getStatusColor, getReimbursementStatusColor, formatReimbursementStatus } from '../../constants/appConstants';
@@ -180,6 +180,15 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
                   value={currentReceipt.location}
                   bgColor="bg-red-100"
                   iconColor="text-red-600"
+                />
+              )}
+              {currentReceipt.user_name && (
+                <DetailItem
+                  icon={<User className="w-5 h-5" />}
+                  label="Submitted By"
+                  value={currentReceipt.user_name}
+                  bgColor="bg-teal-100"
+                  iconColor="text-teal-600"
                 />
               )}
             </div>
