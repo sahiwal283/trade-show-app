@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.30.7 - Improve file upload validation for phone screenshots
+// Version: 1.30.8 - Add submitted by user to expense details modal
 // Date: November 4, 2025
 //
 // New Features:

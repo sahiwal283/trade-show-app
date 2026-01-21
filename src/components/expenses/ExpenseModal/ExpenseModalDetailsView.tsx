@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Calendar, DollarSign, FileText, Receipt, CreditCard, MapPin } from 'lucide-react';
+import { Calendar, DollarSign, FileText, Receipt, CreditCard, MapPin, User } from 'lucide-react';
 import { Expense } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 
@@ -84,6 +84,15 @@ export const ExpenseModalDetailsView: React.FC<ExpenseModalDetailsViewProps> = (
             value={expense.location}
             bgColor="bg-red-100"
             iconColor="text-red-600"
+          />
+        )}
+        {expense.user_name && (
+          <DetailItem
+            icon={<User className="w-5 h-5" />}
+            label="Submitted By"
+            value={expense.user_name}
+            bgColor="bg-teal-100"
+            iconColor="text-teal-600"
           />
         )}
       </div>
