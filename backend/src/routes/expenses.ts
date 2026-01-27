@@ -9,7 +9,7 @@ import fs from 'fs';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { upload } from '../config/upload';
-import { zohoMultiAccountService } from '../services/zohoMultiAccountService';
+import { zohoIntegrationClient } from '../services/zohoIntegrationClient';
 import { expenseService } from '../services/ExpenseService';
 import { DuplicateDetectionService } from '../services/DuplicateDetectionService';
 import { ExpenseAuditService } from '../services/ExpenseAuditService';
@@ -720,7 +720,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
     }
 
     // Check if entity has Zoho configuration
-    if (!zohoMultiAccountService.isConfiguredForEntity(expense.zoho_entity)) {
+    if (!zohoIntegrationClient.isConfiguredForEntity(expense.zoho_entity)) {
       console.log(`[Zoho:Push] Entity "${expense.zoho_entity}" is not configured for Zoho integration`);
       return res.status(400).json({ 
         error: `Entity "${expense.zoho_entity}" does not have Zoho Books integration configured`
@@ -746,7 +746,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
     console.log(`[Zoho:ManualPush] Pushing expense ${id} to ${expense.zoho_entity} Zoho Books...`);
 
     // Submit to Zoho Books synchronously (wait for response)
-    const zohoResult = await zohoMultiAccountService.createExpense(expense.zoho_entity, {
+    const zohoResult = await zohoIntegrationClient.createExpense(expense.zoho_entity, {
       expenseId: expense.id,
       date: expense.date,
       amount: expense.amount,
@@ -851,7 +851,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
 // GET /zoho/health - Check Zoho Books integration status for all accounts
 router.get('/zoho/health', authenticateToken, authorize('admin', 'accountant', 'developer'), async (req: AuthRequest, res) => {
   try {
-    const healthStatus = await zohoMultiAccountService.getHealthStatus();
+    const healthStatus = await zohoIntegrationClient.getHealthStatus();
     const statusArray = Array.from(healthStatus.entries()).map(([entity, status]) => ({
       entity,
       ...status,
@@ -883,7 +883,7 @@ router.get('/zoho/health', authenticateToken, authorize('admin', 'accountant', '
 router.get('/zoho/health/:entity', authenticateToken, authorize('admin', 'accountant', 'developer'), async (req: AuthRequest, res) => {
   try {
     const { entity } = req.params;
-    const health = await zohoMultiAccountService.getHealthForEntity(entity);
+    const health = await zohoIntegrationClient.getHealthForEntity(entity);
     res.json(health);
   } catch (error) {
     console.error(`[Zoho:MultiAccount] Health check failed for ${req.params.entity}:`, error);
@@ -899,7 +899,7 @@ router.get('/zoho/health/:entity', authenticateToken, authorize('admin', 'accoun
 // GET /zoho/accounts - Get available Zoho Books account names for configuration
 router.get('/zoho/accounts', authenticateToken, authorize('admin'), async (req: AuthRequest, res) => {
   try {
-    const accounts = await zohoMultiAccountService.getZohoAccountNames();
+    const accounts = await zohoIntegrationClient.getZohoAccountNames();
     res.json(accounts);
   } catch (error) {
     console.error('[Zoho:MultiAccount] Failed to fetch account names:', error);

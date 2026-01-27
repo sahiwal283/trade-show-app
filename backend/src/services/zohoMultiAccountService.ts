@@ -1,5 +1,15 @@
 /**
- * Multi-Account Zoho Books Service
+ * @deprecated This service has been replaced by zohoIntegrationClient.ts
+ * which communicates with the shared Zoho Integration Service.
+ * 
+ * This file is kept for reference/rollback purposes only.
+ * Do not use in new code - use zohoIntegrationClient instead.
+ * 
+ * Migration Date: January 27, 2026
+ * New Service: http://192.168.1.205:8000
+ * 
+ * ============================================================
+ * LEGACY: Multi-Account Zoho Books Service
  * 
  * Manages multiple Zoho Books accounts (one per entity) with support for:
  * - Real Zoho API integration
