@@ -26,6 +26,18 @@ const ENTITY_TO_BRAND: Record<string, string> = {
   'boomin': 'boomin_brands',
 };
 
+// Zoho account IDs per brand (for now, single account per brand - can be expanded later)
+const BRAND_ACCOUNT_IDS: Record<string, { expenseAccountId: string; paidThroughAccountId: string }> = {
+  'haute_brands': {
+    expenseAccountId: '5254962000000091094',
+    paidThroughAccountId: '5254962000000129043',
+  },
+  'boomin_brands': {
+    expenseAccountId: '4849689000007752119',
+    paidThroughAccountId: '5254962000000129043',
+  },
+};
+
 // ========== TYPES ==========
 
 export interface ExpenseData {
@@ -206,8 +218,18 @@ class ZohoIntegrationClient {
         referenceNumber = referenceNumber.substring(0, 47) + '...';
       }
 
+      // Get account IDs for this brand
+      const brandAccounts = BRAND_ACCOUNT_IDS[brand];
+      if (!brandAccounts) {
+        console.error(`[ZohoClient] No account IDs configured for brand: ${brand}`);
+        return {
+          success: false,
+          error: `No Zoho account IDs configured for brand: ${brand}`,
+        };
+      }
+
       // Create expense via shared service
-      // Note: account_id and paid_through_account_id will be added from shared service's extra_config
+      // App sends account_id and paid_through_account_id (required by shared service)
       const response = await this.httpClient.post<ZohoServiceResponse>(
         '/zoho/expenses/create_books',
         {
@@ -218,6 +240,8 @@ class ZohoIntegrationClient {
           reference_number: referenceNumber,
           is_billable: false,
           is_inclusive_tax: false,
+          account_id: brandAccounts.expenseAccountId,
+          paid_through_account_id: brandAccounts.paidThroughAccountId,
         },
         {
           headers: {
