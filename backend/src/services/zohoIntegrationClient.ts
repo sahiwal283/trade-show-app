@@ -25,6 +25,8 @@ const ENTITY_TO_BRAND: Record<string, string> = {
   'haute': 'haute_brands',
   'boomin brands': 'boomin_brands',
   'boomin': 'boomin_brands',
+  'nirvana kulture': 'nirvana_kulture',
+  'nirvana': 'nirvana_kulture',
 };
 
 // Default Zoho account IDs per brand (fallback if not configured in settings)
@@ -36,6 +38,10 @@ const DEFAULT_BRAND_ACCOUNT_IDS: Record<string, { expenseAccountId: string; paid
   'boomin_brands': {
     expenseAccountId: '4849689000007752119',
     paidThroughAccountId: '5254962000000129043',
+  },
+  'nirvana_kulture': {
+    expenseAccountId: '', // To be configured
+    paidThroughAccountId: '', // To be configured
   },
 };
 
@@ -53,6 +59,7 @@ interface CategoryOption {
   zohoExpenseAccountIds?: {
     haute_brands?: string | null;
     boomin_brands?: string | null;
+    nirvana_kulture?: string | null;
   } | null;
 }
 
@@ -225,7 +232,7 @@ class ZohoIntegrationClient {
       );
       
       // Get brand-specific account ID
-      const brandKey = brand as 'haute_brands' | 'boomin_brands';
+      const brandKey = brand as 'haute_brands' | 'boomin_brands' | 'nirvana_kulture';
       const accountId = matchedCategory?.zohoExpenseAccountIds?.[brandKey];
       
       if (accountId) {

@@ -12,6 +12,7 @@ interface CategoryOption {
   zohoExpenseAccountIds?: {
     haute_brands?: string | null;
     boomin_brands?: string | null;
+    nirvana_kulture?: string | null;
   } | null;
 }
 
@@ -23,6 +24,8 @@ interface CategoryOptionsSectionProps {
   setNewCategoryZohoHauteId: (value: string) => void;
   newCategoryZohoBoomId: string;
   setNewCategoryZohoBoomId: (value: string) => void;
+  newCategoryZohoNirvanaId: string;
+  setNewCategoryZohoNirvanaId: (value: string) => void;
   editingCategoryIndex: number | null;
   editCategoryValue: string;
   setEditCategoryValue: (value: string) => void;
@@ -30,6 +33,8 @@ interface CategoryOptionsSectionProps {
   setEditCategoryZohoHauteId: (value: string) => void;
   editCategoryZohoBoomId: string;
   setEditCategoryZohoBoomId: (value: string) => void;
+  editCategoryZohoNirvanaId: string;
+  setEditCategoryZohoNirvanaId: (value: string) => void;
   isSaving: boolean;
   onAddCategory: () => void;
   onRemoveCategory: (option: CategoryOption) => void;
@@ -46,6 +51,8 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
   setNewCategoryZohoHauteId,
   newCategoryZohoBoomId,
   setNewCategoryZohoBoomId,
+  newCategoryZohoNirvanaId,
+  setNewCategoryZohoNirvanaId,
   editingCategoryIndex,
   editCategoryValue,
   setEditCategoryValue,
@@ -53,6 +60,8 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
   setEditCategoryZohoHauteId,
   editCategoryZohoBoomId,
   setEditCategoryZohoBoomId,
+  editCategoryZohoNirvanaId,
+  setEditCategoryZohoNirvanaId,
   isSaving,
   onAddCategory,
   onRemoveCategory,
@@ -87,20 +96,27 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
               placeholder="Enter new category name..."
             />
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <input
               type="text"
               value={newCategoryZohoHauteId}
               onChange={(e) => setNewCategoryZohoHauteId(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Haute Brands Zoho ID"
+              className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Haute Zoho ID"
             />
             <input
               type="text"
               value={newCategoryZohoBoomId}
               onChange={(e) => setNewCategoryZohoBoomId(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Boomin Brands Zoho ID"
+              className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Boomin Zoho ID"
+            />
+            <input
+              type="text"
+              value={newCategoryZohoNirvanaId}
+              onChange={(e) => setNewCategoryZohoNirvanaId(e.target.value)}
+              className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Nirvana Zoho ID"
             />
           </div>
           <button
@@ -125,20 +141,27 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Category name"
                   />
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <input
                       type="text"
                       value={editCategoryZohoHauteId}
                       onChange={(e) => setEditCategoryZohoHauteId(e.target.value)}
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Haute Brands Zoho ID"
+                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Haute Zoho ID"
                     />
                     <input
                       type="text"
                       value={editCategoryZohoBoomId}
                       onChange={(e) => setEditCategoryZohoBoomId(e.target.value)}
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Boomin Brands Zoho ID"
+                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Boomin Zoho ID"
+                    />
+                    <input
+                      type="text"
+                      value={editCategoryZohoNirvanaId}
+                      onChange={(e) => setEditCategoryZohoNirvanaId(e.target.value)}
+                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Nirvana Zoho ID"
                     />
                   </div>
                   <div className="flex justify-end gap-2">
@@ -164,13 +187,16 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                 <>
                   <div className="flex-1">
                     <span className="text-gray-900 font-medium">{option.name}</span>
-                    {(option.zohoExpenseAccountIds?.haute_brands || option.zohoExpenseAccountIds?.boomin_brands) && (
+                    {(option.zohoExpenseAccountIds?.haute_brands || option.zohoExpenseAccountIds?.boomin_brands || option.zohoExpenseAccountIds?.nirvana_kulture) && (
                       <div className="text-xs mt-1 space-y-0.5">
                         {option.zohoExpenseAccountIds.haute_brands && (
                           <div className="text-blue-600">Haute: {option.zohoExpenseAccountIds.haute_brands}</div>
                         )}
                         {option.zohoExpenseAccountIds.boomin_brands && (
                           <div className="text-orange-600">Boomin: {option.zohoExpenseAccountIds.boomin_brands}</div>
+                        )}
+                        {option.zohoExpenseAccountIds.nirvana_kulture && (
+                          <div className="text-purple-600">Nirvana: {option.zohoExpenseAccountIds.nirvana_kulture}</div>
                         )}
                       </div>
                     )}

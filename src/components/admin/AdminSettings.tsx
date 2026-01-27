@@ -27,6 +27,7 @@ interface CategoryOption {
   zohoExpenseAccountIds?: {
     haute_brands?: string | null;
     boomin_brands?: string | null;
+    nirvana_kulture?: string | null;
   } | null;
 }
 
@@ -90,6 +91,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const [newCategoryOption, setNewCategoryOption] = useState('');
   const [newCategoryZohoHauteId, setNewCategoryZohoHauteId] = useState('');
   const [newCategoryZohoBoomId, setNewCategoryZohoBoomId] = useState('');
+  const [newCategoryZohoNirvanaId, setNewCategoryZohoNirvanaId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
   const [editCardName, setEditCardName] = useState('');
@@ -102,6 +104,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const [editCategoryValue, setEditCategoryValue] = useState('');
   const [editCategoryZohoHauteId, setEditCategoryZohoHauteId] = useState('');
   const [editCategoryZohoBoomId, setEditCategoryZohoBoomId] = useState('');
+  const [editCategoryZohoNirvanaId, setEditCategoryZohoNirvanaId] = useState('');
 
   // Check sessionStorage and hash on mount to set initial tab
   useEffect(() => {
@@ -337,9 +340,10 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const addCategoryOption = async () => {
     const isDuplicate = settings.categoryOptions.some(cat => cat.name === newCategoryOption);
     if (newCategoryOption && !isDuplicate) {
-      const zohoExpenseAccountIds = (newCategoryZohoHauteId || newCategoryZohoBoomId) ? {
+      const zohoExpenseAccountIds = (newCategoryZohoHauteId || newCategoryZohoBoomId || newCategoryZohoNirvanaId) ? {
         haute_brands: newCategoryZohoHauteId || null,
-        boomin_brands: newCategoryZohoBoomId || null
+        boomin_brands: newCategoryZohoBoomId || null,
+        nirvana_kulture: newCategoryZohoNirvanaId || null
       } : null;
       const updatedSettings = {
         ...settings,
@@ -352,6 +356,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       setNewCategoryOption('');
       setNewCategoryZohoHauteId('');
       setNewCategoryZohoBoomId('');
+      setNewCategoryZohoNirvanaId('');
       await saveSettings(updatedSettings);
     }
   };
@@ -371,6 +376,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     const ids = settings.categoryOptions[index].zohoExpenseAccountIds;
     setEditCategoryZohoHauteId(ids?.haute_brands || '');
     setEditCategoryZohoBoomId(ids?.boomin_brands || '');
+    setEditCategoryZohoNirvanaId(ids?.nirvana_kulture || '');
   };
 
   const cancelEditCategory = () => {
@@ -378,13 +384,15 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     setEditCategoryValue('');
     setEditCategoryZohoHauteId('');
     setEditCategoryZohoBoomId('');
+    setEditCategoryZohoNirvanaId('');
   };
 
   const saveEditCategory = async (index: number) => {
     if (editCategoryValue && editCategoryValue.trim()) {
-      const zohoExpenseAccountIds = (editCategoryZohoHauteId || editCategoryZohoBoomId) ? {
+      const zohoExpenseAccountIds = (editCategoryZohoHauteId || editCategoryZohoBoomId || editCategoryZohoNirvanaId) ? {
         haute_brands: editCategoryZohoHauteId || null,
-        boomin_brands: editCategoryZohoBoomId || null
+        boomin_brands: editCategoryZohoBoomId || null,
+        nirvana_kulture: editCategoryZohoNirvanaId || null
       } : null;
       const updatedCategories = [...settings.categoryOptions];
       updatedCategories[index] = {
@@ -400,6 +408,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       setEditCategoryValue('');
       setEditCategoryZohoHauteId('');
       setEditCategoryZohoBoomId('');
+      setEditCategoryZohoNirvanaId('');
       await saveSettings(updatedSettings);
     }
   };
@@ -487,6 +496,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
               setNewCategoryZohoHauteId={setNewCategoryZohoHauteId}
               newCategoryZohoBoomId={newCategoryZohoBoomId}
               setNewCategoryZohoBoomId={setNewCategoryZohoBoomId}
+              newCategoryZohoNirvanaId={newCategoryZohoNirvanaId}
+              setNewCategoryZohoNirvanaId={setNewCategoryZohoNirvanaId}
               editingCategoryIndex={editingCategoryIndex}
               editCategoryValue={editCategoryValue}
               setEditCategoryValue={setEditCategoryValue}
@@ -494,6 +505,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
               setEditCategoryZohoHauteId={setEditCategoryZohoHauteId}
               editCategoryZohoBoomId={editCategoryZohoBoomId}
               setEditCategoryZohoBoomId={setEditCategoryZohoBoomId}
+              editCategoryZohoNirvanaId={editCategoryZohoNirvanaId}
+              setEditCategoryZohoNirvanaId={setEditCategoryZohoNirvanaId}
               isSaving={isSaving}
               onAddCategory={addCategoryOption}
               onRemoveCategory={removeCategoryOption}
