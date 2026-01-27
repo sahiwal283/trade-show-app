@@ -75,8 +75,11 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
         try {
           const settings = await api.getSettings();
           setCardOptions(settings.cardOptions || []);
-          setCategories(settings.categoryOptions || defaultCategories);
-          console.log('[ReceiptUpload] Loaded categories:', settings.categoryOptions?.length || defaultCategories.length);
+          // Handle both old format (string[]) and new format (CategoryOption[])
+          const cats = settings.categoryOptions || defaultCategories;
+          const categoryNames = cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name);
+          setCategories(categoryNames);
+          console.log('[ReceiptUpload] Loaded categories:', categoryNames.length);
         } catch (error) {
           console.error('[ReceiptUpload] Failed to load settings:', error);
           setCardOptions([]);
@@ -85,7 +88,9 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       } else {
         const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
         setCardOptions(settings.cardOptions || []);
-        setCategories(settings.categoryOptions || defaultCategories);
+        // Handle both old format (string[]) and new format (CategoryOption[])
+        const cats = settings.categoryOptions || defaultCategories;
+        setCategories(cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name));
       }
     })();
   }, []);

@@ -759,6 +759,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
       eventEndDate: eventEndDate,
       receiptPath: receiptPath,
       reimbursementRequired: expense.reimbursement_required,
+      cardUsed: expense.card_used, // For payment account lookup
     });
 
     if (zohoResult.success) {

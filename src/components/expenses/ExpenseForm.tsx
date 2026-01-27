@@ -81,7 +81,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
             setCardOptions(cards);
           }
           setEntityOptions(settings.entityOptions || []);
-          setCategories(settings.categoryOptions || categories);
+          // Handle both old format (string[]) and new format (CategoryOption[])
+          const cats = settings.categoryOptions || categories;
+          setCategories(cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name));
         } catch {
           setCardOptions([]);
           setEntityOptions([]);
@@ -102,7 +104,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
           setCardOptions(cards);
         }
         setEntityOptions(settings.entityOptions || ['Entity A - Main Operations','Entity B - Sales Division','Entity C - Marketing Department','Entity D - International Operations']);
-        setCategories(settings.categoryOptions || categories);
+        // Handle both old format (string[]) and new format (CategoryOption[])
+        const cats = settings.categoryOptions || categories;
+        setCategories(cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name));
       }
     })();
   }, []);

@@ -12,6 +12,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
+import { query } from '../config/database';
 
 // ========== CONFIGURATION ==========
 
@@ -26,8 +27,8 @@ const ENTITY_TO_BRAND: Record<string, string> = {
   'boomin': 'boomin_brands',
 };
 
-// Zoho account IDs per brand (for now, single account per brand - can be expanded later)
-const BRAND_ACCOUNT_IDS: Record<string, { expenseAccountId: string; paidThroughAccountId: string }> = {
+// Default Zoho account IDs per brand (fallback if not configured in settings)
+const DEFAULT_BRAND_ACCOUNT_IDS: Record<string, { expenseAccountId: string; paidThroughAccountId: string }> = {
   'haute_brands': {
     expenseAccountId: '5254962000000091094',
     paidThroughAccountId: '5254962000000129043',
@@ -37,6 +38,25 @@ const BRAND_ACCOUNT_IDS: Record<string, { expenseAccountId: string; paidThroughA
     paidThroughAccountId: '5254962000000129043',
   },
 };
+
+// ========== SETTINGS TYPES ==========
+
+interface CardOption {
+  name: string;
+  lastFour: string;
+  entity?: string | null;
+  zohoPaymentAccountId?: string | null;
+}
+
+interface CategoryOption {
+  name: string;
+  zohoExpenseAccountId?: string | null;
+}
+
+interface ZohoSettings {
+  cardOptions: CardOption[];
+  categoryOptions: CategoryOption[];
+}
 
 // ========== TYPES ==========
 
@@ -53,6 +73,7 @@ export interface ExpenseData {
   eventEndDate?: string;
   receiptPath?: string;
   reimbursementRequired: boolean;
+  cardUsed?: string; // Card name for payment account lookup
 }
 
 export interface SubmissionResult {
@@ -84,6 +105,9 @@ interface ZohoServiceError {
 class ZohoIntegrationClient {
   private httpClient: AxiosInstance;
   private configuredBrands: Set<string> = new Set();
+  private settingsCache: ZohoSettings | null = null;
+  private settingsCacheTime: number = 0;
+  private readonly SETTINGS_CACHE_TTL = 60000; // 1 minute cache
 
   constructor() {
     this.httpClient = axios.create({
@@ -97,6 +121,108 @@ class ZohoIntegrationClient {
 
     // Check which brands are configured (on startup)
     this.checkConfiguredBrands();
+  }
+
+  /**
+   * Load Zoho account settings from database
+   */
+  private async loadSettings(): Promise<ZohoSettings> {
+    // Return cached settings if still valid
+    if (this.settingsCache && Date.now() - this.settingsCacheTime < this.SETTINGS_CACHE_TTL) {
+      return this.settingsCache;
+    }
+
+    try {
+      // Load cardOptions
+      const cardResult = await query(
+        "SELECT value FROM app_settings WHERE key = 'cardOptions'"
+      );
+      let cardOptions: CardOption[] = [];
+      if (cardResult.rows.length > 0) {
+        const rawCards = JSON.parse(cardResult.rows[0].value);
+        // Handle both old format (no zohoPaymentAccountId) and new format
+        cardOptions = rawCards.map((card: any) => ({
+          name: card.name,
+          lastFour: card.lastFour,
+          entity: card.entity || null,
+          zohoPaymentAccountId: card.zohoPaymentAccountId || null,
+        }));
+      }
+
+      // Load categoryOptions
+      const categoryResult = await query(
+        "SELECT value FROM app_settings WHERE key = 'categoryOptions'"
+      );
+      let categoryOptions: CategoryOption[] = [];
+      if (categoryResult.rows.length > 0) {
+        const rawCategories = JSON.parse(categoryResult.rows[0].value);
+        // Handle both old format (string[]) and new format (object[])
+        categoryOptions = rawCategories.map((cat: any) => {
+          if (typeof cat === 'string') {
+            return { name: cat, zohoExpenseAccountId: null };
+          }
+          return {
+            name: cat.name,
+            zohoExpenseAccountId: cat.zohoExpenseAccountId || null,
+          };
+        });
+      }
+
+      this.settingsCache = { cardOptions, categoryOptions };
+      this.settingsCacheTime = Date.now();
+      
+      console.log(`[ZohoClient] Loaded settings: ${cardOptions.length} cards, ${categoryOptions.length} categories`);
+      
+      return this.settingsCache;
+    } catch (error) {
+      console.error('[ZohoClient] Failed to load settings:', error);
+      return { cardOptions: [], categoryOptions: [] };
+    }
+  }
+
+  /**
+   * Find payment account ID from card name
+   */
+  private findPaymentAccountId(cardUsed: string | undefined, settings: ZohoSettings, brand: string): string {
+    if (cardUsed && settings.cardOptions.length > 0) {
+      // Try to match card by name (card format: "Name (...1234)")
+      const cardName = cardUsed.split(' (...')[0].trim();
+      const matchedCard = settings.cardOptions.find(
+        card => card.name.toLowerCase() === cardName.toLowerCase() ||
+                cardUsed.toLowerCase().includes(card.name.toLowerCase())
+      );
+      
+      if (matchedCard?.zohoPaymentAccountId) {
+        console.log(`[ZohoClient] Found payment account ID for card "${cardName}": ${matchedCard.zohoPaymentAccountId}`);
+        return matchedCard.zohoPaymentAccountId;
+      }
+    }
+    
+    // Fallback to brand default
+    const defaultAccounts = DEFAULT_BRAND_ACCOUNT_IDS[brand];
+    console.log(`[ZohoClient] Using default payment account ID for ${brand}`);
+    return defaultAccounts?.paidThroughAccountId || '';
+  }
+
+  /**
+   * Find expense account ID from category name
+   */
+  private findExpenseAccountId(category: string, settings: ZohoSettings, brand: string): string {
+    if (category && settings.categoryOptions.length > 0) {
+      const matchedCategory = settings.categoryOptions.find(
+        cat => cat.name.toLowerCase() === category.toLowerCase()
+      );
+      
+      if (matchedCategory?.zohoExpenseAccountId) {
+        console.log(`[ZohoClient] Found expense account ID for category "${category}": ${matchedCategory.zohoExpenseAccountId}`);
+        return matchedCategory.zohoExpenseAccountId;
+      }
+    }
+    
+    // Fallback to brand default
+    const defaultAccounts = DEFAULT_BRAND_ACCOUNT_IDS[brand];
+    console.log(`[ZohoClient] Using default expense account ID for ${brand}`);
+    return defaultAccounts?.expenseAccountId || '';
   }
 
   /**
@@ -218,18 +344,23 @@ class ZohoIntegrationClient {
         referenceNumber = referenceNumber.substring(0, 47) + '...';
       }
 
-      // Get account IDs for this brand
-      const brandAccounts = BRAND_ACCOUNT_IDS[brand];
-      if (!brandAccounts) {
-        console.error(`[ZohoClient] No account IDs configured for brand: ${brand}`);
+      // Load settings and look up account IDs
+      const settings = await this.loadSettings();
+      const expenseAccountId = this.findExpenseAccountId(expenseData.category, settings, brand);
+      const paidThroughAccountId = this.findPaymentAccountId(expenseData.cardUsed, settings, brand);
+
+      if (!expenseAccountId || !paidThroughAccountId) {
+        console.error(`[ZohoClient] Missing account IDs for brand ${brand}: expense=${expenseAccountId}, payment=${paidThroughAccountId}`);
         return {
           success: false,
-          error: `No Zoho account IDs configured for brand: ${brand}`,
+          error: `Missing Zoho account IDs. Please configure account IDs in Admin Settings.`,
         };
       }
 
+      console.log(`[ZohoClient] Using account IDs - Expense: ${expenseAccountId}, Payment: ${paidThroughAccountId}`);
+
       // Create expense via shared service
-      // App sends account_id and paid_through_account_id (required by shared service)
+      // App sends account_id and paid_through_account_id based on category/card settings
       const response = await this.httpClient.post<ZohoServiceResponse>(
         '/zoho/expenses/create_books',
         {
@@ -240,8 +371,8 @@ class ZohoIntegrationClient {
           reference_number: referenceNumber,
           is_billable: false,
           is_inclusive_tax: false,
-          account_id: brandAccounts.expenseAccountId,
-          paid_through_account_id: brandAccounts.paidThroughAccountId,
+          account_id: expenseAccountId,
+          paid_through_account_id: paidThroughAccountId,
         },
         {
           headers: {

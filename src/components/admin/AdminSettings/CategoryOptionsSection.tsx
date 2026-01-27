@@ -7,16 +7,25 @@
 import React from 'react';
 import { Tag, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 
+interface CategoryOption {
+  name: string;
+  zohoExpenseAccountId?: string | null;
+}
+
 interface CategoryOptionsSectionProps {
-  categoryOptions: string[];
+  categoryOptions: CategoryOption[];
   newCategoryOption: string;
   setNewCategoryOption: (value: string) => void;
+  newCategoryZohoAccountId: string;
+  setNewCategoryZohoAccountId: (value: string) => void;
   editingCategoryIndex: number | null;
   editCategoryValue: string;
   setEditCategoryValue: (value: string) => void;
+  editCategoryZohoAccountId: string;
+  setEditCategoryZohoAccountId: (value: string) => void;
   isSaving: boolean;
   onAddCategory: () => void;
-  onRemoveCategory: (option: string) => void;
+  onRemoveCategory: (option: CategoryOption) => void;
   onStartEdit: (index: number) => void;
   onCancelEdit: () => void;
   onSaveEdit: (index: number) => void;
@@ -26,9 +35,13 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
   categoryOptions,
   newCategoryOption,
   setNewCategoryOption,
+  newCategoryZohoAccountId,
+  setNewCategoryZohoAccountId,
   editingCategoryIndex,
   editCategoryValue,
   setEditCategoryValue,
+  editCategoryZohoAccountId,
+  setEditCategoryZohoAccountId,
   isSaving,
   onAddCategory,
   onRemoveCategory,
@@ -52,38 +65,56 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
       </div>
 
       <div className="space-y-4">
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={newCategoryOption}
-            onChange={(e) => setNewCategoryOption(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && onAddCategory()}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Enter new category option..."
-          />
-          <button
-            onClick={onAddCategory}
-            disabled={!newCategoryOption || isSaving}
-            className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Add</span>
-          </button>
+        <div className="space-y-3">
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={newCategoryOption}
+              onChange={(e) => setNewCategoryOption(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && onAddCategory()}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter new category name..."
+            />
+          </div>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={newCategoryZohoAccountId}
+              onChange={(e) => setNewCategoryZohoAccountId(e.target.value)}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Zoho Expense Account ID (optional)"
+            />
+            <button
+              onClick={onAddCategory}
+              disabled={!newCategoryOption || isSaving}
+              className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            >
+              <Plus className="w-5 h-5" />
+              <span>Add</span>
+            </button>
+          </div>
         </div>
 
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {categoryOptions.map((option, index) => (
             <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
               {editingCategoryIndex === index ? (
-                <>
+                <div className="w-full space-y-2">
                   <input
                     type="text"
                     value={editCategoryValue}
                     onChange={(e) => setEditCategoryValue(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Category name"
                   />
                   <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editCategoryZohoAccountId}
+                      onChange={(e) => setEditCategoryZohoAccountId(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Zoho Expense Account ID"
+                    />
                     <button
                       onClick={() => onSaveEdit(index)}
                       disabled={isSaving || !editCategoryValue.trim()}
@@ -101,10 +132,17 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                       <X className="w-4 h-4" />
                     </button>
                   </div>
-                </>
+                </div>
               ) : (
                 <>
-                  <span className="flex-1 text-gray-900">{option}</span>
+                  <div className="flex-1">
+                    <span className="text-gray-900">{option.name}</span>
+                    {option.zohoExpenseAccountId && (
+                      <div className="text-xs text-emerald-600 mt-0.5">
+                        Zoho: {option.zohoExpenseAccountId}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => onStartEdit(index)}

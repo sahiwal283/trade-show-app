@@ -19,12 +19,18 @@ interface CardOption {
   name: string;
   lastFour: string;
   entity?: string | null;
+  zohoPaymentAccountId?: string | null;
+}
+
+interface CategoryOption {
+  name: string;
+  zohoExpenseAccountId?: string | null;
 }
 
 interface AppSettings {
   cardOptions: CardOption[];
   entityOptions: string[];
-  categoryOptions: string[];
+  categoryOptions: CategoryOption[];
 }
 
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
@@ -58,35 +64,39 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       'Entity D - International Operations'
     ],
     categoryOptions: [
-      'Booth / Marketing / Tools',
-      'Travel - Flight',
-      'Accommodation - Hotel',
-      'Transportation - Uber / Lyft / Others',
-      'Parking Fees',
-      'Rental - Car / U-haul',
-      'Meal and Entertainment',
-      'Gas / Fuel',
-      'Show Allowances - Per Diem',
-      'Model',
-      'Shipping Charges',
-      'Other'
+      { name: 'Booth / Marketing / Tools', zohoExpenseAccountId: null },
+      { name: 'Travel - Flight', zohoExpenseAccountId: null },
+      { name: 'Accommodation - Hotel', zohoExpenseAccountId: null },
+      { name: 'Transportation - Uber / Lyft / Others', zohoExpenseAccountId: null },
+      { name: 'Parking Fees', zohoExpenseAccountId: null },
+      { name: 'Rental - Car / U-haul', zohoExpenseAccountId: null },
+      { name: 'Meal and Entertainment', zohoExpenseAccountId: null },
+      { name: 'Gas / Fuel', zohoExpenseAccountId: null },
+      { name: 'Show Allowances - Per Diem', zohoExpenseAccountId: null },
+      { name: 'Model', zohoExpenseAccountId: null },
+      { name: 'Shipping Charges', zohoExpenseAccountId: null },
+      { name: 'Other', zohoExpenseAccountId: null }
     ]
   });
 
   const [newCardName, setNewCardName] = useState('');
   const [newCardLastFour, setNewCardLastFour] = useState('');
   const [newCardEntity, setNewCardEntity] = useState('');
+  const [newCardZohoAccountId, setNewCardZohoAccountId] = useState('');
   const [newEntityOption, setNewEntityOption] = useState('');
   const [newCategoryOption, setNewCategoryOption] = useState('');
+  const [newCategoryZohoAccountId, setNewCategoryZohoAccountId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
   const [editCardName, setEditCardName] = useState('');
   const [editCardLastFour, setEditCardLastFour] = useState('');
   const [editCardEntity, setEditCardEntity] = useState('');
+  const [editCardZohoAccountId, setEditCardZohoAccountId] = useState('');
   const [editingEntityIndex, setEditingEntityIndex] = useState<number | null>(null);
   const [editEntityValue, setEditEntityValue] = useState('');
   const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
   const [editCategoryValue, setEditCategoryValue] = useState('');
+  const [editCategoryZohoAccountId, setEditCategoryZohoAccountId] = useState('');
 
   // Check sessionStorage and hash on mount to set initial tab
   useEffect(() => {
@@ -109,11 +119,36 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
           const data = await api.getSettings();
           console.log('[AdminSettings] Received settings:', data);
           
+          // Handle card options with backward compatibility
+          let cardOptions = data?.cardOptions || settings.cardOptions;
+          // Ensure all cards have zohoPaymentAccountId field
+          cardOptions = cardOptions.map((card: any) => ({
+            name: card.name,
+            lastFour: card.lastFour,
+            entity: card.entity || null,
+            zohoPaymentAccountId: card.zohoPaymentAccountId || null
+          }));
+          
+          // Handle category options with backward compatibility (string[] -> CategoryOption[])
+          let categoryOptions: CategoryOption[] = settings.categoryOptions;
+          if (data?.categoryOptions) {
+            categoryOptions = data.categoryOptions.map((cat: any) => {
+              // Handle old format (string) or new format (object)
+              if (typeof cat === 'string') {
+                return { name: cat, zohoExpenseAccountId: null };
+              }
+              return {
+                name: cat.name,
+                zohoExpenseAccountId: cat.zohoExpenseAccountId || null
+              };
+            });
+          }
+          
           // Merge with defaults to ensure all fields exist
           const mergedSettings = {
-            cardOptions: data?.cardOptions || settings.cardOptions,
+            cardOptions,
             entityOptions: data?.entityOptions || settings.entityOptions,
-            categoryOptions: data?.categoryOptions || settings.categoryOptions
+            categoryOptions
           };
           
           console.log('[AdminSettings] Merged settings:', mergedSettings);
@@ -170,10 +205,12 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
           cardOptions: [...settings.cardOptions, { 
             name: newCardName, 
             lastFour: newCardLastFour,
-            entity: newCardEntity || null  // Store entity assignment (null for personal cards)
+            entity: newCardEntity || null,
+            zohoPaymentAccountId: newCardZohoAccountId || null
           }]
         };
         setSettings(updatedSettings);
+        setNewCardZohoAccountId('');
         setNewCardName('');
         setNewCardLastFour('');
         setNewCardEntity('');
@@ -202,6 +239,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     setEditCardName(settings.cardOptions[index].name);
     setEditCardLastFour(settings.cardOptions[index].lastFour);
     setEditCardEntity(settings.cardOptions[index].entity || '');
+    setEditCardZohoAccountId(settings.cardOptions[index].zohoPaymentAccountId || '');
   };
 
   const cancelEditCard = () => {
@@ -209,6 +247,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     setEditCardName('');
     setEditCardLastFour('');
     setEditCardEntity('');
+    setEditCardZohoAccountId('');
   };
 
   const saveEditCard = async (index: number) => {
@@ -217,7 +256,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       updatedCards[index] = { 
         name: editCardName, 
         lastFour: editCardLastFour,
-        entity: editCardEntity || null
+        entity: editCardEntity || null,
+        zohoPaymentAccountId: editCardZohoAccountId || null
       };
       const updatedSettings = {
         ...settings,
@@ -227,6 +267,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       setEditingCardIndex(null);
       setEditCardName('');
       setEditCardLastFour('');
+      setEditCardZohoAccountId('');
       setEditCardEntity('');
       await saveSettings(updatedSettings);
     } else if (editCardLastFour && editCardLastFour.length !== 4) {
@@ -281,21 +322,26 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   };
 
   const addCategoryOption = async () => {
-    if (newCategoryOption && !settings.categoryOptions.includes(newCategoryOption)) {
+    const isDuplicate = settings.categoryOptions.some(cat => cat.name === newCategoryOption);
+    if (newCategoryOption && !isDuplicate) {
       const updatedSettings = {
         ...settings,
-        categoryOptions: [...settings.categoryOptions, newCategoryOption]
+        categoryOptions: [...settings.categoryOptions, {
+          name: newCategoryOption,
+          zohoExpenseAccountId: newCategoryZohoAccountId || null
+        }]
       };
       setSettings(updatedSettings);
       setNewCategoryOption('');
+      setNewCategoryZohoAccountId('');
       await saveSettings(updatedSettings);
     }
   };
 
-  const removeCategoryOption = async (option: string) => {
+  const removeCategoryOption = async (option: CategoryOption) => {
     const updatedSettings = {
       ...settings,
-      categoryOptions: settings.categoryOptions.filter(category => category !== option)
+      categoryOptions: settings.categoryOptions.filter(category => category.name !== option.name)
     };
     setSettings(updatedSettings);
     await saveSettings(updatedSettings);
@@ -303,18 +349,23 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
   const startEditCategory = (index: number) => {
     setEditingCategoryIndex(index);
-    setEditCategoryValue(settings.categoryOptions[index]);
+    setEditCategoryValue(settings.categoryOptions[index].name);
+    setEditCategoryZohoAccountId(settings.categoryOptions[index].zohoExpenseAccountId || '');
   };
 
   const cancelEditCategory = () => {
     setEditingCategoryIndex(null);
     setEditCategoryValue('');
+    setEditCategoryZohoAccountId('');
   };
 
   const saveEditCategory = async (index: number) => {
     if (editCategoryValue && editCategoryValue.trim()) {
       const updatedCategories = [...settings.categoryOptions];
-      updatedCategories[index] = editCategoryValue.trim();
+      updatedCategories[index] = {
+        name: editCategoryValue.trim(),
+        zohoExpenseAccountId: editCategoryZohoAccountId || null
+      };
       const updatedSettings = {
         ...settings,
         categoryOptions: updatedCategories
@@ -322,6 +373,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       setSettings(updatedSettings);
       setEditingCategoryIndex(null);
       setEditCategoryValue('');
+      setEditCategoryZohoAccountId('');
       await saveSettings(updatedSettings);
     }
   };
@@ -367,6 +419,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
               setNewCardLastFour={setNewCardLastFour}
               newCardEntity={newCardEntity}
               setNewCardEntity={setNewCardEntity}
+              newCardZohoAccountId={newCardZohoAccountId}
+              setNewCardZohoAccountId={setNewCardZohoAccountId}
               editingCardIndex={editingCardIndex}
               editCardName={editCardName}
               setEditCardName={setEditCardName}
@@ -374,6 +428,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
               setEditCardLastFour={setEditCardLastFour}
               editCardEntity={editCardEntity}
               setEditCardEntity={setEditCardEntity}
+              editCardZohoAccountId={editCardZohoAccountId}
+              setEditCardZohoAccountId={setEditCardZohoAccountId}
               isSaving={isSaving}
               onAddCard={addCardOption}
               onRemoveCard={removeCardOption}
@@ -401,9 +457,13 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
               categoryOptions={settings.categoryOptions}
               newCategoryOption={newCategoryOption}
               setNewCategoryOption={setNewCategoryOption}
+              newCategoryZohoAccountId={newCategoryZohoAccountId}
+              setNewCategoryZohoAccountId={setNewCategoryZohoAccountId}
               editingCategoryIndex={editingCategoryIndex}
               editCategoryValue={editCategoryValue}
               setEditCategoryValue={setEditCategoryValue}
+              editCategoryZohoAccountId={editCategoryZohoAccountId}
+              setEditCategoryZohoAccountId={setEditCategoryZohoAccountId}
               isSaving={isSaving}
               onAddCategory={addCategoryOption}
               onRemoveCategory={removeCategoryOption}

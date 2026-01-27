@@ -11,6 +11,7 @@ interface CardOption {
   name: string;
   lastFour: string;
   entity?: string | null;
+  zohoPaymentAccountId?: string | null;
 }
 
 interface CardOptionsSectionProps {
@@ -22,6 +23,8 @@ interface CardOptionsSectionProps {
   setNewCardLastFour: (value: string) => void;
   newCardEntity: string;
   setNewCardEntity: (value: string) => void;
+  newCardZohoAccountId: string;
+  setNewCardZohoAccountId: (value: string) => void;
   editingCardIndex: number | null;
   editCardName: string;
   setEditCardName: (value: string) => void;
@@ -29,6 +32,8 @@ interface CardOptionsSectionProps {
   setEditCardLastFour: (value: string) => void;
   editCardEntity: string;
   setEditCardEntity: (value: string) => void;
+  editCardZohoAccountId: string;
+  setEditCardZohoAccountId: (value: string) => void;
   isSaving: boolean;
   onAddCard: () => void;
   onRemoveCard: (option: CardOption) => void;
@@ -46,6 +51,8 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
   setNewCardLastFour,
   newCardEntity,
   setNewCardEntity,
+  newCardZohoAccountId,
+  setNewCardZohoAccountId,
   editingCardIndex,
   editCardName,
   setEditCardName,
@@ -53,6 +60,8 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
   setEditCardLastFour,
   editCardEntity,
   setEditCardEntity,
+  editCardZohoAccountId,
+  setEditCardZohoAccountId,
   isSaving,
   onAddCard,
   onRemoveCard,
@@ -99,7 +108,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
             />
           </div>
           
-          {/* Entity Selection and Add Button */}
+          {/* Entity Selection */}
           <div className="flex gap-3">
             <select
               value={newCardEntity}
@@ -111,6 +120,17 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                 <option key={idx} value={entity}>{entity}</option>
               ))}
             </select>
+          </div>
+          
+          {/* Zoho Payment Account ID and Add Button */}
+          <div className="flex gap-3">
+            <input
+              type="text"
+              value={newCardZohoAccountId}
+              onChange={(e) => setNewCardZohoAccountId(e.target.value)}
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Zoho Payment Account ID (optional)"
+            />
             <button
               onClick={onAddCard}
               disabled={!newCardName || !newCardLastFour || newCardLastFour.length !== 4 || isSaving}
@@ -158,6 +178,15 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                         <option key={idx} value={entity}>{entity}</option>
                       ))}
                     </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={editCardZohoAccountId}
+                      onChange={(e) => setEditCardZohoAccountId(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Zoho Payment Account ID"
+                    />
                     <button
                       onClick={() => onSaveEdit(index)}
                       disabled={isSaving || !editCardName || !editCardLastFour || editCardLastFour.length !== 4}
@@ -180,11 +209,16 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                 <>
                   <div className="flex-1">
                     <div className="text-gray-900 font-medium">{option.name} | {option.lastFour}</div>
-                    <div className="text-sm mt-0.5">
+                    <div className="text-sm mt-0.5 space-y-0.5">
                       {option.entity ? (
                         <span className="text-blue-600 font-medium">{option.entity}</span>
                       ) : (
                         <span className="text-gray-500">Personal Card</span>
+                      )}
+                      {option.zohoPaymentAccountId && (
+                        <div className="text-xs text-emerald-600">
+                          Zoho: {option.zohoPaymentAccountId}
+                        </div>
                       )}
                     </div>
                   </div>
