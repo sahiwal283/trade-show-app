@@ -200,16 +200,24 @@ class ZohoIntegrationClient {
         fullDescription += ' | REIMBURSEMENT REQUIRED';
       }
 
+      // Build reference number from event name (max 50 chars per Zoho limit)
+      let referenceNumber = expenseData.eventName || expenseData.expenseId;
+      if (referenceNumber && referenceNumber.length > 50) {
+        referenceNumber = referenceNumber.substring(0, 47) + '...';
+      }
+
       // Create expense via shared service
+      // Note: account_id and paid_through_account_id will be added from shared service's extra_config
       const response = await this.httpClient.post<ZohoServiceResponse>(
         '/zoho/expenses/create_books',
         {
           date: this.formatDate(expenseData.date),
           amount: expenseData.amount,
+          vendor_name: expenseData.merchant,
           description: fullDescription,
-          reference_number: expenseData.expenseId,
-          // Note: account_id will use default from shared service config
-          // Category mapping handled by shared service or Zoho defaults
+          reference_number: referenceNumber,
+          is_billable: false,
+          is_inclusive_tax: false,
         },
         {
           headers: {
