@@ -24,7 +24,10 @@ interface CardOption {
 
 interface CategoryOption {
   name: string;
-  zohoExpenseAccountId?: string | null;
+  zohoExpenseAccountIds?: {
+    haute_brands?: string | null;
+    boomin_brands?: string | null;
+  } | null;
 }
 
 interface AppSettings {
@@ -64,18 +67,18 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       'Entity D - International Operations'
     ],
     categoryOptions: [
-      { name: 'Booth / Marketing / Tools', zohoExpenseAccountId: null },
-      { name: 'Travel - Flight', zohoExpenseAccountId: null },
-      { name: 'Accommodation - Hotel', zohoExpenseAccountId: null },
-      { name: 'Transportation - Uber / Lyft / Others', zohoExpenseAccountId: null },
-      { name: 'Parking Fees', zohoExpenseAccountId: null },
-      { name: 'Rental - Car / U-haul', zohoExpenseAccountId: null },
-      { name: 'Meal and Entertainment', zohoExpenseAccountId: null },
-      { name: 'Gas / Fuel', zohoExpenseAccountId: null },
-      { name: 'Show Allowances - Per Diem', zohoExpenseAccountId: null },
-      { name: 'Model', zohoExpenseAccountId: null },
-      { name: 'Shipping Charges', zohoExpenseAccountId: null },
-      { name: 'Other', zohoExpenseAccountId: null }
+      { name: 'Booth / Marketing / Tools', zohoExpenseAccountIds: null },
+      { name: 'Travel - Flight', zohoExpenseAccountIds: null },
+      { name: 'Accommodation - Hotel', zohoExpenseAccountIds: null },
+      { name: 'Transportation - Uber / Lyft / Others', zohoExpenseAccountIds: null },
+      { name: 'Parking Fees', zohoExpenseAccountIds: null },
+      { name: 'Rental - Car / U-haul', zohoExpenseAccountIds: null },
+      { name: 'Meal and Entertainment', zohoExpenseAccountIds: null },
+      { name: 'Gas / Fuel', zohoExpenseAccountIds: null },
+      { name: 'Show Allowances - Per Diem', zohoExpenseAccountIds: null },
+      { name: 'Model', zohoExpenseAccountIds: null },
+      { name: 'Shipping Charges', zohoExpenseAccountIds: null },
+      { name: 'Other', zohoExpenseAccountIds: null }
     ]
   });
 
@@ -85,7 +88,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const [newCardZohoAccountId, setNewCardZohoAccountId] = useState('');
   const [newEntityOption, setNewEntityOption] = useState('');
   const [newCategoryOption, setNewCategoryOption] = useState('');
-  const [newCategoryZohoAccountId, setNewCategoryZohoAccountId] = useState('');
+  const [newCategoryZohoHauteId, setNewCategoryZohoHauteId] = useState('');
+  const [newCategoryZohoBoomId, setNewCategoryZohoBoomId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [editingCardIndex, setEditingCardIndex] = useState<number | null>(null);
   const [editCardName, setEditCardName] = useState('');
@@ -96,7 +100,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const [editEntityValue, setEditEntityValue] = useState('');
   const [editingCategoryIndex, setEditingCategoryIndex] = useState<number | null>(null);
   const [editCategoryValue, setEditCategoryValue] = useState('');
-  const [editCategoryZohoAccountId, setEditCategoryZohoAccountId] = useState('');
+  const [editCategoryZohoHauteId, setEditCategoryZohoHauteId] = useState('');
+  const [editCategoryZohoBoomId, setEditCategoryZohoBoomId] = useState('');
 
   // Check sessionStorage and hash on mount to set initial tab
   useEffect(() => {
@@ -135,11 +140,19 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
             categoryOptions = data.categoryOptions.map((cat: any) => {
               // Handle old format (string) or new format (object)
               if (typeof cat === 'string') {
-                return { name: cat, zohoExpenseAccountId: null };
+                return { name: cat, zohoExpenseAccountIds: null };
+              }
+              // Handle old single-ID format or new multi-brand format
+              let zohoExpenseAccountIds = null;
+              if (cat.zohoExpenseAccountIds) {
+                zohoExpenseAccountIds = cat.zohoExpenseAccountIds;
+              } else if (cat.zohoExpenseAccountId) {
+                // Migrate old single-ID format to new format (assume it was for Haute)
+                zohoExpenseAccountIds = { haute_brands: cat.zohoExpenseAccountId };
               }
               return {
                 name: cat.name,
-                zohoExpenseAccountId: cat.zohoExpenseAccountId || null
+                zohoExpenseAccountIds
               };
             });
           }
@@ -324,16 +337,21 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const addCategoryOption = async () => {
     const isDuplicate = settings.categoryOptions.some(cat => cat.name === newCategoryOption);
     if (newCategoryOption && !isDuplicate) {
+      const zohoExpenseAccountIds = (newCategoryZohoHauteId || newCategoryZohoBoomId) ? {
+        haute_brands: newCategoryZohoHauteId || null,
+        boomin_brands: newCategoryZohoBoomId || null
+      } : null;
       const updatedSettings = {
         ...settings,
         categoryOptions: [...settings.categoryOptions, {
           name: newCategoryOption,
-          zohoExpenseAccountId: newCategoryZohoAccountId || null
+          zohoExpenseAccountIds
         }]
       };
       setSettings(updatedSettings);
       setNewCategoryOption('');
-      setNewCategoryZohoAccountId('');
+      setNewCategoryZohoHauteId('');
+      setNewCategoryZohoBoomId('');
       await saveSettings(updatedSettings);
     }
   };
@@ -350,21 +368,28 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
   const startEditCategory = (index: number) => {
     setEditingCategoryIndex(index);
     setEditCategoryValue(settings.categoryOptions[index].name);
-    setEditCategoryZohoAccountId(settings.categoryOptions[index].zohoExpenseAccountId || '');
+    const ids = settings.categoryOptions[index].zohoExpenseAccountIds;
+    setEditCategoryZohoHauteId(ids?.haute_brands || '');
+    setEditCategoryZohoBoomId(ids?.boomin_brands || '');
   };
 
   const cancelEditCategory = () => {
     setEditingCategoryIndex(null);
     setEditCategoryValue('');
-    setEditCategoryZohoAccountId('');
+    setEditCategoryZohoHauteId('');
+    setEditCategoryZohoBoomId('');
   };
 
   const saveEditCategory = async (index: number) => {
     if (editCategoryValue && editCategoryValue.trim()) {
+      const zohoExpenseAccountIds = (editCategoryZohoHauteId || editCategoryZohoBoomId) ? {
+        haute_brands: editCategoryZohoHauteId || null,
+        boomin_brands: editCategoryZohoBoomId || null
+      } : null;
       const updatedCategories = [...settings.categoryOptions];
       updatedCategories[index] = {
         name: editCategoryValue.trim(),
-        zohoExpenseAccountId: editCategoryZohoAccountId || null
+        zohoExpenseAccountIds
       };
       const updatedSettings = {
         ...settings,
@@ -373,7 +398,8 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       setSettings(updatedSettings);
       setEditingCategoryIndex(null);
       setEditCategoryValue('');
-      setEditCategoryZohoAccountId('');
+      setEditCategoryZohoHauteId('');
+      setEditCategoryZohoBoomId('');
       await saveSettings(updatedSettings);
     }
   };
@@ -457,13 +483,17 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
               categoryOptions={settings.categoryOptions}
               newCategoryOption={newCategoryOption}
               setNewCategoryOption={setNewCategoryOption}
-              newCategoryZohoAccountId={newCategoryZohoAccountId}
-              setNewCategoryZohoAccountId={setNewCategoryZohoAccountId}
+              newCategoryZohoHauteId={newCategoryZohoHauteId}
+              setNewCategoryZohoHauteId={setNewCategoryZohoHauteId}
+              newCategoryZohoBoomId={newCategoryZohoBoomId}
+              setNewCategoryZohoBoomId={setNewCategoryZohoBoomId}
               editingCategoryIndex={editingCategoryIndex}
               editCategoryValue={editCategoryValue}
               setEditCategoryValue={setEditCategoryValue}
-              editCategoryZohoAccountId={editCategoryZohoAccountId}
-              setEditCategoryZohoAccountId={setEditCategoryZohoAccountId}
+              editCategoryZohoHauteId={editCategoryZohoHauteId}
+              setEditCategoryZohoHauteId={setEditCategoryZohoHauteId}
+              editCategoryZohoBoomId={editCategoryZohoBoomId}
+              setEditCategoryZohoBoomId={setEditCategoryZohoBoomId}
               isSaving={isSaving}
               onAddCategory={addCategoryOption}
               onRemoveCategory={removeCategoryOption}

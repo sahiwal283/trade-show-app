@@ -50,7 +50,10 @@ interface CardOption {
 
 interface CategoryOption {
   name: string;
-  zohoExpenseAccountId?: string | null;
+  zohoExpenseAccountIds?: {
+    haute_brands?: string | null;
+    boomin_brands?: string | null;
+  } | null;
 }
 
 interface ZohoSettings {
@@ -156,14 +159,22 @@ class ZohoIntegrationClient {
       let categoryOptions: CategoryOption[] = [];
       if (categoryResult.rows.length > 0) {
         const rawCategories = JSON.parse(categoryResult.rows[0].value);
-        // Handle both old format (string[]) and new format (object[])
+        // Handle old format (string[]), old single-ID format, and new multi-brand format
         categoryOptions = rawCategories.map((cat: any) => {
           if (typeof cat === 'string') {
-            return { name: cat, zohoExpenseAccountId: null };
+            return { name: cat, zohoExpenseAccountIds: null };
+          }
+          // Handle new multi-brand format or migrate old single-ID format
+          let zohoExpenseAccountIds = null;
+          if (cat.zohoExpenseAccountIds) {
+            zohoExpenseAccountIds = cat.zohoExpenseAccountIds;
+          } else if (cat.zohoExpenseAccountId) {
+            // Migrate old single-ID to Haute Brands (backward compatibility)
+            zohoExpenseAccountIds = { haute_brands: cat.zohoExpenseAccountId };
           }
           return {
             name: cat.name,
-            zohoExpenseAccountId: cat.zohoExpenseAccountId || null,
+            zohoExpenseAccountIds,
           };
         });
       }
@@ -205,7 +216,7 @@ class ZohoIntegrationClient {
   }
 
   /**
-   * Find expense account ID from category name
+   * Find expense account ID from category name for a specific brand
    */
   private findExpenseAccountId(category: string, settings: ZohoSettings, brand: string): string {
     if (category && settings.categoryOptions.length > 0) {
@@ -213,9 +224,13 @@ class ZohoIntegrationClient {
         cat => cat.name.toLowerCase() === category.toLowerCase()
       );
       
-      if (matchedCategory?.zohoExpenseAccountId) {
-        console.log(`[ZohoClient] Found expense account ID for category "${category}": ${matchedCategory.zohoExpenseAccountId}`);
-        return matchedCategory.zohoExpenseAccountId;
+      // Get brand-specific account ID
+      const brandKey = brand as 'haute_brands' | 'boomin_brands';
+      const accountId = matchedCategory?.zohoExpenseAccountIds?.[brandKey];
+      
+      if (accountId) {
+        console.log(`[ZohoClient] Found expense account ID for category "${category}" (${brand}): ${accountId}`);
+        return accountId;
       }
     }
     

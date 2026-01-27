@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.31.0 - Add Zoho account ID configuration in Admin Settings
+// Version: 1.31.1 - Multi-brand Zoho expense account IDs per category
 // Date: November 4, 2025
 //
 // New Features:
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.31.0';
-const STATIC_CACHE = 'trade-show-app-static-v1.31.0';
+const CACHE_NAME = 'trade-show-app-v1.31.1';
+const STATIC_CACHE = 'trade-show-app-static-v1.31.1';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -127,7 +127,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.31.0...');
+  console.log('[ServiceWorker] Installing v1.31.1...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -218,7 +218,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.31.0...');
+  console.log('[ServiceWorker] Activating v1.31.1...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(

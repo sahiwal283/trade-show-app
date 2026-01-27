@@ -9,20 +9,27 @@ import { Tag, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
 
 interface CategoryOption {
   name: string;
-  zohoExpenseAccountId?: string | null;
+  zohoExpenseAccountIds?: {
+    haute_brands?: string | null;
+    boomin_brands?: string | null;
+  } | null;
 }
 
 interface CategoryOptionsSectionProps {
   categoryOptions: CategoryOption[];
   newCategoryOption: string;
   setNewCategoryOption: (value: string) => void;
-  newCategoryZohoAccountId: string;
-  setNewCategoryZohoAccountId: (value: string) => void;
+  newCategoryZohoHauteId: string;
+  setNewCategoryZohoHauteId: (value: string) => void;
+  newCategoryZohoBoomId: string;
+  setNewCategoryZohoBoomId: (value: string) => void;
   editingCategoryIndex: number | null;
   editCategoryValue: string;
   setEditCategoryValue: (value: string) => void;
-  editCategoryZohoAccountId: string;
-  setEditCategoryZohoAccountId: (value: string) => void;
+  editCategoryZohoHauteId: string;
+  setEditCategoryZohoHauteId: (value: string) => void;
+  editCategoryZohoBoomId: string;
+  setEditCategoryZohoBoomId: (value: string) => void;
   isSaving: boolean;
   onAddCategory: () => void;
   onRemoveCategory: (option: CategoryOption) => void;
@@ -35,13 +42,17 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
   categoryOptions,
   newCategoryOption,
   setNewCategoryOption,
-  newCategoryZohoAccountId,
-  setNewCategoryZohoAccountId,
+  newCategoryZohoHauteId,
+  setNewCategoryZohoHauteId,
+  newCategoryZohoBoomId,
+  setNewCategoryZohoBoomId,
   editingCategoryIndex,
   editCategoryValue,
   setEditCategoryValue,
-  editCategoryZohoAccountId,
-  setEditCategoryZohoAccountId,
+  editCategoryZohoHauteId,
+  setEditCategoryZohoHauteId,
+  editCategoryZohoBoomId,
+  setEditCategoryZohoBoomId,
   isSaving,
   onAddCategory,
   onRemoveCategory,
@@ -76,23 +87,30 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
               placeholder="Enter new category name..."
             />
           </div>
-          <div className="flex gap-3">
+          <div className="grid grid-cols-2 gap-2">
             <input
               type="text"
-              value={newCategoryZohoAccountId}
-              onChange={(e) => setNewCategoryZohoAccountId(e.target.value)}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Zoho Expense Account ID (optional)"
+              value={newCategoryZohoHauteId}
+              onChange={(e) => setNewCategoryZohoHauteId(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Haute Brands Zoho ID"
             />
-            <button
-              onClick={onAddCategory}
-              disabled={!newCategoryOption || isSaving}
-              className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add</span>
-            </button>
+            <input
+              type="text"
+              value={newCategoryZohoBoomId}
+              onChange={(e) => setNewCategoryZohoBoomId(e.target.value)}
+              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Boomin Brands Zoho ID"
+            />
           </div>
+          <button
+            onClick={onAddCategory}
+            disabled={!newCategoryOption || isSaving}
+            className="w-full bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Category</span>
+          </button>
         </div>
 
         <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -107,14 +125,23 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Category name"
                   />
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <input
                       type="text"
-                      value={editCategoryZohoAccountId}
-                      onChange={(e) => setEditCategoryZohoAccountId(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="Zoho Expense Account ID"
+                      value={editCategoryZohoHauteId}
+                      onChange={(e) => setEditCategoryZohoHauteId(e.target.value)}
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Haute Brands Zoho ID"
                     />
+                    <input
+                      type="text"
+                      value={editCategoryZohoBoomId}
+                      onChange={(e) => setEditCategoryZohoBoomId(e.target.value)}
+                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Boomin Brands Zoho ID"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
                     <button
                       onClick={() => onSaveEdit(index)}
                       disabled={isSaving || !editCategoryValue.trim()}
@@ -136,10 +163,15 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
               ) : (
                 <>
                   <div className="flex-1">
-                    <span className="text-gray-900">{option.name}</span>
-                    {option.zohoExpenseAccountId && (
-                      <div className="text-xs text-emerald-600 mt-0.5">
-                        Zoho: {option.zohoExpenseAccountId}
+                    <span className="text-gray-900 font-medium">{option.name}</span>
+                    {(option.zohoExpenseAccountIds?.haute_brands || option.zohoExpenseAccountIds?.boomin_brands) && (
+                      <div className="text-xs mt-1 space-y-0.5">
+                        {option.zohoExpenseAccountIds.haute_brands && (
+                          <div className="text-blue-600">Haute: {option.zohoExpenseAccountIds.haute_brands}</div>
+                        )}
+                        {option.zohoExpenseAccountIds.boomin_brands && (
+                          <div className="text-orange-600">Boomin: {option.zohoExpenseAccountIds.boomin_brands}</div>
+                        )}
                       </div>
                     )}
                   </div>
