@@ -149,7 +149,9 @@ class ZohoIntegrationClient {
       );
       let cardOptions: CardOption[] = [];
       if (cardResult.rows.length > 0) {
-        const rawCards = JSON.parse(cardResult.rows[0].value);
+        // Handle both string (text column) and object (jsonb column) formats
+        const rawValue = cardResult.rows[0].value;
+        const rawCards = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
         // Handle both old format (no zohoPaymentAccountId) and new format
         cardOptions = rawCards.map((card: any) => ({
           name: card.name,
@@ -165,7 +167,9 @@ class ZohoIntegrationClient {
       );
       let categoryOptions: CategoryOption[] = [];
       if (categoryResult.rows.length > 0) {
-        const rawCategories = JSON.parse(categoryResult.rows[0].value);
+        // Handle both string (text column) and object (jsonb column) formats
+        const rawValue = categoryResult.rows[0].value;
+        const rawCategories = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
         // Handle old format (string[]), old single-ID format, and new multi-brand format
         categoryOptions = rawCategories.map((cat: any) => {
           if (typeof cat === 'string') {
@@ -202,23 +206,32 @@ class ZohoIntegrationClient {
    * Find payment account ID from card name
    */
   private findPaymentAccountId(cardUsed: string | undefined, settings: ZohoSettings, brand: string): string {
+    console.log(`[ZohoClient] Looking up payment account for card: "${cardUsed}", brand: ${brand}`);
+    console.log(`[ZohoClient] Available cards: ${settings.cardOptions.map(c => `${c.name} (zoho: ${c.zohoPaymentAccountId || 'none'})`).join(', ')}`);
+    
     if (cardUsed && settings.cardOptions.length > 0) {
       // Try to match card by name (card format: "Name (...1234)")
       const cardName = cardUsed.split(' (...')[0].trim();
+      console.log(`[ZohoClient] Extracted card name: "${cardName}"`);
+      
       const matchedCard = settings.cardOptions.find(
         card => card.name.toLowerCase() === cardName.toLowerCase() ||
                 cardUsed.toLowerCase().includes(card.name.toLowerCase())
       );
       
-      if (matchedCard?.zohoPaymentAccountId) {
-        console.log(`[ZohoClient] Found payment account ID for card "${cardName}": ${matchedCard.zohoPaymentAccountId}`);
-        return matchedCard.zohoPaymentAccountId;
+      if (matchedCard) {
+        console.log(`[ZohoClient] Matched card: ${matchedCard.name}, zohoPaymentAccountId: ${matchedCard.zohoPaymentAccountId || 'NOT SET'}`);
+        if (matchedCard.zohoPaymentAccountId) {
+          return matchedCard.zohoPaymentAccountId;
+        }
+      } else {
+        console.log(`[ZohoClient] No card matched for "${cardName}"`);
       }
     }
     
     // Fallback to brand default
     const defaultAccounts = DEFAULT_BRAND_ACCOUNT_IDS[brand];
-    console.log(`[ZohoClient] Using default payment account ID for ${brand}`);
+    console.log(`[ZohoClient] Using default payment account ID for ${brand}: ${defaultAccounts?.paidThroughAccountId || 'NONE'}`);
     return defaultAccounts?.paidThroughAccountId || '';
   }
 
