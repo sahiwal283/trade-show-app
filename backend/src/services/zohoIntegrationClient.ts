@@ -264,9 +264,12 @@ class ZohoIntegrationClient {
    * Check which brands are configured in the shared service
    */
   private async checkConfiguredBrands(): Promise<void> {
+    // Get unique brands to avoid duplicate checks
+    const uniqueBrands = [...new Set(Object.values(ENTITY_TO_BRAND))];
+    
     try {
       // Try to list organizations for each known brand
-      for (const brand of Object.values(ENTITY_TO_BRAND)) {
+      for (const brand of uniqueBrands) {
         try {
           await this.httpClient.get('/zoho/organizations/list', {
             headers: this.getHeaders(brand),
@@ -275,14 +278,22 @@ class ZohoIntegrationClient {
           console.log(`[ZohoClient] ✓ Brand "${brand}" is configured`);
         } catch (error) {
           const axiosError = error as AxiosError<ZohoServiceError>;
-          if (axiosError.response?.status === 400 && 
-              axiosError.response?.data?.detail?.error?.code === 'BRAND_NOT_FOUND') {
-            console.log(`[ZohoClient] ✗ Brand "${brand}" is not configured`);
-          } else if (axiosError.response?.status === 400 &&
-                     axiosError.response?.data?.detail?.error?.code === 'PRODUCT_NOT_ENABLED') {
+          const errorCode = axiosError.response?.data?.detail?.error?.code;
+          const internalCode = axiosError.response?.data?.detail?.error?.internal_code;
+          const errorMessage = axiosError.response?.data?.detail?.error?.message;
+          
+          if (axiosError.response?.status === 400 && errorCode === 'BRAND_NOT_FOUND') {
+            console.log(`[ZohoClient] ✗ Brand "${brand}" is not configured in shared service`);
+          } else if (axiosError.response?.status === 400 && errorCode === 'PRODUCT_NOT_ENABLED') {
             // Brand exists but Books not enabled - still count as configured
             this.configuredBrands.add(brand);
             console.log(`[ZohoClient] ⚠ Brand "${brand}" exists but Books may not be enabled`);
+          } else if (internalCode === 'TOKEN_REFRESH_FAILED') {
+            // OAuth token issue - brand exists but token needs refresh
+            console.log(`[ZohoClient] ⚠ Brand "${brand}" has OAuth token issue: ${errorMessage}`);
+          } else {
+            // Log any other errors
+            console.log(`[ZohoClient] ✗ Brand "${brand}" check failed: ${internalCode || errorCode || axiosError.message}`);
           }
         }
       }
