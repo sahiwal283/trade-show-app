@@ -395,31 +395,35 @@ class ZohoIntegrationClient {
       const expenseAccountId = this.findExpenseAccountId(expenseData.category, settings, brand);
       const paidThroughAccountId = this.findPaymentAccountId(expenseData.cardUsed, settings, brand);
 
-      if (!expenseAccountId || !paidThroughAccountId) {
-        console.error(`[ZohoClient] Missing account IDs for brand ${brand}: expense=${expenseAccountId}, payment=${paidThroughAccountId}`);
-        return {
-          success: false,
-          error: `Missing Zoho account IDs. Please configure account IDs in Admin Settings.`,
-        };
+      // Build request payload - only include account IDs if configured
+      // If not configured, the shared service will use its fallback defaults
+      const requestPayload: Record<string, any> = {
+        date: this.formatDate(expenseData.date),
+        amount: expenseData.amount,
+        vendor_name: expenseData.merchant,
+        description: fullDescription,
+        reference_number: referenceNumber,
+        is_billable: false,
+        is_inclusive_tax: false,
+      };
+
+      if (expenseAccountId) {
+        requestPayload.account_id = expenseAccountId;
+      }
+      if (paidThroughAccountId) {
+        requestPayload.paid_through_account_id = paidThroughAccountId;
       }
 
-      console.log(`[ZohoClient] Using account IDs - Expense: ${expenseAccountId}, Payment: ${paidThroughAccountId}`);
+      if (expenseAccountId && paidThroughAccountId) {
+        console.log(`[ZohoClient] Using account IDs - Expense: ${expenseAccountId}, Payment: ${paidThroughAccountId}`);
+      } else {
+        console.log(`[ZohoClient] Using service fallback IDs - App expense: ${expenseAccountId || 'none'}, App payment: ${paidThroughAccountId || 'none'}`);
+      }
 
       // Create expense via shared service
-      // App sends account_id and paid_through_account_id based on category/card settings
       const response = await this.httpClient.post<ZohoServiceResponse>(
         '/zoho/expenses/create_books',
-        {
-          date: this.formatDate(expenseData.date),
-          amount: expenseData.amount,
-          vendor_name: expenseData.merchant,
-          description: fullDescription,
-          reference_number: referenceNumber,
-          is_billable: false,
-          is_inclusive_tax: false,
-          account_id: expenseAccountId,
-          paid_through_account_id: paidThroughAccountId,
-        },
+        requestPayload,
         {
           headers: {
             ...this.getHeaders(brand),
