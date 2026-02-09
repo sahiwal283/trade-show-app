@@ -37,12 +37,19 @@ router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
   // Get expenses with user/event details (optimized with JOINs - no N+1 queries!)
   const expenses = await expenseService.getExpensesWithDetails(filters);
   
+  console.log(`[Expenses:GET] Returning ${expenses.length} expenses`);
+  
   // Normalize and return
   const normalizedExpenses = expenses.map((expense: any) => ({
     ...normalizeExpense(expense),
     user_name: expense.user_name,
     event_name: expense.event_name
   }));
+  
+  // Prevent browser caching to ensure fresh data
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   
   res.json(normalizedExpenses);
 }));

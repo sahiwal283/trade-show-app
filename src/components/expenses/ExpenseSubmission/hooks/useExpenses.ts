@@ -23,6 +23,7 @@ export function useExpenses(options: UseExpensesOptions = {}) {
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
+    console.log('[useExpenses] Loading data... hasApprovalPermission:', hasApprovalPermission);
     setLoading(true);
     
     if (api.USE_SERVER) {
@@ -39,9 +40,22 @@ export function useExpenses(options: UseExpensesOptions = {}) {
           promises.push(api.getSettings());
         }
         
+        console.log('[useExpenses] Fetching data with', promises.length, 'promises');
         const results = await Promise.all(promises);
-        setEvents(results[0] || []);
-        setExpenses(results[1] || []);
+        
+        const eventsData = results[0] || [];
+        const expensesData = results[1] || [];
+        
+        console.log('[useExpenses] API Results:', {
+          eventsCount: eventsData.length,
+          expensesCount: expensesData.length,
+          expensesRaw: expensesData,
+          expensesType: typeof expensesData,
+          expensesIsArray: Array.isArray(expensesData),
+        });
+        
+        setEvents(eventsData);
+        setExpenses(expensesData);
         
         if (hasApprovalPermission) {
           setUsers(results[2] || []);
@@ -66,6 +80,7 @@ export function useExpenses(options: UseExpensesOptions = {}) {
     }
     
     setLoading(false);
+    console.log('[useExpenses] Data loading complete');
   };
 
   useEffect(() => {

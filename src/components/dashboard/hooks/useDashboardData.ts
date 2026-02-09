@@ -31,6 +31,11 @@ export function useDashboardData() {
         const ex = await api.getExpenses();
         if (mounted) {
           console.log('[Dashboard] Loaded expenses:', ex?.length || 0);
+          console.log('[Dashboard] Expenses raw data:', {
+            raw: ex,
+            type: typeof ex,
+            isArray: Array.isArray(ex),
+          });
           setExpenses(ex || []);
         }
       } catch (error) {
