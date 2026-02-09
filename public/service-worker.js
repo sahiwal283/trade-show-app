@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.31.4 - Fix Promise.all causing expenses not to show when other APIs fail
+// Version: 1.31.5 - Fix service worker cache installation failure causing blank page
 // Date: February 9, 2026
 //
 // New Features:
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.31.4';
-const STATIC_CACHE = 'trade-show-app-static-v1.31.4';
+const CACHE_NAME = 'trade-show-app-v1.31.5';
+const STATIC_CACHE = 'trade-show-app-static-v1.31.5';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -127,19 +127,32 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.31.4...');
+  console.log('[ServiceWorker] Installing v1.31.5...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
         console.log('[ServiceWorker] Caching static files');
-        return cache.addAll(urlsToCache);
+        // Cache files individually to prevent one failure from breaking everything
+        return Promise.allSettled(
+          urlsToCache.map(url => 
+            cache.add(url).catch(err => {
+              console.warn('[ServiceWorker] Failed to cache:', url, err);
+              return null;
+            })
+          )
+        );
+      })
+      .then(() => {
+        console.log('[ServiceWorker] Install complete, activating...');
+        // Force immediate activation only after caching attempt completes
+        self.skipWaiting();
       })
       .catch((error) => {
         console.error('[ServiceWorker] Cache installation failed:', error);
+        // Still activate even if caching fails - app should still work
+        self.skipWaiting();
       })
   );
-  // Force immediate activation
-  self.skipWaiting();
 });
 
 // Fetch event - SMART CACHING STRATEGY
@@ -218,7 +231,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.31.4...');
+  console.log('[ServiceWorker] Activating v1.31.5...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -232,7 +245,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     })    .then(() => {
-      console.log('[ServiceWorker] v1.31.4 activated and ready!');
+      console.log('[ServiceWorker] v1.31.5 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
