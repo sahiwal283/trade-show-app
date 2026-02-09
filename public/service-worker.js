@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.31.6 - Auto-recovery script for broken service workers
+// Version: 1.31.7 - Auto-recovery script for broken service workers
 // Date: February 9, 2026
 //
 // New Features:
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.31.6';
-const STATIC_CACHE = 'trade-show-app-static-v1.31.6';
+const CACHE_NAME = 'trade-show-app-v1.31.7';
+const STATIC_CACHE = 'trade-show-app-static-v1.31.7';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -127,7 +127,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.31.6...');
+  console.log('[ServiceWorker] Installing v1.31.7...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -231,7 +231,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.31.6...');
+  console.log('[ServiceWorker] Activating v1.31.7...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -245,7 +245,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     })    .then(() => {
-      console.log('[ServiceWorker] v1.31.6 activated and ready!');
+      console.log('[ServiceWorker] v1.31.7 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

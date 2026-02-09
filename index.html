@@ -47,25 +47,35 @@
     <!-- This runs BEFORE the main app to fix broken service worker states -->
     <script>
       (function() {
-        var REQUIRED_SW_VERSION = '1.31.6';
+        var REQUIRED_SW_VERSION = '1.31.7';
         var RECOVERY_KEY = 'sw_recovery_v' + REQUIRED_SW_VERSION;
         
         // Only run recovery once per version
         if (localStorage.getItem(RECOVERY_KEY)) return;
         
+        // Show recovery UI immediately if we might need to recover
+        function showRecoveryUI() {
+          document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:system-ui,sans-serif;background:#f8fafc;"><div style="text-align:center;"><div style="width:40px;height:40px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px;"></div><h2 style="color:#1e293b;margin:0 0 8px;">Updating ExpenseApp...</h2><p style="color:#64748b;margin:0;">Please wait, this only takes a moment.</p></div></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+        }
+        
         if ('serviceWorker' in navigator && 'caches' in window) {
-          // Check if we need to recover
           navigator.serviceWorker.getRegistrations().then(function(registrations) {
             if (registrations.length > 0) {
-              console.log('[Recovery] Found old service workers, clearing...');
+              console.log('[Recovery] Found ' + registrations.length + ' service workers, clearing...');
+              showRecoveryUI();
               
               // Unregister all service workers
               var unregisterPromises = registrations.map(function(reg) {
-                return reg.unregister();
+                console.log('[Recovery] Unregistering:', reg.scope);
+                return reg.unregister().then(function() {
+                  console.log('[Recovery] Unregistered successfully');
+                  return true;
+                });
               });
               
               // Clear all caches
               var clearCachePromise = caches.keys().then(function(names) {
+                console.log('[Recovery] Found ' + names.length + ' caches to clear');
                 return Promise.all(names.map(function(name) {
                   console.log('[Recovery] Clearing cache:', name);
                   return caches.delete(name);
@@ -73,16 +83,27 @@
               });
               
               Promise.all(unregisterPromises.concat([clearCachePromise])).then(function() {
-                console.log('[Recovery] Cleanup complete, reloading...');
+                console.log('[Recovery] Cleanup complete, waiting before reload...');
                 localStorage.setItem(RECOVERY_KEY, 'done');
-                window.location.reload(true);
+                // Wait a moment for browser to fully release resources
+                setTimeout(function() {
+                  console.log('[Recovery] Reloading with cache bypass...');
+                  // Force bypass all caches with a fresh URL
+                  window.location.href = window.location.origin + window.location.pathname + '?_recovered=' + Date.now();
+                }, 500);
+              }).catch(function(err) {
+                console.error('[Recovery] Cleanup error:', err);
+                localStorage.setItem(RECOVERY_KEY, 'error');
+                setTimeout(function() {
+                  window.location.href = window.location.origin + window.location.pathname + '?_recovered=' + Date.now();
+                }, 500);
               });
             } else {
               // No service workers, mark as done
               localStorage.setItem(RECOVERY_KEY, 'done');
             }
           }).catch(function(err) {
-            console.error('[Recovery] Error:', err);
+            console.error('[Recovery] Error checking service workers:', err);
             localStorage.setItem(RECOVERY_KEY, 'error');
           });
         } else {
