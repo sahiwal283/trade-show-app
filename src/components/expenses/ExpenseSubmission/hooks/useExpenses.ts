@@ -27,47 +27,43 @@ export function useExpenses(options: UseExpensesOptions = {}) {
     setLoading(true);
     
     if (api.USE_SERVER) {
+      // Fetch expenses (critical) - isolated try-catch so other failures don't block expenses
       try {
-        // Base data for all users
-        const promises: Promise<any>[] = [
-          api.getEvents(),
-          api.getExpenses(),
-        ];
-        
-        // Additional data for approval users
-        if (hasApprovalPermission) {
-          promises.push(api.getUsers());
-          promises.push(api.getSettings());
-        }
-        
-        console.log('[useExpenses] Fetching data with', promises.length, 'promises');
-        const results = await Promise.all(promises);
-        
-        const eventsData = results[0] || [];
-        const expensesData = results[1] || [];
-        
-        console.log('[useExpenses] API Results:', {
-          eventsCount: eventsData.length,
-          expensesCount: expensesData.length,
-          expensesRaw: expensesData,
-          expensesType: typeof expensesData,
-          expensesIsArray: Array.isArray(expensesData),
-        });
-        
-        setEvents(eventsData);
-        setExpenses(expensesData);
-        
-        if (hasApprovalPermission) {
-          setUsers(results[2] || []);
-          const settings = results[3];
-          setEntityOptions(settings?.entityOptions || []);
-        }
+        const expensesData = await api.getExpenses();
+        console.log('[useExpenses] Loaded expenses:', expensesData?.length || 0);
+        setExpenses(expensesData || []);
       } catch (error) {
-        console.error('[useExpenses] Failed to load data:', error);
-        setEvents([]);
+        console.error('[useExpenses] Failed to load expenses:', error);
         setExpenses([]);
-        if (hasApprovalPermission) {
+      }
+      
+      // Fetch events (important but not critical)
+      try {
+        const eventsData = await api.getEvents();
+        console.log('[useExpenses] Loaded events:', eventsData?.length || 0);
+        setEvents(eventsData || []);
+      } catch (error) {
+        console.error('[useExpenses] Failed to load events:', error);
+        setEvents([]);
+      }
+      
+      // Additional data for approval users (non-critical)
+      if (hasApprovalPermission) {
+        try {
+          const usersData = await api.getUsers();
+          console.log('[useExpenses] Loaded users:', usersData?.length || 0);
+          setUsers(usersData || []);
+        } catch (error) {
+          console.error('[useExpenses] Failed to load users (non-critical):', error);
           setUsers([]);
+        }
+        
+        try {
+          const settings = await api.getSettings();
+          console.log('[useExpenses] Loaded settings');
+          setEntityOptions(settings?.entityOptions || []);
+        } catch (error) {
+          console.error('[useExpenses] Failed to load settings (non-critical):', error);
           setEntityOptions([]);
         }
       }

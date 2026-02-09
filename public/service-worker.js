@@ -1,6 +1,6 @@
 // ExpenseApp Service Worker
-// Version: 1.31.3 - Fix expenses not showing in Expenses tab (add debugging + cache control)
-// Date: November 4, 2025
+// Version: 1.31.4 - Fix Promise.all causing expenses not to show when other APIs fail
+// Date: February 9, 2026
 //
 // New Features:
 // - Trade Show Checklist management for coordinators
@@ -116,8 +116,8 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.31.3';
-const STATIC_CACHE = 'trade-show-app-static-v1.31.3';
+const CACHE_NAME = 'trade-show-app-v1.31.4';
+const STATIC_CACHE = 'trade-show-app-static-v1.31.4';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -127,7 +127,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.31.3...');
+  console.log('[ServiceWorker] Installing v1.31.4...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -218,7 +218,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.31.3...');
+  console.log('[ServiceWorker] Activating v1.31.4...');
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -232,7 +232,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     })    .then(() => {
-      console.log('[ServiceWorker] v1.31.3 activated and ready!');
+      console.log('[ServiceWorker] v1.31.4 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })
