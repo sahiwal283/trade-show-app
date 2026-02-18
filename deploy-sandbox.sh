@@ -11,7 +11,8 @@ echo ""
 SANDBOX_BACKEND_PATH="/opt/trade-show-app/backend"
 SANDBOX_FRONTEND_PATH="/var/www/trade-show-app/current"
 PROXMOX_IP="192.168.1.190"
-SANDBOX_CONTAINER="203"
+SANDBOX_BACKEND_CONTAINER="2220"
+SANDBOX_FRONTEND_CONTAINER="2120"
 
 # Colors
 RED='\033[0;31m'
@@ -68,11 +69,11 @@ if [ "$DEPLOY_BACKEND" = true ]; then
     scp "$PACKAGE_NAME" root@$PROXMOX_IP:/tmp/backend-deploy.tar.gz
     
     # Deploy
-    echo "🚀 Deploying to Container $SANDBOX_CONTAINER..."
+    echo "🚀 Deploying to Container $SANDBOX_BACKEND_CONTAINER (trade-show-backend)..."
     echo -e "${YELLOW}   Deploying to: $SANDBOX_BACKEND_PATH${NC}"
     ssh root@$PROXMOX_IP "
-        pct push $SANDBOX_CONTAINER /tmp/backend-deploy.tar.gz /tmp/backend-deploy.tar.gz
-        pct exec $SANDBOX_CONTAINER -- bash -c '
+        pct push $SANDBOX_BACKEND_CONTAINER /tmp/backend-deploy.tar.gz /tmp/backend-deploy.tar.gz
+        pct exec $SANDBOX_BACKEND_CONTAINER -- bash -c '
             cd $SANDBOX_BACKEND_PATH || exit 1
             echo \"Current directory: \$(pwd)\"
             tar -xzf /tmp/backend-deploy.tar.gz
@@ -85,7 +86,7 @@ if [ "$DEPLOY_BACKEND" = true ]; then
     # Verify deployment
     echo ""
     echo "🔍 Verifying deployment..."
-    DEPLOYED_VERSION=$(ssh root@$PROXMOX_IP "pct exec $SANDBOX_CONTAINER -- curl -s http://localhost:3000/api/health | grep -o '\"version\":\"[^\"]*\"' | cut -d'\"' -f4")
+    DEPLOYED_VERSION=$(ssh root@$PROXMOX_IP "pct exec $SANDBOX_BACKEND_CONTAINER -- curl -s http://localhost:3000/api/health | grep -o '\"version\":\"[^\"]*\"' | cut -d'\"' -f4")
     
     if [ "$DEPLOYED_VERSION" == "$VERSION" ]; then
         echo -e "${GREEN}✅ Backend deployed successfully!${NC}"
@@ -138,11 +139,11 @@ if [ "$DEPLOY_FRONTEND" = true ]; then
     scp "$PACKAGE_NAME" root@$PROXMOX_IP:/tmp/frontend-deploy.tar.gz
     
     # Deploy
-    echo "🚀 Deploying to Container $SANDBOX_CONTAINER..."
+    echo "🚀 Deploying to Container $SANDBOX_FRONTEND_CONTAINER (trade-show-frontend)..."
     echo -e "${YELLOW}   Deploying to: $SANDBOX_FRONTEND_PATH${NC}"
     ssh root@$PROXMOX_IP "
-        pct push $SANDBOX_CONTAINER /tmp/frontend-deploy.tar.gz /tmp/frontend-deploy.tar.gz
-        pct exec $SANDBOX_CONTAINER -- bash -c '
+        pct push $SANDBOX_FRONTEND_CONTAINER /tmp/frontend-deploy.tar.gz /tmp/frontend-deploy.tar.gz
+        pct exec $SANDBOX_FRONTEND_CONTAINER -- bash -c '
             cd $SANDBOX_FRONTEND_PATH || exit 1
             rm -rf *
             tar -xzf /tmp/frontend-deploy.tar.gz
@@ -160,7 +161,7 @@ if [ "$DEPLOY_FRONTEND" = true ]; then
     # Verify deployment
     echo ""
     echo "🔍 Verifying frontend deployment..."
-    ssh root@$PROXMOX_IP "pct exec $SANDBOX_CONTAINER -- bash -c '
+    ssh root@$PROXMOX_IP "pct exec $SANDBOX_FRONTEND_CONTAINER -- bash -c '
         echo \"Service Worker Version:\"
         head -3 $SANDBOX_FRONTEND_PATH/service-worker.js | grep Version
         echo \"Build ID:\"
