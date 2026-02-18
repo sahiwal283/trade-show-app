@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.31.7 - Auto-recovery script for broken service workers
+// Version: 1.31.9 - Zoho push auto-status fix
 // Date: February 9, 2026
 //
 // New Features:

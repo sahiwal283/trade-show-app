@@ -417,6 +417,22 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
+  const handleStatusChange = async (expense: Expense, status: 'pending' | 'approved' | 'rejected' | 'needs further review') => {
+    try {
+      if (api.USE_SERVER) {
+        const updatedExpense = await api.updateExpenseStatus(expense.id, { status }) as Expense;
+        if (viewingExpense && viewingExpense.id === expense.id) {
+          setViewingExpense(updatedExpense);
+        }
+        addToast(`✅ Status updated to ${status === 'needs further review' ? 'Needs Further Review' : status}`, 'success');
+      }
+      await reloadData();
+    } catch (error) {
+      console.error('[Status Change] Failed:', error);
+      addToast('❌ Failed to update status. Please try again.', 'error');
+    }
+  };
+
   const handleAssignEntity = async (expense: Expense, entity: string) => {
     // Warn if changing entity on an already-pushed expense
     const wasPushed = expense.zohoExpenseId || pushedExpenses.has(expense.id);
@@ -686,11 +702,21 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 hasApprovalPermission={hasApprovalPermission}
                 entityOptions={entityOptions}
                 auditTrail={auditTrail}
+                onStatusChange={async (newStatus) => {
+                  await handleStatusChange(viewingExpense, newStatus);
+                }}
                 onReimbursementStatusChange={async (newStatus) => {
                   if (newStatus === 'paid') {
                     await handleMarkAsPaid(viewingExpense);
                   } else if (newStatus === 'approved' || newStatus === 'rejected') {
                     await handleReimbursementApproval(viewingExpense, newStatus);
+                  } else {
+                    // pending review
+                    if (api.USE_SERVER) {
+                      await api.setExpenseReimbursement(viewingExpense.id, { reimbursement_status: 'pending review' });
+                      addToast('✅ Reimbursement set to Pending Review', 'success');
+                    }
+                    await reloadData();
                   }
                 }}
                 onEntityChange={async (newEntity) => {

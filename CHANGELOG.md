@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.31.9] / [1.32.7] - 2026-02-18 (Patch) - Zoho Push Auto-Status Fix
+
+### Fixed
+- **Zoho push auto-status update**: Expense status now correctly updates from "Pending" to "Approved" when successfully pushed to Zoho Books. Previously, pushed expenses remained stuck on "Pending" despite being implicitly approved by the accountant.
+- **Manual status change**: Added ability for admin/accountant to manually change expense status (Pending, Approved, Rejected, Needs Further Review) in the expense detail modal as a fallback when auto-update does not apply.
+
+### Changed
+- Expense status dropdown is now editable for users with approval permission (admin, accountant, developer).
+- Auto-approval on Zoho push now logs status change in audit trail for traceability.
+
 ## [1.29.0] - 2025-11-12 (Production) ✨ MINOR - Production Release
 
 ### Release Summary

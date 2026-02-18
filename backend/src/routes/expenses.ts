@@ -778,6 +778,21 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
         await expenseRepository.updateZohoInfo(expense.id, zohoResult.zohoExpenseId);
       }
 
+      // Auto-approve: If expense was pending or needs further review, set to approved
+      // (Pushed expenses are implicitly approved - accountant has validated them)
+      const oldStatus = expense.status;
+      if (oldStatus === 'pending' || oldStatus === 'needs further review') {
+        await expenseRepository.updateStatus(expense.id, 'approved');
+        console.log(`[Zoho:ManualPush] Auto-approved expense ${expense.id} (status updated to approved)`);
+        await ExpenseAuditService.logChange(
+          expense.id,
+          req.user!.id,
+          req.user!.username || 'Unknown User',
+          'status_changed',
+          { status: { old: oldStatus, new: 'approved' } }
+        );
+      }
+
       // Log Zoho push in audit trail
       await ExpenseAuditService.logChange(
         expense.id,

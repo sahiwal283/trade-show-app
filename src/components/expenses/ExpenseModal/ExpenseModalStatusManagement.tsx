@@ -20,11 +20,14 @@ interface AuditEntry {
   action: string;
 }
 
+type ExpenseStatus = 'pending' | 'approved' | 'rejected' | 'needs further review';
+
 interface ExpenseModalStatusManagementProps {
   expense: Expense;
   hasApprovalPermission: boolean;
   entityOptions: string[];
   auditTrail: AuditEntry[];
+  onStatusChange?: (newStatus: ExpenseStatus) => Promise<void>;
   onReimbursementStatusChange: (newStatus: 'pending review' | 'approved' | 'rejected' | 'paid') => Promise<void>;
   onEntityChange: (newEntity: string) => Promise<void>;
 }
@@ -59,6 +62,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
   hasApprovalPermission,
   entityOptions,
   auditTrail,
+  onStatusChange,
   onReimbursementStatusChange,
   onEntityChange,
 }) => {
@@ -66,16 +70,42 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
 
   return (
     <div className="flex flex-wrap gap-6">
-      {/* Status - Read-only (auto-updates) */}
+      {/* Status - Editable by admin/accountant, or read-only (auto-updates on entity/reimbursement/push) */}
       <div>
         <p className="text-sm text-gray-500 mb-2">Status</p>
         <div className="flex items-center space-x-2">
-          <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(expense.status)}`}>
-            {expense.status === 'needs further review'
-              ? 'Needs Further Review'
-              : expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-          </span>
-          {hasApprovalPermission && <span className="text-xs text-gray-400 italic">(auto-updates)</span>}
+          {hasApprovalPermission && onStatusChange ? (
+            <select
+              value={expense.status}
+              onChange={async (e) => {
+                const newStatus = e.target.value as ExpenseStatus;
+                if (
+                  !window.confirm(
+                    `Change status to "${newStatus === 'needs further review' ? 'Needs Further Review' : newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}"?`
+                  )
+                ) {
+                  e.target.value = expense.status;
+                  return;
+                }
+                await onStatusChange(newStatus);
+              }}
+              className="px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-gray-300 focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+            >
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="needs further review">Needs Further Review</option>
+            </select>
+          ) : (
+            <>
+              <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(expense.status)}`}>
+                {expense.status === 'needs further review'
+                  ? 'Needs Further Review'
+                  : expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
+              </span>
+              {hasApprovalPermission && <span className="text-xs text-gray-400 italic">(auto-updates)</span>}
+            </>
+          )}
         </div>
       </div>
 

@@ -66,7 +66,7 @@ export interface Expense {
   reimbursementRequired: boolean;
   reimbursementStatus?: 'pending review' | 'approved' | 'rejected' | 'paid';
   receiptUrl?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'needs further review';
   zohoEntity?: string;
   zohoExpenseId?: string;
   location?: string;
