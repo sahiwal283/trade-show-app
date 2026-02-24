@@ -20,6 +20,7 @@ import { asyncHandler, ValidationError } from '../utils/errors';
 import { userCorrectionService } from '../services/ocr/UserCorrectionService';
 import { FieldWarningService } from '../services/ocr/FieldWarningService';
 import { query } from '../config/database';
+import { isAllowedReceiptFile } from '../config/upload';
 
 const execAsync = promisify(exec);
 
@@ -50,19 +51,13 @@ const upload = multer({
     fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760') // 10MB default
   },
   fileFilter: (req, file, cb) => {
-    const allowedExtensions = /jpeg|jpg|png|pdf|heic|heif|webp/i;
-    const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
-    
-    // Accept any image MIME type (image/*) or PDF
-    const mimetypeOk = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
-    
-    if (extname && mimetypeOk) {
-      console.log(`[OCR v2 Upload] Accepting file: ${file.originalname} (${file.mimetype})`);
+    const { allowed, reason } = isAllowedReceiptFile(file.mimetype, file.originalname);
+    if (allowed) {
+      console.log(`[OCR v2 Upload] Accepting file: ${file.originalname} (mime: ${file.mimetype || 'none'})`);
       return cb(null, true);
-    } else {
-      console.warn(`[OCR v2 Upload] Rejected file: ${file.originalname} (ext: ${path.extname(file.originalname)}, mime: ${file.mimetype})`);
-      cb(new Error('Only images (JPEG, PNG, HEIC, WebP) and PDF files are allowed'));
     }
+    console.warn(`[OCR v2 Upload] Rejected file: ${file.originalname} (${reason})`);
+    cb(new Error(reason || 'Only images (JPEG, PNG, HEIC, WebP) and PDF files are allowed'));
   }
 });
 
@@ -154,7 +149,9 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     throw new ValidationError('No file uploaded');
   }
 
-  console.log(`[OCR v2] Processing receipt: ${req.file.filename}`);
+  const ext = path.extname(req.file.originalname || '').toLowerCase();
+  const isPdf = ext === '.pdf' || (req.file.mimetype || '').toLowerCase().trim() === 'application/pdf';
+  console.log(`[OCR v2] Processing receipt: ${req.file.filename} (originalname: ${req.file.originalname}, mime: ${req.file.mimetype || 'none'}, isPdf: ${isPdf})`);
 
   try {
     // Check if external OCR service is available
@@ -205,19 +202,19 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     });
     
   } catch (error: any) {
-    console.error('[OCR v2] Processing error:', error.message);
+    console.error('[OCR v2] Processing error:', error.message, { originalname: req.file.originalname, mimetype: req.file.mimetype });
     
-    // Check if it's a timeout or service error
     const isTimeout = error.message?.includes('timeout') || error.code === 'ECONNABORTED' || error.response?.status === 500;
-    
-    // Don't delete the file - keep it for manual entry
-    // if (fs.existsSync(req.file.path)) {
-    //   fs.unlinkSync(req.file.path);
-    // }
-    
-    // Return a user-friendly error message
+    const isUnsupportedOrPdf = (error.message || '').toLowerCase().includes('pdf') ||
+      (error.response?.data?.error || '').toLowerCase().includes('unsupported') ||
+      (error.response?.data?.error || '').toLowerCase().includes('pdf') ||
+      error.response?.status === 415;
+
     if (isTimeout) {
       throw new Error('OCR processing is taking too long. Please enter the receipt details manually.');
+    }
+    if (isPdf && isUnsupportedOrPdf) {
+      throw new Error('PDF could not be processed by OCR. You can still attach the receipt and enter the expense details manually.');
     }
     
     throw error;

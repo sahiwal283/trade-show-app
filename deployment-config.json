@@ -18,7 +18,9 @@
       }
     },
     "production": {
-      "container": 201,
+      "backendContainer": 2220,
+      "frontendContainer": 2120,
+      "container": 2220,
       "ip": "192.168.1.129",
       "backend": {
         "path": "/opt/trade-show-app/backend",

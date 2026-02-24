@@ -23,6 +23,7 @@ import {
 import { User, Expense } from '../../App';
 import { api } from '../../utils/api';
 import { formatLocalDate } from '../../utils/dateUtils';
+import { isPdfReceiptUrl } from '../../utils/fileValidation';
 import { getReimbursementStatusColor } from '../../constants/appConstants';
 import { useToast, ToastContainer } from '../common/Toast';
 import { StatusBadge, CategoryBadge } from '../common';
@@ -441,13 +442,25 @@ export const Approvals: React.FC<ApprovalsProps> = ({ user }) => {
           >
             <X className="w-6 h-6 text-gray-900" />
           </button>
-          <div className="max-w-5xl max-h-[90vh] overflow-auto">
-            <img
-              src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
-              alt="Receipt full size"
-              className="w-auto h-auto max-w-full max-h-[90vh] rounded-lg shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            />
+          <div className="max-w-5xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            {isPdfReceiptUrl(viewingExpense.receiptUrl) ? (
+              <a
+                href={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center justify-center gap-4 py-12 px-8 rounded-lg bg-white shadow-2xl text-gray-800 no-underline"
+              >
+                <FileText className="w-16 h-16 text-red-600" />
+                <span className="text-lg font-medium">PDF Receipt</span>
+                <span className="text-sm text-gray-500">Click to open in a new tab</span>
+              </a>
+            ) : (
+              <img
+                src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
+                alt="Receipt full size"
+                className="w-auto h-auto max-w-full max-h-[90vh] rounded-lg shadow-2xl"
+              />
+            )}
           </div>
         </div>
       )}

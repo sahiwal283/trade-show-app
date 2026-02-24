@@ -1,4 +1,62 @@
 import { describe, it, expect } from 'vitest';
+import { isAllowedReceiptFile, isAllowedBoothMapFile } from '../../src/config/upload';
+
+/**
+ * Upload config: receipt/OCR file acceptance (PDF + images, extension fallback for PDF)
+ */
+describe('Upload config: isAllowedReceiptFile', () => {
+  it('accepts file with application/pdf MIME and .pdf extension', () => {
+    expect(isAllowedReceiptFile('application/pdf', 'receipt.pdf').allowed).toBe(true);
+  });
+
+  it('accepts PDF by extension when MIME is empty (browser variance)', () => {
+    expect(isAllowedReceiptFile('', 'doc.pdf').allowed).toBe(true);
+  });
+
+  it('accepts PDF by extension when MIME is application/octet-stream', () => {
+    expect(isAllowedReceiptFile('application/octet-stream', 'receipt.pdf').allowed).toBe(true);
+  });
+
+  it('accepts image with image/* MIME and image extension', () => {
+    expect(isAllowedReceiptFile('image/jpeg', 'photo.jpg').allowed).toBe(true);
+    expect(isAllowedReceiptFile('image/png', 'x.png').allowed).toBe(true);
+    expect(isAllowedReceiptFile('image/heic', 'img.heic').allowed).toBe(true);
+  });
+
+  it('rejects non-PDF masquerading with .pdf extension and dangerous MIME', () => {
+    const r = isAllowedReceiptFile('application/x-msdownload', 'virus.pdf');
+    expect(r.allowed).toBe(false);
+    expect(r.reason).toBeDefined();
+  });
+
+  it('rejects file with disallowed extension', () => {
+    expect(isAllowedReceiptFile('application/pdf', 'file.exe').allowed).toBe(false);
+    expect(isAllowedReceiptFile('image/jpeg', 'file.exe').allowed).toBe(false);
+  });
+
+  it('rejects application/octet-stream with image extension (no extension fallback for images)', () => {
+    const r = isAllowedReceiptFile('application/octet-stream', 'photo.jpg');
+    expect(r.allowed).toBe(false);
+  });
+});
+
+describe('Upload config: isAllowedBoothMapFile', () => {
+  it('accepts application/pdf and .pdf', () => {
+    expect(isAllowedBoothMapFile('application/pdf', 'map.pdf').allowed).toBe(true);
+  });
+
+  it('accepts PDF by extension when MIME is empty', () => {
+    expect(isAllowedBoothMapFile('', 'booth.pdf').allowed).toBe(true);
+  });
+
+  it('accepts image/gif for booth maps', () => {
+    expect(isAllowedBoothMapFile('image/gif', 'map.gif').allowed).toBe(true);
+  });
+
+  it('rejects executable MIME with .pdf extension', () => {
+    expect(isAllowedBoothMapFile('application/x-msdownload', 'x.pdf').allowed).toBe(false);
+  });
+});
 
 /**
  * REGRESSION TESTS: MIME Type Validation (v1.27.15)

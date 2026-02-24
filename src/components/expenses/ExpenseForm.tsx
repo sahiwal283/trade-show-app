@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Save, X, Building2, Upload, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, X, Building2, Upload, AlertCircle, Loader2, Plus } from 'lucide-react';
 import { Expense, TradeShow, User } from '../../App';
 import { api } from '../../utils/api';
 import { formatForDateInput, getTodayLocalDateString } from '../../utils/dateUtils';
 import { filterActiveEvents, filterEventsByParticipation } from '../../utils/eventUtils';
+import { isAcceptableReceiptFile, PDF_PLACEHOLDER_IMAGE } from '../../utils/fileValidation';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -66,6 +67,60 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
   const [isProcessingOCR, setIsProcessingOCR] = useState(false);
   const [ocrResults, setOcrResults] = useState<any>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(false);
+
+  // Quick create event state
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+  const [quickEventName, setQuickEventName] = useState('');
+  const [creatingEvent, setCreatingEvent] = useState(false);
+  const [createEventError, setCreateEventError] = useState('');
+  const [localEvents, setLocalEvents] = useState<TradeShow[]>([]);
+
+  const canCreateEvents = ['admin', 'coordinator', 'developer'].includes(user.role);
+
+  // Merge filtered events with locally created events
+  const allActiveEvents = useMemo(() => {
+    const merged = [...activeEvents, ...localEvents];
+    // Deduplicate by id
+    const seen = new Set<string>();
+    return merged.filter(e => {
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
+  }, [activeEvents, localEvents]);
+
+  const handleQuickCreateEvent = async () => {
+    if (!quickEventName.trim()) return;
+    
+    setCreatingEvent(true);
+    setCreateEventError('');
+    
+    try {
+      const today = getTodayLocalDateString();
+      const newEvent = await api.createEvent({
+        name: quickEventName.trim(),
+        venue: 'TBD',
+        city: 'TBD',
+        state: 'TBD',
+        start_date: today,
+        end_date: today,
+        show_start_date: today,
+        show_end_date: today,
+        travel_start_date: today,
+        travel_end_date: today,
+      });
+      
+      setLocalEvents(prev => [...prev, newEvent]);
+      setFormData({ ...formData, tradeShowId: newEvent.id });
+      setQuickEventName('');
+      setShowQuickCreate(false);
+    } catch (error: any) {
+      console.error('[QuickCreate] Failed to create event:', error);
+      setCreateEventError(error?.message || 'Failed to create event');
+    } finally {
+      setCreatingEvent(false);
+    }
+  };
 
   useEffect(() => {
     (async () => {
@@ -143,17 +198,22 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
   const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file (JPG, PNG, etc.)');
+    if (!isAcceptableReceiptFile(file)) {
+      alert('Please upload an image (JPG, PNG, HEIC, WebP) or PDF file.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
       return;
     }
 
     setReceiptFile(file);
     setIsProcessingOCR(true);
 
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
+    // Create preview URL (use placeholder for PDF since img cannot display application/pdf)
+    const previewUrl = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf'
+      ? PDF_PLACEHOLDER_IMAGE
+      : URL.createObjectURL(file);
     setFormData({ ...formData, receiptUrl: previewUrl });
 
     // Simulate OCR processing with improved extraction logic
@@ -322,11 +382,11 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                     <p className="mb-2 text-sm text-gray-700">
                       <span className="font-semibold">Click to upload receipt</span>
                     </p>
-                    <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
+                    <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
                   </div>
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.heic,.heif,application/pdf,.pdf"
                     onChange={handleReceiptUpload}
                     className="hidden"
                     
@@ -385,17 +445,62 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Trade Show Event *
               </label>
-              <select
-                value={formData.tradeShowId}
-                onChange={(e) => setFormData({ ...formData, tradeShowId: e.target.value })}
-                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="">Select an event</option>
-                {activeEvents.map(event => (
-                  <option key={event.id} value={event.id}>{event.name}</option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2">
+                <select
+                  value={formData.tradeShowId}
+                  onChange={(e) => setFormData({ ...formData, tradeShowId: e.target.value })}
+                  className="flex-1 px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select an event</option>
+                  {allActiveEvents.map(event => (
+                    <option key={event.id} value={event.id}>{event.name}</option>
+                  ))}
+                </select>
+                {canCreateEvents && (
+                  <button
+                    type="button"
+                    onClick={() => setShowQuickCreate(!showQuickCreate)}
+                    className="flex items-center gap-1 px-3 py-2.5 sm:py-3 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap min-h-[44px]"
+                    title="Quick create a new event"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="hidden sm:inline">New</span>
+                  </button>
+                )}
+              </div>
+              {showQuickCreate && (
+                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <label className="block text-xs font-medium text-blue-800 mb-1">
+                    Event Name
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={quickEventName}
+                      onChange={(e) => setQuickEventName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleQuickCreateEvent())}
+                      className="flex-1 px-3 py-2 text-sm bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., CES 2026"
+                      autoFocus
+                      disabled={creatingEvent}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleQuickCreateEvent}
+                      disabled={!quickEventName.trim() || creatingEvent}
+                      className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      {creatingEvent ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                      Create
+                    </button>
+                  </div>
+                  {createEventError && (
+                    <p className="mt-1 text-xs text-red-600">{createEventError}</p>
+                  )}
+                  <p className="mt-1 text-xs text-blue-600">You can add venue, dates, and other details later in Events.</p>
+                </div>
+              )}
             </div>
 
             <div>

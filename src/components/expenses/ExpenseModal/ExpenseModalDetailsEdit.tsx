@@ -8,7 +8,8 @@
  */
 
 import React, { useState, useRef } from 'react';
-import { Edit2, Upload, Loader2, Receipt, X, AlertCircle } from 'lucide-react';
+import { Edit2, Upload, Loader2, Receipt, X, AlertCircle, FileText } from 'lucide-react';
+import { isPdfReceiptUrl } from '../../../utils/fileValidation';
 import { ConfirmModal } from '../../common/ConfirmModal';
 
 interface EditFormData {
@@ -238,11 +239,23 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
                   </div>
                 </div>
                 <div className="bg-white rounded-lg p-3 border border-gray-200">
-                  <img
-                    src={receiptImageUrl}
-                    alt="Current receipt"
-                    className="w-full h-auto max-h-48 object-contain rounded"
-                  />
+                  {isPdfReceiptUrl(receiptUrl ?? '') ? (
+                    <a
+                      href={receiptImageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex flex-col items-center justify-center gap-2 py-6 rounded bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-300 text-gray-700 no-underline"
+                    >
+                      <FileText className="w-10 h-10 text-red-600" />
+                      <span className="text-sm font-medium">PDF Receipt – click to open</span>
+                    </a>
+                  ) : (
+                    <img
+                      src={receiptImageUrl}
+                      alt="Current receipt"
+                      className="w-full h-auto max-h-48 object-contain rounded"
+                    />
+                  )}
                 </div>
               </div>
               

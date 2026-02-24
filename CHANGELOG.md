@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.32.0] / [1.32.8] - 2026-02-18 (Patch) - PDF Upload & OCR Reliability
+
+### Fixed
+- **PDF upload acceptance**: Receipt uploads now reliably accept PDFs across all flows (expense submission, checklist receipt upload, expense form). Frontend validates by MIME or `.pdf` extension when browser sends empty/variant MIME.
+- **Backend file validation**: Multer file filters use normalized MIME and extension allowlist; PDFs with `application/octet-stream` or empty MIME but `.pdf` extension are accepted. Rejects masquerading (e.g. wrong extension or dangerous MIME).
+- **OCR handoff for PDFs**: PDFs accepted by upload proceed to OCR; on OCR-service failure for PDFs, API returns a clear message so users can enter details manually.
+
+### Added
+- Shared frontend helper `isAcceptableReceiptFile` / `isPdfFile` and PDF placeholder image for preview.
+- Backend helpers `isAllowedReceiptFile` and `isAllowedBoothMapFile` in upload config; OCR v2 route uses shared validation.
+- Regression tests for PDF acceptance (application/pdf, extension fallback) and rejection of unsafe file types.
+
 ## [1.31.9] / [1.32.7] - 2026-02-18 (Patch) - Zoho Push Auto-Status Fix
 
 ### Fixed

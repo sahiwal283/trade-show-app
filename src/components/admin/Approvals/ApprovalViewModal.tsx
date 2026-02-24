@@ -3,6 +3,7 @@ import { X, Receipt, FileText, MapPin, User } from 'lucide-react';
 import { Expense } from '../../../App';
 import { StatusBadge, CategoryBadge } from '../../common';
 import { formatLocalDate } from '../../../utils/dateUtils';
+import { isPdfReceiptUrl } from '../../../utils/fileValidation';
 
 interface ApprovalViewModalProps {
   expense: Expense;
@@ -159,11 +160,31 @@ export const ApprovalViewModal: React.FC<ApprovalViewModalProps> = ({
                 <div className="bg-gray-50 rounded-lg overflow-hidden">
                   {showFullReceipt ? (
                     <div className="relative">
-                      <img
-                        src={expense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
-                        alt="Receipt"
-                        className="w-full h-auto"
-                      />
+                      {(() => {
+                        const receiptDisplayUrl = expense.receiptUrl.replace(/^\/uploads/, '/api/uploads');
+                        const isPdf = isPdfReceiptUrl(expense.receiptUrl || '');
+                        if (isPdf) {
+                          return (
+                            <a
+                              href={receiptDisplayUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex flex-col items-center justify-center gap-2 py-8 px-4 rounded-lg bg-white border border-gray-200 text-gray-700 no-underline"
+                            >
+                              <Receipt className="w-12 h-12 text-red-600" />
+                              <span className="font-medium">PDF Receipt</span>
+                              <span className="text-sm text-gray-500">Click to open in a new tab</span>
+                            </a>
+                          );
+                        }
+                        return (
+                          <img
+                            src={receiptDisplayUrl}
+                            alt="Receipt"
+                            className="w-full h-auto"
+                          />
+                        );
+                      })()}
                       <button
                         onClick={onToggleReceipt}
                         className="absolute top-2 right-2 px-3 py-1 bg-white rounded-lg shadow-md text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"

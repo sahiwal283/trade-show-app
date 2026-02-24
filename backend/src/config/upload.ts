@@ -1,11 +1,58 @@
 /**
  * Upload Configuration
  * Multer configuration for file uploads (receipts, images, booth maps)
+ * Uses normalized MIME + extension allowlist so PDFs work when browser sends variant/empty MIME.
  */
 
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+
+/** Allowed image extensions (lowercase, with dot). PDF allowed separately. */
+const IMAGE_EXT_REGEX = /\.(jpeg|jpg|png|heic|heif|webp)$/i;
+/** Allowed image extensions for booth maps (includes gif). */
+const BOOTH_MAP_IMAGE_EXT_REGEX = /\.(jpeg|jpg|png|gif|heic|heif|webp)$/i;
+const PDF_EXT_REGEX = /\.pdf$/i;
+const PDF_MIME = 'application/pdf';
+
+/**
+ * Returns true if file is allowed for receipt/OCR uploads.
+ * Uses normalized MIME (lowercase, trim) and extension fallback for PDF when MIME is empty/variant.
+ */
+export function isAllowedReceiptFile(mimetype: string, originalname: string): { allowed: boolean; reason?: string } {
+  const mime = (mimetype || '').toLowerCase().trim();
+  const ext = path.extname(originalname || '').toLowerCase();
+  const isImage = mime.startsWith('image/');
+  const isPdfMime = mime === PDF_MIME;
+  const isPdfExt = PDF_EXT_REGEX.test(ext);
+  const isImageExt = IMAGE_EXT_REGEX.test(ext);
+
+  if (isImage && isImageExt) return { allowed: true };
+  if (isPdfExt && (isPdfMime || mime === '' || mime === 'application/octet-stream')) return { allowed: true };
+  return {
+    allowed: false,
+    reason: `Only images (JPEG, PNG, HEIC, WebP) and PDF files are allowed. Received ext: ${ext || 'none'}, mime: ${mime || 'none'}`
+  };
+}
+
+/**
+ * Returns true if file is allowed for booth map uploads (images + PDF, includes GIF).
+ */
+export function isAllowedBoothMapFile(mimetype: string, originalname: string): { allowed: boolean; reason?: string } {
+  const mime = (mimetype || '').toLowerCase().trim();
+  const ext = path.extname(originalname || '').toLowerCase();
+  const isImage = mime.startsWith('image/');
+  const isPdfMime = mime === PDF_MIME;
+  const isPdfExt = PDF_EXT_REGEX.test(ext);
+  const isImageExt = BOOTH_MAP_IMAGE_EXT_REGEX.test(ext);
+
+  if (isImage && isImageExt) return { allowed: true };
+  if (isPdfExt && (isPdfMime || mime === '' || mime === 'application/octet-stream')) return { allowed: true };
+  return {
+    allowed: false,
+    reason: `Only images (JPEG, PNG, GIF, HEIC, WebP) and PDF files are allowed. Received ext: ${ext || 'none'}, mime: ${mime || 'none'}`
+  };
+}
 
 /**
  * Ensure directory exists with proper permissions (0o755)
@@ -100,21 +147,13 @@ export const upload = multer({
   storage: receiptStorage,
   limits: { fileSize: parseInt(process.env.MAX_FILE_SIZE || '10485760') }, // 10MB default
   fileFilter: (req, file, cb) => {
-    // Accept common image formats and PDFs (including phone camera formats)
-    const allowedExtensions = /jpeg|jpg|png|pdf|heic|heif|webp/i;
-    const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
-    
-    // Accept any image MIME type (image/*) or PDF
-    // This handles phone cameras which may send image/heic, image/heif, image/x-png, etc.
-    const mimetypeOk = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
-
-    if (extname && mimetypeOk) {
-      console.log(`[Upload] Accepting file: ${file.originalname} (${file.mimetype})`);
+    const { allowed, reason } = isAllowedReceiptFile(file.mimetype, file.originalname);
+    if (allowed) {
+      console.log(`[Upload] Accepting file: ${file.originalname} (mime: ${file.mimetype || 'none'})`);
       return cb(null, true);
-    } else {
-      console.warn(`[Upload] Rejected file: ${file.originalname} (ext: ${path.extname(file.originalname)}, mime: ${file.mimetype})`);
-      cb(new Error('Only images (JPEG, PNG, HEIC, WebP) and PDF files are allowed'));
     }
+    console.warn(`[Upload] Rejected file: ${file.originalname} (${reason})`);
+    cb(new Error(reason || 'Only images (JPEG, PNG, HEIC, WebP) and PDF files are allowed'));
   }
 });
 
@@ -123,21 +162,13 @@ export const uploadBoothMap = multer({
   storage: boothMapStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
-    // Accept common image formats and PDFs (including phone camera formats)
-    const allowedExtensions = /jpeg|jpg|png|gif|pdf|heic|heif|webp/i;
-    const extname = allowedExtensions.test(path.extname(file.originalname).toLowerCase());
-    
-    // Accept any image MIME type (image/*) or PDF
-    // This handles phone cameras which may send image/heic, image/heif, image/x-png, etc.
-    const mimetypeOk = file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf';
-    
-    if (extname && mimetypeOk) {
-      console.log(`[Upload] Accepting booth map: ${file.originalname} (${file.mimetype})`);
+    const { allowed, reason } = isAllowedBoothMapFile(file.mimetype, file.originalname);
+    if (allowed) {
+      console.log(`[Upload] Accepting booth map: ${file.originalname} (mime: ${file.mimetype || 'none'})`);
       return cb(null, true);
-    } else {
-      console.warn(`[Upload] Rejected booth map: ${file.originalname} (ext: ${path.extname(file.originalname)}, mime: ${file.mimetype})`);
-      cb(new Error(`Invalid file type. Only images (JPEG, PNG, GIF, HEIC, WebP) and PDF files are allowed. Received: ${file.mimetype}`));
     }
+    console.warn(`[Upload] Rejected booth map: ${file.originalname} (${reason})`);
+    cb(new Error(reason || 'Only images (JPEG, PNG, GIF, HEIC, WebP) and PDF files are allowed'));
   }
 });
 

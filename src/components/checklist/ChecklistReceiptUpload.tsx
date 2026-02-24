@@ -3,6 +3,7 @@ import { Upload, X, FileImage, Scan, Receipt, DollarSign } from 'lucide-react';
 import { api } from '../../utils/api';
 import { User, TradeShow } from '../../App';
 import { AppError } from '../../types/types';
+import { isAcceptableReceiptFile } from '../../utils/fileValidation';
 
 interface ChecklistReceiptUploadProps {
   user: User;
@@ -195,12 +196,24 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
           {!selectedFile ? (
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
               <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 mb-2">Drop receipt here or click to upload</p>
+              <p className="text-gray-600 mb-2">Drop receipt here or click to upload (images or PDF, max 10MB)</p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
-                onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+                accept="image/*,.heic,.heif,application/pdf,.pdf"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (!isAcceptableReceiptFile(file)) {
+                    alert('Please upload an image (JPG, PNG, HEIC, WebP) or PDF file.');
+                    return;
+                  }
+                  if (file.size > 10 * 1024 * 1024) {
+                    alert('File size must be less than 10MB');
+                    return;
+                  }
+                  handleFileSelect(file);
+                }}
                 className="hidden"
               />
               <button

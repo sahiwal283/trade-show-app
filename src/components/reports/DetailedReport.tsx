@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FileText, Calendar, MapPin, User, DollarSign, Eye, X, Store, CreditCard } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
+import { isPdfReceiptUrl } from '../../utils/fileValidation';
 import { CATEGORY_COLORS } from '../../constants/appConstants';
 import { useToast, ToastContainer } from '../common/Toast';
 import { StatusBadge, CategoryBadge } from '../common';
@@ -435,11 +436,31 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   </div>
                   {showFullReceipt && (
                     <div className="bg-white rounded-lg p-4">
-                      <img
-                        src={viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads')}
-                        alt="Receipt"
-                        className="w-full h-auto max-h-[600px] object-contain rounded-lg border-2 border-gray-200 shadow-md"
-                      />
+                      {(() => {
+                        const displayUrl = viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads');
+                        const isPdf = isPdfReceiptUrl(viewingExpense.receiptUrl || '');
+                        if (isPdf) {
+                          return (
+                            <a
+                              href={displayUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex flex-col items-center justify-center gap-3 py-8 px-4 rounded-lg bg-gray-50 hover:bg-gray-100 border-2 border-dashed border-gray-300 text-gray-700 no-underline"
+                            >
+                              <FileText className="w-14 h-14 text-red-600" />
+                              <span className="font-medium">PDF Receipt</span>
+                              <span className="text-sm text-gray-500">Click to open in a new tab</span>
+                            </a>
+                          );
+                        }
+                        return (
+                          <img
+                            src={displayUrl}
+                            alt="Receipt"
+                            className="w-full h-auto max-h-[600px] object-contain rounded-lg border-2 border-gray-200 shadow-md"
+                          />
+                        );
+                      })()}
                     </div>
                   )}
                 </div>

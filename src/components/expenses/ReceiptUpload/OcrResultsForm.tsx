@@ -4,10 +4,12 @@
  * Form displaying OCR results and allowing user edits.
  */
 
-import React from 'react';
-import { CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle, AlertCircle, CreditCard, Plus, Loader2 } from 'lucide-react';
 import { ReceiptData } from '../../../types/types';
-import { TradeShow } from '../../../App';
+import { TradeShow, User } from '../../../App';
+import { api } from '../../../utils/api';
+import { getTodayLocalDateString } from '../../../utils/dateUtils';
 
 interface CardOption {
   name: string;
@@ -38,6 +40,8 @@ interface OcrResultsFormProps {
   userEvents: TradeShow[];
   fieldWarnings: FieldWarning[];
   getFieldWarnings: (fieldName: string) => FieldWarning[];
+  user?: User;
+  onEventCreated?: (event: TradeShow) => void;
 }
 
 export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
@@ -55,8 +59,55 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
   categories,
   userEvents,
   fieldWarnings,
-  getFieldWarnings
+  getFieldWarnings,
+  user,
+  onEventCreated
 }) => {
+  const [showQuickCreate, setShowQuickCreate] = useState(false);
+  const [quickEventName, setQuickEventName] = useState('');
+  const [creatingEvent, setCreatingEvent] = useState(false);
+  const [createError, setCreateError] = useState('');
+
+  const canCreateEvents = user && ['admin', 'coordinator', 'developer'].includes(user.role);
+
+  const handleQuickCreateEvent = async () => {
+    if (!quickEventName.trim()) return;
+    
+    setCreatingEvent(true);
+    setCreateError('');
+    
+    try {
+      const today = getTodayLocalDateString();
+      const newEvent = await api.createEvent({
+        name: quickEventName.trim(),
+        venue: 'TBD',
+        city: 'TBD',
+        state: 'TBD',
+        start_date: today,
+        end_date: today,
+        show_start_date: today,
+        show_end_date: today,
+        travel_start_date: today,
+        travel_end_date: today,
+      });
+      
+      // Auto-select the new event
+      setSelectedEvent(newEvent.id);
+      setQuickEventName('');
+      setShowQuickCreate(false);
+      
+      // Notify parent to refresh events list
+      if (onEventCreated) {
+        onEventCreated(newEvent);
+      }
+    } catch (error: any) {
+      console.error('[QuickCreate] Failed to create event:', error);
+      setCreateError(error?.message || 'Failed to create event');
+    } finally {
+      setCreatingEvent(false);
+    }
+  };
+
   return (
     <div className="bg-gray-50 rounded-xl p-4 sm:p-5 md:p-6">
       <div className="flex items-center justify-between mb-6">
@@ -242,19 +293,64 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Trade Show Event *
           </label>
-          <select
-            value={selectedEvent}
-            onChange={(e) => setSelectedEvent(e.target.value)}
-            className="w-full max-w-sm bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            required
-          >
-            <option value="">Select an event</option>
-            {userEvents.map(event => (
-              <option key={event.id} value={event.id}>
-                {event.name}
-              </option>
-            ))}
-          </select>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedEvent}
+              onChange={(e) => setSelectedEvent(e.target.value)}
+              className="flex-1 max-w-sm bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            >
+              <option value="">Select an event</option>
+              {userEvents.map(event => (
+                <option key={event.id} value={event.id}>
+                  {event.name}
+                </option>
+              ))}
+            </select>
+            {canCreateEvents && (
+              <button
+                type="button"
+                onClick={() => setShowQuickCreate(!showQuickCreate)}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap"
+                title="Quick create a new event"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">New</span>
+              </button>
+            )}
+          </div>
+          {showQuickCreate && (
+            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg max-w-sm">
+              <label className="block text-xs font-medium text-blue-800 mb-1">
+                Event Name
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={quickEventName}
+                  onChange={(e) => setQuickEventName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleQuickCreateEvent()}
+                  className="flex-1 px-3 py-1.5 text-sm bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="e.g., CES 2026"
+                  autoFocus
+                  disabled={creatingEvent}
+                />
+                <button
+                  type="button"
+                  onClick={handleQuickCreateEvent}
+                  disabled={!quickEventName.trim() || creatingEvent}
+                  className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  {creatingEvent ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+                  Create
+                </button>
+              </div>
+              {createError && (
+                <p className="mt-1 text-xs text-red-600">{createError}</p>
+              )}
+              <p className="mt-1 text-xs text-blue-600">You can add venue, dates, and other details later in Events.</p>
+            </div>
+          )}
         </div>
 
         <div>

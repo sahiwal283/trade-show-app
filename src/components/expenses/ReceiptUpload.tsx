@@ -13,6 +13,7 @@ import {
   FullImageModal,
 } from './ReceiptUpload/index';
 import { useReceiptOcr } from './ReceiptUpload/hooks/useReceiptOcr';
+import { isAcceptableReceiptFile, isPdfFile, PDF_PLACEHOLDER_IMAGE } from '../../utils/fileValidation';
 
 interface ReceiptUploadProps {
   onReceiptProcessed: (data: ReceiptData, file: File) => void;
@@ -117,18 +118,20 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
 
   const handleFiles = (files: FileList) => {
     const file = files[0];
-    // Accept images (including HEIC from iPhone), PDFs
-    const isImage = file && file.type.startsWith('image/');
-    const isPDF = file && file.type === 'application/pdf';
-    
-    // Validate file size (10MB max)
-    if (file && file.size > 10 * 1024 * 1024) {
+    if (!file) return;
+    if (!isAcceptableReceiptFile(file)) {
+      alert('Please upload an image (JPG, PNG, HEIC, WebP) or PDF file.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
       alert('File size must be less than 10MB');
       return;
     }
-    
-    if (file && (isImage || isPDF)) {
-      setSelectedFile(file);
+    setSelectedFile(file);
+    if (isPdfFile(file)) {
+      setUploadedImage(PDF_PLACEHOLDER_IMAGE);
+      processReceiptHook(file, cardOptions);
+    } else {
       const reader = new FileReader();
       reader.onload = (e) => {
         setUploadedImage(e.target?.result as string);
@@ -226,6 +229,11 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                 userEvents={userEvents}
                 fieldWarnings={fieldWarnings}
                 getFieldWarnings={getFieldWarnings}
+                user={user}
+                onEventCreated={(newEvent) => {
+                  // Add the new event to the local list so it appears in the dropdown
+                  events.push(newEvent);
+                }}
               />
             )}
 
