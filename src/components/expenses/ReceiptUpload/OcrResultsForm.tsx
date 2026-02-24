@@ -4,12 +4,13 @@
  * Form displaying OCR results and allowing user edits.
  */
 
-import React, { useState } from 'react';
-import { CheckCircle, AlertCircle, CreditCard, Plus, Loader2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { CheckCircle, AlertCircle, CreditCard, Plus, Loader2, Clock } from 'lucide-react';
 import { ReceiptData } from '../../../types/types';
 import { TradeShow, User } from '../../../App';
 import { api } from '../../../utils/api';
 import { getTodayLocalDateString } from '../../../utils/dateUtils';
+import { filterEventsByParticipation } from '../../../utils/eventUtils';
 
 interface CardOption {
   name: string;
@@ -38,6 +39,7 @@ interface OcrResultsFormProps {
   cardOptions: CardOption[];
   categories: string[];
   userEvents: TradeShow[];
+  allEvents?: TradeShow[];
   fieldWarnings: FieldWarning[];
   getFieldWarnings: (fieldName: string) => FieldWarning[];
   user?: User;
@@ -58,6 +60,7 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
   cardOptions,
   categories,
   userEvents,
+  allEvents,
   fieldWarnings,
   getFieldWarnings,
   user,
@@ -67,6 +70,15 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
   const [quickEventName, setQuickEventName] = useState('');
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [showPastEvents, setShowPastEvents] = useState(false);
+
+  // Past events = all events that aren't in the active list
+  const pastEvents = useMemo(() => {
+    if (!allEvents || !user) return [];
+    const activeIds = new Set(userEvents.map(e => e.id));
+    const allUserEvents = filterEventsByParticipation(allEvents, user);
+    return allUserEvents.filter(e => !activeIds.has(e.id));
+  }, [allEvents, userEvents, user]);
 
   const canCreateEvents = user && ['admin', 'coordinator', 'developer'].includes(user.role);
 
@@ -306,6 +318,15 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
                   {event.name}
                 </option>
               ))}
+              {showPastEvents && pastEvents.length > 0 && (
+                <optgroup label="── Past Events ──">
+                  {pastEvents.map(event => (
+                    <option key={event.id} value={event.id}>
+                      {event.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
             {canCreateEvents && (
               <button
@@ -350,6 +371,16 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
               )}
               <p className="mt-1 text-xs text-blue-600">You can add venue, dates, and other details later in Events.</p>
             </div>
+          )}
+          {pastEvents.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowPastEvents(!showPastEvents)}
+              className="mt-1 flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+            >
+              <Clock className="w-3 h-3" />
+              {showPastEvents ? 'Hide past events' : `Show ${pastEvents.length} past event${pastEvents.length === 1 ? '' : 's'}`}
+            </button>
           )}
         </div>
 

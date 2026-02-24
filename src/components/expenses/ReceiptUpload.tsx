@@ -227,6 +227,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                 cardOptions={cardOptions}
                 categories={categories}
                 userEvents={userEvents}
+                allEvents={events}
                 fieldWarnings={fieldWarnings}
                 getFieldWarnings={getFieldWarnings}
                 user={user}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Save, X, Building2, Upload, AlertCircle, Loader2, Plus } from 'lucide-react';
+import { ArrowLeft, Save, X, Building2, Upload, AlertCircle, Loader2, Plus, Clock } from 'lucide-react';
 import { Expense, TradeShow, User } from '../../App';
 import { api } from '../../utils/api';
 import { formatForDateInput, getTodayLocalDateString } from '../../utils/dateUtils';
@@ -74,6 +74,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [createEventError, setCreateEventError] = useState('');
   const [localEvents, setLocalEvents] = useState<TradeShow[]>([]);
+  const [showPastEvents, setShowPastEvents] = useState(false);
 
   const canCreateEvents = ['admin', 'coordinator', 'developer'].includes(user.role);
 
@@ -88,6 +89,13 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
       return true;
     });
   }, [activeEvents, localEvents]);
+
+  // Past events = all events user can access minus active ones
+  const pastEvents = useMemo(() => {
+    const activeIds = new Set(allActiveEvents.map(e => e.id));
+    const allUserEvents = filterEventsByParticipation(events, user);
+    return allUserEvents.filter(e => !activeIds.has(e.id));
+  }, [events, allActiveEvents, user]);
 
   const handleQuickCreateEvent = async () => {
     if (!quickEventName.trim()) return;
@@ -456,6 +464,13 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                   {allActiveEvents.map(event => (
                     <option key={event.id} value={event.id}>{event.name}</option>
                   ))}
+                  {showPastEvents && pastEvents.length > 0 && (
+                    <optgroup label="── Past Events ──">
+                      {pastEvents.map(event => (
+                        <option key={event.id} value={event.id}>{event.name}</option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
                 {canCreateEvents && (
                   <button
@@ -500,6 +515,16 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                   )}
                   <p className="mt-1 text-xs text-blue-600">You can add venue, dates, and other details later in Events.</p>
                 </div>
+              )}
+              {pastEvents.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowPastEvents(!showPastEvents)}
+                  className="mt-1 flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <Clock className="w-3 h-3" />
+                  {showPastEvents ? 'Hide past events' : `Show ${pastEvents.length} past event${pastEvents.length === 1 ? '' : 's'}`}
+                </button>
               )}
             </div>
 
