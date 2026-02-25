@@ -26,6 +26,19 @@ export class UserRepository extends BaseRepository<User> {
   protected tableName = 'users';
 
   /**
+   * Find user by username (without password) - for platform SSO lookup
+   */
+  async findByUsernameSafe(username: string): Promise<UserWithoutPassword | null> {
+    const result = await this.executeQuery<UserWithoutPassword>(
+      `SELECT id, username, name, email, role, created_at, updated_at 
+       FROM ${this.tableName} 
+       WHERE username = $1`,
+      [username]
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
    * Find user by email
    */
   async findByEmail(email: string): Promise<User | null> {

@@ -14,6 +14,7 @@ import { InstallPrompt } from './components/layout/InstallPrompt';
 import { InactivityWarning } from './components/common/InactivityWarning';
 import { NotificationBanner, useNotifications } from './components/common/NotificationBanner';
 import { SyncStatusBar } from './components/common/SyncStatusBar';
+import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { useAuth } from './hooks/useAuth';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { sessionManager } from './utils/sessionManager';
@@ -91,7 +92,7 @@ export interface Expense {
 }
 
 function App() {
-  const { user, login, logout } = useAuth();
+  const { user, login, logout, bootstrapDone } = useAuth();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -305,6 +306,13 @@ function App() {
     setShowInactivityWarning(false);
   };
 
+  if (!bootstrapDone && !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <LoadingSpinner size="xl" text="Checking session..." />
+      </div>
+    );
+  }
   if (!user) {
     return <LoginForm onLogin={login} />;
   }

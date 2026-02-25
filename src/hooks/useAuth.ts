@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User } from '../App';
 import { api, TokenManager } from '../utils/api';
+import { apiClient } from '../utils/apiClient';
 
 // Demo user credentials
 const DEMO_CREDENTIALS = {
@@ -9,14 +10,52 @@ const DEMO_CREDENTIALS = {
   mike: 'password',
   lisa: 'password'
 };
+
+/** Response from GET /api/auth/platform/session */
+interface PlatformSessionResponse {
+  supported?: boolean;
+  authenticated?: boolean;
+  requiresLogin?: boolean;
+  detail?: string;
+  message?: string;
+  user?: User;
+}
+
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [bootstrapDone, setBootstrapDone] = useState(false);
 
+  // Try platform SSO first, then fall back to localStorage (external login)
   useEffect(() => {
-    const savedUser = localStorage.getItem('tradeshow_current_user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiClient.get<PlatformSessionResponse>('/auth/platform/session', {
+          skipAuth: true,
+          credentials: 'include',
+        } as RequestInit);
+        if (cancelled) return;
+        if (data?.user) {
+          setUser(data.user);
+          setBootstrapDone(true);
+          return;
+        }
+        if (data?.supported === false || data?.authenticated === false || data?.requiresLogin === true) {
+          // No platform user; restore from localStorage (external login)
+          const savedUser = localStorage.getItem('tradeshow_current_user');
+          if (savedUser) setUser(JSON.parse(savedUser));
+        }
+      } catch {
+        // Network or other error: fall back to localStorage
+        if (!cancelled) {
+          const savedUser = localStorage.getItem('tradeshow_current_user');
+          if (savedUser) setUser(JSON.parse(savedUser));
+        }
+      } finally {
+        if (!cancelled) setBootstrapDone(true);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
@@ -57,5 +96,5 @@ export const useAuth = () => {
     TokenManager.removeToken(); // Also clear JWT token
   }, []);
 
-  return { user, login, logout };
+  return { user, login, logout, bootstrapDone };
 };

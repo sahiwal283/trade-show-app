@@ -56,8 +56,7 @@ class ApiClient {
   private onUnauthorized: (() => void) | null = null;
 
   constructor() {
-    // @ts-ignore - Vite provides this at build time
-    this.baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+    this.baseURL = API_CONFIG.BASE_URL;
     this.defaultTimeout = API_CONFIG.TIMEOUT;
     
     // Log API base URL in development mode for debugging

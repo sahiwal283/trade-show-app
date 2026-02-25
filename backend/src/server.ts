@@ -90,17 +90,13 @@ app.use('/api/training/sync', authenticateToken, sessionTracker, trainingSyncRou
 app.use('/api/checklist', authenticateToken, sessionTracker, checklistRoutes);
 app.use('/api/user-checklist', authenticateToken, sessionTracker, userChecklistRoutes);
 
-// Health check (with database connectivity test)
+// Health check (with database connectivity test) - existing contract
 app.get('/api/health', async (req, res) => {
   const startTime = Date.now();
-  
   try {
-    // Dynamic import to avoid circular dependency
     const { query } = await import('./config/database');
     await query('SELECT 1');
-    
     const responseTime = Date.now() - startTime;
-    
     res.json({
       status: 'ok',
       version: VERSION,
@@ -109,9 +105,9 @@ app.get('/api/health', async (req, res) => {
       responseTime: `${responseTime}ms`,
       environment: process.env.NODE_ENV || 'development'
     });
-  } catch (error: any) {
-    console.error('[Health] Health check failed:', error);
-    
+  } catch (error: unknown) {
+    const err = error as { message?: string };
+    console.error('[Health] Health check failed:', err);
     res.status(503).json({
       status: 'error',
       version: VERSION,
@@ -121,6 +117,28 @@ app.get('/api/health', async (req, res) => {
       environment: process.env.NODE_ENV || 'development'
     });
   }
+});
+
+// Platform health (no auth) - { status: 'healthy', app: slug }
+app.get('/health', async (_req, res) => {
+  try {
+    const { query } = await import('./config/database');
+    await query('SELECT 1');
+    res.json({ status: 'healthy', app: process.env.APP_SLUG || 'trade-show' });
+  } catch {
+    res.status(503).json({ status: 'error', app: process.env.APP_SLUG || 'trade-show' });
+  }
+});
+
+// Platform meta/version (no auth)
+app.get('/api/meta/version', (_req, res) => {
+  res.json({
+    name: 'Trade Show Expense Management App',
+    slug: process.env.APP_SLUG || 'trade-show',
+    version: VERSION,
+    build: process.env.APP_BUILD || 'dev',
+    commit: process.env.APP_COMMIT || 'local',
+  });
 });
 
 // Diagnostic endpoint for troubleshooting

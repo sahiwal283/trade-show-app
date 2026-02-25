@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.32.2] / [1.32.9] - 2026-02-25 (Patch) - Platform SSO (Hybrid Auth)
+
+### Added
+- **Platform SSO for internal app hub**: When running as an internal app behind the Core Platform, users with a valid platform JWT (Bearer or `token` cookie) and `trade-show` in `assigned_apps` can access the app without logging in. Local user is resolved by platform `username`; if no local account exists, the user is directed to sign in with existing credentials to link their account.
+- **Backend**: Dual-auth middleware accepts either platform JWT (HS256, `PLATFORM_JWT_SECRET`) or existing local JWT. Normalized errors: `401 { detail: "unauthenticated" }`, `403 { detail: "not_assigned_to_app" }`, `403 { detail: "no_local_user", message }`. New `GET /api/auth/platform/session` bootstrap endpoint; `GET /health` and `GET /api/meta/version` for platform compatibility.
+- **Frontend**: On load, calls platform session bootstrap; if the backend returns a linked user, the user is signed in automatically; otherwise the existing login form is shown. Session check runs before restoring from localStorage so external login behavior is unchanged.
+- **Config**: `APP_SLUG`, `APP_BASE_PATH`, `PLATFORM_JWT_SECRET`, `JWT_COOKIE_NAME` in backend env; `VITE_APP_BASE_PATH`, `VITE_API_URL` for frontend base-path builds. `env.example` (root) and backend `env.example` updated.
+
+### Changed
+- Auth middleware now tries platform JWT first (when `PLATFORM_JWT_SECRET` is set), then falls back to local JWT. Existing external login, registration, refresh, and logout are unchanged.
+- Vite `base` and API base URL respect `VITE_APP_BASE_PATH` when set (e.g. `/apps/trade-show`).
+
+### Technical
+- Backend: `UserRepository.findByUsernameSafe` for platform lookup; platform auth tests in `backend/tests/integration/platform-auth.test.ts`. Frontend: platform session bootstrap tests in `src/hooks/__tests__/useAuth.platform-session.test.tsx`.
+
 ## [1.32.0] / [1.32.8] - 2026-02-18 (Patch) - PDF Upload & OCR Reliability
 
 ### Fixed

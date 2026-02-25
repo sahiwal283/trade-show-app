@@ -3,10 +3,55 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database';
 import { createSession, deleteSession } from '../middleware/sessionTracker';
-import { AuthRequest } from '../middleware/auth';
+import { AuthRequest, getToken, tryVerifyPlatformJwt } from '../middleware/auth';
 import { logAuth } from '../utils/auditLogger';
+import { userRepository } from '../database/repositories';
 
 const router = Router();
+
+const APP_SLUG = process.env.APP_SLUG || 'trade-show';
+
+/**
+ * GET /api/auth/platform/session
+ * Bootstrap endpoint for internal platform SSO: validate platform JWT, resolve to local user by username.
+ * - No token or invalid → { authenticated: false } (frontend shows login).
+ * - Valid platform token, slug not in assigned_apps → 403 not_assigned_to_app.
+ * - Valid platform token, no local user for username → { requiresLogin: true, detail: 'no_local_user', message } (frontend shows login for manual linking).
+ * - Valid platform token, local user found → { user: { id, username, name, email, role } }.
+ */
+router.get('/platform/session', async (req, res) => {
+  if (!process.env.PLATFORM_JWT_SECRET) {
+    return res.json({ supported: false });
+  }
+  const token = getToken(req);
+  if (!token) {
+    return res.json({ authenticated: false });
+  }
+  const platform = tryVerifyPlatformJwt(token);
+  if (!platform) {
+    return res.json({ authenticated: false });
+  }
+  if (!platform.assigned_apps.includes(APP_SLUG)) {
+    return res.status(403).json({ detail: 'not_assigned_to_app' });
+  }
+  const localUser = await userRepository.findByUsernameSafe(platform.username);
+  if (!localUser) {
+    return res.json({
+      requiresLogin: true,
+      detail: 'no_local_user',
+      message: 'No local account linked. Please sign in with your app credentials to link your account.',
+    });
+  }
+  res.json({
+    user: {
+      id: localUser.id,
+      username: localUser.username,
+      name: localUser.name,
+      email: localUser.email,
+      role: localUser.role,
+    },
+  });
+});
 
 router.post('/login', async (req, res) => {
   const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

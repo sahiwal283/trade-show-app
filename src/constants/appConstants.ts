@@ -5,7 +5,7 @@
  */
 
 // ========== APPLICATION INFO ==========
-export const APP_VERSION = '1.32.1';
+export const APP_VERSION = '1.32.2';
 export const APP_NAME = 'Trade Show Expense Management App';
 
 // ========== DEMO CREDENTIALS (Development Only) ==========
@@ -108,9 +108,12 @@ export const DEFAULT_ENTITY_OPTIONS = [
   'Haute Intl',
 ] as const;
 
+// ========== PLATFORM / BASE PATH ==========
+export const APP_BASE_PATH = (import.meta.env.VITE_APP_BASE_PATH as string) || '';
+
 // ========== API CONFIGURATION ==========
 export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || '/api',
+  BASE_URL: (import.meta.env.VITE_API_URL as string) || (import.meta.env.VITE_API_BASE_URL as string) || (APP_BASE_PATH ? `${APP_BASE_PATH}/api` : '/api'),
   TIMEOUT: 30000, // 30 seconds
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000, // 1 second
