@@ -36,6 +36,9 @@ export const useAuth = () => {
         } as RequestInit);
         if (cancelled) return;
         if (data?.user) {
+          // Platform SSO is authoritative. Clear any stale local JWT so it
+          // cannot override cookie-based platform auth on subsequent API calls.
+          TokenManager.removeToken();
           setUser(data.user);
           setBootstrapDone(true);
           return;
