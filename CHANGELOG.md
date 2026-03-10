@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.32.4] - 2026-03-10 (Patch) - Editable Event in Expense Edit
+
+### Added
+- **Editable Event field when editing expense**: Users can now change the selected event when editing an expense in the Expense Details modal. This allows correcting accidental wrong event assignments. The Event dropdown appears at the top of the edit form with all available events.
+
+### Fixed
+- Previously, the event was displayed as static text in the modal header with no way to change it if an expense was incorrectly assigned to the wrong event.
+
 ## [1.32.2] / [1.32.9] - 2026-02-25 (Patch) - Platform SSO (Hybrid Auth)
 
 ### Added

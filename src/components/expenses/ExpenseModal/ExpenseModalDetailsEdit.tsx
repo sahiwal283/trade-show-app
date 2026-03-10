@@ -13,6 +13,7 @@ import { isPdfReceiptUrl } from '../../../utils/fileValidation';
 import { ConfirmModal } from '../../common/ConfirmModal';
 
 interface EditFormData {
+  tradeShowId: string;
   date: string;
   amount: number;
   category: string;
@@ -23,9 +24,15 @@ interface EditFormData {
   reimbursementRequired: boolean;
 }
 
+interface EventOption {
+  id: string;
+  name: string;
+}
+
 interface ExpenseModalDetailsEditProps {
   formData: EditFormData;
   onChange: (updates: Partial<EditFormData>) => void;
+  events: EventOption[];
   uniqueCategories: string[];
   uniqueCards: string[];
   onCancel: () => void;
@@ -37,6 +44,7 @@ interface ExpenseModalDetailsEditProps {
 export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = ({
   formData,
   onChange,
+  events,
   uniqueCategories,
   uniqueCards,
   onCancel,
@@ -116,6 +124,23 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Event - editable to correct wrong event assignment */}
+        <div className="md:col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Event *</label>
+          <select
+            value={formData.tradeShowId || ''}
+            onChange={(e) => onChange({ tradeShowId: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="">Select event</option>
+            {events.map((evt) => (
+              <option key={evt.id} value={evt.id}>
+                {evt.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Date */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>

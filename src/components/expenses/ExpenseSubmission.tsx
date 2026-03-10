@@ -672,6 +672,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 editFormData && (
                   <ExpenseModalDetailsEdit
                     formData={{
+                      tradeShowId: editFormData.tradeShowId || '',
                       date: editFormData.date,
                       amount: editFormData.amount,
                       category: editFormData.category,
@@ -686,6 +687,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         setEditFormData({ ...editFormData, ...updates });
                       }
                     }}
+                    events={events.map((e) => ({ id: e.id, name: e.name }))}
                     uniqueCategories={uniqueCategories}
                     uniqueCards={uniqueCards}
                     onCancel={cancelInlineEdit}
