@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { api } from '../../utils/api';
 import { ReceiptData } from '../../types/types';
@@ -14,6 +14,11 @@ import {
 } from './ReceiptUpload/index';
 import { useReceiptOcr } from './ReceiptUpload/hooks/useReceiptOcr';
 import { isAcceptableReceiptFile, isPdfFile, PDF_PLACEHOLDER_IMAGE } from '../../utils/fileValidation';
+import {
+  buildZohoExpenseDescription,
+  getZohoExpenseDescriptionValidationMessage,
+  ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH,
+} from '../../utils/zohoExpenseDescription';
 
 interface ReceiptUploadProps {
   onReceiptProcessed: (data: ReceiptData, file: File) => void;
@@ -41,7 +46,36 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   // Filter events
   const activeEvents = filterActiveEvents(events);
   const userEvents = filterEventsByParticipation(activeEvents, user);
-  
+
+  const selectedEventRecord = useMemo(
+    () => events.find((e) => e.id === selectedEvent),
+    [events, selectedEvent]
+  );
+
+  const receiptZohoDescriptionError = useMemo(() => {
+    return getZohoExpenseDescriptionValidationMessage({
+      description,
+      userName: user.name,
+      eventName: selectedEventRecord?.name,
+      eventStartDate: selectedEventRecord?.startDate,
+      eventEndDate: selectedEventRecord?.endDate,
+      reimbursementRequired: false,
+    });
+  }, [description, user.name, selectedEventRecord]);
+
+  const receiptZohoComposedLength = useMemo(
+    () =>
+      buildZohoExpenseDescription({
+        description,
+        userName: user.name,
+        eventName: selectedEventRecord?.name,
+        eventStartDate: selectedEventRecord?.startDate,
+        eventEndDate: selectedEventRecord?.endDate,
+        reimbursementRequired: false,
+      }).length,
+    [description, user.name, selectedEventRecord]
+  );
+
   // Use OCR hook
   const {
     processing,
@@ -159,6 +193,10 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       alert('Please select an event for this expense.');
       return;
     }
+    if (receiptZohoDescriptionError) {
+      alert(receiptZohoDescriptionError);
+      return;
+    }
     
     if (ocrResults) {
       // Include additional fields in the data
@@ -250,7 +288,16 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+            <div className="flex flex-col gap-3 pt-6 border-t border-gray-200">
+              {ocrResults && selectedEvent && (
+                <p className="text-xs text-gray-500 text-right">
+                  Zoho Books combined description: {receiptZohoComposedLength}/{ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH} characters
+                </p>
+              )}
+              {receiptZohoDescriptionError && (
+                <p className="text-sm text-red-700 text-right">{receiptZohoDescriptionError}</p>
+              )}
+              <div className="flex items-center justify-between">
               <button
                 onClick={handleReset}
                 className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
@@ -261,9 +308,9 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               {ocrResults && (
                 <button
                   onClick={handleConfirm}
-                  disabled={isSaving}
+                  disabled={isSaving || !!receiptZohoDescriptionError}
                   className={`${
-                    isSaving 
+                    isSaving || receiptZohoDescriptionError
                       ? 'bg-gray-400 cursor-not-allowed' 
                       : 'bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600'
                   } text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2`}
@@ -281,6 +328,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                   )}
                 </button>
               )}
+              </div>
             </div>
           </div>
         )}

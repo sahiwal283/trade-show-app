@@ -7,10 +7,15 @@
  * SIMPLIFICATION: Separated from view mode, uses cleaner prop interface
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Edit2, Upload, Loader2, Receipt, X, AlertCircle, FileText } from 'lucide-react';
 import { isPdfReceiptUrl } from '../../../utils/fileValidation';
 import { ConfirmModal } from '../../common/ConfirmModal';
+import {
+  buildZohoExpenseDescription,
+  getZohoExpenseDescriptionValidationMessage,
+  ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH,
+} from '../../../utils/zohoExpenseDescription';
 
 interface EditFormData {
   tradeShowId: string;
@@ -27,6 +32,8 @@ interface EditFormData {
 interface EventOption {
   id: string;
   name: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 interface ExpenseModalDetailsEditProps {
@@ -39,6 +46,8 @@ interface ExpenseModalDetailsEditProps {
   onSave: () => void;
   receiptUrl?: string;
   onReceiptUpload?: (file: File) => Promise<void>;
+  /** Submitter name as used for Zoho Books (expense owner, not necessarily editor) */
+  zohoSubmitterName: string;
 }
 
 export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = ({
@@ -47,10 +56,11 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
   events,
   uniqueCategories,
   uniqueCards,
-  onCancel,
-  onSave,
+  onCancel: _onCancel,
+  onSave: _onSave,
   receiptUrl,
   onReceiptUpload,
+  zohoSubmitterName,
 }) => {
   const [showReplaceWarning, setShowReplaceWarning] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
@@ -112,6 +122,39 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
   const receiptImageUrl = receiptUrl 
     ? receiptUrl.replace(/^\/uploads/, '/api/uploads')
     : null;
+
+  const selectedEvent = useMemo(
+    () => events.find((e) => e.id === formData.tradeShowId),
+    [events, formData.tradeShowId]
+  );
+
+  const zohoDescriptionInput = useMemo(
+    () => ({
+      description: formData.description,
+      userName: zohoSubmitterName,
+      eventName: selectedEvent?.name,
+      eventStartDate: selectedEvent?.startDate,
+      eventEndDate: selectedEvent?.endDate,
+      reimbursementRequired: formData.reimbursementRequired,
+    }),
+    [
+      formData.description,
+      formData.reimbursementRequired,
+      formData.tradeShowId,
+      zohoSubmitterName,
+      selectedEvent,
+    ]
+  );
+
+  const zohoComposedPreview = useMemo(
+    () => buildZohoExpenseDescription(zohoDescriptionInput),
+    [zohoDescriptionInput]
+  );
+
+  const zohoDescriptionValidationError = useMemo(
+    () => getZohoExpenseDescriptionValidationMessage(zohoDescriptionInput),
+    [zohoDescriptionInput]
+  );
 
   return (
     <div className="space-y-4">
@@ -229,9 +272,18 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
           value={formData.description || ''}
           onChange={(e) => onChange({ description: e.target.value })}
           rows={3}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+            zohoDescriptionValidationError ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-300'
+          }`}
           placeholder="Optional additional details"
         />
+        <p className="text-xs text-gray-500 mt-1">
+          Zoho Books combined text: {zohoComposedPreview.length}/{ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH} characters
+          (includes submitter name, event, dates, and reimbursement flag).
+        </p>
+        {zohoDescriptionValidationError && (
+          <p className="text-sm text-red-700 mt-2">{zohoDescriptionValidationError}</p>
+        )}
       </div>
 
       {/* Reimbursement */}

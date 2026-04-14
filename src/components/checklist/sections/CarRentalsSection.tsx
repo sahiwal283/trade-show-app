@@ -3,6 +3,7 @@ import { Car, Plus, CheckCircle2, Circle, Trash2, Save, Receipt, Users, User as 
 import { ChecklistData, CarRentalData } from '../TradeShowChecklist';
 import { User, TradeShow } from '../../../App';
 import { api } from '../../../utils/api';
+import { getZohoExpenseDescriptionValidationMessage } from '../../../utils/zohoExpenseDescription';
 import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
 
 interface CarRentalsSectionProps {
@@ -83,6 +84,23 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
 
   const handleAddRental = async () => {
     setSaving({ ...saving, [-1]: true }); // Use -1 for new rental
+
+    const carDescription = `Car rental - ${newRental.provider || 'Unnamed'}`;
+    if (newRentalReceipt) {
+      const zohoErr = getZohoExpenseDescriptionValidationMessage({
+        description: carDescription,
+        userName: user.name,
+        eventName: event.name,
+        eventStartDate: event.startDate,
+        eventEndDate: event.endDate,
+        reimbursementRequired: false,
+      });
+      if (zohoErr) {
+        alert(zohoErr);
+        setSaving({ ...saving, [-1]: false });
+        return;
+      }
+    }
     
     try {
       // Create the rental first
@@ -107,7 +125,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
             merchant: newRental.provider || 'Car Rental',
             amount: 0, // Will be updated from receipt
             date: newRental.pickup_date || new Date().toISOString().split('T')[0],
-            description: `Car rental - ${newRental.provider || 'Unnamed'}`,
+            description: carDescription,
             card_used: '',
             reimbursement_required: false,
           };

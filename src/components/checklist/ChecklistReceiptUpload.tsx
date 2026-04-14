@@ -4,6 +4,7 @@ import { api } from '../../utils/api';
 import { User, TradeShow } from '../../App';
 import { AppError } from '../../types/types';
 import { isAcceptableReceiptFile } from '../../utils/fileValidation';
+import { getZohoExpenseDescriptionValidationMessage } from '../../utils/zohoExpenseDescription';
 
 interface ChecklistReceiptUploadProps {
   user: User;
@@ -24,7 +25,7 @@ const SECTION_CATEGORIES = {
 };
 
 export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
-  user: _user, // Reserved for future use (e.g., user-specific settings)
+  user,
   event,
   section,
   attendeeName,
@@ -116,6 +117,19 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
     setProcessing(true);
 
     try {
+      const zohoErr = getZohoExpenseDescriptionValidationMessage({
+        description: formData.description,
+        userName: user.name,
+        eventName: event.name,
+        eventStartDate: event.startDate,
+        eventEndDate: event.endDate,
+        reimbursementRequired: false,
+      });
+      if (zohoErr) {
+        alert(zohoErr);
+        return;
+      }
+
       // Create expense with receipt URL (no file re-upload needed)
       // The receipt was already uploaded during OCR processing
       const expensePayload: {

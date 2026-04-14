@@ -15,12 +15,24 @@ import { DuplicateDetectionService } from '../services/DuplicateDetectionService
 import { ExpenseAuditService } from '../services/ExpenseAuditService';
 import { asyncHandler, ValidationError } from '../utils/errors';
 import { normalizeExpense } from '../utils/expenseHelpers';
+import {
+  buildZohoExpenseDescription,
+  ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH,
+} from '../utils/zohoExpenseDescription';
 import { expenseRepository, userRepository, eventRepository } from '../database/repositories';
 import { generateExpensePDF } from '../services/ExpensePDFService';
 
 const router = Router();
 
 router.use(authenticateToken);
+
+/** Prefer full name for audit UI; falls back to username */
+async function auditActorDisplayName(userId: string, username: string): Promise<string> {
+  const u = await userRepository.findById(userId);
+  const name = u?.name?.trim();
+  if (name) return name;
+  return username?.trim() || 'Unknown User';
+}
 
 // ========== CRUD ENDPOINTS ==========
 // Note: OCR processing is handled by /api/ocr/v2/process endpoint (external OCR service)
@@ -170,6 +182,27 @@ router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'develope
   }
 }));
 
+// Audit trail (must be registered before GET /:id so paths like /:id/audit are not ambiguous)
+router.get(
+  '/:id/audit',
+  authorize('admin', 'accountant', 'developer'),
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    const { id } = req.params;
+
+    const expense = await expenseService.getExpenseById(id);
+    if (!expense) {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+
+    const auditTrail = await ExpenseAuditService.getAuditTrail(id);
+
+    res.json({
+      expenseId: id,
+      auditTrail,
+    });
+  })
+);
+
 // Get expense by ID
 router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
@@ -260,7 +293,7 @@ router.put('/:id/receipt', upload.single('receipt'), asyncHandler(async (req: Au
     await ExpenseAuditService.logChange(
       id,
       req.user!.id,
-      req.user!.username || 'Unknown User',
+      await auditActorDisplayName(req.user!.id, req.user!.username),
       'receipt_replaced',
       {
         receipt_url: {
@@ -354,6 +387,35 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
     receiptUrl = `/uploads/${req.file.filename}`;
   }
 
+  const submitter = await userRepository.findById(req.user!.id);
+  const submitterName = submitter?.name || 'Unknown User';
+  let zohoEventName: string | undefined;
+  let zohoEventStart: string | undefined;
+  let zohoEventEnd: string | undefined;
+  if (event_id) {
+    const ev = await eventRepository.findById(event_id);
+    if (ev) {
+      zohoEventName = ev.name;
+      zohoEventStart = ev.start_date;
+      zohoEventEnd = ev.end_date;
+    }
+  }
+  const reimb =
+    reimbursement_required === 'true' || reimbursement_required === true;
+  const composedZohoDescription = buildZohoExpenseDescription({
+    description: typeof description === 'string' ? description : '',
+    userName: submitterName,
+    eventName: zohoEventName,
+    eventStartDate: zohoEventStart,
+    eventEndDate: zohoEventEnd,
+    reimbursementRequired: reimb,
+  });
+  if (composedZohoDescription.length > ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH) {
+    throw new ValidationError(
+      `Description is too long for Zoho Books (${composedZohoDescription.length} characters; maximum ${ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH} including your name, event, dates, and reimbursement flag). Shorten the Description field and try again.`
+    );
+  }
+
   // Create expense using service layer
   const expense = await expenseService.createExpense(req.user!.id, {
     eventId: event_id,
@@ -394,7 +456,7 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
   await ExpenseAuditService.logChange(
     expense.id,
     req.user!.id,
-    req.user!.username || 'Unknown User',
+    await auditActorDisplayName(req.user!.id, req.user!.username),
     'created',
     {
       merchant: { old: null, new: expense.merchant },
@@ -454,6 +516,41 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
     return res.status(404).json({ error: 'Expense not found' });
   }
 
+  const owner = await userRepository.findById(oldExpense.user_id);
+  const submitterName = owner?.name || 'Unknown User';
+  const mergedEventId = event_id !== undefined ? event_id : oldExpense.event_id;
+  const mergedDescription =
+    description !== undefined ? description : oldExpense.description;
+  let mergedReimb = oldExpense.reimbursement_required;
+  if (reimbursement_required !== undefined) {
+    mergedReimb =
+      reimbursement_required === 'true' || reimbursement_required === true;
+  }
+  let zohoEventName: string | undefined;
+  let zohoEventStart: string | undefined;
+  let zohoEventEnd: string | undefined;
+  if (mergedEventId) {
+    const ev = await eventRepository.findById(mergedEventId);
+    if (ev) {
+      zohoEventName = ev.name;
+      zohoEventStart = ev.start_date;
+      zohoEventEnd = ev.end_date;
+    }
+  }
+  const composedZohoDescription = buildZohoExpenseDescription({
+    description: mergedDescription ?? '',
+    userName: submitterName,
+    eventName: zohoEventName,
+    eventStartDate: zohoEventStart,
+    eventEndDate: zohoEventEnd,
+    reimbursementRequired: mergedReimb,
+  });
+  if (composedZohoDescription.length > ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH) {
+    throw new ValidationError(
+      `Description is too long for Zoho Books (${composedZohoDescription.length} characters; maximum ${ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH} including submitter name, event, dates, and reimbursement flag). Shorten the Description field and try again.`
+    );
+  }
+
   // Update expense using service layer (handles authorization)
   const expense = await expenseService.updateExpense(
     id,
@@ -478,7 +575,7 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
 
   // Log changes in audit trail
   if (oldExpense) {
-    const changes = ExpenseAuditService.detectChanges(
+    let changes = ExpenseAuditService.detectChanges(
       oldExpense,
       {
         merchant: expense.merchant,
@@ -489,16 +586,43 @@ router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthReques
         location: expense.location,
         card_used: expense.card_used,
         reimbursement_required: expense.reimbursement_required,
-        zoho_entity: expense.zoho_entity
+        zoho_entity: expense.zoho_entity,
+        event_id: expense.event_id,
       },
-      ['merchant', 'amount', 'date', 'category', 'description', 'location', 'card_used', 'reimbursement_required', 'zoho_entity']
+      [
+        'merchant',
+        'amount',
+        'date',
+        'category',
+        'description',
+        'location',
+        'card_used',
+        'reimbursement_required',
+        'zoho_entity',
+        'event_id',
+      ]
     );
+
+    if (changes.event_id) {
+      const eid = changes.event_id;
+      const resolveEventLabel = async (val: unknown): Promise<string> => {
+        if (val == null || val === '') return 'None';
+        const ev = await eventRepository.findById(String(val));
+        return ev?.name ?? String(val);
+      };
+      changes = { ...changes };
+      changes.event = {
+        old: await resolveEventLabel(eid.old),
+        new: await resolveEventLabel(eid.new),
+      };
+      delete changes.event_id;
+    }
 
     if (Object.keys(changes).length > 0) {
       await ExpenseAuditService.logChange(
         id,
         req.user!.id,
-        req.user!.username || 'Unknown User',
+        await auditActorDisplayName(req.user!.id, req.user!.username),
         'updated',
         changes
       );
@@ -579,15 +703,15 @@ router.patch('/:id/status', authorize('admin', 'accountant', 'developer'), async
     req.user!.role
   );
 
-  // Log status change in audit trail
-  if (oldStatus && oldStatus !== status) {
+  // Log status change in audit trail (include when previous value was empty/null)
+  if ((oldStatus ?? '') !== status) {
     await ExpenseAuditService.logChange(
       id,
       req.user!.id,
-      req.user!.username || 'Unknown User',
+      await auditActorDisplayName(req.user!.id, req.user!.username),
       'status_changed',
       {
-        status: { old: oldStatus, new: status }
+        status: { old: oldStatus ?? null, new: status }
       }
     );
   }
@@ -604,12 +728,25 @@ router.patch('/:id/review', authorize('admin', 'accountant', 'developer'), async
     throw new ValidationError('Invalid status. Must be "approved" or "rejected"');
   }
 
+  const prior = await expenseRepository.findById(id);
+  const oldStatus = prior?.status;
+
   // Update status using service layer
   const expense = await expenseService.updateExpenseStatus(
     id,
     status,
     req.user!.role
   );
+
+  if (prior && (oldStatus ?? '') !== status) {
+    await ExpenseAuditService.logChange(
+      id,
+      req.user!.id,
+      await auditActorDisplayName(req.user!.id, req.user!.username),
+      'status_changed',
+      { status: { old: oldStatus ?? null, new: status } }
+    );
+  }
 
   res.json(normalizeExpense(expense));
 }));
@@ -631,16 +768,19 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
 
   console.log(`[Entity Assignment] Entity "${zoho_entity}" assigned to expense ${id} (manual push required)`);
 
-  // Log entity assignment in audit trail
-  await ExpenseAuditService.logChange(
-    id,
-    req.user!.id,
-    req.user!.username || 'Unknown User',
-    'entity_assigned',
-    {
-      zoho_entity: { old: oldEntity || null, new: zoho_entity }
-    }
-  );
+  // Log entity assignment in audit trail (skip duplicate row when unchanged)
+  const newEntity = expense.zoho_entity ?? null;
+  if ((oldEntity ?? null) !== newEntity) {
+    await ExpenseAuditService.logChange(
+      id,
+      req.user!.id,
+      await auditActorDisplayName(req.user!.id, req.user!.username),
+      'entity_assigned',
+      {
+        zoho_entity: { old: oldEntity || null, new: newEntity }
+      }
+    );
+  }
 
   // Check for potential duplicates (non-blocking - don't fail if column doesn't exist)
   try {
@@ -752,6 +892,20 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
 
     console.log(`[Zoho:ManualPush] Pushing expense ${id} to ${expense.zoho_entity} Zoho Books...`);
 
+    const composedPushDescription = buildZohoExpenseDescription({
+      description: expense.description ?? '',
+      userName,
+      eventName,
+      eventStartDate,
+      eventEndDate,
+      reimbursementRequired: expense.reimbursement_required,
+    });
+    if (composedPushDescription.length > ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH) {
+      return res.status(400).json({
+        error: `Description is too long for Zoho Books (${composedPushDescription.length} characters; maximum ${ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH}). Edit the expense and shorten the Description field.`,
+      });
+    }
+
     // Submit to Zoho Books synchronously (wait for response)
     const zohoResult = await zohoIntegrationClient.createExpense(expense.zoho_entity, {
       expenseId: expense.id,
@@ -787,7 +941,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
         await ExpenseAuditService.logChange(
           expense.id,
           req.user!.id,
-          req.user!.username || 'Unknown User',
+          await auditActorDisplayName(req.user!.id, req.user!.username),
           'status_changed',
           { status: { old: oldStatus, new: 'approved' } }
         );
@@ -797,7 +951,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
       await ExpenseAuditService.logChange(
         expense.id,
         req.user!.id,
-        req.user!.username || 'Unknown User',
+        await auditActorDisplayName(req.user!.id, req.user!.username),
         'pushed_to_zoho',
         {
           zoho_entity: { old: null, new: expense.zoho_entity },
@@ -832,12 +986,28 @@ router.patch('/:id/reimbursement', authorize('admin', 'accountant', 'developer')
 
   console.log(`[REIMBURSEMENT] Updating expense ${id} to status: "${reimbursement_status}"`);
 
+  const before = await expenseRepository.findById(id);
+  const oldReimbursement = before?.reimbursement_status ?? null;
+
   // Update reimbursement status using service layer
   const expense = await expenseService.updateReimbursementStatus(
     id,
     reimbursement_status,
     req.user!.role
   );
+
+  const newReimbursement = expense.reimbursement_status ?? null;
+  if (oldReimbursement !== newReimbursement) {
+    await ExpenseAuditService.logChange(
+      id,
+      req.user!.id,
+      await auditActorDisplayName(req.user!.id, req.user!.username),
+      'updated',
+      {
+        reimbursement_status: { old: oldReimbursement, new: newReimbursement },
+      }
+    );
+  }
 
   console.log(`[REIMBURSEMENT] Successfully updated expense ${id} to status "${reimbursement_status}"`);
   res.json(normalizeExpense(expense));
@@ -932,25 +1102,5 @@ router.get('/zoho/accounts', authenticateToken, authorize('admin'), async (req: 
     });
   }
 });
-
-// ========== AUDIT TRAIL ==========
-// GET /api/expenses/:id/audit - Get audit trail for an expense (accountant/admin/developer only)
-router.get('/:id/audit', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
-
-  // Verify expense exists and user has access
-  const expense = await expenseService.getExpenseById(id);
-  if (!expense) {
-    return res.status(404).json({ error: 'Expense not found' });
-  }
-
-  // Get audit trail
-  const auditTrail = await ExpenseAuditService.getAuditTrail(id);
-
-  res.json({
-    expenseId: id,
-    auditTrail
-  });
-}));
 
 export default router;

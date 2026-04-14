@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { User, Expense } from '../../App';
 import { ExpenseForm } from './ExpenseForm';
 import { ReceiptUpload } from './ReceiptUpload';
@@ -8,7 +8,7 @@ import { getTodayLocalDateString, formatForDateInput } from '../../utils/dateUti
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
-import { ReceiptData, AuditTrailEntry, ExpenseEditFormData, OcrV2Data, AppError } from '../../types/types';
+import type { ReceiptData, AuditTrailEntry, ExpenseEditFormData, OcrV2Data, AppError as AppErrorType } from '../../types/types';
 import { useToast, ToastContainer } from '../common/Toast';
 import { sendOCRCorrection } from '../../utils/ocrCorrections';
 import {
@@ -22,6 +22,9 @@ import {
   prepareOcrCorrectionData,
   trackOcrCorrections,
 } from '../../utils/ocrUtils';
+import { getZohoExpenseDescriptionValidationMessage } from '../../utils/zohoExpenseDescription';
+import { AppError } from '../../utils/errorHandler';
+import { apiClient } from '../../utils/apiClient';
 
 // ✅ REFACTORED: Imported extracted components
 import {
@@ -98,6 +101,30 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   // Toast notifications
   const { toasts, addToast, removeToast } = useToast();
 
+  const inlineZohoDescriptionError = useMemo(() => {
+    if (!isEditingExpense || !editFormData || !viewingExpense) return null;
+    const evt = events.find((e) => e.id === editFormData.tradeShowId);
+    const submitterName =
+      viewingExpense.user_name ||
+      users.find((u) => u.id === viewingExpense.userId)?.name ||
+      user.name;
+    return getZohoExpenseDescriptionValidationMessage({
+      description: editFormData.description,
+      userName: submitterName,
+      eventName: evt?.name,
+      eventStartDate: evt?.startDate,
+      eventEndDate: evt?.endDate,
+      reimbursementRequired: editFormData.reimbursementRequired,
+    });
+  }, [
+    isEditingExpense,
+    editFormData,
+    viewingExpense,
+    events,
+    users,
+    user.name,
+  ]);
+
   // Update pushedExpenses set when expenses data changes
   useEffect(() => {
     if (hasApprovalPermission) {
@@ -109,24 +136,13 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   // Fetch audit trail when viewing expense (accountant/admin/developer only)
   const fetchAuditTrail = async (expenseId: string) => {
     if (!hasApprovalPermission) return;
-    
+
     setLoadingAudit(true);
     try {
-      const response = await fetch(`/api/expenses/${expenseId}/audit`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const trail = data.auditTrail || [];
-        setAuditTrail(trail);
-        // Audit trail loaded
-      } else {
-        console.error('[Audit] Failed to fetch audit trail');
-        setAuditTrail([]);
-      }
+      const data = await apiClient.get<{ auditTrail: AuditTrailEntry[] }>(
+        `/expenses/${expenseId}/audit`
+      );
+      setAuditTrail(data.auditTrail || []);
     } catch (error) {
       console.error('[Audit] Error fetching audit trail:', error);
       setAuditTrail([]);
@@ -203,7 +219,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       setEditingExpense(null);
     } catch (error) {
       console.error('[ExpenseSubmission] Error saving expense:', error);
-      addToast('❌ Failed to save expense. Please try again.', 'error');
+      const msg =
+        error instanceof AppError
+          ? error.message
+          : 'Failed to save expense. Please try again.';
+      addToast(`❌ ${msg}`, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -236,6 +256,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   // Save inline edits
   const saveInlineEdit = async () => {
     if (!viewingExpense || !editFormData) return;
+    if (inlineZohoDescriptionError) {
+      addToast(`❌ ${inlineZohoDescriptionError}`, 'error');
+      return;
+    }
 
     setIsSaving(true);
     try {
@@ -260,9 +284,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         })
       });
 
-      if (!response.ok) throw new Error('Failed to update expense');
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({} as { error?: string }));
+        throw new Error(errBody.error || 'Failed to update expense');
+      }
 
-          const updatedExpense = await response.json() as Expense;
+      const updatedExpense = (await response.json()) as Expense;
       
       // Update the viewing expense
       setViewingExpense(updatedExpense);
@@ -280,7 +307,9 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       addToast('✅ Expense updated successfully', 'success');
     } catch (error) {
       console.error('[ExpenseSubmission] Error updating expense:', error);
-      addToast('❌ Failed to update expense. Please try again.', 'error');
+      const msg =
+        error instanceof Error ? error.message : 'Failed to update expense. Please try again.';
+      addToast(`❌ ${msg}`, 'error');
     } finally {
       setIsSaving(false);
     }
@@ -514,7 +543,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
       await reloadData();
     } catch (error) {
-      const appError = error as AppError & { response?: { status?: number; statusText?: string; data?: unknown } };
+      const appError = error as AppErrorType & { response?: { status?: number; statusText?: string; data?: unknown } };
       console.error('[Push to Zoho] Failed:', appError);
       console.error('[Push to Zoho] Error details:', {
         status: appError.response?.status,
@@ -687,13 +716,23 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                         setEditFormData({ ...editFormData, ...updates });
                       }
                     }}
-                    events={events.map((e) => ({ id: e.id, name: e.name }))}
+                    events={events.map((e) => ({
+                      id: e.id,
+                      name: e.name,
+                      startDate: e.startDate,
+                      endDate: e.endDate,
+                    }))}
                     uniqueCategories={uniqueCategories}
                     uniqueCards={uniqueCards}
                     onCancel={cancelInlineEdit}
                     onSave={saveInlineEdit}
                     receiptUrl={viewingExpense.receiptUrl}
                     onReceiptUpload={handleReceiptUpload}
+                    zohoSubmitterName={
+                      viewingExpense.user_name ||
+                      users.find((u) => u.id === viewingExpense.userId)?.name ||
+                      user.name
+                    }
                   />
                 )
               )}
@@ -744,6 +783,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               isEditingExpense={isEditingExpense}
               isSaving={isSaving}
               expenseId={viewingExpense.id}
+              saveDisabled={!!inlineZohoDescriptionError}
               onClose={() => {
                 setViewingExpense(null);
                 setIsEditingExpense(false);

@@ -1,11 +1,11 @@
 /**
  * Application Constants
  * Centralized constants for the entire application
- * @version 1.0.0
+ * @version 1.34.4
  */
 
 // ========== APPLICATION INFO ==========
-export const APP_VERSION = '1.32.2';
+export const APP_VERSION = '1.34.4';
 export const APP_NAME = 'Trade Show Expense Management App';
 
 // ========== DEMO CREDENTIALS (Development Only) ==========

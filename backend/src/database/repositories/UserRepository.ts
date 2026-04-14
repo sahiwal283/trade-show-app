@@ -29,11 +29,14 @@ export class UserRepository extends BaseRepository<User> {
    * Find user by username (without password) - for platform SSO lookup
    */
   async findByUsernameSafe(username: string): Promise<UserWithoutPassword | null> {
+    const normalized = typeof username === 'string' ? username.trim() : '';
     const result = await this.executeQuery<UserWithoutPassword>(
       `SELECT id, username, name, email, role, created_at, updated_at 
        FROM ${this.tableName} 
-       WHERE username = $1`,
-      [username]
+       WHERE LOWER(TRIM(username)) = LOWER($1)
+          OR LOWER(TRIM(email)) = LOWER($1)
+       LIMIT 1`,
+      [normalized]
     );
     return result.rows[0] || null;
   }

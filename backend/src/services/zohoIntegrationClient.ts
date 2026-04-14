@@ -13,6 +13,7 @@ import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
 import { query } from '../config/database';
+import { buildZohoExpenseDescription } from '../utils/zohoExpenseDescription';
 
 // ========== CONFIGURATION ==========
 
@@ -365,24 +366,14 @@ class ZohoIntegrationClient {
     console.log(`[ZohoClient] Creating expense for ${brand}: ${expenseData.merchant} - $${expenseData.amount}`);
 
     try {
-      // Build description with context
-      let fullDescription = expenseData.description || '';
-      if (expenseData.userName) {
-        fullDescription = `Submitted by: ${expenseData.userName}${fullDescription ? ` | ${fullDescription}` : ''}`;
-      }
-      if (expenseData.eventName) {
-        fullDescription += ` | Event: ${expenseData.eventName}`;
-        if (expenseData.eventStartDate) {
-          fullDescription += ` (${expenseData.eventStartDate}`;
-          if (expenseData.eventEndDate) {
-            fullDescription += ` - ${expenseData.eventEndDate}`;
-          }
-          fullDescription += ')';
-        }
-      }
-      if (expenseData.reimbursementRequired) {
-        fullDescription += ' | REIMBURSEMENT REQUIRED';
-      }
+      const fullDescription = buildZohoExpenseDescription({
+        description: expenseData.description,
+        userName: expenseData.userName,
+        eventName: expenseData.eventName,
+        eventStartDate: expenseData.eventStartDate,
+        eventEndDate: expenseData.eventEndDate,
+        reimbursementRequired: expenseData.reimbursementRequired,
+      });
 
       // Build reference number from event name (max 50 chars per Zoho limit)
       let referenceNumber = expenseData.eventName || expenseData.expenseId;

@@ -37,6 +37,7 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
     status_changed: 'Status Changed',
     entity_assigned: 'Entity Assigned',
     pushed_to_zoho: 'Pushed to Zoho',
+    receipt_replaced: 'Receipt Replaced',
   };
 
   const actionColors: Record<string, string> = {
@@ -45,6 +46,7 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
     status_changed: 'bg-purple-100 text-purple-800',
     entity_assigned: 'bg-orange-100 text-orange-800',
     pushed_to_zoho: 'bg-emerald-100 text-emerald-800',
+    receipt_replaced: 'bg-cyan-100 text-cyan-800',
   };
 
   const fieldLabels: Record<string, string> = {
@@ -56,9 +58,12 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
     location: 'Location',
     card_used: 'Card Used',
     reimbursement_required: 'Reimbursement Required',
+    reimbursement_status: 'Reimbursement',
     zoho_entity: 'Entity',
     zoho_expense_id: 'Zoho Expense ID',
     status: 'Status',
+    event: 'Event',
+    receipt_url: 'Receipt',
   };
 
   return (

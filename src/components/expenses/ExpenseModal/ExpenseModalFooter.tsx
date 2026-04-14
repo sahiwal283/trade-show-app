@@ -17,6 +17,8 @@ interface ExpenseModalFooterProps {
   onCancel: () => void;
   onSave: () => void;
   onDownloadPDF?: (expenseId: string) => Promise<void>;
+  /** When set while editing, Save is disabled (e.g. Zoho description over limit) */
+  saveDisabled?: boolean;
 }
 
 export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
@@ -28,6 +30,7 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
   onCancel,
   onSave,
   onDownloadPDF,
+  saveDisabled = false,
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -130,7 +133,7 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
           </button>
           <button
             onClick={onSave}
-            disabled={isSaving}
+            disabled={isSaving || saveDisabled}
             className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isSaving ? (

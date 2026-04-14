@@ -1018,8 +1018,8 @@ Services (Business Logic Layer)
 │   └── Business logic, authorization, orchestration
 ├── services/DevDashboardService.ts
 │   └── Dashboard logic
-├── services/zohoMultiAccountService.ts
-│   └── Multi-entity Zoho integration
+├── services/zohoIntegrationClient.ts
+│   └── Zoho Books via shared integration service
 └── services/ocr/
     ├── OCRService.ts
     └── UserCorrectionService.ts

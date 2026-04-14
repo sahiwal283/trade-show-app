@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../../src/middleware/auth';
 import { uploadBoothMap } from '../../src/config/upload';
 import fs from 'fs';
-import path from 'path';
 
 /**
  * Booth Map Upload Tests
@@ -160,11 +159,12 @@ describe('Booth Map Upload Tests', () => {
 
   describe('File Storage', () => {
     it('should save files to booth-maps directory', () => {
-      const expectedPath = path.join('uploads', 'booth-maps');
+      // Use string paths here — `path` is vi.mocked() for this file, so path.join is not reliable.
+      const expectedPath = 'uploads/booth-maps';
       const file = {
         destination: expectedPath,
         filename: 'test-booth-map.jpg',
-        path: path.join(expectedPath, 'test-booth-map.jpg'),
+        path: 'uploads/booth-maps/test-booth-map.jpg',
       };
 
       expect(file.destination).toBe(expectedPath);

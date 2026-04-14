@@ -16,6 +16,26 @@ export interface AuditLogEntry {
   timestamp: string;
 }
 
+function normalizeChangesJson(
+  raw: unknown
+): Record<string, { old: any; new: any }> {
+  if (raw == null) return {};
+  if (typeof raw === 'string') {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+        ? (parsed as Record<string, { old: any; new: any }>)
+        : {};
+    } catch {
+      return {};
+    }
+  }
+  if (typeof raw === 'object' && !Array.isArray(raw)) {
+    return raw as Record<string, { old: any; new: any }>;
+  }
+  return {};
+}
+
 export class ExpenseAuditService {
   /**
    * Log an expense change
@@ -66,7 +86,7 @@ export class ExpenseAuditService {
         userId: row.user_id,
         userName: row.user_name,
         action: row.action,
-        changes: row.changes,
+        changes: normalizeChangesJson(row.changes),
         timestamp: row.timestamp
       }));
     } catch (error) {

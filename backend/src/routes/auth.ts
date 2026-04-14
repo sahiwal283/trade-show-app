@@ -66,7 +66,12 @@ router.post('/login', async (req, res) => {
   });
 
   try {
-    const { username, password } = req.body;
+    const rawUser = req.body.username;
+    const rawPass = req.body.password;
+    const username =
+      typeof rawUser === 'string' ? rawUser.trim() : '';
+    const password =
+      typeof rawPass === 'string' ? rawPass.trim() : '';
 
     if (!username || !password) {
       console.log(`[Auth:Login] Request ${requestId} - Missing credentials`, {
@@ -76,9 +81,14 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    console.log(`[Auth:Login] Request ${requestId} - Querying database for user: ${username}`);
+    // Match by username OR email (case-insensitive). Mobile password managers often autofill
+    // email into the login field; desktop may save the username. Same generic error if no match.
+    console.log(`[Auth:Login] Request ${requestId} - Querying database for user (username or email)`);
     const result = await query(
-      'SELECT id, username, password, name, email, role FROM users WHERE username = $1',
+      `SELECT id, username, password, name, email, role FROM users
+       WHERE LOWER(TRIM(username)) = LOWER($1)
+          OR LOWER(TRIM(email)) = LOWER($1)
+       LIMIT 1`,
       [username]
     );
 

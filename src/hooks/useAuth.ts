@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { User } from '../App';
 import { api, TokenManager } from '../utils/api';
 import { apiClient } from '../utils/apiClient';
+import { normalizeLoginPassword, normalizeLoginUsername } from '../utils/loginCredentials';
 
 // Demo user credentials
 const DEMO_CREDENTIALS = {
@@ -63,8 +64,10 @@ export const useAuth = () => {
 
   const login = useCallback(async (username: string, password: string): Promise<boolean> => {
     try {
+      const userNorm = normalizeLoginUsername(username);
+      const passNorm = normalizeLoginPassword(password);
       if (api.USE_SERVER) {
-        const data = await api.login(username, password) as { user?: User; token?: string };
+        const data = await api.login(userNorm, passNorm) as { user?: User; token?: string };
         const serverUser = data?.user;
         if (data?.token && serverUser) {
           TokenManager.setToken(data.token);
@@ -75,10 +78,15 @@ export const useAuth = () => {
         return false;
       }
 
-      // Fallback demo mode
-      if (DEMO_CREDENTIALS[username as keyof typeof DEMO_CREDENTIALS] !== password) return false;
+      // Fallback demo mode (case-insensitive username match)
+      const demoKey = Object.keys(DEMO_CREDENTIALS).find(
+        (k) => k.toLowerCase() === userNorm.toLowerCase()
+      ) as keyof typeof DEMO_CREDENTIALS | undefined;
+      if (!demoKey || DEMO_CREDENTIALS[demoKey] !== passNorm) return false;
       const users = JSON.parse(localStorage.getItem('tradeshow_users') || '[]');
-      const foundUser = users.find((u: User) => u.username === username);
+      const foundUser = users.find(
+        (u: User) => u.username.toLowerCase() === userNorm.toLowerCase()
+      );
       if (!foundUser) return false;
       setUser(foundUser);
       localStorage.setItem('tradeshow_current_user', JSON.stringify(foundUser));

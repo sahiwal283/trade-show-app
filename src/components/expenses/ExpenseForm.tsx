@@ -5,6 +5,11 @@ import { api } from '../../utils/api';
 import { formatForDateInput, getTodayLocalDateString } from '../../utils/dateUtils';
 import { filterActiveEvents, filterEventsByParticipation } from '../../utils/eventUtils';
 import { isAcceptableReceiptFile, PDF_PLACEHOLDER_IMAGE } from '../../utils/fileValidation';
+import {
+  buildZohoExpenseDescription,
+  getZohoExpenseDescriptionValidationMessage,
+  ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH,
+} from '../../utils/zohoExpenseDescription';
 
 interface ExpenseFormProps {
   expense?: Expense | null;
@@ -96,6 +101,47 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
     const allUserEvents = filterEventsByParticipation(events, user);
     return allUserEvents.filter(e => !activeIds.has(e.id));
   }, [events, allActiveEvents, user]);
+
+  const selectedEventForZoho = useMemo(() => {
+    const id = formData.tradeShowId;
+    if (!id) return undefined;
+    return [...allActiveEvents, ...pastEvents].find((e) => e.id === id);
+  }, [formData.tradeShowId, allActiveEvents, pastEvents]);
+
+  const zohoDescriptionValidationError = useMemo(() => {
+    return getZohoExpenseDescriptionValidationMessage({
+      description: formData.description,
+      userName: user.name,
+      eventName: selectedEventForZoho?.name,
+      eventStartDate: selectedEventForZoho?.startDate,
+      eventEndDate: selectedEventForZoho?.endDate,
+      reimbursementRequired: formData.reimbursementRequired,
+    });
+  }, [
+    formData.description,
+    formData.reimbursementRequired,
+    formData.tradeShowId,
+    user.name,
+    selectedEventForZoho,
+  ]);
+
+  const zohoComposedPreview = useMemo(
+    () =>
+      buildZohoExpenseDescription({
+        description: formData.description,
+        userName: user.name,
+        eventName: selectedEventForZoho?.name,
+        eventStartDate: selectedEventForZoho?.startDate,
+        eventEndDate: selectedEventForZoho?.endDate,
+        reimbursementRequired: formData.reimbursementRequired,
+      }),
+    [
+      formData.description,
+      formData.reimbursementRequired,
+      user.name,
+      selectedEventForZoho,
+    ]
+  );
 
   const handleQuickCreateEvent = async () => {
     if (!quickEventName.trim()) return;
@@ -198,8 +244,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    
+    if (zohoDescriptionValidationError) {
+      return;
+    }
     onSave(formData, receiptFile || undefined);
   };
 
@@ -629,9 +676,18 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                zohoDescriptionValidationError ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-300'
+              }`}
               placeholder="Additional details about this expense..."
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Zoho Books combined text: {zohoComposedPreview.length}/{ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH} characters
+              (includes your name, event, dates, and reimbursement flag).
+            </p>
+            {zohoDescriptionValidationError && (
+              <p className="text-sm text-red-700 mt-2">{zohoDescriptionValidationError}</p>
+            )}
           </div>
 
           {/* OCR Text Display */}
@@ -660,7 +716,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
             </button>
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || !!zohoDescriptionValidationError}
               className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSaving ? (

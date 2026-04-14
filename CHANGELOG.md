@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.34.1] - 2026-04-02 (Patch) - Test reliability, docs, Zoho description coercion
+
+### Fixed
+- **Booth map upload unit test**: Avoided `path.join` under a mocked `path` module so file storage expectations use real string paths.
+- **Database schema integration tests**: Skip the suite when Postgres is unavailable instead of failing the entire test run.
+
+### Changed
+- **Zoho composed description**: User description is normalized to text (`normalizeDescriptionText`) so non-string API values do not break length checks or produce odd payloads.
+- **Architecture doc**: Replaced removed `zohoMultiAccountService` with `zohoIntegrationClient` in the services tree.
+
+## [1.34.0] - 2026-04-02 (Minor) - Zoho Books description length validation
+
+### Added
+- **Zoho Books 500-character guard**: Expense create and update are rejected by the API when the composed string (submitter name, event, dates, reimbursement flag, and user description) would exceed Zoho’s limit. Manual **push to Zoho** returns **400** with a clear message if the stored expense still exceeds the limit.
+- **Frontend validation**: Expense form, receipt upload flow, and expense detail edit show a live combined character count, disable save/submit when over limit, and surface the same rules. Checklist receipt upload and car-rental + receipt flow validate before calling the API.
+- **Shared helpers**: `backend/src/utils/zohoExpenseDescription.ts` and `src/utils/zohoExpenseDescription.ts` centralize composition and the **500** limit (keep these files in sync). `zohoIntegrationClient` uses the backend helper for the payload sent to the integration service.
+
+## [1.33.0] - 2026-04-02 (Minor) - Zoho description format & legacy Zoho cleanup
+
+### Changed
+- **Zoho Books expense description**: Shorter composed description when pushing expenses—submitter shown as `(Name)` instead of `Submitted by: Name`; event line uses event name and dates only (no `Event:` prefix). `REIMBURSEMENT REQUIRED` suffix unchanged.
+
+### Removed
+- **Deprecated backend Zoho modules**: Removed unused `zohoBooksService`, `zohoMultiAccountService`, and `zohoAccounts` config; all Zoho traffic goes through `zohoIntegrationClient` and the shared integration service.
+
 ## [1.32.4] - 2026-03-10 (Patch) - Editable Event in Expense Edit
 
 ### Added

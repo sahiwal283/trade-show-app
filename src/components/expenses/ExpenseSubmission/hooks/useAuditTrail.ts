@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { AuditTrailEntry } from '../../../../types/types';
+import { apiClient } from '../../../../utils/apiClient';
 
 export function useAuditTrail() {
   const [auditTrail, setAuditTrail] = useState<AuditTrailEntry[]>([]);
@@ -18,25 +19,14 @@ export function useAuditTrail() {
 
     setLoadingAudit(true);
     try {
-      const response = await fetch(`/api/expenses/${expenseId}/audit`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-        },
-      });
+      const data = await apiClient.get<{ auditTrail: AuditTrailEntry[] }>(
+        `/expenses/${expenseId}/audit`
+      );
+      const trail = data.auditTrail || [];
+      setAuditTrail(trail);
 
-      if (response.ok) {
-        const data = await response.json();
-        const trail = data.auditTrail || [];
-        setAuditTrail(trail);
-
-        // Auto-expand if there's history (more than just "created")
-        const hasChanges = trail.filter((entry: AuditTrailEntry) => entry.action !== 'created').length > 0;
-        setShowAuditTrail(hasChanges);
-      } else {
-        console.error('[Audit] Failed to fetch audit trail');
-        setAuditTrail([]);
-        setShowAuditTrail(false);
-      }
+      const hasChanges = trail.filter((entry: AuditTrailEntry) => entry.action !== 'created').length > 0;
+      setShowAuditTrail(hasChanges);
     } catch (error) {
       console.error('[Audit] Error fetching audit trail:', error);
       setAuditTrail([]);

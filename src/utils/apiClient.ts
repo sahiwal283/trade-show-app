@@ -254,20 +254,22 @@ class ApiClient {
       // Handle authentication errors
       // 401 = Token expired/invalid (from backend auth middleware)
       // 403 = Permission denied (user authenticated but lacks permission) - DON'T logout
+      // Skip session-expiry flow for login endpoint: 401 there means invalid credentials, not expired token
       if (error instanceof AppError && error.statusCode === 401) {
-        console.error('[API] 401 Unauthorized - Session expired, logging out');
-        TokenManager.removeToken();
-        
-        // Trigger logout callback if set
-        if (this.onUnauthorized) {
-          console.log('[API] Triggering unauthorized callback');
-          this.onUnauthorized();
-        } else {
-          // Fallback: force reload to login page
-          console.warn('[API] Unauthorized callback not set, forcing reload');
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 100);
+        const isLoginPath = path.includes('/auth/login');
+        if (!isLoginPath) {
+          console.error('[API] 401 Unauthorized - Session expired, logging out');
+          TokenManager.removeToken();
+
+          if (this.onUnauthorized) {
+            console.log('[API] Triggering unauthorized callback');
+            this.onUnauthorized();
+          } else {
+            console.warn('[API] Unauthorized callback not set, forcing reload');
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 100);
+          }
         }
       }
       // Note: 403 errors (permission denied) are NOT handled here - they should show error message but not logout
