@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.35.0] - 2026-04-21 (Minor) - Telegram account linking foundation
+
+### Added
+- **Telegram bot backend foundation**: New `/api/telegram` routes for webhook intake, one-time link start, link status, unlink, and admin/developer webhook registration.
+- **Secure link-token model**: Added database migration `026_add_telegram_integration.sql` with `telegram_links` and `telegram_link_tokens` tables for per-user Telegram mapping and short-lived one-time link flow.
+- **All-users account entry point**: Added a new `Account` page in app navigation for all logged-in roles with a **Connect Telegram** workflow.
+- **Connect Telegram UI**: Users can generate one-time link credentials, use deep-link or `/link CODE`, view connection status, refresh, and disconnect.
+
+### Changed
+- **Versioning**: Bumped frontend and backend to `1.35.0` following semantic versioning for new user-facing feature capability.
+
 ## [1.34.1] - 2026-04-02 (Patch) - Test reliability, docs, Zoho description coercion
 
 ### Fixed

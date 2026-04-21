@@ -362,6 +362,15 @@ export const api = {
     getTasks: () => apiClient.get('/quick-actions'),
   },
 
+  // Telegram Integration
+  telegram: {
+    startLink: () => apiClient.post('/telegram/link/start', {}),
+    getLinkStatus: () => apiClient.get('/telegram/link/status'),
+    disconnect: () => apiClient.delete('/telegram/link'),
+    registerWebhook: (webhookBaseUrl?: string) =>
+      apiClient.post('/telegram/webhook/register', webhookBaseUrl ? { webhookBaseUrl } : {}),
+  },
+
   // Developer Dashboard
   devDashboard: {
     getVersion: () => apiClient.get('/dev-dashboard/version'),

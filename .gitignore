@@ -86,6 +86,7 @@ Desktop.ini
 # Database dumps & SQL exports
 *.sql
 !backend/src/database/schema.sql
+!backend/src/database/migrations/*.sql
 
 # Obsolete version-specific documentation
 *_v[0-9]*.md

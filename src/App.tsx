@@ -10,6 +10,7 @@ import { DevDashboard } from './components/developer/DevDashboard';
 import { Reports } from './components/reports/Reports';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
+import { AccountSettings } from './components/account/AccountSettings';
 import { InstallPrompt } from './components/layout/InstallPrompt';
 import { InactivityWarning } from './components/common/InactivityWarning';
 import { NotificationBanner, useNotifications } from './components/common/NotificationBanner';
@@ -358,6 +359,7 @@ function App() {
           {currentPage === 'events' && <EventSetup user={user} />}
           {currentPage === 'checklist' && <TradeShowChecklist user={user} />}
           {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
+          {currentPage === 'account' && <AccountSettings user={user} />}
           {/* REMOVED in v1.3.0: Approvals page - approval workflows now integrated into Expenses page */}
           {/* {currentPage === 'approvals' && <Approvals user={user} />} */}
           {currentPage === 'reports' && <Reports user={user} />}

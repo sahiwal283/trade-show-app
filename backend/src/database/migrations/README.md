@@ -31,6 +31,7 @@
 | 023 | `023_fix_audit_log_table_name.sql` | Rename audit_log to audit_logs to match code expectations | ✅ Applied |
 | 024 | `024_create_user_checklist_items.sql` | Create user-facing checklist items table (guidelines, packing lists) | ✅ Applied |
 | 025 | `025_create_schema_migrations_table.sql` | Create migration tracking table for explicit migration management | ✅ Applied |
+| 026 | `026_add_telegram_integration.sql` | Add Telegram account linking tables and one-time link tokens | ✅ Applied |
 
 ## Notes
 
@@ -59,7 +60,7 @@
 ## Adding New Migrations
 
 1. **Filename Format:** `NNN_descriptive_name.sql` (e.g., `026_add_new_feature.sql`)
-2. **Sequential Numbering:** Use next available number (currently 026)
+2. **Sequential Numbering:** Use next available number (currently 027)
 3. **Idempotency:** Always use `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE IF NOT EXISTS`, etc.
 4. **Testing:** Test on sandbox database before production
 5. **Documentation:** Update this README with description
