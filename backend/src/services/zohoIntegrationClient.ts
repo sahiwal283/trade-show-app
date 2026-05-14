@@ -30,6 +30,15 @@ const ENTITY_TO_BRAND: Record<string, string> = {
   'nirvana': 'nirvana_kulture',
 };
 
+// Organization IDs for brands whose OAuth token has multi-org access.
+// When set, the org selector is included in every create_books request for that brand.
+// Configure via env vars: NIRVANA_KULTURE_ZOHO_COMPANY_ID, etc.
+const BRAND_ORGANIZATION_IDS: Record<string, string | undefined> = {
+  'haute_brands': process.env.HAUTE_BRANDS_ZOHO_COMPANY_ID || undefined,
+  'boomin_brands': process.env.BOOMIN_BRANDS_ZOHO_COMPANY_ID || undefined,
+  'nirvana_kulture': process.env.NIRVANA_KULTURE_ZOHO_COMPANY_ID || undefined,
+};
+
 // Default Zoho account IDs per brand (fallback if not configured in settings)
 const DEFAULT_BRAND_ACCOUNT_IDS: Record<string, { expenseAccountId: string; paidThroughAccountId: string }> = {
   'haute_brands': {
@@ -403,6 +412,18 @@ class ZohoIntegrationClient {
       }
       if (paidThroughAccountId) {
         requestPayload.paid_through_account_id = paidThroughAccountId;
+      }
+
+      // Include organization_id for brands whose token has multi-org access (e.g. nirvana_kulture).
+      // Without it Zoho returns: "This user belongs to multiple organizations, hence the
+      // parameter CompanyID/CompanyName is required."
+      const organizationId = BRAND_ORGANIZATION_IDS[brand];
+      if (organizationId) {
+        requestPayload.organization_id = organizationId;
+        console.log(`[ZohoClient] Including organization_id for brand "${brand}" (multi-org token)`);
+      } else if (brand === 'nirvana_kulture') {
+        console.warn(`[ZohoClient] WARN: organization_id not configured for "${brand}". ` +
+          `Set NIRVANA_KULTURE_ZOHO_COMPANY_ID in backend .env to fix multi-org Zoho push.`);
       }
 
       if (expenseAccountId && paidThroughAccountId) {

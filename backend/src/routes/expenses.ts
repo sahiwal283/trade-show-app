@@ -968,10 +968,22 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
         expense: normalizeExpense(updatedExpense!)
       });
     } else {
-      console.error(`[Zoho:ManualPush] Failed to submit expense ${expense.id}: ${zohoResult.error}`);
-      return res.status(500).json({ 
-        error: `Failed to push to Zoho Books: ${zohoResult.error}`
-      });
+      const rawError = zohoResult.error || '';
+      console.error(`[Zoho:ManualPush] Failed to submit expense ${expense.id}: ${rawError}`);
+
+      // Surface a human-readable message when Zoho rejects the request because the brand's
+      // OAuth token has multi-org access and no organization_id was supplied.
+      const isMultiOrgError = rawError.toLowerCase().includes('companyid') ||
+        rawError.toLowerCase().includes('companyname') ||
+        rawError.toLowerCase().includes('multiple organizations');
+      const displayError = isMultiOrgError
+        ? `Zoho push failed for "${expense.zoho_entity}": the Zoho account has access to multiple ` +
+          `organizations and no Organization ID is configured for this entity. ` +
+          `Ask your system administrator to set the organization ID environment variable for ` +
+          `"${expense.zoho_entity}" on the backend server and restart it.`
+        : `Failed to push to Zoho Books: ${rawError}`;
+
+      return res.status(500).json({ error: displayError });
     }
   } catch (error) {
     console.error('[Zoho:ManualPush] Error pushing expense to Zoho:', error);

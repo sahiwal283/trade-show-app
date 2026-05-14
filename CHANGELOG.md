@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.38.2] - 2026-05-14 (Patch) - Fix Nirvana Kulture Zoho push (multi-org)
+
+### Fixed
+- **Nirvana Kulture Zoho push**: Pushing expenses assigned to "Nirvana Kulture" failed with "This user belongs to multiple organizations, hence the parameter CompanyID/CompanyName is required." The shared Zoho integration service now receives an `organization_id` in the request payload for brands configured with a per-brand env var (`NIRVANA_KULTURE_ZOHO_COMPANY_ID`). Haute Brands and Boomin Brands are unaffected (no env var set = no change to their payloads).
+- **Clearer error message**: When the multi-org error occurs, the accountant now sees an actionable message explaining that a system administrator must set the organization ID environment variable, rather than the raw Zoho API error string.
+
 ## [1.35.0] - 2026-04-21 (Minor) - Telegram account linking foundation
 
 ### Added
