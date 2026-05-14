@@ -3,6 +3,10 @@ import axios from 'axios';
 import crypto from 'crypto';
 import { pool, query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
+import { telegramReceiptService } from '../services/telegram/TelegramReceiptService';
+import { telegramEventService } from '../services/telegram/TelegramEventService';
+import { telegramClient } from '../services/telegram/TelegramClient';
+import { isAllowedReceiptFile } from '../config/upload';
 
 const router = Router();
 
@@ -28,13 +32,7 @@ function generateStartToken(): string {
 }
 
 async function sendTelegramMessage(chatId: number, text: string): Promise<void> {
-  if (!TELEGRAM_BOT_TOKEN) return;
-  await axios.post(getTelegramApiUrl('sendMessage'), {
-    chat_id: chatId,
-    text,
-  }, {
-    timeout: 10000,
-  });
+  await telegramClient.sendMessage(chatId, text);
 }
 
 async function consumeLinkToken(
@@ -151,51 +149,104 @@ router.post('/webhook/:secret', async (req, res) => {
     return res.status(401).json({ error: 'Invalid webhook secret' });
   }
 
-  const message = req.body?.message;
-  const from = message?.from;
-  const text = typeof message?.text === 'string' ? message.text.trim() : '';
+  res.status(200).json({ ok: true });
 
-  if (!from || !message?.chat?.id) {
-    return res.status(200).json({ ok: true });
-  }
+  void (async () => {
+    try {
+      const callbackQuery = req.body?.callback_query;
+      if (callbackQuery) {
+        const cbData = typeof callbackQuery.data === 'string' ? callbackQuery.data : '';
+        if (cbData.startsWith('evt:')) {
+          await telegramEventService.handleCallbackQuery(callbackQuery);
+        } else {
+          await telegramReceiptService.handleCallbackQuery(callbackQuery);
+        }
+        return;
+      }
 
-  const chatId = message.chat.id as number;
+      const message = req.body?.message;
+      const from = message?.from;
+      if (!from || !message?.chat?.id) return;
 
-  try {
-    if (text.startsWith('/start')) {
-      const payload = text.split(' ')[1];
-      if (payload) {
-        const result = await consumeLinkToken('start', payload, from);
-        await sendTelegramMessage(chatId, result.message);
-      } else {
+      const chatId = message.chat.id as number;
+
+      if (message.document?.file_id) {
+        const doc = message.document;
+        const { allowed } = isAllowedReceiptFile(doc.mime_type || '', doc.file_name || '');
+        if (allowed) {
+          await telegramReceiptService.handleReceiptDocument(message);
+          return;
+        }
+      }
+
+      if (Array.isArray(message.photo) && message.photo.length > 0) {
+        await telegramReceiptService.handlePhoto(message);
+        return;
+      }
+
+      const text = typeof message?.text === 'string' ? message.text.trim() : '';
+
+      if (text.startsWith('/start')) {
+        const payload = text.split(' ')[1];
+        if (payload) {
+          const result = await consumeLinkToken('start', payload, from);
+          await sendTelegramMessage(chatId, result.message);
+        } else {
+          await sendTelegramMessage(
+            chatId,
+            'Welcome. Link your account in the app (Account → Connect Telegram), then send a receipt photo to create an expense.'
+          );
+        }
+        return;
+      }
+
+      if (text.startsWith('/link')) {
+        const code = text.split(' ')[1]?.toUpperCase();
+        if (!code) {
+          await sendTelegramMessage(chatId, 'Usage: /link YOUR_CODE');
+        } else {
+          const result = await consumeLinkToken('code', code, from);
+          await sendTelegramMessage(chatId, result.message);
+        }
+        return;
+      }
+
+      if (text.startsWith('/help')) {
         await sendTelegramMessage(
           chatId,
-          'Welcome! Use the Connect Telegram button in the app to link your account.'
+          [
+            'Commands:',
+            '/start — welcome / complete linking via deep link',
+            '/link CODE — link this Telegram account with a code from the app',
+            '/newevent — create a new trade show event (admin/coordinator/developer)',
+            '/cancel — abort the current wizard',
+            '/help — this message',
+            '',
+            'Send a photo of a receipt to create an expense (or attach the image/PDF as a file for sharper OCR). I will OCR it, auto-assign the trade show event when possible, and let you edit any field before submitting.',
+          ].join('\n')
         );
+        return;
       }
-      return res.status(200).json({ ok: true });
-    }
 
-    if (text.startsWith('/link')) {
-      const code = text.split(' ')[1]?.toUpperCase();
-      if (!code) {
-        await sendTelegramMessage(chatId, 'Usage: /link YOUR_CODE');
-      } else {
-        const result = await consumeLinkToken('code', code, from);
-        await sendTelegramMessage(chatId, result.message);
+      if (text.startsWith('/newevent')) {
+        await telegramEventService.startNewEvent(message);
+        return;
       }
-      return res.status(200).json({ ok: true });
+
+      const handledAsDraft = await telegramEventService.handleText(message);
+      if (handledAsDraft) return;
+
+      const handledAsEdit = await telegramReceiptService.handleTextDuringEdit(message);
+      if (handledAsEdit) return;
+
+      await sendTelegramMessage(
+        chatId,
+        'Send a receipt photo to create an expense, /newevent to create a trade show, or /help for commands.'
+      );
+    } catch (error) {
+      console.error('[Telegram] Webhook processing error:', error);
     }
-
-    await sendTelegramMessage(
-      chatId,
-      'Receipt processing is coming next. For now, link your account with /link CODE or /start payload.'
-    );
-  } catch (error) {
-    console.error('[Telegram] Webhook processing error:', error);
-  }
-
-  return res.status(200).json({ ok: true });
+  })();
 });
 
 router.post('/link/start', authenticateToken, async (req: AuthRequest, res) => {
@@ -327,7 +378,7 @@ router.post('/webhook/register', authenticateToken, authorize('admin', 'develope
       {
         url: webhookUrl,
         secret_token: TELEGRAM_WEBHOOK_SECRET,
-        allowed_updates: ['message'],
+        allowed_updates: ['message', 'callback_query'],
       },
       { timeout: 10000 }
     );

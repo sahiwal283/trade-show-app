@@ -7,7 +7,8 @@ import { Router } from 'express';
 import { pool } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { eventRepository, EventWithParticipants } from '../database/repositories';
-import { processParticipants, removeAllParticipants } from '../services/EventParticipantService';
+import { processParticipants, removeAllParticipants, getCurrentParticipantIds } from '../services/EventParticipantService';
+import { notifyParticipantsAdded } from '../services/telegram/TelegramNotifications';
 
 const router = Router();
 
@@ -148,14 +149,21 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
     }, client);
 
     // Update participants if provided
+    let newlyAddedIds: string[] = [];
     if (participants || participant_ids) {
+      const previousIds = new Set(await getCurrentParticipantIds(id, client));
       await removeAllParticipants(id, client);
-      await processParticipants(id, participants, participant_ids, client);
+      const addedIds = await processParticipants(id, participants, participant_ids, client, { notify: false });
+      newlyAddedIds = addedIds.filter((uid) => !previousIds.has(uid));
     }
 
     // Commit transaction
     await client.query('COMMIT');
     console.log('[Events] Transaction committed successfully');
+
+    if (newlyAddedIds.length > 0) {
+      notifyParticipantsAdded(id, newlyAddedIds);
+    }
 
     res.json(convertEventTypes(event));
   } catch (error: any) {

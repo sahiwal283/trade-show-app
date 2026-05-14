@@ -8,6 +8,7 @@
 import { query, pool } from '../config/database';
 import { userRepository } from '../database/repositories';
 import bcrypt from 'bcrypt';
+import { notifyParticipantsAdded } from './telegram/TelegramNotifications';
 
 export interface ParticipantObject {
   id: string;
@@ -30,10 +31,13 @@ export async function processParticipants(
   eventId: string,
   participants?: ParticipantObject[],
   participantIds?: string[],
-  client?: any
+  client?: any,
+  options?: { notify?: boolean }
 ): Promise<string[]> {
   const queryFn = client ? client.query.bind(client) : query;
+  const notify = options?.notify ?? true;
   const addedParticipantIds: string[] = [];
+  const newlyInsertedIds: string[] = [];
 
   // Handle full participant objects (new format)
   if (participants && Array.isArray(participants)) {
@@ -43,9 +47,10 @@ export async function processParticipants(
       try {
         const userId = await ensureParticipantUser(participant, client);
         if (userId) {
-          await addParticipantToEvent(eventId, userId, queryFn);
+          const inserted = await addParticipantToEvent(eventId, userId, queryFn);
           addedParticipantIds.push(userId);
-          console.log(`[EventParticipantService] ✓ Added participant ${userId} to event ${eventId}`);
+          if (inserted) newlyInsertedIds.push(userId);
+          console.log(`[EventParticipantService] ✓ Added participant ${userId} to event ${eventId}${inserted ? '' : ' (already a participant)'}`);
         }
       } catch (error: any) {
         console.error(`[EventParticipantService] ⚠️ Failed to add participant ${participant.name}:`, error.message);
@@ -59,9 +64,10 @@ export async function processParticipants(
     
     for (const userId of participantIds) {
       try {
-        await addParticipantToEvent(eventId, userId, queryFn);
+        const inserted = await addParticipantToEvent(eventId, userId, queryFn);
         addedParticipantIds.push(userId);
-        console.log(`[EventParticipantService] ✓ Added participant ${userId} to event ${eventId}`);
+        if (inserted) newlyInsertedIds.push(userId);
+        console.log(`[EventParticipantService] ✓ Added participant ${userId} to event ${eventId}${inserted ? '' : ' (already a participant)'}`);
       } catch (error: any) {
         console.error(`[EventParticipantService] ⚠️ Failed to add participant ${userId}:`, error.message);
         // Continue with next participant (best effort)
@@ -69,7 +75,26 @@ export async function processParticipants(
     }
   }
 
+  if (notify && newlyInsertedIds.length > 0) {
+    notifyParticipantsAdded(eventId, newlyInsertedIds);
+  }
+
   return addedParticipantIds;
+}
+
+/**
+ * Get the current set of participant user IDs for an event.
+ */
+export async function getCurrentParticipantIds(
+  eventId: string,
+  client?: any
+): Promise<string[]> {
+  const queryFn = client ? client.query.bind(client) : query;
+  const result = await queryFn(
+    'SELECT user_id FROM event_participants WHERE event_id = $1',
+    [eventId]
+  );
+  return (result.rows as Array<{ user_id: string }>).map((r) => r.user_id);
 }
 
 /**
@@ -128,11 +153,12 @@ async function addParticipantToEvent(
   eventId: string,
   userId: string,
   queryFn: typeof query
-): Promise<void> {
-  await queryFn(
-    'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+): Promise<boolean> {
+  const result = await queryFn(
+    'INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING event_id',
     [eventId, userId]
   );
+  return (result as any).rowCount > 0;
 }
 
 /**

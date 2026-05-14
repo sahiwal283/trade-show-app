@@ -11,18 +11,16 @@ import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import axios from 'axios';
-import FormData from 'form-data';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, ValidationError } from '../utils/errors';
 import { userCorrectionService } from '../services/ocr/UserCorrectionService';
 import { FieldWarningService } from '../services/ocr/FieldWarningService';
 import { query } from '../config/database';
 import { isAllowedReceiptFile } from '../config/upload';
-
-const execAsync = promisify(exec);
+import {
+  checkExternalOcrReady,
+  runExternalReceiptOcrWithCleanup,
+} from '../services/ocr/receiptExternalOcr';
 
 // External OCR Service configuration
 const EXTERNAL_OCR_URL = process.env.OCR_SERVICE_URL || 'http://192.168.1.195:8000';
@@ -64,81 +62,6 @@ const upload = multer({
 router.use(authenticateToken);
 
 /**
- * Check if external OCR service is available
- */
-async function checkOCRServiceHealth(): Promise<boolean> {
-  try {
-    const response = await axios.get(`${EXTERNAL_OCR_URL}/health/ready`, { timeout: 5000 });
-    return response.status === 200;
-  } catch (error) {
-    console.warn('[OCR Health] External OCR service not available:', (error as any).message);
-    return false;
-  }
-}
-
-/**
- * Convert HEIC/HEIF files to JPEG and resize for faster OCR processing
- */
-async function convertHEICToJPEG(filePath: string): Promise<string> {
-  const ext = path.extname(filePath).toLowerCase();
-  
-  // Only convert HEIC/HEIF files
-  if (ext !== '.heic' && ext !== '.heif') {
-    return filePath;
-  }
-  
-  console.log(`[OCR v2] Converting HEIC to JPEG: ${filePath}`);
-  
-  const jpegPath = filePath.replace(/\.(heic|heif)$/i, '.jpg');
-  
-  try {
-    // Convert HEIC to JPEG using ImageMagick
-    // Resize to max 2000px width while maintaining aspect ratio for faster OCR
-    // This significantly reduces processing time while maintaining quality
-    await execAsync(`convert "${filePath}" -resize 2000x2000\\> -quality 85 "${jpegPath}"`);
-    
-    // Delete original HEIC file
-    fs.unlinkSync(filePath);
-    
-    console.log(`[OCR v2] Converted to: ${jpegPath}`);
-    return jpegPath;
-  } catch (error: any) {
-    console.error('[OCR v2] HEIC conversion failed:', error.message);
-    throw new Error('Failed to process HEIC file. Please convert to JPEG and try again.');
-  }
-}
-
-/**
- * Call external OCR service
- */
-async function callExternalOCR(filePath: string): Promise<any> {
-  // Convert HEIC to JPEG if needed
-  const processedPath = await convertHEICToJPEG(filePath);
-  
-  const formData = new FormData();
-  formData.append('file', fs.createReadStream(processedPath));
-  
-  console.log(`[OCR v2] Calling external OCR at: ${EXTERNAL_OCR_URL}/ocr/`);
-  const startTime = Date.now();
-  
-  const response = await axios.post(
-    `${EXTERNAL_OCR_URL}/ocr/`,
-    formData,
-    {
-      headers: formData.getHeaders(),
-      timeout: OCR_TIMEOUT,
-      maxContentLength: Infinity,
-      maxBodyLength: Infinity
-    }
-  );
-  
-  const elapsed = Date.now() - startTime;
-  console.log(`[OCR v2] External OCR completed in ${elapsed}ms (Provider: ${response.data.ocr?.provider || 'unknown'})`);
-  
-  return response.data;
-}
-
-/**
  * POST /api/ocr/v2/process
  * 
  * Enhanced OCR processing with field inference and confidence scores
@@ -155,7 +78,7 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
 
   try {
     // Check if external OCR service is available
-    const isHealthy = await checkOCRServiceHealth();
+    const isHealthy = await checkExternalOcrReady();
     
     if (!isHealthy) {
       throw new Error('OCR service is currently unavailable. Please enter details manually.');
@@ -163,8 +86,8 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     
     console.log('[OCR v2] Using external OCR service');
     
-    // Call external OCR service
-    const result = await callExternalOCR(req.file.path);
+    // Call external OCR service (shared pipeline with Telegram: prep + rule-based enrichment)
+    const result = await runExternalReceiptOcrWithCleanup(req.file.path);
     
     // Analyze fields for potential issues
     let fieldWarnings: any[] = [];

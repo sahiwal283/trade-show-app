@@ -1,6 +1,6 @@
 // ExpenseApp Service Worker
-// Version: 1.34.4 - Login with email or username
-// Date: April 2, 2026
+// Version: 1.38.0 - Telegram event creation + participant notifications
+// Date: April 21, 2026
 //
 // New Features:
 // - Trade Show Checklist management for coordinators
@@ -116,7 +116,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.34.4';
+const CACHE_NAME = 'trade-show-app-v1.38.0';
 const STATIC_CACHE = 'trade-show-app-static-v1.34.4';
 const urlsToCache = [
   '/',
@@ -245,7 +245,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     })    .then(() => {
-      console.log('[ServiceWorker] v1.34.4 activated and ready!');
+      console.log('[ServiceWorker] v1.36.0 activated and ready!');
       // Claim all clients immediately
       return self.clients.claim();
     })

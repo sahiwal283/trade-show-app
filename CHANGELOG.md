@@ -7,11 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.38.2] - 2026-05-14 (Patch) - Fix Nirvana Kulture Zoho push (multi-org)
+## [1.38.2] - 2026-05-14 - Telegram receipt/event services, OCR refactor, Nirvana Kulture Zoho fix
+
+### Added
+- **Telegram receipt flow** (`TelegramReceiptService`): Users can submit expense receipts via the Telegram bot. The bot parses OCR output, prompts for category/card/event, and creates the expense automatically.
+- **Telegram event integration** (`TelegramEventService`): Bot handles event-scoped callback queries (`evt:` prefix), supporting event draft creation and inline event selection during receipt submission.
+- **Telegram client abstraction** (`TelegramClient`): Centralizes all Telegram Bot API calls (sendMessage, sendPhoto, editMessageText, answerCallbackQuery) behind a single injectable client.
+- **Telegram participant notifications** (`TelegramNotifications`): When participants are added to an event, they receive a Telegram message if their account is linked.
+- **DB migrations**: `027_add_telegram_receipt_jobs.sql` and `028_add_telegram_event_drafts.sql` add tables for async receipt processing jobs and multi-step event draft state.
+
+### Changed
+- **OCR route refactor** (`ocrV2.ts`): Extracted inline `checkOCRServiceHealth` and `convertHEICToJPEG`/OCR runner into `services/ocr/receiptExternalOcr.ts`. No behavior change.
+- **Event participant update** (`events.ts`): `PUT /:id` now tracks which participants were newly added and fires `notifyParticipantsAdded` after commit (fire-and-forget).
+- **EventParticipantService**: Exposes `getCurrentParticipantIds` for diffing before/after participant sets during event updates; `processParticipants` accepts `{ notify: false }` option.
+- **Telegram webhook handler** (`telegram.ts`): Delegates message/callback routing to `TelegramReceiptService` and `TelegramEventService`; responds 200 immediately and processes async.
 
 ### Fixed
 - **Nirvana Kulture Zoho push**: Pushing expenses assigned to "Nirvana Kulture" failed with "This user belongs to multiple organizations, hence the parameter CompanyID/CompanyName is required." The shared Zoho integration service now receives an `organization_id` in the request payload for brands configured with a per-brand env var (`NIRVANA_KULTURE_ZOHO_COMPANY_ID`). Haute Brands and Boomin Brands are unaffected (no env var set = no change to their payloads).
-- **Clearer error message**: When the multi-org error occurs, the accountant now sees an actionable message explaining that a system administrator must set the organization ID environment variable, rather than the raw Zoho API error string.
 
 ## [1.35.0] - 2026-04-21 (Minor) - Telegram account linking foundation
 

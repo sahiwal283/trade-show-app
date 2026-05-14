@@ -32,6 +32,8 @@
 | 024 | `024_create_user_checklist_items.sql` | Create user-facing checklist items table (guidelines, packing lists) | ✅ Applied |
 | 025 | `025_create_schema_migrations_table.sql` | Create migration tracking table for explicit migration management | ✅ Applied |
 | 026 | `026_add_telegram_integration.sql` | Add Telegram account linking tables and one-time link tokens | ✅ Applied |
+| 027 | `027_add_telegram_receipt_jobs.sql` | Track in-flight Telegram receipt uploads (OCR → event assign → edits → expense) | ✅ Applied |
+| 028 | `028_add_telegram_event_drafts.sql` | Track in-flight Telegram event creation wizards and participant pickers | ⏳ Pending |
 
 ## Notes
 
@@ -60,7 +62,7 @@
 ## Adding New Migrations
 
 1. **Filename Format:** `NNN_descriptive_name.sql` (e.g., `026_add_new_feature.sql`)
-2. **Sequential Numbering:** Use next available number (currently 027)
+2. **Sequential Numbering:** Use next available number (currently 029)
 3. **Idempotency:** Always use `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE IF NOT EXISTS`, etc.
 4. **Testing:** Test on sandbox database before production
 5. **Documentation:** Update this README with description
