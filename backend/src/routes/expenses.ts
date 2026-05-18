@@ -833,7 +833,7 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
 
 // ========== ZOHO INTEGRATION ENDPOINTS ==========
 // Manual push to Zoho Books (accountant/admin only)
-router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), async (req: AuthRequest, res) => {
+router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
   try {
     console.log(`[Zoho:Push] User attempting push:`, {
       userId: req.user?.id,
@@ -989,7 +989,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
     console.error('[Zoho:ManualPush] Error pushing expense to Zoho:', error);
     res.status(500).json({ error: 'Internal server error while pushing to Zoho Books' });
   }
-});
+}));
 
 // Reimbursement approval (accountant only)
 router.patch('/:id/reimbursement', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {

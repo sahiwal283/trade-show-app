@@ -52,15 +52,20 @@ export function useExpenseApprovals({
       addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
       await reloadData();
     } catch (error) {
-      const appError = error as AppError & { response?: { data?: { error?: string } } };
+      const appError = error as AppError;
       console.error('Failed to push to Zoho:', appError);
 
-      const errorMsg = appError.response?.data?.error || appError.message || 'Unknown error';
+      const errorMsg = appError.message || 'Unknown error';
 
       if (errorMsg.includes('does not have Zoho Books integration configured')) {
         addToast(
           `🕐 Zoho Books integration for "${expense.zohoEntity}" is coming soon. Please try again later or add manually.`,
           'info'
+        );
+      } else if (appError.code === 'NETWORK_ERROR' || appError.code === 'TIMEOUT') {
+        addToast(
+          `❌ Push to Zoho failed: Server is unreachable. Please try again or contact your administrator.`,
+          'error'
         );
       } else {
         addToast(`❌ Failed to push to Zoho Books: ${errorMsg}`, 'error');

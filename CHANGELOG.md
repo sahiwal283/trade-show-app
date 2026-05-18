@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.38.3] - 2026-05-18 - Fix misleading "Network error" on Zoho push failure
+
+### Fixed
+- **Zoho push error handling**: When clicking Push on an expense, network/server failures now show "Server is unreachable. Please try again or contact your administrator." instead of the generic internal "Network error. Please check your connection and ensure the API server is running." message. Backend 400 errors (e.g. unsupported entity) are still shown with their specific message, and the "coming soon" info toast still appears for unconfigured entities.
+- **`push-to-zoho` route**: Wrapped with `asyncHandler` for consistency with all other expense routes; the explicit `try/catch` for Zoho-specific errors is retained.
+
 ## [1.38.2] - 2026-05-14 - Telegram receipt/event services, OCR refactor, Nirvana Kulture Zoho fix
 
 ### Added

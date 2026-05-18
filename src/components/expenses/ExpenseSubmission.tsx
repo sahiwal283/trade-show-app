@@ -543,21 +543,25 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       addToast(`✅ Expense successfully pushed to ${expense.zohoEntity} Zoho Books!`, 'success');
       await reloadData();
     } catch (error) {
-      const appError = error as AppErrorType & { response?: { status?: number; statusText?: string; data?: unknown } };
+      const appError = error as AppErrorType;
       console.error('[Push to Zoho] Failed:', appError);
       console.error('[Push to Zoho] Error details:', {
-        status: appError.response?.status,
-        statusText: appError.response?.statusText,
-        data: appError.response?.data,
+        code: appError.code,
+        statusCode: appError.statusCode,
         message: appError.message
       });
-      
-      const errorMsg = (appError.response?.data as { error?: string })?.error || appError.message || 'Unknown error';
-      
+
+      const errorMsg = appError.message || 'Unknown error';
+
       if (errorMsg.includes('does not have Zoho Books integration configured')) {
         addToast(
           `🕐 Zoho Books integration for "${expense.zohoEntity}" is coming soon. Please try again later or add manually.`,
           'info'
+        );
+      } else if (appError.code === 'NETWORK_ERROR' || appError.code === 'TIMEOUT') {
+        addToast(
+          `❌ Push to Zoho failed: Server is unreachable. Please try again or contact your administrator.`,
+          'error'
         );
       } else {
         addToast(`❌ Failed to push to Zoho Books: ${errorMsg}`, 'error');
