@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **OCR service upgraded to RapidOCR (infrastructure)**: The external OCR microservice (`OCR_SERVICE_URL`) that `/api/ocr/v2/process` delegates to now ships a `rapidocr` provider — PaddleOCR PP-OCR detection/recognition models running on onnxruntime (CPU). Production switched from `PRIMARY_OCR_PROVIDER=tesseract` to `rapidocr` (with `tesseract` as fallback), replacing the low-accuracy Tesseract path for receipt scans. Free/local (no metered cloud calls), no app-side code change required — the provider name surfaces in the existing `X-OCR-Provider` response header. The OCR microservice source now lives in [`ocr-service/`](ocr-service/) in this repo (service v0.14.0); production provider order is `rapidocr` → `document_ai` (low-confidence fallback), with `rapidocr` as the ledger-unavailable fallback.
+
+### Fixed
+- **OCR service `/health/ready` latency (ocr-service v0.14.0)**: the readiness probe could exceed the backend's 5s health-check timeout — provider availability checks did full heavy imports per probe, and the optional model-training prompt fetch waited out a 30s httpx timeout when that host was down. Provider checks now use `importlib.util.find_spec`, and the prompt fetch is capped at 2s. Readiness now answers in ~3.5s worst-case.
+
 ## [1.38.4] - 2026-05-18 - Fix Nirvana Kulture "coming soon" false-positive on Zoho push
 
 ### Fixed

@@ -1,0 +1,63 @@
+version: "3.9"
+
+services:
+  ocr_service:
+    build: .
+    container_name: ocr_service
+    privileged: true  # Required for asyncio in LXC containers
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    # DATABASE_URL is taken from .env (points to the external Postgres host in production).
+    # Do not override it here so the .env value is used.
+    volumes:
+      - ./app:/app/app
+      - ocr_uploads:/tmp/ocr_uploads
+      - ./secrets:/app/secrets:ro
+      # Writable bind-mount of .env so POST /admin/settings/apply can update provider keys.
+      # The file is written atomically; a dated backup is created before every write.
+      - ./.env:/app/.env.writable:rw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Async OCR worker — disabled by default (requires profiles: [worker] to start).
+  # Enable:  docker compose --profile worker up -d ocr_worker
+  # Requires: ASYNC_WORKER_ENABLED=true in .env (or passed via environment below)
+  ocr_worker:
+    build: .
+    container_name: ocr_worker
+    privileged: true
+    command: ["python", "-m", "app.services.ocr_worker"]
+    env_file:
+      - .env
+    environment:
+      # ASYNC_WORKER_ENABLED must be true for the worker to run.
+      # DATABASE_URL is taken from .env; do not override so the external Postgres host is used.
+      - ASYNC_WORKER_ENABLED=true
+      # Use local rapidocr so async jobs never trigger paid metered providers.
+      # tesseract remains the fallback if rapidocr fails on a given image.
+      - PRIMARY_OCR_PROVIDER=rapidocr
+      - FALLBACK_OCR_PROVIDER=tesseract
+    volumes:
+      - ./app:/app/app
+      - ocr_uploads:/tmp/ocr_uploads
+      - ./secrets:/app/secrets:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/ocr_worker_heartbeat && python3 -c \"import os,time; exit(0 if time.time()-os.path.getmtime('/tmp/ocr_worker_heartbeat') < 90 else 1)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    profiles:
+      - worker
+
+volumes:
+  ocr_uploads:
+
