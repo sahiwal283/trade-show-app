@@ -348,7 +348,10 @@ class ZohoIntegrationClient {
   }
 
   /**
-   * Check if entity has Zoho integration configured
+   * Check if entity has Zoho integration configured.
+   * Returns true for any entity with a known brand mapping — the actual Zoho
+   * service call will surface real errors. The async configuredBrands startup
+   * check is informational only and must not gate pushes for known brands.
    */
   public isConfiguredForEntity(entityName: string): boolean {
     const brand = this.entityToBrand(entityName);
@@ -356,7 +359,7 @@ class ZohoIntegrationClient {
       console.log(`[ZohoClient] Unknown entity: ${entityName}`);
       return false;
     }
-    return this.configuredBrands.has(brand);
+    return true;
   }
 
   /**

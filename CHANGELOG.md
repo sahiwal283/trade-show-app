@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.38.4] - 2026-05-18 - Fix Nirvana Kulture "coming soon" false-positive on Zoho push
+
+### Fixed
+- **Zoho push gating for Nirvana Kulture**: `isConfiguredForEntity()` previously returned `false` when the async startup health check (`checkConfiguredBrands`) failed to confirm the brand (e.g. TOKEN_REFRESH_FAILED), causing every Nirvana Kulture push to show "coming soon" even though the Zoho org ID is set and pushes succeed. Fix: any entity with a known brand mapping is now treated as configured; unknown entities (e.g. Summit Labs) are still blocked. Real errors are surfaced by the actual Zoho API call.
+
 ## [1.38.3] - 2026-05-18 - Fix misleading "Network error" on Zoho push failure
 
 ### Fixed
