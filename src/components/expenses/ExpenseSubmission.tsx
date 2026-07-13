@@ -571,14 +571,18 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
-  // Apply user permission filter to hook's filtered results (sorting already handled by hook)
-  const finalFilteredExpenses = filteredExpenses
-    .filter(expense => {
+  // Apply user permission filter to hook's filtered results (sorting already handled by hook).
+  // Memoized: this component re-renders on every keystroke/toast, and re-filtering
+  // the full expense list each time re-renders every table row.
+  const finalFilteredExpenses = useMemo(
+    () => filteredExpenses.filter(expense => {
       // User permission filter:
       // - Users with approval permission see ALL expenses
       // - Regular users see only their own expenses
       return hasApprovalPermission || expense.userId === user.id;
-    });
+    }),
+    [filteredExpenses, hasApprovalPermission, user.id]
+  );
 
   if (showForm) {
     return (

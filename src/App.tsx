@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { LoginForm } from './components/auth/LoginForm';
-import { Dashboard } from './components/dashboard/Dashboard';
-import { EventSetup } from './components/events/EventSetup';
-import { TradeShowChecklist } from './components/checklist/TradeShowChecklist';
-import { ExpenseSubmission } from './components/expenses/ExpenseSubmission';
-import { AdminSettings } from './components/admin/AdminSettings';
-import { DevDashboard } from './components/developer/DevDashboard';
-// import { Approvals } from './components/admin/Approvals'; // REMOVED in v1.3.0 - approval workflows now in ExpenseSubmission
-import { Reports } from './components/reports/Reports';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
-import { AccountSettings } from './components/account/AccountSettings';
+
+// Views are code-split so login and initial load only ship the app shell.
+// Each view downloads on first navigation and stays cached by the browser.
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
+const EventSetup = lazy(() => import('./components/events/EventSetup').then(m => ({ default: m.EventSetup })));
+const TradeShowChecklist = lazy(() => import('./components/checklist/TradeShowChecklist').then(m => ({ default: m.TradeShowChecklist })));
+const ExpenseSubmission = lazy(() => import('./components/expenses/ExpenseSubmission').then(m => ({ default: m.ExpenseSubmission })));
+const AdminSettings = lazy(() => import('./components/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
+const DevDashboard = lazy(() => import('./components/developer/DevDashboard').then(m => ({ default: m.DevDashboard })));
+const Reports = lazy(() => import('./components/reports/Reports').then(m => ({ default: m.Reports })));
+const AccountSettings = lazy(() => import('./components/account/AccountSettings').then(m => ({ default: m.AccountSettings })));
 import { InstallPrompt } from './components/layout/InstallPrompt';
 import { InactivityWarning } from './components/common/InactivityWarning';
 import { NotificationBanner, useNotifications } from './components/common/NotificationBanner';
@@ -355,16 +357,16 @@ function App() {
         />
         
         <main className="flex-1 p-3 sm:p-4 md:p-6 bg-gray-50">
-          {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
-          {currentPage === 'events' && <EventSetup user={user} />}
-          {currentPage === 'checklist' && <TradeShowChecklist user={user} />}
-          {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
-          {currentPage === 'account' && <AccountSettings user={user} />}
-          {/* REMOVED in v1.3.0: Approvals page - approval workflows now integrated into Expenses page */}
-          {/* {currentPage === 'approvals' && <Approvals user={user} />} */}
-          {currentPage === 'reports' && <Reports user={user} />}
-          {currentPage === 'settings' && <AdminSettings user={user} />}
-          {currentPage === 'devdashboard' && <DevDashboard user={user} />}
+          <Suspense fallback={<div className="flex items-center justify-center py-24"><LoadingSpinner size="lg" text="Loading..." /></div>}>
+            {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
+            {currentPage === 'events' && <EventSetup user={user} />}
+            {currentPage === 'checklist' && <TradeShowChecklist user={user} />}
+            {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
+            {currentPage === 'account' && <AccountSettings user={user} />}
+            {currentPage === 'reports' && <Reports user={user} />}
+            {currentPage === 'settings' && <AdminSettings user={user} />}
+            {currentPage === 'devdashboard' && <DevDashboard user={user} />}
+          </Suspense>
         </main>
         
         {/* PWA Install Prompt */}

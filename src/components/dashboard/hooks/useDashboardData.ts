@@ -24,68 +24,37 @@ export function useDashboardData() {
         return;
       }
 
-      console.log('[Dashboard] Loading data...');
+      // All three fetches are independent — run them in parallel so the
+      // dashboard costs one round trip instead of three serial ones.
+      const [exResult, evResult, usResult] = await Promise.allSettled([
+        api.getExpenses(),
+        api.getEvents(),
+        api.getUsers(),
+      ]);
 
-      // Fetch expenses (critical)
-      try {
-        const ex = await api.getExpenses();
-        if (mounted) {
-          console.log('[Dashboard] Loaded expenses:', ex?.length || 0);
-          console.log('[Dashboard] Expenses raw data:', {
-            raw: ex,
-            type: typeof ex,
-            isArray: Array.isArray(ex),
-          });
-          setExpenses(ex || []);
-        }
-      } catch (error) {
-        const appError = error as AppError;
-        console.error('[Dashboard] Error loading expenses:', appError);
-        // If we get a 401/403, the apiClient unauthorized callback should handle logout
-        // But if that fails, we'll at least show empty data instead of crashing
-        if (mounted) setExpenses([]);
-        
-        // Don't continue loading other data if authentication failed
-        if (appError?.statusCode === 401 || appError?.statusCode === 403) {
-          console.error('[Dashboard] Authentication failed, stopping data load');
-          if (mounted) setLoading(false);
-          return;
+      if (!mounted) return;
+
+      const isAuthFailure = (r: PromiseSettledResult<unknown>) => {
+        if (r.status !== 'rejected') return false;
+        const appError = r.reason as AppError;
+        return appError?.statusCode === 401 || appError?.statusCode === 403;
+      };
+
+      setExpenses(exResult.status === 'fulfilled' ? exResult.value || [] : []);
+      setEvents(evResult.status === 'fulfilled' ? evResult.value || [] : []);
+      setUsers(usResult.status === 'fulfilled' ? usResult.value || [] : []);
+
+      for (const r of [exResult, evResult, usResult]) {
+        if (r.status === 'rejected') {
+          console.error('[Dashboard] Error loading data:', r.reason);
         }
       }
-
-      // Fetch events (critical)
-      try {
-        const ev = await api.getEvents();
-        if (mounted) {
-          console.log('[Dashboard] Loaded events:', ev?.length || 0);
-          setEvents(ev || []);
-        }
-      } catch (error) {
-        const appError = error as AppError;
-        console.error('[Dashboard] Error loading events:', appError);
-        if (mounted) setEvents([]);
-        
-        // Don't continue if authentication failed
-        if (appError?.statusCode === 401 || appError?.statusCode === 403) {
-          console.error('[Dashboard] Authentication failed, stopping data load');
-          if (mounted) setLoading(false);
-          return;
-        }
+      if ([exResult, evResult, usResult].some(isAuthFailure)) {
+        // apiClient's unauthorized callback handles logout; just stop here.
+        console.error('[Dashboard] Authentication failed during data load');
       }
 
-      // Fetch users (non-critical)
-      try {
-        const us = await api.getUsers();
-        if (mounted) {
-          console.log('[Dashboard] Loaded users:', us?.length || 0);
-          setUsers(us || []);
-        }
-      } catch (error) {
-        console.error('[Dashboard] Error loading users (non-critical):', error);
-        if (mounted) setUsers([]);
-      }
-
-      if (mounted) setLoading(false);
+      setLoading(false);
     };
 
     loadData();

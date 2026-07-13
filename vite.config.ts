@@ -11,6 +11,24 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  esbuild: {
+    // Strip console noise from production bundles; keep console.error/warn.
+    pure: process.env.NODE_ENV === 'production' ? ['console.log', 'console.debug', 'console.info'] : [],
+    drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
+  },
+  build: {
+    target: 'es2020',
+    rollupOptions: {
+      output: {
+        // Stable vendor chunks cache independently of app releases.
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          icons: ['lucide-react'],
+          offline: ['dexie'],
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'happy-dom',

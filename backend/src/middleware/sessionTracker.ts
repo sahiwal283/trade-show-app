@@ -35,11 +35,17 @@ function getClientIp(req: AuthRequest): string {
   );
 }
 
+// last_activity only needs coarse freshness for the Dev Dashboard. Throttle
+// writes per session so a busy client doesn't turn every API call into a DB
+// UPDATE. Entries are pruned on the same interval to bound memory.
+const ACTIVITY_WRITE_INTERVAL_MS = 60_000;
+const lastActivityWrite = new Map<string, number>();
+
 /**
  * Middleware to track session activity
  * Call this AFTER authenticateToken middleware
  */
-export const sessionTracker = async (
+export const sessionTracker = (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -49,24 +55,34 @@ export const sessionTracker = async (
     return next();
   }
 
-  try {
-    const tokenHash = getTokenHash(req);
-    
-    if (tokenHash) {
-      // Update last_activity timestamp for this session
-      await pool.query(
-        `UPDATE user_sessions 
+  const tokenHash = getTokenHash(req);
+  if (tokenHash) {
+    const now = Date.now();
+    const lastWrite = lastActivityWrite.get(tokenHash) || 0;
+
+    if (now - lastWrite >= ACTIVITY_WRITE_INTERVAL_MS) {
+      lastActivityWrite.set(tokenHash, now);
+
+      // Fire-and-forget: never block the request on this bookkeeping write.
+      // If it fails, the session just shows slightly stale activity.
+      pool.query(
+        `UPDATE user_sessions
          SET last_activity = NOW()
          WHERE token_hash = $1`,
         [tokenHash]
-      );
-      
-      // Note: We don't await this or handle errors to avoid slowing down requests
-      // If the update fails, it's not critical - the session will just show stale data
+      ).catch((error) => {
+        console.error('[SessionTracker] Failed to update session activity:', error);
+      });
+
+      // Opportunistic prune of stale throttle entries.
+      if (lastActivityWrite.size > 1000) {
+        for (const [hash, ts] of lastActivityWrite) {
+          if (now - ts > ACTIVITY_WRITE_INTERVAL_MS * 10) {
+            lastActivityWrite.delete(hash);
+          }
+        }
+      }
     }
-  } catch (error) {
-    // Log error but don't fail the request
-    console.error('[SessionTracker] Failed to update session activity:', error);
   }
 
   next();

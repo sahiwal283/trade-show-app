@@ -27,43 +27,41 @@ export function useExpenses(options: UseExpensesOptions = {}) {
     setLoading(true);
     
     if (api.USE_SERVER) {
-      // Fetch expenses (critical) - isolated try-catch so other failures don't block expenses
-      try {
-        const expensesData = await api.getExpenses();
-        console.log('[useExpenses] Loaded expenses:', expensesData?.length || 0);
-        setExpenses(expensesData || []);
-      } catch (error) {
-        console.error('[useExpenses] Failed to load expenses:', error);
+      // All fetches are independent — run in parallel (1 round trip, not 2-4).
+      // Failures stay isolated per endpoint, matching the old per-call try/catch.
+      const [expensesResult, eventsResult, usersResult, settingsResult] = await Promise.allSettled([
+        api.getExpenses(),
+        api.getEvents(),
+        hasApprovalPermission ? api.getUsers() : Promise.resolve([]),
+        hasApprovalPermission ? api.getSettings() : Promise.resolve(null),
+      ]);
+
+      if (expensesResult.status === 'fulfilled') {
+        setExpenses(expensesResult.value || []);
+      } else {
+        console.error('[useExpenses] Failed to load expenses:', expensesResult.reason);
         setExpenses([]);
       }
-      
-      // Fetch events (important but not critical)
-      try {
-        const eventsData = await api.getEvents();
-        console.log('[useExpenses] Loaded events:', eventsData?.length || 0);
-        setEvents(eventsData || []);
-      } catch (error) {
-        console.error('[useExpenses] Failed to load events:', error);
+
+      if (eventsResult.status === 'fulfilled') {
+        setEvents(eventsResult.value || []);
+      } else {
+        console.error('[useExpenses] Failed to load events:', eventsResult.reason);
         setEvents([]);
       }
-      
-      // Additional data for approval users (non-critical)
+
       if (hasApprovalPermission) {
-        try {
-          const usersData = await api.getUsers();
-          console.log('[useExpenses] Loaded users:', usersData?.length || 0);
-          setUsers(usersData || []);
-        } catch (error) {
-          console.error('[useExpenses] Failed to load users (non-critical):', error);
+        if (usersResult.status === 'fulfilled') {
+          setUsers(usersResult.value || []);
+        } else {
+          console.error('[useExpenses] Failed to load users (non-critical):', usersResult.reason);
           setUsers([]);
         }
-        
-        try {
-          const settings = await api.getSettings();
-          console.log('[useExpenses] Loaded settings');
-          setEntityOptions(settings?.entityOptions || []);
-        } catch (error) {
-          console.error('[useExpenses] Failed to load settings (non-critical):', error);
+
+        if (settingsResult.status === 'fulfilled') {
+          setEntityOptions(settingsResult.value?.entityOptions || []);
+        } else {
+          console.error('[useExpenses] Failed to load settings (non-critical):', settingsResult.reason);
           setEntityOptions([]);
         }
       }

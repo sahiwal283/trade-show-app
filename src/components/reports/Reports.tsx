@@ -153,7 +153,20 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     URL.revokeObjectURL(url);
   };
 
-  const entities = Array.from(new Set(expenses.map(e => e.zohoEntity).filter(Boolean)));
+  const entities = useMemo(
+    () => Array.from(new Set(expenses.map(e => e.zohoEntity).filter(Boolean))),
+    [expenses]
+  );
+
+  // Computed once per filter change instead of 3x inline in JSX below.
+  const unassignedExpenses = useMemo(
+    () => filteredExpenses.filter(e => !e.zohoEntity),
+    [filteredExpenses]
+  );
+  const unassignedTotal = useMemo(
+    () => unassignedExpenses.reduce((sum, e) => sum + e.amount, 0),
+    [unassignedExpenses]
+  );
 
   return (
     <div className="space-y-6">
@@ -334,14 +347,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             ))}
           </div>
 
-          {filteredExpenses.filter(e => !e.zohoEntity).length > 0 && (
+          {unassignedExpenses.length > 0 && (
             <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
               <div className="flex items-center space-x-2">
                 <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-white text-xs font-bold">!</span>
                 </div>
                 <p className="text-xs text-yellow-800">
-                  <span className="font-semibold">{filteredExpenses.filter(e => !e.zohoEntity).length} expenses</span> in current view have no entity assigned (${filteredExpenses.filter(e => !e.zohoEntity).reduce((sum, e) => sum + e.amount, 0).toLocaleString()})
+                  <span className="font-semibold">{unassignedExpenses.length} expenses</span> in current view have no entity assigned (${unassignedTotal.toLocaleString()})
                 </p>
               </div>
             </div>
