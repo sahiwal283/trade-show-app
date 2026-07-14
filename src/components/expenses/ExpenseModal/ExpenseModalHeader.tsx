@@ -16,14 +16,14 @@ interface ExpenseModalHeaderProps {
 
 export const ExpenseModalHeader: React.FC<ExpenseModalHeaderProps> = ({ eventName, onClose }) => {
   return (
-    <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-4 rounded-t-xl flex justify-between items-center">
-      <div>
-        <h2 className="text-xl font-bold">Expense Details</h2>
-        <p className="text-sm text-purple-100">{eventName || 'N/A'}</p>
+    <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-xl bg-gradient-to-r from-brand-700 via-brand-600 to-accent-600 px-4 py-3 text-white sm:px-6 sm:py-4">
+      <div className="min-w-0">
+        <h2 className="font-display text-lg sm:text-xl font-bold tracking-tight">Expense Details</h2>
+        <p className="truncate text-sm text-brand-100">{eventName || 'N/A'}</p>
       </div>
       <button
         onClick={onClose}
-        className="p-2 hover:bg-white hover:bg-opacity-20 rounded-lg transition-colors"
+        className="tap-target shrink-0 rounded-lg p-2 transition-colors duration-150 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-0"
       >
         <X className="w-5 h-5" />
       </button>

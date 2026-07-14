@@ -41,12 +41,12 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
   };
 
   const actionColors: Record<string, string> = {
-    created: 'bg-green-100 text-green-800',
-    updated: 'bg-blue-100 text-blue-800',
-    status_changed: 'bg-purple-100 text-purple-800',
-    entity_assigned: 'bg-orange-100 text-orange-800',
-    pushed_to_zoho: 'bg-emerald-100 text-emerald-800',
-    receipt_replaced: 'bg-cyan-100 text-cyan-800',
+    created: 'bg-accent-50 text-accent-800 ring-accent-200/70',
+    updated: 'bg-brand-50 text-brand-700 ring-brand-200/70',
+    status_changed: 'bg-purple-50 text-purple-700 ring-purple-200/70',
+    entity_assigned: 'bg-orange-50 text-orange-700 ring-orange-200/70',
+    pushed_to_zoho: 'bg-accent-50 text-accent-800 ring-accent-200/70',
+    receipt_replaced: 'bg-cyan-50 text-cyan-700 ring-cyan-200/70',
   };
 
   const fieldLabels: Record<string, string> = {
@@ -67,27 +67,29 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
   };
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6">
+    <div className="rounded-card bg-gray-50/80 p-6 ring-1 ring-inset ring-gray-200/70">
       <button
         onClick={() => setShowAuditTrail(!showAuditTrail)}
         className="w-full flex items-center justify-between mb-4 hover:opacity-80 transition-opacity"
       >
-        <div className="flex items-center space-x-2">
-          <History className="w-5 h-5 text-blue-600" />
-          <h3 className="font-semibold text-gray-900">Change History</h3>
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+            <History className="w-4 h-4" />
+          </span>
+          <h3 className="font-display font-semibold tracking-tight text-gray-900">Change History</h3>
           {historyCount > 0 && (
-            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-600 text-white">
+            <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">
               {historyCount}
             </span>
           )}
         </div>
-        <div className="text-blue-600">{showAuditTrail ? '▼' : '▶'}</div>
+        <div className="text-brand-600">{showAuditTrail ? '▼' : '▶'}</div>
       </button>
 
       {showAuditTrail &&
         (loadingAudit ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            <Loader2 className="w-6 h-6 animate-spin text-brand-600" />
             <span className="ml-2 text-sm text-gray-600">Loading history...</span>
           </div>
         ) : auditTrail.length === 0 ? (
@@ -98,17 +100,17 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
               const timestamp = new Date(entry.timestamp);
 
               return (
-                <div key={entry.id} className="bg-white rounded-lg p-4 border border-gray-200">
+                <div key={entry.id} className="card rounded-lg p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <span
-                        className={`px-2 py-1 text-xs font-medium rounded ${actionColors[entry.action] || 'bg-gray-100 text-gray-800'}`}
+                        className={`chip px-2 py-1 text-xs ${actionColors[entry.action] || 'bg-gray-50 text-gray-700 ring-gray-200'}`}
                       >
                         {actionLabels[entry.action] || entry.action}
                       </span>
                       <span className="text-sm font-medium text-gray-900">{entry.userName}</span>
                     </div>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-gray-400 tabular-nums">
                       {timestamp.toLocaleDateString()} {timestamp.toLocaleTimeString()}
                     </span>
                   </div>
@@ -120,14 +122,14 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
                           <div key={field} className="text-xs text-gray-700">
                             <span className="font-medium">{fieldLabels[field] || field}:</span>{' '}
                             {change.old !== null && change.old !== undefined && (
-                              <span className="text-red-600 line-through">
+                              <span className="text-red-500/80 line-through">
                                 {field === 'amount' && typeof change.old === 'number'
                                   ? `$${change.old.toFixed(2)}`
                                   : String(change.old)}
                               </span>
                             )}
                             {change.old !== null && change.old !== undefined && ' → '}
-                            <span className="text-green-600 font-medium">
+                            <span className="text-accent-700 font-medium">
                               {field === 'amount' && typeof change.new === 'number'
                                 ? `$${change.new.toFixed(2)}`
                                 : String(change.new)}

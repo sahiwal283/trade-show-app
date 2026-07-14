@@ -28,7 +28,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Welcome Section */}
       <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 via-brand-500 to-accent-500 text-white shadow-elevation-2 p-5 md:p-8">
         {/* Layered atmosphere: soft light blooms, no images */}
@@ -66,7 +66,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
         <StatsCard
           title={user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' ? 'Total Expenses' : 'My Expenses'}
           value={`$${stats.totalExpenses.toLocaleString()}`}
@@ -88,14 +88,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
+        <div className="xl:col-span-2 space-y-4 md:space-y-6">
           <RecentExpenses expenses={stats.userExpenses} onPageChange={onPageChange} />
           {(user.role === 'admin' || user.role === 'developer' || user.role === 'accountant') && (
             <BudgetOverview events={stats.userEvents} expenses={stats.userExpenses} />
           )}
         </div>
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           <UpcomingEvents events={stats.userEvents} onPageChange={onPageChange} />
           
           {/* Pending Tasks / Quick Actions */}

@@ -25,13 +25,19 @@ interface DetailItemProps {
 }
 
 const DetailItem: React.FC<DetailItemProps> = ({ icon, label, value, bgColor, iconColor }) => (
-  <div className="flex items-start space-x-3">
-    <div className={`w-10 h-10 ${bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}>
+  <div className="flex items-start gap-3">
+    <div
+      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ring-black/5 ${bgColor}`}
+    >
       <div className={iconColor}>{icon}</div>
     </div>
-    <div>
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="font-semibold text-gray-900 text-xl" style={{ fontSize: label === 'Amount' ? '1.25rem' : '1rem' }}>
+    <div className="min-w-0">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
+      <p
+        className={`mt-0.5 font-semibold text-gray-900 ${
+          label === 'Amount' ? 'font-display text-xl tracking-tight tabular-nums' : 'text-base'
+        }`}
+      >
         {value}
       </p>
     </div>
@@ -46,35 +52,35 @@ export const ExpenseModalDetailsView: React.FC<ExpenseModalDetailsViewProps> = (
           icon={<Calendar className="w-5 h-5" />}
           label="Date"
           value={formatLocalDate(expense.date)}
-          bgColor="bg-blue-100"
-          iconColor="text-blue-600"
+          bgColor="bg-brand-50"
+          iconColor="text-brand-600"
         />
         <DetailItem
           icon={<DollarSign className="w-5 h-5" />}
           label="Amount"
           value={`$${expense.amount.toFixed(2)}`}
-          bgColor="bg-emerald-100"
-          iconColor="text-emerald-600"
+          bgColor="bg-accent-50"
+          iconColor="text-accent-600"
         />
         <DetailItem
           icon={<FileText className="w-5 h-5" />}
           label="Category"
           value={expense.category}
-          bgColor="bg-purple-100"
+          bgColor="bg-purple-50"
           iconColor="text-purple-600"
         />
         <DetailItem
           icon={<Receipt className="w-5 h-5" />}
           label="Merchant"
           value={expense.merchant}
-          bgColor="bg-orange-100"
+          bgColor="bg-orange-50"
           iconColor="text-orange-600"
         />
         <DetailItem
           icon={<CreditCard className="w-5 h-5" />}
           label="Card Used"
           value={expense.cardUsed || 'N/A'}
-          bgColor="bg-indigo-100"
+          bgColor="bg-indigo-50"
           iconColor="text-indigo-600"
         />
         {expense.location && (
@@ -82,7 +88,7 @@ export const ExpenseModalDetailsView: React.FC<ExpenseModalDetailsViewProps> = (
             icon={<MapPin className="w-5 h-5" />}
             label="Location"
             value={expense.location}
-            bgColor="bg-red-100"
+            bgColor="bg-red-50"
             iconColor="text-red-600"
           />
         )}
@@ -91,7 +97,7 @@ export const ExpenseModalDetailsView: React.FC<ExpenseModalDetailsViewProps> = (
             icon={<User className="w-5 h-5" />}
             label="Submitted By"
             value={expense.user_name}
-            bgColor="bg-teal-100"
+            bgColor="bg-teal-50"
             iconColor="text-teal-600"
           />
         )}
@@ -99,9 +105,9 @@ export const ExpenseModalDetailsView: React.FC<ExpenseModalDetailsViewProps> = (
 
       {/* Description */}
       {expense.description && (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-sm text-gray-500 mb-2">Description</p>
-          <p className="text-gray-900">{expense.description}</p>
+        <div className="rounded-lg bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Description</p>
+          <p className="text-sm text-gray-900">{expense.description}</p>
         </div>
       )}
     </>

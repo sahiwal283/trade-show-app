@@ -30,23 +30,23 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
 
   return (
     <div className="flex flex-col sm:flex-row gap-3">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
+      <div className="card flex sm:inline-flex rounded-xl p-1">
         <button
           onClick={() => setViewMode('active')}
-          className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+          className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
             viewMode === 'active'
-              ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-brand-600 to-accent-500 text-white shadow-brand'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           }`}
         >
           Active Events ({activeEventsCount})
         </button>
         <button
           onClick={() => setViewMode('past')}
-          className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+          className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
             viewMode === 'past'
-              ? 'bg-gradient-to-r from-blue-500 to-emerald-500 text-white shadow-sm'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-brand-600 to-accent-500 text-white shadow-brand'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
           }`}
         >
           Past Events ({pastEventsCount})
@@ -54,23 +54,23 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
       </div>
 
       {showFilterToggle && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-1 inline-flex">
+        <div className="card flex sm:inline-flex rounded-xl p-1">
           <button
             onClick={() => setFilterMode('all')}
-            className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+            className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
               filterMode === 'all'
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-brand-600 text-white shadow-brand'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
             }`}
           >
             All Events
           </button>
           <button
             onClick={() => setFilterMode('my')}
-            className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+            className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
               filterMode === 'my'
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+                ? 'bg-brand-600 text-white shadow-brand'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
             }`}
           >
             My Events

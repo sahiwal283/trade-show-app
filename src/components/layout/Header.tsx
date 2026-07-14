@@ -62,13 +62,13 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur border-b border-gray-200/80 px-3 sm:px-4 md:px-6 py-3">
+    <header className="bg-white/95 backdrop-blur border-b border-gray-200/80 px-3 sm:px-4 md:px-6 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 md:gap-4 flex-1">
           {/* Mobile Menu Button */}
           <button
             onClick={onToggleMobileMenu}
-            className="lg:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+            className="lg:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-2 -ml-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
             title="Open menu"
           >
             <Menu className="w-5 h-5" />
@@ -93,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
           <div className="relative">
             <button
               onClick={handleNotificationClick}
-              className="relative p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="tap-target relative p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               title="Notifications"
             >
               <Bell className="w-5 h-5" />
@@ -160,7 +160,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
 
           <button
             onClick={onLogout}
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="tap-target p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Logout"
           >
             <LogOut className="w-5 h-5" />
@@ -175,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
           <input
             type="text"
             placeholder="Search..."
-            className="w-full rounded-lg border border-transparent bg-gray-100 pl-9 pr-3 py-2 text-sm text-gray-900 placeholder-gray-400 transition-all duration-150 focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15"
+            className="w-full min-h-[44px] rounded-lg border border-transparent bg-gray-100 pl-9 pr-3 py-2.5 text-base text-gray-900 placeholder-gray-400 transition-all duration-150 focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15"
           />
         </div>
       </div>

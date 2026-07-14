@@ -77,7 +77,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             </div>
             <button
               onClick={onCancel}
-              className="flex-shrink-0 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              className="tap-target flex-shrink-0 p-1 -mt-1 -mr-1 hover:bg-gray-100 rounded-lg transition-colors lg:mt-0 lg:mr-0"
               aria-label="Close"
             >
               <X className="w-5 h-5 text-gray-500" />
@@ -88,13 +88,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <div className="flex gap-3 justify-end">
             <button
               onClick={onCancel}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 min-h-[44px] flex-1 sm:flex-initial lg:min-h-0 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
               {cancelText}
             </button>
             <button
               onClick={onConfirm}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${styles.button}`}
+              className={`px-4 py-2 min-h-[44px] flex-1 sm:flex-initial lg:min-h-0 rounded-lg font-medium transition-colors ${styles.button}`}
             >
               {confirmText}
             </button>

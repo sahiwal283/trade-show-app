@@ -37,7 +37,7 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
     <div className="card">
       <div className="flex items-center justify-between px-5 md:px-6 pt-5 pb-4 border-b border-gray-100">
         <h3 className="card-title">Upcoming Events</h3>
-        <button onClick={() => onPageChange('events')} className="card-link">View All</button>
+        <button onClick={() => onPageChange('events')} className="card-link inline-flex min-h-[44px] items-center lg:min-h-0">View All</button>
       </div>
 
       {upcomingEvents.length === 0 ? (

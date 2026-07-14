@@ -159,21 +159,21 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
   return (
     <div className="space-y-4">
       {/* Edit Mode Banner */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-        <p className="text-sm text-blue-800 flex items-center gap-2">
+      <div className="rounded-lg border-l-4 border-brand-400 bg-brand-50 p-3 mb-4 ring-1 ring-inset ring-brand-200/60">
+        <p className="flex items-center gap-2 text-sm font-medium text-brand-800">
           <Edit2 className="w-4 h-4" />
-          <span>Editing expense - make changes below and click Save</span>
+          <span>Editing expense — make changes below and click Save</span>
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Event - editable to correct wrong event assignment */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">Event *</label>
+          <label className="field-label">Event *</label>
           <select
             value={formData.tradeShowId || ''}
             onChange={(e) => onChange({ tradeShowId: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="input-field"
           >
             <option value="">Select event</option>
             {events.map((evt) => (
@@ -186,34 +186,35 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
 
         {/* Date */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+          <label className="field-label">Date *</label>
           <input
             type="date"
             value={formData.date || ''}
             onChange={(e) => onChange({ date: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="input-field"
           />
         </div>
 
         {/* Amount */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+          <label className="field-label">Amount *</label>
           <input
             type="number"
             step="0.01"
+            inputMode="decimal"
             value={formData.amount || 0}
             onChange={(e) => onChange({ amount: parseFloat(e.target.value) || 0 })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="input-field"
           />
         </div>
 
         {/* Category */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+          <label className="field-label">Category *</label>
           <select
             value={formData.category || ''}
             onChange={(e) => onChange({ category: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="input-field"
           >
             <option value="">Select category</option>
             {uniqueCategories.map((cat, idx) => (
@@ -226,22 +227,22 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
 
         {/* Merchant */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Merchant *</label>
+          <label className="field-label">Merchant *</label>
           <input
             type="text"
             value={formData.merchant || ''}
             onChange={(e) => onChange({ merchant: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="input-field"
           />
         </div>
 
         {/* Card Used */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Card Used *</label>
+          <label className="field-label">Card Used *</label>
           <select
             value={formData.cardUsed || ''}
             onChange={(e) => onChange({ cardUsed: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="input-field"
           >
             <option value="">Select card used</option>
             {uniqueCards.map((card, idx) => (
@@ -254,12 +255,12 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
 
         {/* Location */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <label className="field-label">Location</label>
           <input
             type="text"
             value={formData.location || ''}
             onChange={(e) => onChange({ location: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="input-field"
             placeholder="Optional"
           />
         </div>
@@ -267,13 +268,15 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+        <label className="field-label">Description</label>
         <textarea
           value={formData.description || ''}
           onChange={(e) => onChange({ description: e.target.value })}
           rows={3}
-          className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-            zohoDescriptionValidationError ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-300'
+          className={`input-field ${
+            zohoDescriptionValidationError
+              ? 'border-red-400 focus:border-red-500 focus:ring-red-500/15'
+              : ''
           }`}
           placeholder="Optional additional details"
         />
@@ -293,7 +296,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
           id="edit-reimbursement"
           checked={formData.reimbursementRequired || false}
           onChange={(e) => onChange({ reimbursementRequired: e.target.checked })}
-          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+          className="h-5 w-5 lg:h-4 lg:w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
         />
         <label htmlFor="edit-reimbursement" className="text-sm font-medium text-gray-700">
           Reimbursement Required (Personal Card)
@@ -303,25 +306,25 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
       {/* Receipt Management */}
       {onReceiptUpload && (
         <div className="border-t border-gray-200 pt-4 mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-3">Receipt</label>
+          <label className="field-label mb-3">Receipt</label>
           
           {/* Current Receipt Display */}
           {receiptImageUrl ? (
             <div className="space-y-3">
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="rounded-lg bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
-                    <Receipt className="w-5 h-5 text-purple-600" />
+                    <Receipt className="w-5 h-5 text-brand-600" />
                     <span className="text-sm font-medium text-gray-900">Current Receipt</span>
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-3 border border-gray-200">
+                <div className="card rounded-lg p-3">
                   {isPdfReceiptUrl(receiptUrl ?? '') ? (
                     <a
                       href={receiptImageUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex flex-col items-center justify-center gap-2 py-6 rounded bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-300 text-gray-700 no-underline"
+                      className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 py-6 text-gray-700 no-underline transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/40"
                     >
                       <FileText className="w-10 h-10 text-red-600" />
                       <span className="text-sm font-medium">PDF Receipt – click to open</span>
@@ -340,7 +343,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
               <button
                 onClick={handleReplaceReceipt}
                 disabled={uploadingReceipt}
-                className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-secondary w-full px-4 py-2"
               >
                 {uploadingReceipt ? (
                   <>
@@ -360,7 +363,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
             <button
               onClick={handleAddReceipt}
               disabled={uploadingReceipt}
-              className="w-full px-4 py-2 border-2 border-dashed border-gray-300 hover:border-purple-400 hover:bg-purple-50 text-gray-600 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition-colors duration-150 hover:border-brand-400 hover:bg-brand-50/60 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed lg:min-h-0"
             >
               {uploadingReceipt ? (
                 <>
@@ -378,7 +381,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
 
           {/* Upload Error */}
           {uploadError && (
-            <div className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+            <div className="mt-3 flex items-start gap-2 rounded-lg bg-red-50 p-3 ring-1 ring-inset ring-red-200/70">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm text-red-800 font-medium">Upload Failed</p>
@@ -386,7 +389,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
               </div>
               <button
                 onClick={() => setUploadError(null)}
-                className="p-1 hover:bg-red-100 rounded transition-colors"
+                className="tap-target p-1 hover:bg-red-100 rounded transition-colors"
                 aria-label="Dismiss error"
               >
                 <X className="w-4 h-4 text-red-600" />

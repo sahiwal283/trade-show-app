@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Save, X, Building2, Upload, AlertCircle, Loader2, Plus, Clock } from 'lucide-react';
+import { ArrowLeft, Save, X, Building2, Upload, Camera, AlertCircle, Loader2, Plus, Clock } from 'lucide-react';
 import { Expense, TradeShow, User } from '../../App';
 import { api } from '../../utils/api';
 import { formatForDateInput, getTodayLocalDateString } from '../../utils/dateUtils';
@@ -399,25 +399,25 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6 lg:p-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
+      <div className="card p-4 sm:p-5 md:p-6 lg:p-8">
+        <div className="flex items-center justify-between mb-6 lg:mb-8">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             <button
               onClick={onCancel}
-              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              className="btn-ghost tap-target p-2"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+              <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
                 {expense ? 'Edit Expense' : 'Add New Expense'}
               </h1>
-              <p className="text-gray-600">Upload receipt for automatic OCR data extraction, or enter manually</p>
+              <p className="mt-0.5 text-sm text-gray-500">Upload receipt for automatic OCR data extraction, or enter manually</p>
             </div>
           </div>
           <button
             onClick={onCancel}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            className="btn-ghost tap-target p-2"
           >
             <X className="w-5 h-5" />
           </button>
@@ -425,19 +425,22 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Receipt Upload - First Field */}
-          <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 sm:p-5 md:p-6">
-            <label className="block text-sm font-medium text-gray-900 mb-3">
+          <div className="rounded-card border border-brand-200/70 bg-brand-50/50 p-4 sm:p-5 md:p-6">
+            <label className="field-label mb-3 text-gray-900">
               Receipt Image {expense ? <span className="text-gray-600">(Optional - Upload to replace)</span> : <span className="text-red-600">* (Upload First - Required)</span>}
             </label>
             <div className="space-y-4">
               <div className="flex items-center justify-center w-full">
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50">
+                <label className="flex h-40 sm:h-32 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-brand-300/80 bg-white transition-colors duration-150 hover:border-brand-400 hover:bg-brand-50/60 active:bg-brand-50">
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="w-8 h-8 mb-2 text-blue-500" />
+                    <Camera className="w-9 h-9 mb-2 text-brand-500 sm:hidden" />
+                    <Upload className="hidden sm:block w-8 h-8 mb-2 text-brand-500" />
                     <p className="mb-2 text-sm text-gray-700">
-                      <span className="font-semibold">Click to upload receipt</span>
+                      <span className="font-semibold text-brand-700 sm:hidden">Tap to snap or upload receipt</span>
+                      <span className="hidden sm:inline font-semibold text-brand-700">Click to upload receipt</span>
                     </p>
-                    <p className="text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                    <p className="text-xs text-gray-500 sm:hidden">Opens your camera or photo library</p>
+                    <p className="hidden sm:block text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
                   </div>
                   <input
                     type="file"
@@ -459,7 +462,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                     <img
                       src={formData.receiptUrl}
                       alt="Receipt preview"
-                      className="w-full h-48 object-cover rounded-lg border group-hover:shadow-xl transition-shadow"
+                      className="w-full h-48 object-cover rounded-lg ring-1 ring-gray-200 transition-shadow duration-200 group-hover:shadow-elevation-3"
                     />
                     {!isProcessingOCR && (
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all flex items-center justify-center">
@@ -472,7 +475,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                   {isProcessingOCR && (
                     <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
                       <div className="text-center">
-                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
                         <p className="text-sm text-gray-700 font-medium">Processing receipt...</p>
                       </div>
                     </div>
@@ -482,12 +485,12 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
 
               {/* OCR Results */}
               {ocrResults && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center mb-2">
-                    <AlertCircle className="w-5 h-5 text-green-600 mr-2" />
-                    <h4 className="text-sm font-semibold text-green-800">Receipt Processed Successfully</h4>
+                <div className="rounded-lg bg-accent-50 p-4 ring-1 ring-inset ring-accent-200/70">
+                  <div className="flex items-center mb-1.5">
+                    <AlertCircle className="w-5 h-5 text-accent-600 mr-2" />
+                    <h4 className="text-sm font-semibold text-accent-800">Receipt Processed Successfully</h4>
                   </div>
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm text-accent-700">
                     Form fields below have been auto-filled with extracted data. Please review and adjust if needed.
                   </p>
                 </div>
@@ -495,16 +498,20 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="border-t border-gray-100 pt-6">
+            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-4">
+              Expense Details
+            </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="field-label">
                 Trade Show Event *
               </label>
               <div className="flex items-center gap-2">
                 <select
                   value={formData.tradeShowId}
                   onChange={(e) => setFormData({ ...formData, tradeShowId: e.target.value })}
-                  className="flex-1 px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="input-field flex-1 min-h-[44px]"
                   required
                 >
                   <option value="">Select an event</option>
@@ -523,7 +530,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                   <button
                     type="button"
                     onClick={() => setShowQuickCreate(!showQuickCreate)}
-                    className="flex items-center gap-1 px-3 py-2.5 sm:py-3 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap min-h-[44px]"
+                    className="inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap rounded-lg bg-brand-50 px-3 py-2.5 text-sm font-medium text-brand-700 ring-1 ring-inset ring-brand-200/70 transition-colors duration-150 hover:bg-brand-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 sm:py-3"
                     title="Quick create a new event"
                   >
                     <Plus className="w-4 h-4" />
@@ -532,8 +539,8 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                 )}
               </div>
               {showQuickCreate && (
-                <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <label className="block text-xs font-medium text-blue-800 mb-1">
+                <div className="mt-2 rounded-lg border border-brand-200/70 bg-brand-50/60 p-3">
+                  <label className="block text-xs font-semibold text-brand-800 mb-1">
                     Event Name
                   </label>
                   <div className="flex gap-2">
@@ -542,7 +549,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                       value={quickEventName}
                       onChange={(e) => setQuickEventName(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleQuickCreateEvent())}
-                      className="flex-1 px-3 py-2 text-sm bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="input-field flex-1 py-2.5 sm:py-2"
                       placeholder="e.g., CES 2026"
                       autoFocus
                       disabled={creatingEvent}
@@ -551,7 +558,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                       type="button"
                       onClick={handleQuickCreateEvent}
                       disabled={!quickEventName.trim() || creatingEvent}
-                      className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                      className="btn-primary px-3 py-2 text-xs shrink-0"
                     >
                       {creatingEvent ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
                       Create
@@ -560,14 +567,14 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                   {createEventError && (
                     <p className="mt-1 text-xs text-red-600">{createEventError}</p>
                   )}
-                  <p className="mt-1 text-xs text-blue-600">You can add venue, dates, and other details later in Events.</p>
+                  <p className="mt-1 text-xs text-brand-600">You can add venue, dates, and other details later in Events.</p>
                 </div>
               )}
               {pastEvents.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowPastEvents(!showPastEvents)}
-                  className="mt-1 flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                  className="mt-1 flex min-h-[44px] items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors lg:min-h-0"
                 >
                   <Clock className="w-3 h-3" />
                   {showPastEvents ? 'Hide past events' : `Show ${pastEvents.length} past event${pastEvents.length === 1 ? '' : 's'}`}
@@ -576,42 +583,43 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="field-label">
                 Amount *
               </label>
               <input
                 type="number"
                 step="0.01"
+                inputMode="decimal"
                 value={formData.amount}
                 onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field min-h-[44px]"
                 placeholder="0.00"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="field-label">
                 Merchant *
               </label>
               <input
                 type="text"
                 value={formData.merchant}
                 onChange={(e) => handleMerchantChange(e.target.value)}
-                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field min-h-[44px]"
                 placeholder="e.g., Delta Airlines, Marriott Hotel"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="field-label">
                 Category *
               </label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field min-h-[44px]"
                 required
               >
                 <option value="">Select category</option>
@@ -622,20 +630,20 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="field-label">
                 Date *
               </label>
               <input
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field min-h-[44px]"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="field-label">
                 Card Used *
               </label>
               <select
@@ -651,7 +659,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                     zohoEntity: selectedCard?.entity || ''
                   });
                 }}
-                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="input-field min-h-[44px]"
                 required
               >
                 <option value="">Select card used</option>
@@ -667,17 +675,20 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
               </p>
             </div>
           </div>
+          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="border-t border-gray-100 pt-6">
+            <label className="field-label">
               Description
             </label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               rows={3}
-              className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                zohoDescriptionValidationError ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-300'
+              className={`input-field min-h-[44px] ${
+                zohoDescriptionValidationError
+                  ? 'border-red-400 focus:border-red-500 focus:ring-red-500/15'
+                  : ''
               }`}
               placeholder="Additional details about this expense..."
             />
@@ -693,31 +704,32 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
           {/* OCR Text Display */}
           {formData.ocrText && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="field-label">
                 OCR Extracted Text
               </label>
               <textarea
                 value={formData.ocrText}
                 readOnly
                 rows={4}
-                className="w-full px-3 py-2.5 sm:px-4 sm:py-3 border min-h-[44px] border-gray-300 rounded-lg bg-gray-50 text-sm"
+                className="input-field min-h-[44px] bg-gray-50 text-gray-600"
                 placeholder="OCR text will appear here after receipt processing..."
               />
             </div>
           )}
 
-          <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+          {/* Sticky on phones/tablets so Save stays reachable while the form scrolls; lg: restores the original static bar */}
+          <div className="sticky bottom-0 z-10 -mx-4 flex items-center justify-end gap-3 border-t border-gray-200 bg-white/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:static lg:z-auto lg:mx-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:pb-0 lg:backdrop-blur-none">
             <button
               type="button"
               onClick={onCancel}
-              className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+              className="btn-secondary flex-1 px-6 py-3 sm:flex-initial"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSaving || !!zohoDescriptionValidationError}
-              className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-8 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="btn-primary flex-1 px-8 py-3 sm:flex-initial"
             >
               {isSaving ? (
                 <>
@@ -743,7 +755,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
         >
           <button
             onClick={() => setShowFullReceipt(false)}
-            className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+            className="tap-target absolute top-[max(1rem,env(safe-area-inset-top))] right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
             title="Close"
           >
             <X className="w-6 h-6 text-gray-900" />

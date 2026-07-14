@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+import { getCategoryColor } from '../../constants/appConstants';
 
 interface CategoryBadgeProps {
   category: string;
@@ -19,17 +20,8 @@ interface CategoryBadgeProps {
 
 // Categories are metadata, not status — keep them quiet and uniform in form
 // (soft tint + inset ring) so status chips carry the semantic color weight.
-const categoryColors: Record<string, string> = {
-  'Travel': 'bg-blue-50 text-blue-700 ring-blue-200/60',
-  'Meals & Entertainment': 'bg-purple-50 text-purple-700 ring-purple-200/60',
-  'Accommodation': 'bg-indigo-50 text-indigo-700 ring-indigo-200/60',
-  'Supplies': 'bg-green-50 text-green-700 ring-green-200/60',
-  'Shipping': 'bg-orange-50 text-orange-700 ring-orange-200/60',
-  'Technology': 'bg-cyan-50 text-cyan-700 ring-cyan-200/60',
-  'Marketing': 'bg-pink-50 text-pink-700 ring-pink-200/60',
-  'Professional Services': 'bg-teal-50 text-teal-700 ring-teal-200/60',
-  'Other': 'bg-gray-50 text-gray-600 ring-gray-200'
-};
+// Colors come from the shared CATEGORY_COLORS map in appConstants so every
+// surface (table, reports, dashboard) renders the same tint per category.
 
 const sizeClasses = {
   xs: 'px-1.5 py-0.5 text-[10px]',
@@ -43,7 +35,7 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   size = 'sm',
   className = ''
 }) => {
-  const colorClass = categoryColors[category] || categoryColors['Other'];
+  const colorClass = getCategoryColor(category);
 
   return (
     <span

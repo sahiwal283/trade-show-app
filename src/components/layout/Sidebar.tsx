@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <button
         key={item.id}
         onClick={() => onPageChange(item.id)}
-        className={`group relative w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 ${
+        className={`group relative w-full flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] lg:min-h-0 text-sm font-medium transition-all duration-150 ${
           isCollapsed ? 'justify-center' : ''
         } ${
           isActive
@@ -173,14 +173,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Mobile Sidebar (slide-out) */}
-      <div className={`lg:hidden fixed left-0 top-0 h-full bg-white border-r border-gray-200/80 shadow-elevation-3 transition-transform duration-300 z-30 w-64 flex flex-col ${
+      <div className={`lg:hidden fixed left-0 top-0 h-full bg-white border-r border-gray-200/80 shadow-elevation-3 transition-transform duration-300 z-30 w-64 max-w-[85vw] flex flex-col pt-safe pb-safe ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           {brandMark}
           <button
             onClick={onCloseMobileMenu}
-            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] -mr-2 p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             title="Close menu"
           >
             <X className="w-5 h-5" />

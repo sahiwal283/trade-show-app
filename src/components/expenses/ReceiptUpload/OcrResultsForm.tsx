@@ -12,6 +12,11 @@ import { api } from '../../../utils/api';
 import { getTodayLocalDateString } from '../../../utils/dateUtils';
 import { filterEventsByParticipation } from '../../../utils/eventUtils';
 
+// Confidence tint used beside field labels: accent = trustworthy,
+// amber = double-check, orange = likely wrong.
+const confidenceTextClass = (confidence: number): string =>
+  confidence >= 0.7 ? 'text-accent-600' : confidence >= 0.5 ? 'text-amber-600' : 'text-orange-600';
+
 interface CardOption {
   name: string;
   lastFour: string;
@@ -121,26 +126,31 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
   };
 
   return (
-    <div className="bg-gray-50 rounded-xl p-4 sm:p-5 md:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-2">
-          <CheckCircle className="w-6 h-6 text-emerald-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Extracted Data</h3>
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-            ocrResults.confidence >= 0.7 ? 'bg-emerald-100 text-emerald-800' :
-            ocrResults.confidence >= 0.5 ? 'bg-yellow-100 text-yellow-800' :
-            'bg-orange-100 text-orange-800'
+    <div className="rounded-card bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70 sm:p-5 md:p-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <CheckCircle className="w-6 h-6 text-accent-600" />
+          <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Extracted Data</h3>
+          <span className={`chip px-2 py-1 text-xs ${
+            ocrResults.confidence >= 0.7 ? 'bg-accent-50 text-accent-800 ring-accent-200/70' :
+            ocrResults.confidence >= 0.5 ? 'bg-amber-50 text-amber-800 ring-amber-200/70' :
+            'bg-orange-50 text-orange-700 ring-orange-200/70'
           }`}>
+            <span className={`chip-dot ${
+              ocrResults.confidence >= 0.7 ? 'bg-accent-500' :
+              ocrResults.confidence >= 0.5 ? 'bg-amber-500' :
+              'bg-orange-500'
+            }`} />
             {Math.round(ocrResults.confidence * 100)}% confidence
           </span>
           {ocrResults.ocrV2Data?.ocrProvider && (
-            <span className="bg-blue-100 text-blue-800 px-2 py-1 text-xs font-medium rounded-full">
+            <span className="chip bg-brand-50 px-2 py-1 text-xs text-brand-700 ring-brand-200/70">
               {ocrResults.ocrV2Data.ocrProvider}
             </span>
           )}
         </div>
         <div className={`flex items-center text-sm ${
-          ocrResults.ocrV2Data?.needsReview ? 'text-orange-600 font-medium' : 'text-blue-600'
+          ocrResults.ocrV2Data?.needsReview ? 'text-orange-600 font-medium' : 'text-brand-600'
         }`}>
           <AlertCircle className="w-4 h-4 mr-1" />
           <span>
@@ -155,14 +165,10 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="field-label">
               Merchant
               {ocrResults.ocrV2Data?.inference?.merchant && (
-                <span className={`ml-2 text-xs ${
-                  ocrResults.ocrV2Data.inference.merchant.confidence >= 0.7 ? 'text-emerald-600' :
-                  ocrResults.ocrV2Data.inference.merchant.confidence >= 0.5 ? 'text-yellow-600' :
-                  'text-orange-600'
-                }`}>
+                <span className={`ml-2 text-xs font-medium tabular-nums ${confidenceTextClass(ocrResults.ocrV2Data.inference.merchant.confidence)}`}>
                   ({Math.round(ocrResults.ocrV2Data.inference.merchant.confidence * 100)}%)
                 </span>
               )}
@@ -176,18 +182,18 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
               type="text"
               value={ocrResults.merchant}
               onChange={(e) => setOcrResults({ ...ocrResults, merchant: e.target.value })}
-              className={`w-full bg-white px-3 py-2 rounded-lg border ${
-                getFieldWarnings('merchant').some(w => w.severity === 'high') 
-                  ? 'border-orange-400 focus:ring-orange-500' 
-                  : 'border-gray-300 focus:ring-blue-500'
-              } focus:ring-2 focus:border-blue-500`}
+              className={`input-field ${
+                getFieldWarnings('merchant').some(w => w.severity === 'high')
+                  ? 'border-orange-400 focus:border-orange-500 focus:ring-orange-500/15'
+                  : ''
+              }`}
               placeholder="Merchant name"
             />
             {getFieldWarnings('merchant').map((warning, idx) => (
               <div key={idx} className={`mt-1 text-xs ${
                 warning.severity === 'high' ? 'text-orange-600' :
-                warning.severity === 'medium' ? 'text-yellow-600' :
-                'text-blue-600'
+                warning.severity === 'medium' ? 'text-amber-600' :
+                'text-brand-600'
               }`}>
                 <span className="font-medium">⚠️ {warning.reason}</span>
                 {warning.suggestedAction && (
@@ -199,14 +205,10 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
             ))}
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="field-label">
               Total Amount
               {ocrResults.ocrV2Data?.inference?.amount && (
-                <span className={`ml-2 text-xs ${
-                  ocrResults.ocrV2Data.inference.amount.confidence >= 0.7 ? 'text-emerald-600' :
-                  ocrResults.ocrV2Data.inference.amount.confidence >= 0.5 ? 'text-yellow-600' :
-                  'text-orange-600'
-                }`}>
+                <span className={`ml-2 text-xs font-medium tabular-nums ${confidenceTextClass(ocrResults.ocrV2Data.inference.amount.confidence)}`}>
                   ({Math.round(ocrResults.ocrV2Data.inference.amount.confidence * 100)}%)
                 </span>
               )}
@@ -220,21 +222,17 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
                 const cleaned = value.replace(/^0+(?=\d)/, '');
                 setOcrResults({ ...ocrResults, total: parseFloat(cleaned) || 0 });
               }}
-              className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-semibold text-emerald-600"
+              className="input-field font-semibold text-accent-700 tabular-nums"
               placeholder="0.00"
             />
           </div>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="field-label">
               Date
               {ocrResults.ocrV2Data?.inference?.date && (
-                <span className={`ml-2 text-xs ${
-                  ocrResults.ocrV2Data.inference.date.confidence >= 0.7 ? 'text-emerald-600' :
-                  ocrResults.ocrV2Data.inference.date.confidence >= 0.5 ? 'text-yellow-600' :
-                  'text-orange-600'
-                }`}>
+                <span className={`ml-2 text-xs font-medium tabular-nums ${confidenceTextClass(ocrResults.ocrV2Data.inference.date.confidence)}`}>
                   ({Math.round(ocrResults.ocrV2Data.inference.date.confidence * 100)}%)
                 </span>
               )}
@@ -243,18 +241,14 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
               type="date"
               value={ocrResults.date}
               onChange={(e) => setOcrResults({ ...ocrResults, date: e.target.value })}
-              className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="input-field"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="field-label">
               Category
               {ocrResults.ocrV2Data?.inference?.category && (
-                <span className={`ml-2 text-xs ${
-                  ocrResults.ocrV2Data.inference.category.confidence >= 0.7 ? 'text-emerald-600' :
-                  ocrResults.ocrV2Data.inference.category.confidence >= 0.5 ? 'text-yellow-600' :
-                  'text-orange-600'
-                }`}>
+                <span className={`ml-2 text-xs font-medium tabular-nums ${confidenceTextClass(ocrResults.ocrV2Data.inference.category.confidence)}`}>
                   ({Math.round(ocrResults.ocrV2Data.inference.category.confidence * 100)}% confidence)
                 </span>
               )}
@@ -265,7 +259,7 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
                 console.log('[ReceiptUpload] Category changed to:', e.target.value);
                 setOcrResults({ ...ocrResults, category: e.target.value });
               }}
-              className="w-full bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="input-field"
             >
               <option value="">Select category...</option>
               {categories.length > 0 ? (
@@ -284,7 +278,7 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
 
       {/* Review Reasons */}
       {ocrResults.ocrV2Data?.reviewReasons && ocrResults.ocrV2Data.reviewReasons.length > 0 && (
-        <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-3">
+        <div className="mt-4 rounded-lg bg-orange-50 p-3 ring-1 ring-inset ring-orange-200/70">
           <div className="flex items-start space-x-2">
             <AlertCircle className="w-4 h-4 text-orange-600 mt-0.5" />
             <div>
@@ -302,14 +296,14 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
       {/* Event and Card Selection */}
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="field-label">
             Trade Show Event *
           </label>
           <div className="flex items-center gap-2">
             <select
               value={selectedEvent}
               onChange={(e) => setSelectedEvent(e.target.value)}
-              className="flex-1 max-w-sm bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="input-field flex-1 max-w-sm py-2.5 sm:py-1.5"
               required
             >
               <option value="">Select an event</option>
@@ -332,7 +326,7 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
               <button
                 type="button"
                 onClick={() => setShowQuickCreate(!showQuickCreate)}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors whitespace-nowrap"
+                className="inline-flex min-h-[44px] items-center gap-1 whitespace-nowrap rounded-lg bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700 ring-1 ring-inset ring-brand-200/70 transition-colors duration-150 hover:bg-brand-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 lg:min-h-0"
                 title="Quick create a new event"
               >
                 <Plus className="w-4 h-4" />
@@ -341,8 +335,8 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
             )}
           </div>
           {showQuickCreate && (
-            <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg max-w-sm">
-              <label className="block text-xs font-medium text-blue-800 mb-1">
+            <div className="mt-2 max-w-sm rounded-lg border border-brand-200/70 bg-brand-50/60 p-3">
+              <label className="block text-xs font-semibold text-brand-800 mb-1">
                 Event Name
               </label>
               <div className="flex gap-2">
@@ -351,7 +345,7 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
                   value={quickEventName}
                   onChange={(e) => setQuickEventName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleQuickCreateEvent()}
-                  className="flex-1 px-3 py-1.5 text-sm bg-white border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="input-field flex-1 py-2.5 sm:py-1.5"
                   placeholder="e.g., CES 2026"
                   autoFocus
                   disabled={creatingEvent}
@@ -360,7 +354,7 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
                   type="button"
                   onClick={handleQuickCreateEvent}
                   disabled={!quickEventName.trim() || creatingEvent}
-                  className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                  className="btn-primary shrink-0 px-3 py-1.5 text-xs"
                 >
                   {creatingEvent ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
                   Create
@@ -369,14 +363,14 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
               {createError && (
                 <p className="mt-1 text-xs text-red-600">{createError}</p>
               )}
-              <p className="mt-1 text-xs text-blue-600">You can add venue, dates, and other details later in Events.</p>
+              <p className="mt-1 text-xs text-brand-600">You can add venue, dates, and other details later in Events.</p>
             </div>
           )}
           {pastEvents.length > 0 && (
             <button
               type="button"
               onClick={() => setShowPastEvents(!showPastEvents)}
-              className="mt-1 flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors"
+              className="mt-1 flex min-h-[44px] items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors lg:min-h-0"
             >
               <Clock className="w-3 h-3" />
               {showPastEvents ? 'Hide past events' : `Show ${pastEvents.length} past event${pastEvents.length === 1 ? '' : 's'}`}
@@ -385,15 +379,11 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="field-label">
             <CreditCard className="w-4 h-4 inline mr-1" />
             Card Used
             {ocrResults?.ocrV2Data?.inference?.cardLastFour && (
-              <span className={`ml-2 text-xs ${
-                ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.7 ? 'text-emerald-600' :
-                ocrResults.ocrV2Data.inference.cardLastFour.confidence >= 0.5 ? 'text-yellow-600' :
-                'text-orange-600'
-              }`}>
+              <span className={`ml-2 text-xs font-medium tabular-nums ${confidenceTextClass(ocrResults.ocrV2Data.inference.cardLastFour.confidence)}`}>
                 ({Math.round(ocrResults.ocrV2Data.inference.cardLastFour.confidence * 100)}% - OCR found ...{ocrResults.ocrV2Data.inference.cardLastFour.value})
               </span>
             )}
@@ -406,7 +396,7 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
               setSelectedCard(cardValue);
               setSelectedEntity(selectedCardOption?.entity || '');
             }}
-            className="w-full max-w-sm bg-white px-3 py-1.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="input-field max-w-sm py-2.5 sm:py-1.5"
           >
             <option value="">Select card...</option>
             {cardOptions.map((card, idx) => (
@@ -420,13 +410,13 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
 
       {/* Description / Notes */}
       <div className="mt-4">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="field-label">
           Description / Notes
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full max-w-2xl bg-white px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="input-field max-w-2xl"
           rows={3}
           placeholder="Optional: Add any additional notes or details..."
         />

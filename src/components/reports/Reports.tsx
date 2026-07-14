@@ -172,8 +172,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="text-xl md:text-xl sm:text-2xl font-bold text-gray-900">Reports & Analytics</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight text-gray-900">Reports & Analytics</h1>
+          <p className="mt-1 text-sm text-gray-500">
             Analyze expenses and generate comprehensive reports
             <span className="ml-3 text-sm text-gray-500">
               • {filteredExpenses.length} expenses found
@@ -183,19 +183,19 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             </span>
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex w-full items-center gap-3 sm:w-auto">
           <button
             onClick={() => setShowFilterModal(true)}
-            className="bg-white border border-gray-300 text-gray-700 px-3 sm:px-4 py-2 min-h-[44px] rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center space-x-2"
+            className="btn-secondary min-h-[44px] flex-1 sm:flex-initial"
           >
             <Filter className="w-4 h-4" />
             <span>Filters</span>
           </button>
           <button
             onClick={handleExportCSV}
-            className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+            className="btn-primary min-h-[44px] flex-1 px-4 sm:flex-initial sm:px-5 md:px-6"
           >
-            <Download className="w-5 h-5" />
+            <Download className="w-4 h-4" />
             <span>Export CSV</span>
           </button>
         </div>
@@ -203,7 +203,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Trade Show Header Banner */}
       {selectedEvent !== 'all' && (
-        <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-xl shadow-lg border border-blue-600 p-3 sm:p-4 md:p-5 lg:p-6">
+        <div className="rounded-card bg-gradient-to-r from-brand-600 to-accent-600 p-3 shadow-brand-lg sm:p-4 md:p-5 lg:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
               <button
@@ -211,21 +211,21 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                   setSelectedEvent('all');
                   setReportType('overview');
                 }}
-                className="w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                className="group flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 ring-1 ring-inset ring-white/30 transition-all duration-200 hover:bg-white/30 focus-visible:ring-2 focus-visible:ring-white/80"
                 title="Back to Overview"
               >
                 <ArrowLeft className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
               </button>
               <div>
-                <p className="text-white text-opacity-90 text-sm font-medium mb-1">Viewing Trade Show</p>
-                <h2 className="text-xl md:text-xl sm:text-2xl font-bold text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">Viewing Trade Show</p>
+                <h2 className="font-display text-xl md:text-2xl font-bold tracking-tight text-white">
                   {events.find(e => e.id === selectedEvent)?.name || 'Unknown Event'}
                 </h2>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-white text-opacity-90 text-sm font-medium mb-1">Total Expenses</p>
-              <p className="text-2xl sm:text-3xl font-bold text-white">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">Total Expenses</p>
+              <p className="font-display text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-white">
                 ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
               </p>
             </div>
@@ -235,7 +235,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Entity Header Banner */}
       {selectedEntity !== 'all' && (
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg border border-purple-700 p-3 sm:p-4 md:p-5 lg:p-6">
+        <div className="rounded-card bg-gradient-to-r from-brand-700 to-brand-500 p-3 shadow-brand-lg sm:p-4 md:p-5 lg:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
               <button
@@ -243,21 +243,21 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                   setSelectedEntity('all');
                   setReportType('overview');
                 }}
-                className="w-10 h-10 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all duration-200 group"
+                className="group flex h-10 w-10 items-center justify-center rounded-lg bg-white/20 ring-1 ring-inset ring-white/30 transition-all duration-200 hover:bg-white/30 focus-visible:ring-2 focus-visible:ring-white/80"
                 title="Back to Overview"
               >
                 <ArrowLeft className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
               </button>
               <div>
-                <p className="text-white text-opacity-90 text-sm font-medium mb-1">Viewing Entity</p>
-                <h2 className="text-xl md:text-xl sm:text-2xl font-bold text-white">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">Viewing Entity</p>
+                <h2 className="font-display text-xl md:text-2xl font-bold tracking-tight text-white">
                   {selectedEntity}
                 </h2>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-white text-opacity-90 text-sm font-medium mb-1">Total Expenses</p>
-              <p className="text-2xl sm:text-3xl font-bold text-white">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">Total Expenses</p>
+              <p className="font-display text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-white">
                 ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
               </p>
             </div>
@@ -267,14 +267,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Trade Show Breakdown - Show when viewing specific entity */}
       {tradeShowBreakdown.length > 0 && selectedEntity !== 'all' && selectedEvent === 'all' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+        <div className="card p-3 sm:p-4">
           <div className="flex items-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
-              <Calendar className="w-4 h-4 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+              <Calendar className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Trade Show Breakdown</h3>
-              <p className="text-xs text-gray-600">Entity expenses by trade show • Click to view details</p>
+              <h3 className="card-title">Trade Show Breakdown</h3>
+              <p className="text-xs text-gray-500">Entity expenses by trade show • Click to view details</p>
             </div>
           </div>
           
@@ -286,19 +286,19 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 onKeyPress={(e) => e.key === 'Enter' && handleTradeShowClick(eventId)}
                 role="button"
                 tabIndex={0}
-                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-lg hover:scale-105 hover:border-blue-300 transition-all duration-200 min-w-[200px] flex-shrink-0 cursor-pointer"
+                className="group min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-gray-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-600 mb-1 truncate" title={name}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1 truncate" title={name}>
                       {name}
                     </p>
-                    <p className="text-lg font-bold text-gray-900">
+                    <p className="font-display text-lg font-bold tracking-tight tabular-nums text-gray-900">
                       ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </p>
                   </div>
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center ml-2 flex-shrink-0">
-                    <Calendar className="w-3 h-3 text-blue-600" />
+                  <div className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+                    <Calendar className="w-3.5 h-3.5" />
                   </div>
                 </div>
               </div>
@@ -309,14 +309,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Entity Totals Dashboard - Show when not filtering by entity */}
       {entityTotals.length > 0 && selectedEntity === 'all' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-4">
+        <div className="card p-3 sm:p-4">
           <div className="flex items-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Building2 className="w-4 h-4 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600 ring-1 ring-inset ring-purple-100">
+              <Building2 className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-gray-900">Entity Running Totals</h3>
-              <p className="text-xs text-gray-600">For selected filters • Click to view details</p>
+              <h3 className="card-title">Entity Running Totals</h3>
+              <p className="text-xs text-gray-500">For selected filters • Click to view details</p>
             </div>
           </div>
           
@@ -328,19 +328,19 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 onKeyPress={(e) => e.key === 'Enter' && handleEntityClick(entity)}
                 role="button"
                 tabIndex={0}
-                className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200 hover:shadow-lg hover:scale-105 hover:border-purple-300 transition-all duration-200 min-w-[200px] flex-shrink-0 cursor-pointer"
+                className="group min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-gray-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-600 mb-1 truncate" title={entity}>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1 truncate" title={entity}>
                       {entity}
                     </p>
-                    <p className="text-lg font-bold text-gray-900">
+                    <p className="font-display text-lg font-bold tracking-tight tabular-nums text-gray-900">
                       ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </p>
                   </div>
-                  <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center ml-2 flex-shrink-0">
-                    <DollarSign className="w-3 h-3 text-purple-600" />
+                  <div className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 ring-1 ring-inset ring-purple-100">
+                    <DollarSign className="w-3.5 h-3.5" />
                   </div>
                 </div>
               </div>
@@ -348,13 +348,12 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           </div>
 
           {unassignedExpenses.length > 0 && (
-            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-yellow-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-white text-xs font-bold">!</span>
-                </div>
-                <p className="text-xs text-yellow-800">
-                  <span className="font-semibold">{unassignedExpenses.length} expenses</span> in current view have no entity assigned (${unassignedTotal.toLocaleString()})
+            <div className="mt-3 rounded-lg border-l-4 border-amber-400 bg-amber-50 p-2.5 ring-1 ring-inset ring-amber-200/60">
+              <div className="flex items-center gap-2">
+                <span className="chip-dot bg-amber-500" />
+                <p className="text-xs text-amber-800">
+                  <span className="font-semibold">{unassignedExpenses.length} expenses</span> in current view have no entity assigned (
+                  <span className="font-semibold tabular-nums">${unassignedTotal.toLocaleString()}</span>)
                 </p>
               </div>
             </div>
@@ -389,14 +388,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Category Averages Across Trade Shows */}
       {selectedEvent === 'all' && events.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="card p-6">
           <div className="flex items-center space-x-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100">
+              <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Category Averages Across Trade Shows</h3>
-              <p className="text-sm text-gray-600">Average spending per category based on {events.length} trade show{events.length !== 1 ? 's' : ''}</p>
+              <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Category Averages Across Trade Shows</h3>
+              <p className="text-sm text-gray-500">Average spending per category based on {events.length} trade show{events.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
 
@@ -457,21 +456,21 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 {sortedAverages.map(({ category, total, count, average }) => (
                   <div 
                     key={category}
-                    className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-all duration-200"
+                    className="rounded-lg border border-gray-200/80 bg-white p-4 shadow-elevation-1 transition-shadow duration-200 hover:shadow-elevation-2"
                   >
                     <div className="flex items-start justify-between mb-3">
                       <h4 className="text-sm font-semibold text-gray-900 flex-1 pr-2">
                         {category}
                       </h4>
-                      <div className="w-8 h-8 bg-gradient-to-br from-amber-100 to-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <TrendingUp className="w-4 h-4 text-amber-600" />
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100">
+                        <TrendingUp className="w-4 h-4" />
                       </div>
                     </div>
                     
                     <div className="space-y-2">
                       <div>
-                        <p className="text-xs text-gray-600 mb-0.5">Average per Trade Show</p>
-                        <p className="text-2xl font-bold text-amber-600">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5">Average per Trade Show</p>
+                        <p className="font-display text-2xl font-bold tracking-tight tabular-nums text-amber-600">
                           ${average.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
@@ -497,39 +496,39 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Filter Modal */}
       {showFilterModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-gray-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="modal-sheet-h w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-xl rounded-b-none bg-white shadow-elevation-3 sm:rounded-xl">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 sticky top-0 bg-white rounded-t-xl">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex flex-row items-center justify-between gap-3 sticky top-0 z-10 bg-white rounded-t-xl">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <Filter className="w-5 h-5 text-white" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+                  <Filter className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Filter Reports</h3>
-                  <p className="text-sm text-gray-600">Customize your report view</p>
+                  <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Filter Reports</h3>
+                  <p className="text-sm text-gray-500">Customize your report view</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowFilterModal(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 sm:h-8 sm:w-8"
               >
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="space-y-6">
                 {/* Event Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="field-label">
                     Event / Trade Show
                   </label>
                   <select
                     value={selectedEvent}
                     onChange={(e) => setSelectedEvent(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input-field px-4 py-3"
                   >
                     <option value="all">All Events</option>
                     {events.map(event => (
@@ -540,13 +539,13 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
                 {/* Period Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="field-label">
                     Time Period
                   </label>
                   <select
                     value={selectedPeriod}
                     onChange={(e) => setSelectedPeriod(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input-field px-4 py-3"
                   >
                     <option value="all">All Time</option>
                     <option value="week">Last Week</option>
@@ -557,13 +556,13 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
                 {/* Entity Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="field-label">
                     Zoho Entity
                   </label>
                   <select
                     value={selectedEntity}
                     onChange={(e) => setSelectedEntity(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input-field px-4 py-3"
                   >
                     <option value="all">All Entities</option>
                     {entities.map(entity => (
@@ -574,13 +573,13 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
                 {/* Report Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="field-label">
                     Report Type
                   </label>
                   <select
                     value={reportType}
                     onChange={(e) => setReportType(e.target.value as any)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input-field px-4 py-3"
                   >
                     <option value="overview">Overview</option>
                     <option value="detailed">Detailed</option>
@@ -590,8 +589,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               </div>
             </div>
 
-            {/* Modal Actions */}
-            <div className="px-6 py-4 bg-gray-50 rounded-b-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 border-t border-gray-200">
+            {/* Modal Actions — pinned on phones so Apply stays above the home indicator */}
+            <div className="sticky bottom-0 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:static sm:px-6 sm:py-4 sm:pb-4 bg-gray-50 rounded-b-none sm:rounded-b-xl flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 border-t border-gray-200">
               <button
                 onClick={() => {
                   setSelectedEvent('all');
@@ -599,13 +598,13 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                   setSelectedEntity('all');
                   setReportType('overview');
                 }}
-                className="px-3 sm:px-4 py-2 min-h-[44px] text-gray-600 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                className="btn-ghost min-h-[44px] w-full sm:w-auto"
               >
                 Clear All
               </button>
               <button
                 onClick={() => setShowFilterModal(false)}
-                className="px-6 py-2 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
+                className="btn-primary w-full px-6 py-2 sm:w-auto"
               >
                 Apply Filters
               </button>

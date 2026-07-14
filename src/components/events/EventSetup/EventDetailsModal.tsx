@@ -95,22 +95,22 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
   const [showBoothMapViewer, setShowBoothMapViewer] = useState(false);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-900">{event.name}</h2>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-gray-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+      <div className="modal-sheet-h w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-xl rounded-b-none bg-white shadow-elevation-3 sm:rounded-xl">
+        <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-xl bg-gradient-to-r from-brand-700 via-brand-600 to-accent-600 px-4 py-3 text-white sm:px-6 sm:py-4">
+          <h2 className="min-w-0 truncate font-display text-xl sm:text-2xl font-bold tracking-tight">{event.name}</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="tap-target shrink-0 rounded-lg p-2 transition-colors duration-150 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-4 sm:p-6 sm:space-y-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-6">
           {/* Location */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Location</h3>
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Location</h3>
             <div className="flex items-start gap-2">
               <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
               <div>
@@ -122,68 +122,68 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
           {/* Show Dates */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-2">
-              <span className="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>
+            <h3 className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <span className="chip-dot bg-brand-500"></span>
               Show Dates
             </h3>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-blue-900">
+            <div className="rounded-lg bg-brand-50 p-4 ring-1 ring-inset ring-brand-200/70">
+              <div className="flex items-center gap-2 text-brand-900">
                 <Calendar className="w-5 h-5" />
                 <span className="font-medium">
                   {formatLocalDate(event.showStartDate || event.startDate)} - {formatLocalDate(event.showEndDate || event.endDate)}
                 </span>
               </div>
-              <p className="text-sm text-blue-700 mt-1">Actual event/trade show dates</p>
+              <p className="mt-1 text-sm text-brand-700">Actual event/trade show dates</p>
             </div>
           </div>
 
           {/* Travel Dates */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-2">
-              <span className="inline-block w-2 h-2 bg-green-500 rounded-full"></span>
+            <h3 className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <span className="chip-dot bg-accent-500"></span>
               Travel Dates
             </h3>
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center gap-2 text-green-900">
+            <div className="rounded-lg bg-accent-50 p-4 ring-1 ring-inset ring-accent-200/70">
+              <div className="flex items-center gap-2 text-accent-900">
                 <Calendar className="w-5 h-5" />
                 <span className="font-medium">
                   {formatLocalDate(event.travelStartDate || event.startDate)} - {formatLocalDate(event.travelEndDate || event.endDate)}
                 </span>
               </div>
-              <p className="text-sm text-green-700 mt-1">When team members travel for the event</p>
+              <p className="mt-1 text-sm text-accent-700">When team members travel for the event</p>
             </div>
           </div>
 
           {/* Budget */}
           {event.budget && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant') && (
             <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2">Budget</h3>
-              <div className="flex items-center gap-2 text-emerald-600">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Budget</h3>
+              <div className="flex items-center gap-2 text-accent-600">
                 <DollarSign className="w-5 h-5" />
-                <span className="text-2xl font-bold">${event.budget.toLocaleString()}</span>
+                <span className="font-display text-2xl font-bold tracking-tight tabular-nums">${event.budget.toLocaleString()}</span>
               </div>
             </div>
           )}
 
           {/* Participants */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
               Participants ({event.participants?.length || 0})
             </h3>
             {event.participants && event.participants.length > 0 ? (
               <div className="space-y-2">
                 {event.participants.map((participant) => (
-                  <div key={participant.id} className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <div key={participant.id} className="flex items-center gap-3 rounded-lg bg-gray-50/80 p-3 ring-1 ring-inset ring-gray-200/70">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-accent-500">
                       <span className="text-white font-medium">
                         {participant.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-gray-900 truncate">{participant.name}</p>
-                      <p className="text-sm text-gray-600 truncate">{participant.email}</p>
+                      <p className="text-sm text-gray-500 truncate">{participant.email}</p>
                     </div>
-                    <span className="px-2.5 py-1 bg-gray-200 text-gray-700 rounded-full text-xs font-medium capitalize flex-shrink-0">
+                    <span className="chip flex-shrink-0 bg-gray-50 px-2.5 py-1 text-xs capitalize text-gray-600 ring-gray-200">
                       {participant.role}
                     </span>
                   </div>
@@ -197,11 +197,11 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           {/* Booth Floor Plan */}
           {!loadingChecklist && checklistData?.booth_map_url && (
             <div>
-              <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-2">
-                <span className="inline-block w-2 h-2 bg-purple-500 rounded-full"></span>
+              <h3 className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                <span className="chip-dot bg-purple-500"></span>
                 Booth Floor Plan
               </h3>
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <div className="rounded-lg bg-purple-50 p-4 ring-1 ring-inset ring-purple-200/70">
                 <div className="flex items-center gap-2 mb-3">
                   <Map className="w-5 h-5 text-purple-600" />
                   <span className="font-medium text-purple-900">Booth Layout</span>
@@ -216,7 +216,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
 
           {/* Checklist Summary */}
           <div>
-            <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-3">
+            <h3 className="mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
               Event Checklist
             </h3>
             <ChecklistSummary
@@ -227,10 +227,10 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-gray-50 px-6 py-4 border-t border-gray-200 flex justify-end">
+        <div className="sticky bottom-0 flex justify-end rounded-b-xl border-t border-gray-200 bg-gray-50/95 px-6 py-4 backdrop-blur-sm">
           <button
             onClick={onClose}
-            className="px-6 py-2.5 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
+            className="btn-secondary px-6 py-2.5"
           >
             Close
           </button>

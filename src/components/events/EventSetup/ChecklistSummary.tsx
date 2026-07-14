@@ -40,13 +40,13 @@ export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
   return (
     <div className="space-y-4">
       {/* Overall Checklist Status */}
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
-        <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Overall Status</h4>
+      <div className="space-y-3 rounded-lg bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70">
+        <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Overall Status</h4>
         
         {/* Booth & Electricity */}
         <div className="flex items-center gap-3">
           {checklistData.booth_ordered ? (
-            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-accent-600 flex-shrink-0" />
           ) : (
             <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
           )}
@@ -55,7 +55,7 @@ export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
 
         <div className="flex items-center gap-3">
           {checklistData.electricity_ordered ? (
-            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-accent-600 flex-shrink-0" />
           ) : (
             <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
           )}
@@ -64,7 +64,7 @@ export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
 
         {/* Flights */}
         <div className="flex items-center gap-3">
-          <Plane className="w-5 h-5 text-blue-600 flex-shrink-0" />
+          <Plane className="w-5 h-5 text-brand-600 flex-shrink-0" />
           <span className="text-sm text-gray-700">
             Flights: {checklistData.flights_booked}/{checklistData.flights_total} booked
           </span>
@@ -72,7 +72,7 @@ export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
 
         {/* Hotels */}
         <div className="flex items-center gap-3">
-          <Hotel className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <Hotel className="w-5 h-5 text-accent-600 flex-shrink-0" />
           <span className="text-sm text-gray-700">
             Hotels: {checklistData.hotels_booked}/{checklistData.hotels_total} booked
           </span>
@@ -91,7 +91,7 @@ export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
         {/* Booth Shipping */}
         <div className="flex items-center gap-3">
           {checklistData.booth_shipped ? (
-            <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <CheckCircle2 className="w-5 h-5 text-accent-600 flex-shrink-0" />
           ) : (
             <Circle className="w-5 h-5 text-gray-400 flex-shrink-0" />
           )}
@@ -101,20 +101,20 @@ export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
 
       {/* Personal Travel Details - Only show if user is a participant */}
       {(userFlight || userHotel || carRentals.length > 0) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-          <h4 className="text-xs font-semibold text-blue-900 uppercase tracking-wide mb-2 flex items-center gap-2">
+        <div className="space-y-3 rounded-lg bg-brand-50 p-4 ring-1 ring-inset ring-brand-200/70">
+          <h4 className="mb-2 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-brand-800">
             <Users2 className="w-4 h-4" />
             Your Travel Details
           </h4>
 
           {/* User's Flight Info */}
           {userFlight && (
-            <div className="bg-white rounded-lg p-3 space-y-2">
+            <div className="space-y-2 rounded-lg bg-white p-3 shadow-elevation-1 ring-1 ring-gray-200/70">
               <div className="flex items-center gap-2 mb-2">
-                <Plane className="w-4 h-4 text-blue-600" />
+                <Plane className="w-4 h-4 text-brand-600" />
                 <span className="font-medium text-gray-900 text-sm">Flight</span>
                 {userFlight.booked && (
-                  <CheckCircle2 className="w-4 h-4 text-green-600 ml-auto" />
+                  <CheckCircle2 className="w-4 h-4 text-accent-600 ml-auto" />
                 )}
               </div>
               {userFlight.carrier && (
@@ -140,12 +140,12 @@ export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
 
           {/* User's Hotel Info */}
           {userHotel && (
-            <div className="bg-white rounded-lg p-3 space-y-2">
+            <div className="space-y-2 rounded-lg bg-white p-3 shadow-elevation-1 ring-1 ring-gray-200/70">
               <div className="flex items-center gap-2 mb-2">
-                <Hotel className="w-4 h-4 text-emerald-600" />
+                <Hotel className="w-4 h-4 text-accent-600" />
                 <span className="font-medium text-gray-900 text-sm">Hotel</span>
                 {userHotel.booked && (
-                  <CheckCircle2 className="w-4 h-4 text-green-600 ml-auto" />
+                  <CheckCircle2 className="w-4 h-4 text-accent-600 ml-auto" />
                 )}
               </div>
               {userHotel.property_name && (
@@ -179,12 +179,12 @@ export const ChecklistSummary: React.FC<ChecklistSummaryProps> = ({
 
           {/* Car Rentals - Shared by all attendees */}
           {carRentals.map((rental) => (
-            <div key={rental.id} className="bg-white rounded-lg p-3 space-y-2">
+            <div key={rental.id} className="space-y-2 rounded-lg bg-white p-3 shadow-elevation-1 ring-1 ring-gray-200/70">
               <div className="flex items-center gap-2 mb-2">
                 <Car className="w-4 h-4 text-orange-600" />
                 <span className="font-medium text-gray-900 text-sm">Car Rental</span>
                 {rental.booked && (
-                  <CheckCircle2 className="w-4 h-4 text-green-600 ml-auto" />
+                  <CheckCircle2 className="w-4 h-4 text-accent-600 ml-auto" />
                 )}
               </div>
               {rental.provider && (

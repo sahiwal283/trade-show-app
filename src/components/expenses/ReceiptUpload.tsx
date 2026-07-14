@@ -231,7 +231,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-5 md:p-6 lg:p-8">
+      <div className="card p-4 sm:p-5 md:p-6 lg:p-8">
         <ReceiptUploadHeader onCancel={onCancel} />
 
         {!uploadedImage ? (
@@ -287,8 +287,8 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               />
             )}
 
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-3 pt-6 border-t border-gray-200">
+            {/* Action Buttons — sticky on phones/tablets so Create Expense stays reachable; lg: restores the original static bar */}
+            <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t border-gray-200 bg-white/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:static lg:z-auto lg:mx-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:pb-0 lg:backdrop-blur-none">
               {ocrResults && selectedEvent && (
                 <p className="text-xs text-gray-500 text-right">
                   Zoho Books combined description: {receiptZohoComposedLength}/{ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH} characters
@@ -297,23 +297,19 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               {receiptZohoDescriptionError && (
                 <p className="text-sm text-red-700 text-right">{receiptZohoDescriptionError}</p>
               )}
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
               <button
                 onClick={handleReset}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                className="btn-secondary w-full px-6 py-3 sm:w-auto"
               >
                 Upload Different Receipt
               </button>
-              
+
               {ocrResults && (
                 <button
                   onClick={handleConfirm}
                   disabled={isSaving || !!receiptZohoDescriptionError}
-                  className={`${
-                    isSaving || receiptZohoDescriptionError
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-gradient-to-r from-blue-500 to-emerald-500 hover:from-blue-600 hover:to-emerald-600'
-                  } text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2`}
+                  className="btn-primary w-full px-8 py-3 sm:w-auto"
                 >
                   {isSaving ? (
                     <>

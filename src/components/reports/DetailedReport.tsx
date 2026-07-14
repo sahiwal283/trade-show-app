@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Calendar, MapPin, User, DollarSign, Eye, X, Store, CreditCard } from 'lucide-react';
+import { FileText, Calendar, MapPin, User, DollarSign, Eye, X, Store, CreditCard, CheckCircle } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { isPdfReceiptUrl } from '../../utils/fileValidation';
@@ -21,13 +21,27 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   const { toasts, addToast, removeToast } = useToast();
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(true);
+  // Literal bar classes (not derived strings) so Tailwind's scanner generates them.
+  const CATEGORY_BAR_COLORS: Record<string, string> = {
+    'bg-blue-50': 'bg-blue-500',
+    'bg-emerald-50': 'bg-emerald-500',
+    'bg-orange-50': 'bg-orange-500',
+    'bg-purple-50': 'bg-purple-500',
+    'bg-yellow-50': 'bg-yellow-500',
+    'bg-pink-50': 'bg-pink-500',
+    'bg-indigo-50': 'bg-indigo-500',
+    'bg-cyan-50': 'bg-cyan-500',
+    'bg-teal-50': 'bg-teal-500',
+    'bg-amber-50': 'bg-amber-500',
+    'bg-lime-50': 'bg-lime-500',
+    'bg-fuchsia-50': 'bg-fuchsia-500',
+    'bg-gray-50': 'bg-gray-400',
+  };
+
   const getCategoryBarColor = (category: string) => {
     const colorConfig = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS];
-    if (!colorConfig) return 'bg-gray-500';
-    
-    // Convert badge colors (bg-blue-100) to chart bar colors (bg-blue-500)
-    const bgClass = colorConfig.bg;
-    return bgClass.replace('-100', '-500');
+    if (!colorConfig) return 'bg-gray-400';
+    return CATEGORY_BAR_COLORS[colorConfig.bg] || 'bg-gray-400';
   };
 
   // Calculate category breakdown
@@ -41,10 +55,12 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
   if (expenses.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-        <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Detailed Data Available</h3>
-        <p className="text-gray-600">
+      <div className="card p-12 text-center">
+        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 ring-1 ring-inset ring-brand-100">
+          <FileText className="w-8 h-8" />
+        </div>
+        <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900 mb-1.5">No Detailed Data Available</h3>
+        <p className="mx-auto max-w-md text-sm text-gray-500">
           Apply filters to see detailed expense reports or submit some expenses to get started.
         </p>
       </div>
@@ -56,10 +72,10 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <div className="space-y-6">
       {/* Category Breakdown Chart */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 sm:p-5 md:p-6">
+      <div className="card p-3 sm:p-5 md:p-6">
         <div className="mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Expenses by Category</h3>
-          <p className="text-sm text-gray-600 mt-1">For selected filters</p>
+          <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Expenses by Category</h3>
+          <p className="mt-1 text-sm text-gray-500">For selected filters</p>
         </div>
         
         {categories.length > 0 ? (
@@ -72,11 +88,11 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                 <div key={category} className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-900">{category}</span>
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className="text-sm font-semibold tabular-nums text-gray-900">
                       ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-gray-100 rounded-full h-2 ring-1 ring-inset ring-gray-200/60">
                     <div
                       className={`h-2 rounded-full ${getCategoryBarColor(category)} transition-all duration-500`}
                       style={{ width: `${percentage}%` }}
@@ -94,14 +110,16 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
       </div>
 
       {/* Detailed Expense Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+      <div className="card overflow-hidden">
+      <div className="px-6 py-4 bg-gray-50/80 border-b border-gray-200/80">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <FileText className="w-5 h-5 text-gray-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Detailed Expense Report</h3>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+              <FileText className="w-4 h-4" />
+            </span>
+            <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Detailed Expense Report</h3>
           </div>
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-500 tabular-nums">
             {expenses.length} entries • ${expenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()} total
           </div>
         </div>
@@ -109,46 +127,46 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50/80">
             <tr>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Date & Event
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Merchant & Location
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Category
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Card Used
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Amount
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Status
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Reimbursement
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Entity
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Description
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                 Details
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-100">
             {expenses.map((expense) => {
               const event = events.find(e => e.id === expense.tradeShowId);
               
               return (
-                <tr key={expense.id} className="hover:bg-gray-50">
+                <tr key={expense.id} className="transition-colors duration-150 hover:bg-brand-50/40">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
                       <div className="flex items-center text-sm text-gray-900">
@@ -179,9 +197,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {expense.cardUsed}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center text-sm font-semibold text-gray-900">
-                      <DollarSign className="w-4 h-4 mr-1" />
+                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <div className="inline-flex items-center text-sm font-semibold tabular-nums text-gray-900">
+                      <DollarSign className="w-4 h-4 mr-0.5 text-gray-400" />
                       {expense.amount.toFixed(2)}
                     </div>
                   </td>
@@ -189,8 +207,10 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <StatusBadge status={expense.status} size="sm" />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      expense.reimbursementRequired ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
+                    <span className={`chip px-2 py-1 text-xs ${
+                      expense.reimbursementRequired
+                        ? 'bg-orange-50 text-orange-700 ring-orange-200/70'
+                        : 'bg-gray-50 text-gray-500 ring-gray-200'
                     }`}>
                       {expense.reimbursementRequired ? 
                         `Required (${expense.reimbursementStatus || 'pending review'})` : 
@@ -214,7 +234,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <div className="flex justify-center">
                       <button
                         onClick={() => setViewingExpense(expense)}
-                        className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-gray-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
                         title="View Details & Receipt"
                       >
                         <Eye className="w-4 h-4" />
@@ -227,14 +247,14 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                         <div className="flex items-center justify-end space-x-2">
                           <button
                             onClick={() => onReimbursementApproval(expense, 'approved')}
-                            className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                            className="inline-flex items-center justify-center rounded-md p-1 text-accent-600 transition-colors duration-150 hover:bg-accent-50 hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-1"
                             title="Approve Reimbursement"
                           >
                             <CheckCircle className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => onReimbursementApproval(expense, 'rejected')}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            className="inline-flex items-center justify-center rounded-md p-1 text-red-600 transition-colors duration-150 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
                             title="Reject Reimbursement"
                           >
                             <X className="w-4 h-4" />
@@ -251,7 +271,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
       </div>
 
       {/* Summary Footer */}
-      <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+      <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-200/80">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6">
             <div className="flex items-center">
@@ -262,26 +282,26 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
             </div>
             <div className="flex items-center">
               <span className="text-gray-600">Approved:</span>
-              <span className="ml-1 font-semibold text-emerald-600">
+              <span className="ml-1 font-semibold tabular-nums text-accent-600">
                 {expenses.filter(e => e.status === 'approved').length}
               </span>
             </div>
             <div className="flex items-center">
               <span className="text-gray-600">Pending:</span>
-              <span className="ml-1 font-semibold text-yellow-600">
+              <span className="ml-1 font-semibold tabular-nums text-amber-600">
                 {expenses.filter(e => e.status === 'pending').length}
               </span>
             </div>
             <div className="flex items-center">
               <span className="text-gray-600">Reimbursement Required:</span>
-              <span className="ml-1 font-semibold text-orange-600">
+              <span className="ml-1 font-semibold tabular-nums text-orange-600">
                 {expenses.filter(e => e.reimbursementRequired).length}
               </span>
             </div>
           </div>
           <div className="flex items-center">
             <span className="text-gray-600">Total Amount:</span>
-            <span className="ml-1 font-bold text-lg text-gray-900">
+            <span className="ml-1 font-display text-lg font-bold tracking-tight tabular-nums text-gray-900">
               ${expenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()}
             </span>
           </div>
@@ -292,12 +312,12 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
       {/* View Expense Details Modal */}
       {viewingExpense && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-elevation-3">
+            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-xl bg-gradient-to-r from-brand-700 via-brand-600 to-accent-600 px-6 py-4 text-white">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Expense Details</h2>
-                <p className="text-sm text-gray-600 mt-1">
+                <h2 className="font-display text-xl font-bold tracking-tight">Expense Details</h2>
+                <p className="mt-1 text-sm text-brand-100">
                   {events.find(e => e.id === viewingExpense.tradeShowId)?.name || 'N/A'}
                 </p>
               </div>
@@ -306,7 +326,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   setViewingExpense(null);
                   setShowFullReceipt(true);
                 }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="rounded-lg p-2 transition-colors duration-150 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -316,62 +336,62 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
               {/* Expense Info Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50 ring-1 ring-inset ring-black/5">
                     <Calendar className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Date</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Date</p>
                     <p className="font-semibold text-gray-900">{formatLocalDate(viewingExpense.date)}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50 ring-1 ring-inset ring-black/5">
                     <DollarSign className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Amount</p>
-                    <p className="font-semibold text-gray-900 text-xl">${viewingExpense.amount.toFixed(2)}</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Amount</p>
+                    <p className="font-display text-xl font-semibold tracking-tight tabular-nums text-gray-900">${viewingExpense.amount.toFixed(2)}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-purple-50 ring-1 ring-inset ring-black/5">
                     <FileText className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Category</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Category</p>
                     <p className="font-semibold text-gray-900">{viewingExpense.category}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-orange-50 ring-1 ring-inset ring-black/5">
                     <Store className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Merchant</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Merchant</p>
                     <p className="font-semibold text-gray-900">{viewingExpense.merchant}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 ring-1 ring-inset ring-black/5">
                     <CreditCard className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Card Used</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Card Used</p>
                     <p className="font-semibold text-gray-900">{viewingExpense.cardUsed}</p>
                   </div>
                 </div>
 
                 {viewingExpense.location && (
                   <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-red-50 ring-1 ring-inset ring-black/5">
                       <MapPin className="w-5 h-5 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Location</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Location</p>
                       <p className="font-semibold text-gray-900">{viewingExpense.location}</p>
                     </div>
                   </div>
@@ -379,11 +399,11 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
                 {viewingExpense.user_name && (
                   <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-teal-50 ring-1 ring-inset ring-black/5">
                       <User className="w-5 h-5 text-teal-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Submitted By</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Submitted By</p>
                       <p className="font-semibold text-gray-900">{viewingExpense.user_name}</p>
                     </div>
                   </div>
@@ -391,30 +411,32 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
               </div>
 
               {viewingExpense.description && (
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <p className="text-sm text-gray-500 mb-2">Description</p>
-                  <p className="text-gray-900">{viewingExpense.description}</p>
+                <div className="rounded-lg bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Description</p>
+                  <p className="text-sm text-gray-900">{viewingExpense.description}</p>
                 </div>
               )}
 
               {/* Status and Reimbursement */}
               <div className="flex flex-wrap gap-3">
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Status</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Status</p>
                   <StatusBadge status={viewingExpense.status} size="md" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Reimbursement</p>
-                  <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                    viewingExpense.reimbursementRequired ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Reimbursement</p>
+                  <span className={`chip px-3 py-1 text-sm ${
+                    viewingExpense.reimbursementRequired
+                      ? 'bg-orange-50 text-orange-700 ring-orange-200/70'
+                      : 'bg-gray-50 text-gray-500 ring-gray-200'
                   }`}>
                     {viewingExpense.reimbursementRequired ? 'Required' : 'Not Required'}
                   </span>
                 </div>
                 {viewingExpense.zohoEntity && (
                   <div>
-                    <p className="text-sm text-gray-500 mb-1">Entity</p>
-                    <span className="px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Entity</p>
+                    <span className="chip px-3 py-1 text-sm bg-brand-50 text-brand-700 ring-brand-200/70">
                       {viewingExpense.zohoEntity}
                     </span>
                   </div>
@@ -423,19 +445,19 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
               {/* Receipt */}
               {viewingExpense.receiptUrl && (
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
+                <div className="rounded-card bg-gray-50/80 p-6 ring-1 ring-inset ring-gray-200/70">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Receipt</h3>
+                    <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Receipt</h3>
                     <button
                       onClick={() => setShowFullReceipt(!showFullReceipt)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-white text-gray-700 rounded-lg hover:bg-gray-50 transition-colors border border-gray-200"
+                      className="btn-secondary px-4 py-2"
                     >
                       <Eye className="w-4 h-4" />
                       <span>{showFullReceipt ? 'Hide' : 'View Full Size'}</span>
                     </button>
                   </div>
                   {showFullReceipt && (
-                    <div className="bg-white rounded-lg p-4">
+                    <div className="card rounded-lg p-4">
                       {(() => {
                         const displayUrl = viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads');
                         const isPdf = isPdfReceiptUrl(viewingExpense.receiptUrl || '');
@@ -445,7 +467,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                               href={displayUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex flex-col items-center justify-center gap-3 py-8 px-4 rounded-lg bg-gray-50 hover:bg-gray-100 border-2 border-dashed border-gray-300 text-gray-700 no-underline"
+                              className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-gray-700 no-underline transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/40"
                             >
                               <FileText className="w-14 h-14 text-red-600" />
                               <span className="font-medium">PDF Receipt</span>
@@ -457,7 +479,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                           <img
                             src={displayUrl}
                             alt="Receipt"
-                            className="w-full h-auto max-h-[600px] object-contain rounded-lg border-2 border-gray-200 shadow-md"
+                            className="w-full h-auto max-h-[600px] object-contain rounded-lg ring-1 ring-gray-200"
                           />
                         );
                       })()}
@@ -468,13 +490,13 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
             </div>
 
             {/* Close Button */}
-            <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
+            <div className="sticky bottom-0 rounded-b-xl border-t border-gray-200 bg-gray-50/95 px-6 py-4 backdrop-blur-sm">
               <button
                 onClick={() => {
                   setViewingExpense(null);
                   setShowFullReceipt(true);
                 }}
-                className="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors font-medium"
+                className="btn-secondary w-full px-4 py-2"
               >
                 Close
               </button>

@@ -42,10 +42,13 @@
     @apply text-sm font-medium text-brand-600 hover:text-brand-700 hover:underline underline-offset-4 rounded transition-colors;
   }
 
-  /* ===== Buttons ===== */
+  /* ===== Buttons =====
+     min-h-[44px] guarantees comfortable touch targets on phones/tablets;
+     lg:min-h-0 pins desktop (lg+) back to its original metrics. */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg
       bg-gradient-to-r from-brand-600 to-accent-500 px-4 py-2.5
+      min-h-[44px] lg:min-h-0
       text-sm font-semibold text-white shadow-brand
       transition-all duration-200
       hover:from-brand-700 hover:to-accent-600 hover:shadow-brand-lg
@@ -57,6 +60,7 @@
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg
       border border-gray-300 bg-white px-4 py-2.5
+      min-h-[44px] lg:min-h-0
       text-sm font-semibold text-gray-700 shadow-elevation-1
       transition-all duration-200
       hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900
@@ -67,6 +71,7 @@
 
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2
+      min-h-[44px] lg:min-h-0
       text-sm font-medium text-gray-600
       transition-colors duration-150
       hover:bg-gray-100 hover:text-gray-900
@@ -75,7 +80,8 @@
 
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2 rounded-lg
-      bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-elevation-1
+      bg-red-600 px-4 py-2.5 min-h-[44px] lg:min-h-0
+      text-sm font-semibold text-white shadow-elevation-1
       transition-all duration-200
       hover:bg-red-700 active:translate-y-px
       focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2
@@ -87,9 +93,11 @@
     @apply block text-sm font-medium text-gray-700 mb-1.5;
   }
 
+  /* text-base below sm keeps iOS from auto-zooming on focus (needs >=16px) */
   .input-field {
     @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5
-      text-sm text-gray-900 placeholder-gray-400 shadow-sm
+      min-h-[44px] sm:min-h-0
+      text-base sm:text-sm text-gray-900 placeholder-gray-400 shadow-sm
       transition-all duration-150
       hover:border-gray-400
       focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15;
@@ -135,6 +143,25 @@
   /* Mobile form inputs */
   .input-mobile {
     @apply px-3 py-2.5 min-h-[44px] text-base;
+  }
+
+  /* 44x44 minimum touch target on phones/tablets; lg+ keeps original size */
+  .tap-target {
+    @apply inline-flex items-center justify-center min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0;
+  }
+
+  /* Safe-area padding for notched phones (PWA standalone, viewport-fit=cover) */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .px-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
   }
 
   /* Toast notification animations */
@@ -185,6 +212,39 @@
 
     table td {
       padding: 0.5rem 0.5rem !important;
+    }
+  }
+
+  /* Sticky first column for wide data tables below lg. Keeps the Date column
+     anchored while the rest of the row scrolls horizontally. Cells need an
+     opaque background so scrolled content doesn't bleed through. */
+  @media (max-width: 1023.98px) {
+    .table-sticky-first th:first-child,
+    .table-sticky-first td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+      background-color: #ffffff;
+      box-shadow: inset -1px 0 0 rgba(15, 23, 42, 0.08);
+    }
+
+    .table-sticky-first thead th:first-child {
+      z-index: 3;
+      background-color: #f9fafb;
+    }
+  }
+
+  /* Full-height bottom-sheet sizing for modals on phones only (<640px).
+     Uses dvh where supported so the on-screen keyboard doesn't hide content. */
+  @media (max-width: 639.98px) {
+    .modal-sheet-h {
+      max-height: calc(100vh - 1.5rem);
+    }
+
+    @supports (height: 100dvh) {
+      .modal-sheet-h {
+        max-height: calc(100dvh - 1.5rem);
+      }
     }
   }
 }

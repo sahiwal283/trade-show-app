@@ -684,8 +684,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
       {/* ✅ REFACTORED: Expense Details Modal with 8 sub-components */}
       {viewingExpense && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-gray-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="modal-sheet-h w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-t-xl rounded-b-none bg-white shadow-elevation-3 sm:rounded-xl">
             
             <ExpenseModalHeader
               eventName={events.find(e => e.id === viewingExpense.tradeShowId)?.name}
@@ -697,7 +697,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
             />
 
             {/* Content */}
-            <div className="p-6 space-y-6">
+            <div className="p-4 space-y-4 sm:p-6 sm:space-y-6">
               {viewingExpense.duplicateCheck && (
                 <ExpenseModalDuplicateWarning duplicateCheck={viewingExpense.duplicateCheck} />
               )}

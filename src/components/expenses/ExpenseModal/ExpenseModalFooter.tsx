@@ -55,12 +55,12 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
   };
 
   return (
-    <div className="sticky bottom-0 bg-gray-50 px-6 py-4 rounded-b-xl border-t border-gray-200 flex justify-end space-x-3">
+    <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 rounded-b-none border-t border-gray-200 bg-gray-50/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:gap-3 sm:rounded-b-xl sm:px-6 sm:py-4 sm:pb-4">
       {!isEditingExpense ? (
         <>
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+            className="btn-secondary px-4 py-2"
           >
             Close
           </button>
@@ -70,7 +70,7 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
                 <button
                   onClick={handleDownload}
                   disabled={isDownloading}
-                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="btn-secondary px-4 py-2"
                   aria-label="Download expense PDF"
                 >
                   {isDownloading ? (
@@ -88,7 +88,7 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
                 
                 {/* Browser Compatibility Tooltip */}
                 <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block z-50 w-64">
-                  <div className="bg-gray-900 text-white text-xs rounded-lg p-3 shadow-xl">
+                  <div className="rounded-lg bg-gray-900 p-3 text-xs text-white shadow-elevation-3">
                     <div className="flex items-start gap-2">
                       <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
                       <div>
@@ -117,7 +117,7 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
           )}
           <button
             onClick={onEdit}
-            className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all"
+            className="btn-primary px-4 py-2"
           >
             Edit Expense
           </button>
@@ -127,14 +127,14 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
           <button
             onClick={onCancel}
             disabled={isSaving}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-secondary px-4 py-2"
           >
             Cancel
           </button>
           <button
             onClick={onSave}
             disabled={isSaving || saveDisabled}
-            className="px-6 py-2 bg-gradient-to-r from-emerald-600 to-green-600 text-white rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="btn-primary px-6 py-2"
           >
             {isSaving ? (
               <>

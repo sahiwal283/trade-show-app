@@ -21,15 +21,17 @@ export const ExpenseModalReceipt: React.FC<ExpenseModalReceiptProps> = ({ receip
   const pdfReceipt = isPdfReceiptUrl(receiptUrl);
 
   return (
-    <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6">
+    <div className="rounded-card bg-gray-50/80 p-6 ring-1 ring-inset ring-gray-200/70">
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-2">
-          <Receipt className="w-5 h-5 text-purple-600" />
-          <h3 className="font-semibold text-gray-900">Receipt</h3>
+        <div className="flex items-center gap-2.5">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+            <Receipt className="w-4 h-4" />
+          </span>
+          <h3 className="font-display font-semibold tracking-tight text-gray-900">Receipt</h3>
         </div>
         <button
           onClick={() => setShowFullReceipt(!showFullReceipt)}
-          className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center space-x-1"
+          className="card-link flex min-h-[44px] items-center gap-1 lg:min-h-0"
         >
           <Eye className="w-4 h-4" />
           <span>{showFullReceipt ? 'Hide' : 'View Full Size'}</span>
@@ -37,13 +39,13 @@ export const ExpenseModalReceipt: React.FC<ExpenseModalReceiptProps> = ({ receip
       </div>
 
       {showFullReceipt && (
-        <div className="bg-white rounded-lg p-4 border-2 border-gray-200 shadow-md">
+        <div className="card rounded-lg p-4">
           {pdfReceipt ? (
             <a
               href={displayUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col items-center justify-center gap-3 py-8 px-4 rounded-lg bg-gray-50 hover:bg-gray-100 border-2 border-dashed border-gray-300 text-gray-700 no-underline"
+              className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-gray-700 no-underline transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/40"
             >
               <FileText className="w-14 h-14 text-red-600" />
               <span className="font-medium">PDF Receipt</span>

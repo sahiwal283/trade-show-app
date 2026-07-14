@@ -24,17 +24,17 @@ export const PendingSyncModal: React.FC<PendingSyncModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" 
+      <div className="flex items-end sm:items-center justify-center min-h-screen px-0 sm:px-4">
+        <div
+          className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
           onClick={onClose}
         />
-        <div className="relative bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden z-50">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-900">Pending Sync</h2>
+        <div className="modal-sheet-h relative z-50 w-full max-w-6xl max-h-[90vh] overflow-hidden rounded-t-xl rounded-b-none sm:rounded-xl bg-white shadow-elevation-3">
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+            <h2 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-gray-900">Pending Sync</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="tap-target rounded-lg p-2 transition-colors duration-150 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
             >
               <X className="w-5 h-5 text-gray-500" />
             </button>

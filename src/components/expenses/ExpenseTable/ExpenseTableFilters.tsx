@@ -8,6 +8,13 @@
 import React from 'react';
 import { Expense, TradeShow } from '../../../App';
 
+// One shared recipe for every inline filter control so the toolbar reads as
+// a single grouped system (quiet at rest, brand-focused when active).
+// Mobile-first: 16px text + 44px height below sm so iOS doesn't zoom and
+// controls are thumb-friendly; sm: restores the original compact desktop recipe.
+const filterControl =
+  'w-full rounded-md border border-gray-200 bg-white px-2 py-2 min-h-[44px] text-base sm:py-1 sm:min-h-0 sm:text-xs text-gray-600 placeholder-gray-400 shadow-sm transition-all duration-150 hover:border-gray-300 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15';
+
 interface ExpenseTableFiltersProps {
   // Filter values
   dateFilter: string;
@@ -70,13 +77,13 @@ export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
   }
 
   return (
-    <tr className="border-t border-gray-100">
+    <tr className="border-t border-gray-200/80 bg-gray-50/60">
       {/* Date Filter (Month Dropdown) */}
-      <th className="px-2 sm:px-3 lg:px-4 py-1">
+      <th className="px-2 sm:px-3 lg:px-4 py-2">
         <select
           value={dateFilter.substring(0, 7) || ''}
           onChange={(e) => setDateFilter(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+          className={filterControl}
         >
           <option value="">All</option>
           {(() => {
@@ -112,14 +119,14 @@ export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
       </th>
 
       {/* User Filter Placeholder (Approval Users) */}
-      {hasApprovalPermission && <th className="px-2 sm:px-3 lg:px-4 py-1"></th>}
+      {hasApprovalPermission && <th className="px-2 sm:px-3 lg:px-4 py-2"></th>}
 
       {/* Event Filter */}
-      <th className="px-2 sm:px-3 lg:px-4 py-1">
+      <th className="px-2 sm:px-3 lg:px-4 py-2">
         <select
           value={eventFilter}
           onChange={(e) => setEventFilter(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+          className={filterControl}
         >
           <option value="all">All Events</option>
           {events.map((event) => (
@@ -131,11 +138,11 @@ export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
       </th>
 
       {/* Category Filter */}
-      <th className="px-2 sm:px-3 lg:px-4 py-1">
+      <th className="px-2 sm:px-3 lg:px-4 py-2">
         <select
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+          className={filterControl}
         >
           <option value="all">All</option>
           {uniqueCategories.map((cat) => (
@@ -147,25 +154,25 @@ export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
       </th>
 
       {/* Merchant Filter */}
-      <th className="px-2 sm:px-3 lg:px-4 py-1">
+      <th className="px-2 sm:px-3 lg:px-4 py-2">
         <input
           type="text"
           value={merchantFilter}
           onChange={(e) => setMerchantFilter(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 placeholder-gray-400 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+          className={filterControl}
           placeholder="Search..."
         />
       </th>
 
       {/* Amount - No Filter */}
-      <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
+      <th className="px-2 sm:px-3 lg:px-4 py-2"></th>
 
       {/* Card Filter */}
-      <th className="px-2 sm:px-3 lg:px-4 py-1">
+      <th className="px-2 sm:px-3 lg:px-4 py-2">
         <select
           value={cardFilter}
           onChange={(e) => setCardFilter(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+          className={filterControl}
         >
           <option value="all">All</option>
           {uniqueCards.map((card) => (
@@ -177,11 +184,11 @@ export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
       </th>
 
       {/* Status Filter */}
-      <th className="px-2 sm:px-3 lg:px-4 py-1">
+      <th className="px-2 sm:px-3 lg:px-4 py-2">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+          className={filterControl}
         >
           <option value="all">All</option>
           <option value="pending">Pending</option>
@@ -191,11 +198,11 @@ export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
       </th>
 
       {/* Reimbursement Filter */}
-      <th className="px-2 sm:px-3 lg:px-4 py-1">
+      <th className="px-2 sm:px-3 lg:px-4 py-2">
         <select
           value={reimbursementFilter}
           onChange={(e) => setReimbursementFilter(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+          className={filterControl}
         >
           <option value="all">All</option>
           <option value="required">Required</option>
@@ -206,17 +213,17 @@ export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
       {/* Entity and Zoho Filter Placeholders (Approval Users) */}
       {hasApprovalPermission && (
         <>
-          <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
-          <th className="px-2 sm:px-3 lg:px-4 py-1"></th>
+          <th className="px-2 sm:px-3 lg:px-4 py-2"></th>
+          <th className="px-2 sm:px-3 lg:px-4 py-2"></th>
         </>
       )}
 
       {/* Actions Column - Sort By */}
-      <th className="px-2 sm:px-3 lg:px-4 py-1">
+      <th className="px-2 sm:px-3 lg:px-4 py-2">
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-white border border-gray-200 rounded text-gray-600 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 transition-all"
+          className={filterControl}
         >
           <option value="default">Default</option>
           <option value="date-newest">Newest First</option>

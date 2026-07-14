@@ -102,7 +102,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         />
       </div>
 
-      <div className="relative max-w-md w-full px-3 sm:px-0 py-10">
+      <div className="relative max-w-md w-full px-0 py-10">
         <div className="bg-white/95 backdrop-blur rounded-2xl shadow-elevation-3 ring-1 ring-gray-900/5 p-6 sm:p-8 md:p-10">
           <div className="text-center mb-10">
             <div className="w-14 h-14 bg-gradient-to-br from-brand-500 to-accent-500 rounded-2xl shadow-brand flex items-center justify-center mx-auto mb-5">
@@ -220,7 +220,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                       setUsername(user.username);
                       setPassword(user.password);
                     }}
-                    className="text-left px-3 py-2 text-sm rounded-lg transition-colors hover:bg-gray-50 focus-visible:bg-gray-50"
+                    className="text-left px-3 py-2 min-h-[44px] lg:min-h-0 text-sm rounded-lg transition-colors hover:bg-gray-50 focus-visible:bg-gray-50"
                   >
                     <div className="flex justify-between items-center gap-2">
                       <div className="min-w-0 truncate">

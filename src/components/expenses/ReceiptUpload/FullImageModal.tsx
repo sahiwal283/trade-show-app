@@ -27,7 +27,7 @@ export const FullImageModal: React.FC<FullImageModalProps> = ({
     >
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+        className="tap-target absolute top-[max(1rem,env(safe-area-inset-top))] right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
         title="Close"
       >
         <X className="w-6 h-6 text-gray-900" />

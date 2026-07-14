@@ -85,36 +85,43 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = ({
   currentUserId
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-      <div className="overflow-x-auto">
+    <div className="card overflow-hidden">
+      {/* Mobile scroll affordance: the Date column stays pinned, rest scrolls */}
+      <div className="flex items-center justify-between gap-2 border-b border-gray-100 px-3 py-1.5 text-[11px] text-gray-400 lg:hidden" aria-hidden="true">
+        <span>Swipe sideways for more columns</span>
+        <span className="tracking-widest">&rsaquo;&rsaquo;</span>
+      </div>
+      <div className="overflow-x-auto table-sticky-first">
         <table className="w-full min-w-max">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50/80">
             {/* Column Headers */}
             <tr>
-              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Date</th>
+              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Date</th>
               {hasApprovalPermission && (
-                <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">User</th>
+                <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">User</th>
               )}
-              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Event</th>
-              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Category</th>
-              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Merchant</th>
-              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Amount</th>
-              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Card Used</th>
-              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Status</th>
-              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Reimbursement</th>
+              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Event</th>
+              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Category</th>
+              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Merchant</th>
+              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Amount</th>
+              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Card Used</th>
+              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Status</th>
+              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Reimbursement</th>
               {hasApprovalPermission && (
                 <>
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Entity</th>
-                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-center text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">Zoho</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Entity</th>
+                  <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">Zoho</th>
                 </>
               )}
-              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-right text-xs sm:text-sm font-medium text-gray-900 whitespace-nowrap">
+              <th className="px-2 sm:px-3 lg:px-4 py-2.5 sm:py-3 min-h-[44px] text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500 whitespace-nowrap">
                 <div className="flex items-center justify-end space-x-2">
                   <span>Actions</span>
                   <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`p-1 rounded transition-colors ${
-                      showFilters ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                    className={`tap-target rounded-md p-1 transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
+                      showFilters
+                        ? 'bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-200/70'
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
                     }`}
                     title={showFilters ? 'Hide Filters' : 'Show Filters'}
                   >
@@ -149,7 +156,7 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = ({
               uniqueCards={uniqueCards}
             />
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-gray-100">
             {filteredExpenses.map((expense) => {
               const event = events.find(e => e.id === expense.tradeShowId);
               const userName = expense.user_name || users.find(u => u.id === expense.userId)?.name || 'Unknown User';

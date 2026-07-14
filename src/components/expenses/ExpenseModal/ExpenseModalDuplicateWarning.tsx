@@ -25,10 +25,12 @@ export const ExpenseModalDuplicateWarning: React.FC<ExpenseModalDuplicateWarning
   if (!duplicateCheck || duplicateCheck.length === 0) return null;
 
   return (
-    <div className="bg-amber-50 border-2 border-amber-400 rounded-xl p-4">
+    <div className="rounded-card border-l-4 border-amber-400 bg-amber-50 p-4 ring-1 ring-inset ring-amber-200/70">
       <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle className="w-5 h-5 text-amber-600" />
-        <p className="font-semibold text-amber-900">⚠ Possible Duplicate Expenses</p>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 ring-1 ring-inset ring-amber-200">
+          <AlertTriangle className="w-4 h-4" />
+        </span>
+        <p className="font-display font-semibold tracking-tight text-amber-900">Possible Duplicate Expenses</p>
       </div>
       <div className="space-y-2">
         {duplicateCheck.map((dup, index) => {
@@ -38,9 +40,13 @@ export const ExpenseModalDuplicateWarning: React.FC<ExpenseModalDuplicateWarning
             day: 'numeric',
           });
           return (
-            <div key={index} className="text-sm text-amber-900 bg-white rounded p-2">
-              ⚠ Possible duplicate: Expense #{dup.expenseId} (${dup.amount.toFixed(2)} at {dup.merchant} on{' '}
-              {formattedDate})
+            <div
+              key={index}
+              className="rounded-lg bg-white p-2.5 text-sm text-gray-700 ring-1 ring-inset ring-amber-200/60"
+            >
+              Expense #{dup.expenseId} —{' '}
+              <span className="font-semibold text-gray-900 tabular-nums">${dup.amount.toFixed(2)}</span> at{' '}
+              {dup.merchant} on {formattedDate}
             </div>
           );
         })}

@@ -88,7 +88,12 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   showIcon = false,
   className = ''
 }) => {
-  const config = statusConfig[status];
+  // Normalize space-separated statuses from the API ("needs further review")
+  // to the underscore keys used in statusConfig.
+  const normalizedStatus = (typeof status === 'string'
+    ? status.replace(/\s+/g, '_')
+    : status) as ExpenseStatus;
+  const config = statusConfig[normalizedStatus];
   
   if (!config) {
     console.warn(`[StatusBadge] Unknown status: ${status}`);

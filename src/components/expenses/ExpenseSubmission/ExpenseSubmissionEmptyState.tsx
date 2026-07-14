@@ -1,6 +1,6 @@
 /**
  * ExpenseSubmissionEmptyState Component
- * 
+ *
  * Empty state displayed when no expenses are found.
  */
 
@@ -19,32 +19,34 @@ export const ExpenseSubmissionEmptyState: React.FC<ExpenseSubmissionEmptyStatePr
   onAddExpense
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-      <Receipt className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-      <h3 className="text-lg font-medium text-gray-900 mb-2">No Expenses Found</h3>
-      <p className="text-gray-600 mb-6 max-w-md mx-auto">
+    <div className="card relative overflow-hidden p-12 text-center">
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-500/60 to-transparent"
+      />
+      <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 ring-1 ring-inset ring-brand-100">
+        <Receipt className="w-8 h-8" />
+      </div>
+      <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900 mb-1.5">
+        No Expenses Found
+      </h3>
+      <p className="mx-auto mb-6 max-w-md text-sm text-gray-500">
         {hasActiveFilters
           ? 'Try adjusting your filters to see more expenses.'
           : 'Start by submitting your first expense with automatic OCR extraction from receipts.'
         }
       </p>
-      <div className="flex justify-center space-x-4">
+      <div className="flex justify-center gap-3">
         {hasActiveFilters && (
-          <button
-            onClick={onClearFilters}
-            className="bg-gray-100 text-gray-700 px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:bg-gray-200 transition-all duration-200"
-          >
+          <button onClick={onClearFilters} className="btn-secondary">
             Clear Filters
           </button>
         )}
-        <button
-          onClick={onAddExpense}
-          className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
-        >
+        <button onClick={onAddExpense} className="btn-primary">
+          <Receipt className="w-4 h-4" />
           Add Expense
         </button>
       </div>
     </div>
   );
 };
-

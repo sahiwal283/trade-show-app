@@ -1,6 +1,6 @@
 /**
  * ExpenseSubmissionHeader Component
- * 
+ *
  * Header section with title, description, and action buttons.
  */
 
@@ -25,21 +25,20 @@ export const ExpenseSubmissionHeader: React.FC<ExpenseSubmissionHeaderProps> = (
   onAddExpense
 }) => {
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-2">
       <div>
-        <h1 className="text-lg md:text-xl font-bold text-gray-900">Expense Management</h1>
-        <p className="text-gray-500 text-sm">
-          {hasApprovalPermission 
+        <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight text-gray-900">
+          Expense Management
+        </h1>
+        <p className="mt-0.5 text-sm text-gray-500">
+          {hasApprovalPermission
             ? 'Review, approve, and manage expense submissions'
             : 'Submit and track your trade show expenses'}
         </p>
       </div>
       <div className="flex flex-row flex-wrap gap-2 w-full sm:w-auto">
         {hasActiveFilters && (
-          <button
-            onClick={onClearFilters}
-            className="bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-all duration-200 flex items-center space-x-1.5"
-          >
+          <button onClick={onClearFilters} className="btn-ghost">
             <X className="w-4 h-4" />
             <span>Clear Filters</span>
           </button>
@@ -47,19 +46,16 @@ export const ExpenseSubmissionHeader: React.FC<ExpenseSubmissionHeaderProps> = (
         {pendingCount > 0 && (
           <button
             onClick={onShowPendingSync}
-            className="relative bg-orange-50 text-orange-700 border border-orange-200 px-3 py-2 rounded-lg text-sm font-medium hover:bg-orange-100 transition-all duration-200 flex items-center space-x-1.5"
+            className="inline-flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 ring-1 ring-inset ring-amber-200/70 transition-colors duration-150 hover:bg-amber-100 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:ring-offset-2"
           >
             <Clock className="w-4 h-4" />
             <span>Pending Sync</span>
-            <span className="ml-1 px-1.5 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">
+            <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-white">
               {pendingCount}
             </span>
           </button>
         )}
-        <button
-          onClick={onAddExpense}
-          className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 py-2 min-h-[40px] rounded-lg text-sm font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-1.5 shadow-lg shadow-blue-500/30"
-        >
+        <button onClick={onAddExpense} className="btn-primary flex-1 sm:flex-initial">
           <Receipt className="w-4 h-4" />
           <span>Add Expense</span>
         </button>
@@ -67,4 +63,3 @@ export const ExpenseSubmissionHeader: React.FC<ExpenseSubmissionHeaderProps> = (
     </div>
   );
 };
-

@@ -16,7 +16,7 @@ export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPage
     <div className="card">
       <div className="flex items-center justify-between px-5 md:px-6 pt-5 pb-4 border-b border-gray-100">
         <h3 className="card-title">Recent Expenses</h3>
-        <button onClick={() => onPageChange('expenses')} className="card-link">View All</button>
+        <button onClick={() => onPageChange('expenses')} className="card-link inline-flex min-h-[44px] items-center lg:min-h-0">View All</button>
       </div>
 
       {recentExpenses.length === 0 ? (
@@ -39,9 +39,9 @@ export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPage
                   <div className="flex items-center gap-2 mb-0.5">
                     <p className="text-sm font-semibold text-gray-900 truncate">{expense.merchant}</p>
                     {expense.event_name && (
-                      <span className="chip shrink-0 px-2 py-0.5 text-[11px] bg-brand-50 text-brand-700 ring-brand-200/60">
-                        <Calendar className="w-3 h-3" />
-                        {expense.event_name}
+                      <span className="chip min-w-0 shrink px-2 py-0.5 text-[11px] bg-brand-50 text-brand-700 ring-brand-200/60 sm:shrink-0">
+                        <Calendar className="w-3 h-3 shrink-0" />
+                        <span className="truncate">{expense.event_name}</span>
                       </span>
                     )}
                   </div>

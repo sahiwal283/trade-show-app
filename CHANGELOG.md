@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.40.0] - 2026-07-14 - UI refresh phase 2 + mobile pass
+
+### Changed
+- **Desktop UI phase 2**: expense table (card shell, shared status/category chips, refined filters toolbar, icon-button actions, designed empty state), ApprovalCards, ExpenseForm + ReceiptUpload (consistent field anatomy, brand receipt panel, OCR confidence chips), ExpenseModal family (gradient headers, amber duplicate-warning notice, chip audit trail), Reports (elevated clickable tiles, system filter modal, brand→accent progress bars), and EventSetup (segmented filters, card list, redesigned form/details modals) — all on the phase-1 token system.
+- **Mobile pass (320-430px)**: 44px touch targets and 16px inputs app-wide (kills iOS focus-zoom), camera-first receipt capture affordance, sticky bottom action bars on long forms, bottom-sheet modals with pinned headers/footers and safe-area padding, sticky-first-column horizontal scroll for the expense table with a visible swipe affordance, contained chart scrolling, PWA safe-area support for notched phones. Desktop (lg+) rendering pixel-identical.
+
+### Fixed
+- `DetailedReport`: missing `CheckCircle` import crashed accountant approval buttons; category progress bars rendered invisible after the token migration.
+- `StatusBadge`: "needs further review" (API format) fell through to the gray unknown chip.
+- `CategoryBadge`: local color map didn't match real category names, so all categories rendered gray.
+- Five real 320px overflow bugs (EventFormModal grid, Reports tiles, EventFilters segmented controls, RecentExpenses event chip, Reports monthly chart).
+
 ## [1.39.0] - 2026-07-14 - Performance overhaul, dead-code purge, UI refresh (phase 1)
 
 ### Performance

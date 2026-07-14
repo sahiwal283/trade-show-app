@@ -1,6 +1,6 @@
 /**
  * ExpenseTableRow Component
- * 
+ *
  * Extracted from ExpenseSubmission.tsx (was lines 869-1068, ~200 lines)
  * Single expense row with all columns, approval actions, and entity management
  */
@@ -20,11 +20,11 @@ import {
 import { Expense, TradeShow, User } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 import {
-  getStatusColor,
-  getCategoryColor,
   getReimbursementStatusColor,
   formatReimbursementStatus,
 } from '../../../constants/appConstants';
+import { StatusBadge } from '../../common/StatusBadge';
+import { CategoryBadge } from '../../common/CategoryBadge';
 
 interface ExpenseTableRowProps {
   expense: Expense;
@@ -43,6 +43,19 @@ interface ExpenseTableRowProps {
   currentUserId: string;
 }
 
+// Dot colors matching the shared REIMBURSEMENT_COLORS tints
+const reimbursementDotColors: Record<string, string> = {
+  'pending review': 'bg-amber-500',
+  approved: 'bg-accent-500',
+  rejected: 'bg-red-500',
+  paid: 'bg-brand-500',
+};
+
+// Compact icon-button recipe for inline row actions.
+// 44px touch target below lg; desktop keeps the original compact footprint.
+const rowIconButton =
+  'inline-flex items-center justify-center rounded-md p-1 min-h-[44px] min-w-[44px] lg:min-h-0 lg:min-w-0 transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1';
+
 export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
   expense,
   event,
@@ -60,9 +73,9 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
   currentUserId,
 }) => {
   return (
-    <tr key={expense.id} className="hover:bg-gray-50">
+    <tr key={expense.id} className="group transition-colors duration-150 hover:bg-brand-50/40">
       {/* Date */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-900 whitespace-nowrap">
+      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-600 tabular-nums whitespace-nowrap">
         {formatLocalDate(expense.date)}
       </td>
 
@@ -73,16 +86,12 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
 
       {/* Event */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-900">
-        {event ? event.name : 'No Event'}
+        {event ? event.name : <span className="text-gray-400">No Event</span>}
       </td>
 
       {/* Category */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
-        <span
-          className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${getCategoryColor(expense.category)}`}
-        >
-          {expense.category}
-        </span>
+        <CategoryBadge category={expense.category} size="sm" />
       </td>
 
       {/* Merchant */}
@@ -91,13 +100,16 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
           <div className="flex items-center gap-2">
             <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
             {expense.duplicateCheck && expense.duplicateCheck.length > 0 && (
-              <div className="relative group">
-                <div className="flex items-center text-amber-600 cursor-help">
+              <div className="relative group/dup">
+                <div className="flex items-center text-amber-500 cursor-help">
                   <AlertTriangle className="w-4 h-4" />
                 </div>
                 {/* Tooltip on hover */}
-                <div className="absolute left-0 top-6 hidden group-hover:block z-50 w-80 p-3 bg-amber-50 border-2 border-amber-400 rounded-lg shadow-lg">
-                  <p className="text-xs font-semibold text-amber-900 mb-2">⚠ Possible Duplicate Expenses:</p>
+                <div className="absolute left-0 top-6 hidden group-hover/dup:block z-50 w-80 rounded-card bg-white p-4 shadow-elevation-3 ring-1 ring-amber-200">
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 mb-2">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+                    Possible duplicate expenses
+                  </p>
                   <div className="space-y-1">
                     {expense.duplicateCheck.map((dup, idx) => {
                       const dupDate = new Date(dup.date);
@@ -106,8 +118,9 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
                         day: 'numeric',
                       });
                       return (
-                        <div key={idx} className="text-xs text-amber-900">
-                          ${dup.amount.toFixed(2)} at {dup.merchant} on {formattedDate}
+                        <div key={idx} className="text-xs text-gray-700 tabular-nums">
+                          <span className="font-semibold text-gray-900">${dup.amount.toFixed(2)}</span>{' '}
+                          at {dup.merchant} on {formattedDate}
                         </div>
                       );
                     })}
@@ -116,69 +129,71 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
               </div>
             )}
           </div>
-          {expense.location && <div className="text-xs sm:text-sm text-gray-500">{expense.location}</div>}
+          {expense.location && <div className="text-xs text-gray-500">{expense.location}</div>}
         </div>
       </td>
 
       {/* Amount */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">
+      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-gray-900 tabular-nums whitespace-nowrap">
         ${expense.amount.toFixed(2)}
       </td>
 
       {/* Card Used */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-900">{expense.cardUsed}</td>
+      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-600">{expense.cardUsed}</td>
 
       {/* Status */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
-        <span
-          className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${getStatusColor(expense.status)}`}
-        >
-          {expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
-        </span>
+        <StatusBadge
+          status={expense.status as React.ComponentProps<typeof StatusBadge>['status']}
+          size="sm"
+        />
       </td>
 
       {/* Reimbursement */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
         <div className="space-y-1">
-          <span
-            className={`px-1.5 py-0.5 text-[10px] sm:px-2 sm:py-1 sm:text-xs font-medium rounded-full whitespace-nowrap ${
-              expense.reimbursementRequired
-                ? getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')
-                : 'bg-gray-100 text-gray-800'
-            }`}
-          >
-            {expense.reimbursementRequired
-              ? formatReimbursementStatus(expense.reimbursementStatus)
-              : 'Not Required'}
-          </span>
+          {expense.reimbursementRequired ? (
+            <span
+              className={`chip px-2 py-1 text-xs ${getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')}`}
+            >
+              <span
+                className={`chip-dot ${reimbursementDotColors[expense.reimbursementStatus || 'pending review'] || 'bg-amber-500'}`}
+              />
+              {formatReimbursementStatus(expense.reimbursementStatus)}
+            </span>
+          ) : (
+            <span className="chip px-2 py-1 text-xs bg-gray-50 text-gray-500 ring-gray-200">
+              Not Required
+            </span>
+          )}
           {hasApprovalPermission && expense.reimbursementRequired && (
             <>
               {(!expense.reimbursementStatus || expense.reimbursementStatus === 'pending review') && (
-                <div className="flex items-center space-x-1 mt-1">
+                <div className="flex items-center gap-1 mt-1">
                   <button
                     onClick={() => onReimbursementApproval(expense, 'approved')}
-                    className="p-1 text-emerald-600 hover:bg-emerald-50 rounded transition-colors"
+                    className={`${rowIconButton} text-accent-600 hover:bg-accent-50 hover:text-accent-700`}
                     title="Approve Reimbursement"
                   >
-                    <CheckCircle className="w-3 h-3" />
+                    <CheckCircle className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => onReimbursementApproval(expense, 'rejected')}
-                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                    className={`${rowIconButton} text-red-600 hover:bg-red-50 hover:text-red-700`}
                     title="Reject Reimbursement"
                   >
-                    <X className="w-3 h-3" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
               {expense.reimbursementStatus === 'approved' && (
-                <div className="flex items-center space-x-1 mt-1">
+                <div className="flex items-center gap-1 mt-1">
                   <button
                     onClick={() => onMarkAsPaid(expense)}
-                    className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    className={`${rowIconButton} text-brand-600 hover:bg-brand-50 hover:text-brand-700`}
                     title="Mark as Paid"
                   >
-                    <DollarSign className="w-3 h-3" />
+                    <DollarSign className="w-3.5 h-3.5" />
                   </button>
                 </div>
               )}
@@ -193,10 +208,10 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
           <select
             value={expense.zohoEntity || ''}
             onChange={(e) => onAssignEntity(expense, e.target.value)}
-            className={`text-xs border rounded px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full min-w-[120px] ${
+            className={`w-full min-w-[120px] rounded-lg border px-2 py-2 min-h-[44px] text-base sm:py-1 sm:min-h-0 sm:text-xs shadow-sm transition-all duration-150 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 ${
               expense.zohoEntity
                 ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
-                : 'border-gray-300 bg-white text-gray-900'
+                : 'border-gray-300 bg-white text-gray-900 hover:border-gray-400'
             }`}
             disabled={!!expense.zohoEntity}
             title={expense.zohoEntity ? 'Entity assigned - use View Details to change' : ''}
@@ -222,14 +237,14 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
             {!expense.zohoEntity ? (
               <span className="text-xs text-gray-400 italic">No entity</span>
             ) : expense.zohoExpenseId || pushedExpenses.has(expense.id) ? (
-              <div className="flex items-center space-x-1 text-emerald-600">
-                <CheckCircle2 className="w-4 h-4" />
-                <span className="text-xs font-medium">Pushed</span>
-              </div>
+              <span className="chip px-2 py-1 text-xs bg-accent-50 text-accent-800 ring-accent-200/70">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                Pushed
+              </span>
             ) : pushingExpenseId === expense.id ? (
               <button
                 disabled
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-md cursor-not-allowed"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-200/70 cursor-not-allowed"
               >
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 <span>Pushing...</span>
@@ -237,7 +252,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
             ) : (
               <button
                 onClick={() => onPushToZoho(expense)}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-200/70 transition-colors duration-150 hover:bg-brand-100 hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 lg:min-h-0"
                 title={`Push to ${expense.zohoEntity} Zoho Books`}
               >
                 <Upload className="w-3.5 h-3.5" />
@@ -250,11 +265,11 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
 
       {/* Actions */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-right">
-        <div className="flex items-center justify-end space-x-2">
+        <div className="flex items-center justify-end gap-1">
           {/* View Details (All Users) */}
           <button
             onClick={() => onViewExpense(expense)}
-            className="p-2 text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+            className="tap-target rounded-lg p-2 text-gray-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
             title="View Details & Receipt"
           >
             <Eye className="w-4 h-4" />
@@ -263,7 +278,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
           {(expense.userId === currentUserId || hasApprovalPermission) && (
             <button
               onClick={() => onDeleteExpense(expense.id)}
-              className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="tap-target rounded-lg p-2 text-gray-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
               title="Delete"
             >
               <Trash2 className="w-4 h-4" />
@@ -274,4 +289,3 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
     </tr>
   );
 };
-
