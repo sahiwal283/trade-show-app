@@ -25,7 +25,14 @@ export function useExpenseFilters(expenses: Expense[]) {
       const matchesDate = !dateFilter || expense.date.startsWith(dateFilter);
       const matchesEvent = eventFilter === 'all' || expense.tradeShowId === eventFilter;
       const matchesCategory = categoryFilter === 'all' || expense.category === categoryFilter;
-      const matchesMerchant = !merchantFilter || expense.merchant.toLowerCase().includes(merchantFilter.toLowerCase());
+      // Free-text search spans merchant, category, description, location, and
+      // submitter so the toolbar search box behaves like a global row search.
+      const query = merchantFilter.trim().toLowerCase();
+      const matchesMerchant =
+        !query ||
+        [expense.merchant, expense.category, expense.description, expense.location, expense.user_name]
+          .filter(Boolean)
+          .some(field => (field as string).toLowerCase().includes(query));
       const matchesCard = cardFilter === 'all' || expense.cardUsed === cardFilter;
       const matchesStatus = statusFilter === 'all' || expense.status === statusFilter;
       const matchesReimbursement = reimbursementFilter === 'all' || 
@@ -70,6 +77,12 @@ export function useExpenseFilters(expenses: Expense[]) {
         break;
       case 'category-za':
         sorted.sort((a, b) => b.category.localeCompare(a.category));
+        break;
+      case 'user-az':
+        sorted.sort((a, b) => (a.user_name || '').localeCompare(b.user_name || ''));
+        break;
+      case 'user-za':
+        sorted.sort((a, b) => (b.user_name || '').localeCompare(a.user_name || ''));
         break;
       default:
         // Fallback to default sort

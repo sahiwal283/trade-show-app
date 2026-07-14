@@ -348,7 +348,9 @@ function App() {
         />
       )}
       
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? "ml-0 lg:ml-16" : "ml-0 lg:ml-64"}`}>
+      {/* min-w-0 keeps wide tables scrolling inside their own overflow wrapper
+          instead of stretching the page (flex children default to min-width:auto) */}
+      <div className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${sidebarCollapsed ? "ml-0 lg:ml-16" : "ml-0 lg:ml-64"}`}>
         <Header 
           user={user} 
           onLogout={handleLogout}

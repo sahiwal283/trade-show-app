@@ -1,94 +1,126 @@
 import React from 'react';
-import { AlertTriangle, CreditCard, Building2, DollarSign } from 'lucide-react';
+import { AlertTriangle, Building2, CreditCard, DollarSign, TrendingDown, TrendingUp } from 'lucide-react';
 import { Expense } from '../../App';
 
 interface ApprovalCardsProps {
   expenses: Expense[];
 }
 
-// Stat-strip anatomy: soft tinted icon wells with an inset ring, uppercase
-// micro-labels, and one brand hairline across the strip.
-const approvalStats = {
-  total: { well: 'bg-brand-50 text-brand-600 ring-brand-100', value: 'text-stone-900' },
-  pending: { well: 'bg-amber-50 text-amber-600 ring-amber-100', value: 'text-amber-700' },
-  reimbursements: { well: 'bg-orange-50 text-orange-600 ring-orange-100', value: 'text-orange-700' },
-  unassigned: { well: 'bg-red-50 text-red-600 ring-red-100', value: 'text-red-700' },
-};
+interface KpiCardProps {
+  well: string;
+  icon: React.ReactNode;
+  value: string;
+  label: string;
+  context: React.ReactNode;
+}
+
+// KPI card anatomy: tinted icon well, display-face numeral, micro-label,
+// and a quiet context line (trend or what-to-do-next).
+function KpiCard({ well, icon, value, label, context }: KpiCardProps) {
+  return (
+    <div className="card flex items-start gap-3 p-4">
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ${well}`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <p className="font-display text-xl font-bold tracking-tight tabular-nums text-stone-900 md:text-2xl">
+          {value}
+        </p>
+        <p className="micro-label">{label}</p>
+        <div className="mt-1 text-xs text-stone-400">{context}</div>
+      </div>
+    </div>
+  );
+}
+
+function monthKey(offset: number): string {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + offset);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
 
 export const ApprovalCards: React.FC<ApprovalCardsProps> = ({ expenses }) => {
-  // Calculate stats
+  const counted = expenses.filter(e => e.status !== 'rejected');
+  const totalSpent = counted.reduce((sum, e) => sum + (e.amount || 0), 0);
+
+  const thisMonth = monthKey(0);
+  const lastMonth = monthKey(-1);
+  const thisMonthTotal = counted
+    .filter(e => e.date.startsWith(thisMonth))
+    .reduce((sum, e) => sum + (e.amount || 0), 0);
+  const lastMonthTotal = counted
+    .filter(e => e.date.startsWith(lastMonth))
+    .reduce((sum, e) => sum + (e.amount || 0), 0);
+  const monthDeltaPct =
+    lastMonthTotal > 0 ? Math.round(((thisMonthTotal - lastMonthTotal) / lastMonthTotal) * 100) : null;
+
   const pendingExpenses = expenses.filter(e => e.status === 'pending');
+  const pendingTotal = pendingExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
   const pendingReimbursements = expenses.filter(
     e => e.reimbursementRequired && e.reimbursementStatus === 'pending review'
   );
+  const reimbursementTotal = pendingReimbursements.reduce((sum, e) => sum + (e.amount || 0), 0);
   const unassignedEntities = expenses.filter(e => !e.zohoEntity);
-  const totalPendingAmount = pendingExpenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+  const money = (n: number) =>
+    `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
-    <div className="card relative overflow-hidden p-4 mb-4">
-      <span
-        aria-hidden="true"
-        className="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-brand-500/60 via-accent-500/40 to-transparent"
+    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <KpiCard
+        well="bg-brand-50 text-brand-600 ring-brand-100"
+        icon={<DollarSign className="h-5 w-5" />}
+        value={money(totalSpent)}
+        label="Total Spent"
+        context={
+          monthDeltaPct !== null ? (
+            <span
+              className={`inline-flex items-center gap-1 font-medium ${
+                monthDeltaPct > 0 ? 'text-red-600' : 'text-accent-600'
+              }`}
+            >
+              {monthDeltaPct > 0 ? (
+                <TrendingUp className="h-3.5 w-3.5" />
+              ) : (
+                <TrendingDown className="h-3.5 w-3.5" />
+              )}
+              {Math.abs(monthDeltaPct)}% vs last month
+            </span>
+          ) : (
+            <>across {counted.length} expense{counted.length === 1 ? '' : 's'}</>
+          )
+        }
       />
-      <div className="flex flex-wrap items-center gap-4 md:gap-6">
-        {/* Total Amount */}
-        <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ${approvalStats.total.well}`}>
-            <DollarSign className="w-5 h-5" />
-          </div>
-          <div>
-            <p className={`font-display text-xl font-bold tracking-tight tabular-nums ${approvalStats.total.value}`}>
-              ${totalPendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Pending Total</p>
-          </div>
-        </div>
-
-        <div className="hidden sm:block w-px h-10 bg-stone-200" />
-
-        {/* Pending Approval */}
-        <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ${approvalStats.pending.well}`}>
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div>
-            <p className={`font-display text-xl font-bold tracking-tight tabular-nums ${approvalStats.pending.value}`}>
-              {pendingExpenses.length}
-            </p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Pending Approval</p>
-          </div>
-        </div>
-
-        <div className="hidden sm:block w-px h-10 bg-stone-200" />
-
-        {/* Reimbursements */}
-        <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ${approvalStats.reimbursements.well}`}>
-            <CreditCard className="w-5 h-5" />
-          </div>
-          <div>
-            <p className={`font-display text-xl font-bold tracking-tight tabular-nums ${approvalStats.reimbursements.value}`}>
-              {pendingReimbursements.length}
-            </p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Reimbursements</p>
-          </div>
-        </div>
-
-        <div className="hidden sm:block w-px h-10 bg-stone-200" />
-
-        {/* Unassigned Entities */}
-        <div className="flex items-center gap-3">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ${approvalStats.unassigned.well}`}>
-            <Building2 className="w-5 h-5" />
-          </div>
-          <div>
-            <p className={`font-display text-xl font-bold tracking-tight tabular-nums ${approvalStats.unassigned.value}`}>
-              {unassignedEntities.length}
-            </p>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Unassigned</p>
-          </div>
-        </div>
-      </div>
+      <KpiCard
+        well="bg-amber-50 text-amber-600 ring-amber-100"
+        icon={<AlertTriangle className="h-5 w-5" />}
+        value={String(pendingExpenses.length)}
+        label="Pending Approval"
+        context={
+          pendingExpenses.length > 0 ? <>{money(pendingTotal)} awaiting review</> : <>All caught up</>
+        }
+      />
+      <KpiCard
+        well="bg-orange-50 text-orange-600 ring-orange-100"
+        icon={<CreditCard className="h-5 w-5" />}
+        value={String(pendingReimbursements.length)}
+        label="Reimbursements"
+        context={
+          pendingReimbursements.length > 0 ? (
+            <>{money(reimbursementTotal)} to pay out</>
+          ) : (
+            <>No actions required</>
+          )
+        }
+      />
+      <KpiCard
+        well="bg-red-50 text-red-600 ring-red-100"
+        icon={<Building2 className="h-5 w-5" />}
+        value={String(unassignedEntities.length)}
+        label="Unassigned"
+        context={unassignedEntities.length > 0 ? <>Need a Zoho entity</> : <>All assigned</>}
+      />
     </div>
   );
 };

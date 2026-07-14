@@ -523,6 +523,34 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
+  // Bulk entity assignment from the table's selection bar: one pass over the
+  // selected rows, a single toast, and a single reload. Only rows without an
+  // entity are touched, so the change-after-push confirmation never applies.
+  const handleBulkAssignEntity = async (targets: Expense[], entity: string) => {
+    const assignable = targets.filter(e => !e.zohoEntity);
+    if (!entity || assignable.length === 0 || !api.USE_SERVER) return;
+
+    let succeeded = 0;
+    let failed = 0;
+    for (const expense of assignable) {
+      try {
+        await api.assignEntity(expense.id, { zoho_entity: entity });
+        succeeded++;
+      } catch (error) {
+        console.error('[Bulk Entity Assignment] Failed for expense:', expense.id, error);
+        failed++;
+      }
+    }
+
+    if (succeeded > 0) {
+      addToast(`✅ Assigned ${entity} to ${succeeded} expense${succeeded === 1 ? '' : 's'}`, 'success');
+    }
+    if (failed > 0) {
+      addToast(`❌ Failed to assign entity to ${failed} expense${failed === 1 ? '' : 's'}`, 'error');
+    }
+    await reloadData();
+  };
+
   const handlePushToZoho = async (expense: Expense) => {
     if (!expense.zohoEntity) {
       addToast('⚠️ No entity assigned to this expense. Please assign an entity first.', 'warning');
@@ -651,6 +679,8 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           pushedExpenses={pushedExpenses}
           showFilters={showFilters}
           setShowFilters={setShowFilters}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearAllFilters}
           dateFilter={dateFilter}
           setDateFilter={setDateFilter}
           eventFilter={eventFilter}
@@ -672,6 +702,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           onReimbursementApproval={handleReimbursementApproval}
           onMarkAsPaid={handleMarkAsPaid}
           onAssignEntity={handleAssignEntity}
+          onBulkAssignEntity={handleBulkAssignEntity}
           onPushToZoho={handlePushToZoho}
           onViewExpense={(exp) => {
             setViewingExpense(exp);

@@ -261,6 +261,31 @@
       z-index: 3;
       background-color: #fafaf9;
     }
+
+    /* Variant for tables with a leading select-checkbox column (2.5rem wide):
+       pins checkbox + Date together so the date anchor survives the scroll. */
+    .table-sticky-2 th:nth-child(-n + 2),
+    .table-sticky-2 td:nth-child(-n + 2) {
+      position: sticky;
+      z-index: 2;
+      background-color: #ffffff;
+    }
+
+    .table-sticky-2 th:first-child,
+    .table-sticky-2 td:first-child {
+      left: 0;
+    }
+
+    .table-sticky-2 th:nth-child(2),
+    .table-sticky-2 td:nth-child(2) {
+      left: 2.5rem;
+      box-shadow: inset -1px 0 0 rgba(15, 23, 42, 0.08);
+    }
+
+    .table-sticky-2 thead th:nth-child(-n + 2) {
+      z-index: 3;
+      background-color: #fafaf9;
+    }
   }
 
   /* Full-height bottom-sheet sizing for modals on phones only (<640px).

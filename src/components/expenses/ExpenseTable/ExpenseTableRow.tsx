@@ -16,8 +16,9 @@ import {
   Loader2,
   Eye,
   Trash2,
+  Paperclip,
 } from 'lucide-react';
-import { Expense, TradeShow, User } from '../../../App';
+import { Expense, TradeShow } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 import {
   getReimbursementStatusColor,
@@ -41,6 +42,8 @@ interface ExpenseTableRowProps {
   onViewExpense: (expense: Expense) => void;
   onDeleteExpense: (expenseId: string) => void;
   currentUserId: string;
+  isSelected?: boolean;
+  onToggleSelect?: (expenseId: string) => void;
 }
 
 // Dot colors matching the shared REIMBURSEMENT_COLORS tints
@@ -71,9 +74,27 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
   onViewExpense,
   onDeleteExpense,
   currentUserId,
+  isSelected = false,
+  onToggleSelect,
 }) => {
   return (
-    <tr key={expense.id} className="group transition-colors duration-150 hover:bg-brand-50/40">
+    <tr
+      key={expense.id}
+      className={`group transition-colors duration-150 hover:bg-brand-50/40 ${isSelected ? 'bg-brand-50/60' : ''}`}
+    >
+      {/* Bulk select (approval users only) */}
+      {hasApprovalPermission && onToggleSelect && (
+        <td className="w-10 px-2 py-2 text-center sm:px-3 sm:py-2.5">
+          <input
+            type="checkbox"
+            checked={isSelected}
+            onChange={() => onToggleSelect(expense.id)}
+            aria-label={`Select expense at ${expense.merchant}`}
+            className="h-4 w-4 cursor-pointer rounded border-stone-300 accent-brand-600"
+          />
+        </td>
+      )}
+
       {/* Date */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-stone-600 tabular-nums whitespace-nowrap">
         {formatLocalDate(expense.date)}
@@ -202,6 +223,23 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
         </div>
       </td>
 
+      {/* Receipt */}
+      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 whitespace-nowrap">
+        {expense.receiptUrl ? (
+          <button
+            type="button"
+            onClick={() => onViewExpense(expense)}
+            className="chip min-h-[44px] bg-stone-50 px-2 py-1 text-xs text-stone-500 ring-stone-200 transition-colors hover:bg-stone-100 hover:text-stone-700 lg:min-h-0"
+            title="View receipt"
+          >
+            <Paperclip className="h-3 w-3" />
+            1 receipt
+          </button>
+        ) : (
+          <span className="text-xs text-stone-300">—</span>
+        )}
+      </td>
+
       {/* Entity (Approval Users Only) */}
       {hasApprovalPermission && (
         <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
@@ -269,10 +307,11 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
           {/* View Details (All Users) */}
           <button
             onClick={() => onViewExpense(expense)}
-            className="tap-target rounded-lg p-2 text-stone-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-50 px-2.5 py-1.5 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-200/70 transition-colors duration-150 hover:bg-brand-100 hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 lg:min-h-0"
             title="View Details & Receipt"
           >
-            <Eye className="w-4 h-4" />
+            <Eye className="h-3.5 w-3.5" />
+            <span>View</span>
           </button>
           {/* Delete (Own Expenses OR Approval Users) */}
           {(expense.userId === currentUserId || hasApprovalPermission) && (
