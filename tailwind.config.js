@@ -35,9 +35,24 @@ export default {
         },
       },
       fontFamily: {
-        // Same system stack as body, but a named token so headings can opt
-        // into tighter, heavier display styling consistently.
+        // Self-hosted pairing (see src/index.css @font-face): Inter carries
+        // body text, Instrument Sans gives headings and hero numerals their
+        // refined grotesque character.
+        sans: [
+          '"Inter"',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
         display: [
+          '"Instrument Sans"',
+          '"Inter"',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',

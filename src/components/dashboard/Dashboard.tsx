@@ -1,107 +1,153 @@
-import React from 'react';
-import { DollarSign, Calendar, Users, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+/**
+ * Dashboard — Editorial Finance layout.
+ *
+ * Per-show narrative: the active (or next) show is the hero, followed by
+ * the spend story, the action queue, and the receipt ledger. Mobile
+ * stacks hero → spend → actions → reimbursements → ledger → up next;
+ * desktop splits into a 2/1 editorial grid via the `contents` wrappers.
+ */
+
+import React, { useState } from 'react';
+import { CalendarPlus } from 'lucide-react';
 import { User } from '../../App';
-import { StatsCard } from './StatsCard';
-import { RecentExpenses } from './RecentExpenses';
-import { UpcomingEvents } from './UpcomingEvents';
-import { BudgetOverview } from './BudgetOverview';
-import { QuickActions } from './QuickActions';
 import { InstallPWA } from '../common/InstallPWA';
+import { EmptyState } from '../common/EmptyState';
 import { useDashboardData } from './hooks/useDashboardData';
-import { useDashboardStats } from './hooks/useDashboardStats';
+import { useShowDashboard } from './hooks/useShowDashboard';
+import { ShowHero } from './ShowHero';
+import { SpendStoryCard } from './SpendStoryCard';
+import { ReceiptLedger } from './ReceiptLedger';
+import { ActionQueue } from './ActionQueue';
+import { ReimbursementsCard } from './ReimbursementsCard';
+import { UpNextCard } from './UpNextCard';
 
 interface DashboardProps {
   user: User;
   onPageChange: (page: string) => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
-  // Use custom hooks
-  const { expenses, events, users } = useDashboardData();
-  const stats = useDashboardStats({ expenses, events, users, currentUser: user });
+function greeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
+export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
+  const { expenses, events, users, loading } = useDashboardData();
+  const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
+  const board = useShowDashboard({
+    expenses,
+    events,
+    users,
+    currentUser: user,
+    selectedShowId,
+  });
+
+  const canCreateShows =
+    user.role === 'admin' || user.role === 'developer' || user.role === 'coordinator';
+
+  if (loading) {
+    return (
+      <div aria-busy="true" aria-label="Loading dashboard" className="animate-pulse space-y-4">
+        <div className="h-8 w-2/3 max-w-sm rounded-lg bg-stone-200/70" />
+        <div className="h-64 rounded-card bg-stone-200/50" />
+        <div className="h-40 rounded-card bg-stone-200/50" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Welcome Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 via-brand-500 to-accent-500 text-white shadow-elevation-2 p-5 md:p-8">
-        {/* Layered atmosphere: soft light blooms, no images */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-accent-300/20 blur-3xl" />
+    <div className="mx-auto max-w-6xl space-y-4 md:space-y-5">
+      {/* Byline: quiet greeting above the masthead */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-stone-500">
+          {greeting()}, <span className="font-semibold text-stone-700">{user.name.split(' ')[0]}</span>
+          <span className="text-stone-400">
+            {' '}
+            · {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+          </span>
+        </p>
+        <InstallPWA />
+      </div>
+
+      {!board.show ? (
+        <div className="card">
+          <EmptyState
+            icon={CalendarPlus}
+            title="No shows on the calendar"
+            description={
+              canCreateShows
+                ? 'Set up your first trade show to start tracking budgets, receipts, and approvals.'
+                : "You're not assigned to any trade shows yet. Your coordinator will add you to one."
+            }
+            action={
+              canCreateShows
+                ? { label: 'Set up a show', onClick: () => onPageChange('events') }
+                : undefined
+            }
+          />
         </div>
-        <div className="relative flex items-center justify-between gap-6 mb-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-white/70 mb-2">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </p>
-            <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight mb-2">
-              {getGreeting()}, {user.name.split(' ')[0]}!
-            </h1>
-            <p className="text-sm md:text-base text-blue-50/90 max-w-xl">
-              {user.role === 'coordinator' && 'Manage your trade shows and track expenses'}
-              {user.role === 'salesperson' && 'Submit your expenses and view your activity'}
-              {user.role === 'accountant' && 'Review expenses and manage entity mappings'}
-              {user.role === 'admin' && 'Oversee all operations and manage users'}
-              {user.role === 'developer' && 'Full system access with dev tools'}
-              {user.role === 'temporary' && 'View trade show information and dashboard'}
-            </p>
-          </div>
-          <div className="hidden md:block shrink-0">
-            <div className="w-28 h-28 rounded-2xl bg-white/10 ring-1 ring-inset ring-white/20 backdrop-blur-sm flex items-center justify-center rotate-3">
-              <Calendar className="w-12 h-12 text-white/90" />
+      ) : (
+        <>
+          <ShowHero
+            show={board.show}
+            shows={board.shows}
+            isLive={board.isLive}
+            dayCurrent={board.dayCurrent}
+            dayTotal={board.dayTotal}
+            onSelectShow={setSelectedShowId}
+          />
+
+          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-3 lg:items-start lg:gap-5">
+            {/* Left column on desktop; `contents` lets mobile order via order-N */}
+            <div className="contents lg:col-span-2 lg:block lg:space-y-5">
+              <div className="order-1">
+                <SpendStoryCard
+                  spent={board.spent}
+                  budget={board.budget}
+                  budgetPct={board.budgetPct}
+                  dailyPace={board.dailyPace}
+                  isLive={board.isLive}
+                  spendByDay={board.spendByDay}
+                  categories={board.categories}
+                  teamCount={board.teamCount}
+                  receiptsToday={board.receiptsToday}
+                  showBudget={board.canManage}
+                />
+              </div>
+              <div className="order-4">
+                <ReceiptLedger ledger={board.ledger} onPageChange={onPageChange} />
+              </div>
+            </div>
+
+            {/* Right column on desktop */}
+            <div className="contents lg:block lg:space-y-5">
+              <div className="order-2">
+                <ActionQueue
+                  canManage={board.canManage}
+                  pendingCount={board.pendingCount}
+                  ocrReviewCount={board.ocrReviewCount}
+                  zohoQueueCount={board.zohoQueueCount}
+                  onPageChange={onPageChange}
+                />
+              </div>
+              <div className="order-3">
+                <ReimbursementsCard
+                  total={board.reimbursementTotal}
+                  shares={board.reimbursementShares}
+                  canManage={board.canManage}
+                />
+              </div>
+              {board.upNext && (
+                <div className="order-5">
+                  <UpNextCard show={board.upNext} onPageChange={onPageChange} />
+                </div>
+              )}
             </div>
           </div>
-        </div>
-        {/* PWA Install Button */}
-        <div className="relative flex justify-start">
-          <InstallPWA />
-        </div>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
-        <StatsCard
-          title={user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' ? 'Total Expenses' : 'My Expenses'}
-          value={`$${stats.totalExpenses.toLocaleString()}`}
-          icon={DollarSign}
-          color="blue"
-        />
-        <StatsCard
-          title={user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' ? 'Pending Approvals' : 'My Pending Approvals'}
-          value={stats.pendingExpenses.toString()}
-          icon={AlertTriangle}
-          color="orange"
-        />
-        <StatsCard
-          title={user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator' ? 'Active Events' : 'My Active Events'}
-          value={stats.activeEvents.toString()}
-          icon={Calendar}
-          color="emerald"
-        />
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
-        <div className="xl:col-span-2 space-y-4 md:space-y-6">
-          <RecentExpenses expenses={stats.userExpenses} onPageChange={onPageChange} />
-          {(user.role === 'admin' || user.role === 'developer' || user.role === 'accountant') && (
-            <BudgetOverview events={stats.userEvents} expenses={stats.userExpenses} />
-          )}
-        </div>
-        <div className="space-y-4 md:space-y-6">
-          <UpcomingEvents events={stats.userEvents} onPageChange={onPageChange} />
-          
-          {/* Pending Tasks / Quick Actions */}
-          <QuickActions user={user} onNavigate={onPageChange} />
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

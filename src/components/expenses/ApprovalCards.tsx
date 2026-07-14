@@ -6,8 +6,8 @@ interface ApprovalCardsProps {
   expenses: Expense[];
 }
 
-// Same anatomy as dashboard StatsCard: soft tinted icon wells with an inset
-// ring, uppercase micro-labels, and one brand hairline across the strip.
+// Stat-strip anatomy: soft tinted icon wells with an inset ring, uppercase
+// micro-labels, and one brand hairline across the strip.
 const approvalStats = {
   total: { well: 'bg-brand-50 text-brand-600 ring-brand-100', value: 'text-gray-900' },
   pending: { well: 'bg-amber-50 text-amber-600 ring-amber-100', value: 'text-amber-700' },

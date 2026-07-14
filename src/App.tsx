@@ -311,7 +311,7 @@ function App() {
 
   if (!bootstrapDone && !user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <LoadingSpinner size="xl" text="Checking session..." />
       </div>
     );
@@ -326,7 +326,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-stone-50 flex">
       {/* Sync Status Bar */}
       <SyncStatusBar position="top" />
 
@@ -356,7 +356,7 @@ function App() {
           onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
         
-        <main className="flex-1 p-3 sm:p-4 md:p-6 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-4 md:pb-6 bg-gray-50">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-4 md:pb-6 bg-stone-50">
           <Suspense fallback={<div className="flex items-center justify-center py-24"><LoadingSpinner size="lg" text="Loading..." /></div>}>
             {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
             {currentPage === 'events' && <EventSetup user={user} />}

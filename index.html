@@ -42,6 +42,11 @@
     <meta property="og:image" content="/icons/icon-512x512.png" />
     
     <title>ExpenseApp - Trade Show Expense Management</title>
+
+    <!-- Self-hosted fonts: preload both variable files so text renders in the
+         final face on first paint (font-display: swap covers slow loads) -->
+    <link rel="preload" href="/fonts/inter-var-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/instrument-sans-var-latin.woff2" as="font" type="font/woff2" crossorigin />
     
     <!-- Service Worker Cleanup - runs before app loads -->
     <script>
