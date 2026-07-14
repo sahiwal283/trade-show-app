@@ -27,10 +27,13 @@ export const ExpenseSubmissionHeader: React.FC<ExpenseSubmissionHeaderProps> = (
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-2">
       <div>
-        <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight text-gray-900">
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
+          Expenses
+        </p>
+        <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">
           Expense Management
         </h1>
-        <p className="mt-0.5 text-sm text-gray-500">
+        <p className="mt-0.5 text-sm text-stone-500">
           {hasApprovalPermission
             ? 'Review, approve, and manage expense submissions'
             : 'Submit and track your trade show expenses'}

@@ -166,10 +166,13 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
       
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight text-gray-900">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
+            Workspace
+          </p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">
             {user.role === 'coordinator' ? 'Event Management' : 'Events'}
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-stone-500">
             {user.role === 'coordinator'
               ? 'Create and manage trade show events' 
               : user.role === 'admin' || user.role === 'developer'

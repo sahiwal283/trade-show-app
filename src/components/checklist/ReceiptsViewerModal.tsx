@@ -94,8 +94,8 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
         <div className={iconColor}>{icon}</div>
       </div>
       <div>
-        <p className="text-sm text-gray-500">{label}</p>
-        <p className="font-semibold text-gray-900 text-lg">
+        <p className="text-sm text-stone-500">{label}</p>
+        <p className="font-display font-bold tracking-tight text-stone-900 text-lg">
           {value}
         </p>
       </div>
@@ -110,10 +110,10 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
       {/* Close Button */}
       <button
         onClick={onClose}
-        className="fixed top-4 right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+        className="fixed top-4 right-4 p-2 bg-white rounded-full hover:bg-stone-100 transition-colors z-10"
         title="Close (Esc)"
       >
-        <X className="w-6 h-6 text-gray-900" />
+        <X className="w-6 h-6 text-stone-900" />
       </button>
 
       {/* Main Content */}
@@ -122,10 +122,10 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-4">
+        <div className="border-b border-stone-200 bg-white px-6 py-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-white">Expense Details</h2>
-            <div className="text-white text-sm font-medium">
+            <h2 className="font-display text-2xl font-bold tracking-tight text-stone-900">Expense Details</h2>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
               Receipt {currentIndex + 1} of {receipts.length}
             </div>
           </div>
@@ -135,7 +135,7 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
         <div className="p-6 space-y-6 max-h-[calc(90vh-120px)] overflow-y-auto">
           {/* Expense Details Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Expense Information</h3>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 border-b border-stone-200 pb-2">Expense Information</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <DetailItem
@@ -195,9 +195,9 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
 
             {/* Description */}
             {currentReceipt.description && (
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-500 mb-2">Description</p>
-                <p className="text-gray-900">{currentReceipt.description}</p>
+              <div className="bg-stone-50 rounded-lg p-4">
+                <p className="text-sm text-stone-500 mb-2">Description</p>
+                <p className="text-stone-900">{currentReceipt.description}</p>
               </div>
             )}
 
@@ -205,7 +205,7 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Status */}
               <div>
-                <p className="text-sm text-gray-500 mb-2">Status</p>
+                <p className="text-sm text-stone-500 mb-2">Status</p>
                 <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(currentReceipt.status)}`}>
                   {currentReceipt.status === 'needs further review'
                     ? 'Needs Further Review'
@@ -216,7 +216,7 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
               {/* Reimbursement Status */}
               {currentReceipt.reimbursementRequired && (
                 <div>
-                  <p className="text-sm text-gray-500 mb-2">Reimbursement</p>
+                  <p className="text-sm text-stone-500 mb-2">Reimbursement</p>
                   <span className={`px-3 py-1 text-sm font-medium rounded-full ${getReimbursementStatusColor(currentReceipt.reimbursementStatus || 'pending review')}`}>
                     {formatReimbursementStatus(currentReceipt.reimbursementStatus || 'pending review')}
                   </span>
@@ -226,10 +226,10 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
               {/* Entity */}
               {currentReceipt.zohoEntity && (
                 <div>
-                  <p className="text-sm text-gray-500 mb-2">Entity</p>
+                  <p className="text-sm text-stone-500 mb-2">Entity</p>
                   <div className="flex items-center space-x-2">
-                    <Building2 className="w-4 h-4 text-gray-600" />
-                    <span className="text-gray-900 font-medium">{currentReceipt.zohoEntity}</span>
+                    <Building2 className="w-4 h-4 text-stone-600" />
+                    <span className="text-stone-900 font-medium">{currentReceipt.zohoEntity}</span>
                   </div>
                 </div>
               )}
@@ -237,10 +237,10 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
               {/* Zoho Status */}
               {currentReceipt.zohoExpenseId && (
                 <div>
-                  <p className="text-sm text-gray-500 mb-2">Zoho Status</p>
+                  <p className="text-sm text-stone-500 mb-2">Zoho Status</p>
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span className="text-gray-900 font-medium">Synced to Zoho</span>
+                    <span className="text-stone-900 font-medium">Synced to Zoho</span>
                   </div>
                 </div>
               )}
@@ -249,9 +249,9 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
 
           {/* Receipt Image Section */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">Receipt Image</h3>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 border-b border-stone-200 pb-2">Receipt Image</h3>
             
-            <div className="relative bg-gray-900 rounded-lg overflow-hidden min-h-[400px] flex items-center justify-center">
+            <div className="relative bg-stone-900 rounded-lg overflow-hidden min-h-[400px] flex items-center justify-center">
               {/* Previous Button */}
               {receipts.length > 1 && (
                 <button
@@ -307,7 +307,7 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
                       className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
                         index === currentIndex
                           ? 'border-purple-600 scale-110'
-                          : 'border-gray-300 opacity-60 hover:opacity-100'
+                          : 'border-stone-300 opacity-60 hover:opacity-100'
                       }`}
                       title={`View receipt ${index + 1}`}
                     >
@@ -318,8 +318,8 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                          <span className="text-gray-600 text-xs">{index + 1}</span>
+                        <div className="w-full h-full bg-stone-200 flex items-center justify-center">
+                          <span className="text-stone-600 text-xs">{index + 1}</span>
                         </div>
                       )}
                     </button>

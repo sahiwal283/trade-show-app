@@ -51,18 +51,18 @@ export const BoothMapViewer: React.FC<BoothMapViewerProps> = ({
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[9999] p-4">
         <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Booth Floor Plan</h2>
+            <h2 className="text-xl font-bold text-stone-900">Booth Floor Plan</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
               aria-label="Close"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-stone-500" />
             </button>
           </div>
           <div className="flex flex-col items-center justify-center py-12">
-            <AlertCircle className="w-12 h-12 text-gray-400 mb-4" />
-            <p className="text-gray-500">Invalid booth map URL</p>
+            <AlertCircle className="w-12 h-12 text-stone-400 mb-4" />
+            <p className="text-stone-500">Invalid booth map URL</p>
           </div>
         </div>
       </div>
@@ -100,34 +100,34 @@ export const BoothMapViewer: React.FC<BoothMapViewerProps> = ({
     >
       <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-stone-200">
           <div className="flex items-center gap-2">
-            <Maximize2 className="w-5 h-5 text-gray-600" />
-            <h2 className="text-xl font-bold text-gray-900">Booth Floor Plan</h2>
+            <Maximize2 className="w-5 h-5 text-stone-600" />
+            <h2 className="text-xl font-bold text-stone-900">Booth Floor Plan</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
             aria-label="Close"
           >
-            <X className="w-5 h-5 text-gray-500" />
+            <X className="w-5 h-5 text-stone-500" />
           </button>
         </div>
 
         {/* Image Container */}
-        <div className="flex-1 overflow-auto p-6 flex items-center justify-center bg-gray-50">
+        <div className="flex-1 overflow-auto p-6 flex items-center justify-center bg-stone-50">
           {imageLoading && (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-gray-400 mb-4" />
-              <p className="text-sm text-gray-500">Loading image...</p>
+              <Loader2 className="w-8 h-8 animate-spin text-stone-400 mb-4" />
+              <p className="text-sm text-stone-500">Loading image...</p>
             </div>
           )}
 
           {imageError && (
             <div className="flex flex-col items-center justify-center py-12">
-              <AlertCircle className="w-12 h-12 text-gray-400 mb-4" />
-              <p className="text-gray-500 mb-2">Failed to load booth map image</p>
-              <p className="text-xs text-gray-400 text-center max-w-md">
+              <AlertCircle className="w-12 h-12 text-stone-400 mb-4" />
+              <p className="text-stone-500 mb-2">Failed to load booth map image</p>
+              <p className="text-xs text-stone-400 text-center max-w-md">
                 The image could not be loaded. Please check the URL or try again later.
               </p>
             </div>
@@ -145,8 +145,8 @@ export const BoothMapViewer: React.FC<BoothMapViewerProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-          <p className="text-xs text-gray-500 text-center">
+        <div className="p-4 border-t border-stone-200 bg-stone-50 rounded-b-xl">
+          <p className="text-xs text-stone-500 text-center">
             Click outside the image or press Escape to close
           </p>
         </div>

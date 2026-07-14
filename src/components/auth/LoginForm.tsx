@@ -85,7 +85,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-4">
+    <div className="relative min-h-screen overflow-hidden bg-stone-50 flex items-center justify-center px-4">
       {/* Layered background: soft brand washes + faint grid texture (pure CSS) */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-brand-200/40 blur-3xl" />
@@ -94,7 +94,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           className="absolute inset-0 opacity-[0.4]"
           style={{
             backgroundImage:
-              'linear-gradient(to right, rgba(15,23,42,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.045) 1px, transparent 1px)',
+              'linear-gradient(to right, rgba(28,25,23,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(28,25,23,0.045) 1px, transparent 1px)',
             backgroundSize: '32px 32px',
             maskImage: 'radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent)',
             WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent)',
@@ -103,13 +103,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       </div>
 
       <div className="relative max-w-md w-full px-0 py-10">
-        <div className="bg-white/95 backdrop-blur rounded-2xl shadow-elevation-3 ring-1 ring-gray-900/5 p-6 sm:p-8 md:p-10">
+        <div className="bg-white/95 backdrop-blur rounded-2xl shadow-elevation-3 ring-1 ring-stone-900/5 p-6 sm:p-8 md:p-10">
           <div className="text-center mb-10">
             <div className="w-14 h-14 bg-gradient-to-br from-brand-500 to-accent-500 rounded-2xl shadow-brand flex items-center justify-center mx-auto mb-5">
               <Key className="w-7 h-7 text-white" />
             </div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">Welcome back</h1>
-            <p className="text-sm text-gray-500 mt-2">Sign in to TradeShow Expense Manager</p>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">Welcome back</h1>
+            <p className="text-sm text-stone-500 mt-2">Sign in to TradeShow Expense Manager</p>
           </div>
 
           {error && (
@@ -129,7 +129,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 Username or email
               </label>
               <div className="relative">
-                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
                 <input
                   id="login-username"
                   type="text"
@@ -153,7 +153,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 Password
               </label>
               <div className="relative">
-                <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
                 <input
                   id="login-password"
                   type="password"
@@ -191,10 +191,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
+                <div className="w-full border-t border-stone-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-3 bg-white text-gray-500">Don't have an account?</span>
+                <span className="px-3 bg-white text-stone-500">Don't have an account?</span>
               </div>
             </div>
             <button
@@ -208,8 +208,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
           </div>
 
           {displayUsers.length > 0 && (
-            <div className="mt-10 pt-5 border-t border-dashed border-gray-200">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-3">
+            <div className="mt-10 pt-5 border-t border-dashed border-stone-200">
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-3">
                 {isSandbox ? 'Sandbox test accounts' : 'Production accounts'}
               </h3>
               <div className="grid grid-cols-1 gap-1">
@@ -220,14 +220,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                       setUsername(user.username);
                       setPassword(user.password);
                     }}
-                    className="text-left px-3 py-2 min-h-[44px] lg:min-h-0 text-sm rounded-lg transition-colors hover:bg-gray-50 focus-visible:bg-gray-50"
+                    className="text-left px-3 py-2 min-h-[44px] lg:min-h-0 text-sm rounded-lg transition-colors hover:bg-stone-50 focus-visible:bg-stone-50"
                   >
                     <div className="flex justify-between items-center gap-2">
                       <div className="min-w-0 truncate">
-                        <span className="font-medium text-gray-700">{user.username}</span>
-                        <span className="text-gray-400 ml-2 text-xs">{user.role}</span>
+                        <span className="font-medium text-stone-700">{user.username}</span>
+                        <span className="text-stone-400 ml-2 text-xs">{user.role}</span>
                       </div>
-                      <span className="shrink-0 text-[11px] font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{user.password}</span>
+                      <span className="shrink-0 text-[11px] font-mono text-stone-400 bg-stone-100 px-2 py-0.5 rounded">{user.password}</span>
                     </div>
                   </button>
                 ))}

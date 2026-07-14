@@ -120,19 +120,19 @@ export const InstallPrompt: React.FC<InstallPromptProps> = () => {
             {isIOS ? (
               // iOS Instructions
               <div className="space-y-4">
-                <p className="text-gray-700 text-center font-medium mb-4">
+                <p className="text-stone-700 text-center font-medium mb-4">
                   Add ExpenseApp to your home screen for easy access!
                 </p>
                 
                 <div className="space-y-3">
-                  <div className="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg">
+                  <div className="flex items-start space-x-3 bg-stone-50 p-3 rounded-lg">
                     <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
                       1
                     </div>
                     <div>
-                      <p className="text-gray-900 font-medium">Tap the Share button</p>
-                      <p className="text-gray-600 text-sm">
-                        Look for the <span className="inline-flex items-center px-2 py-0.5 bg-gray-200 rounded mx-1">
+                      <p className="text-stone-900 font-medium">Tap the Share button</p>
+                      <p className="text-stone-600 text-sm">
+                        Look for the <span className="inline-flex items-center px-2 py-0.5 bg-stone-200 rounded mx-1">
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
                           </svg>
@@ -141,28 +141,28 @@ export const InstallPrompt: React.FC<InstallPromptProps> = () => {
                     </div>
                   </div>
                   
-                  <div className="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg">
+                  <div className="flex items-start space-x-3 bg-stone-50 p-3 rounded-lg">
                     <div className="flex-shrink-0 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold">
                       2
                     </div>
                     <div>
-                      <p className="text-gray-900 font-medium">Select "Add to Home Screen"</p>
-                      <p className="text-gray-600 text-sm">Scroll down in the menu if needed</p>
+                      <p className="text-stone-900 font-medium">Select "Add to Home Screen"</p>
+                      <p className="text-stone-600 text-sm">Scroll down in the menu if needed</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-start space-x-3 bg-gray-50 p-3 rounded-lg">
+                  <div className="flex items-start space-x-3 bg-stone-50 p-3 rounded-lg">
                     <div className="flex-shrink-0 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
                       3
                     </div>
                     <div>
-                      <p className="text-gray-900 font-medium">Tap "Add"</p>
-                      <p className="text-gray-600 text-sm">The app will appear on your home screen!</p>
+                      <p className="text-stone-900 font-medium">Tap "Add"</p>
+                      <p className="text-stone-600 text-sm">The app will appear on your home screen!</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="mt-6 pt-4 border-t border-stone-200">
                   <button
                     onClick={handleDismiss}
                     className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-emerald-600 transition-all"
@@ -179,10 +179,10 @@ export const InstallPrompt: React.FC<InstallPromptProps> = () => {
                 </div>
                 
                 <div className="text-center">
-                  <p className="text-gray-700 font-medium mb-2">
+                  <p className="text-stone-700 font-medium mb-2">
                     Install ExpenseApp for quick access!
                   </p>
-                  <p className="text-gray-600 text-sm mb-6">
+                  <p className="text-stone-600 text-sm mb-6">
                     Get the full app experience with offline access and faster loading times.
                   </p>
                 </div>
@@ -198,7 +198,7 @@ export const InstallPrompt: React.FC<InstallPromptProps> = () => {
                   
                   <button
                     onClick={handleDismiss}
-                    className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                    className="w-full bg-stone-100 text-stone-700 py-3 rounded-xl font-medium hover:bg-stone-200 transition-colors"
                   >
                     Maybe Later
                   </button>
@@ -207,11 +207,11 @@ export const InstallPrompt: React.FC<InstallPromptProps> = () => {
             ) : (
               // Generic mobile prompt
               <div className="space-y-4">
-                <p className="text-gray-700 text-center font-medium">
+                <p className="text-stone-700 text-center font-medium">
                   Install ExpenseApp on your device for easy access!
                 </p>
                 
-                <div className="text-center text-sm text-gray-600">
+                <div className="text-center text-sm text-stone-600">
                   Look for the "Add to Home Screen" or "Install" option in your browser menu.
                 </div>
 
@@ -225,9 +225,9 @@ export const InstallPrompt: React.FC<InstallPromptProps> = () => {
             )}
 
             {/* Benefits */}
-            <div className="mt-6 pt-4 border-t border-gray-200">
-              <p className="text-xs text-gray-500 text-center mb-2">Benefits of installing:</p>
-              <div className="flex justify-around text-xs text-gray-600">
+            <div className="mt-6 pt-4 border-t border-stone-200">
+              <p className="text-xs text-stone-500 text-center mb-2">Benefits of installing:</p>
+              <div className="flex justify-around text-xs text-stone-600">
                 <span>⚡ Faster</span>
                 <span>📱 Easy Access</span>
                 <span>🔒 More Secure</span>

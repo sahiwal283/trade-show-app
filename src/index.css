@@ -34,7 +34,7 @@
   }
 
   body {
-    @apply text-base text-gray-900 antialiased;
+    @apply text-base text-stone-900 antialiased;
   }
 
   /* Better touch targets for mobile */
@@ -51,7 +51,7 @@
 @layer components {
   /* ===== Card system ===== */
   .card {
-    @apply bg-white rounded-card border border-gray-200/80 shadow-elevation-1;
+    @apply bg-white rounded-card border border-stone-200/80 shadow-elevation-1;
   }
 
   .card-hover {
@@ -59,7 +59,7 @@
   }
 
   .card-title {
-    @apply font-display text-base font-semibold tracking-tight text-gray-900;
+    @apply font-display text-base font-semibold tracking-tight text-stone-900;
   }
 
   .card-link {
@@ -83,11 +83,11 @@
 
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg
-      border border-gray-300 bg-white px-4 py-2.5
+      border border-stone-300 bg-white px-4 py-2.5
       min-h-[44px] lg:min-h-0
-      text-sm font-semibold text-gray-700 shadow-elevation-1
+      text-sm font-semibold text-stone-700 shadow-elevation-1
       transition-all duration-200
-      hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900
+      hover:border-stone-400 hover:bg-stone-50 hover:text-stone-900
       active:translate-y-px
       focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
       disabled:opacity-50 disabled:pointer-events-none;
@@ -96,9 +96,9 @@
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2
       min-h-[44px] lg:min-h-0
-      text-sm font-medium text-gray-600
+      text-sm font-medium text-stone-600
       transition-colors duration-150
-      hover:bg-gray-100 hover:text-gray-900
+      hover:bg-stone-100 hover:text-stone-900
       focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
   }
 
@@ -114,17 +114,22 @@
 
   /* ===== Form fields ===== */
   .field-label {
-    @apply block text-sm font-medium text-gray-700 mb-1.5;
+    @apply block text-sm font-medium text-stone-700 mb-1.5;
   }
 
   /* text-base below sm keeps iOS from auto-zooming on focus (needs >=16px) */
   .input-field {
-    @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5
+    @apply w-full rounded-lg border border-stone-300 bg-white px-3 py-2.5
       min-h-[44px] sm:min-h-0
-      text-base sm:text-sm text-gray-900 placeholder-gray-400 shadow-sm
+      text-base sm:text-sm text-stone-900 placeholder-stone-400 shadow-sm
       transition-all duration-150
-      hover:border-gray-400
+      hover:border-stone-400
       focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15;
+  }
+
+  /* ===== Editorial micro-label: quiet uppercase section headers ===== */
+  .micro-label {
+    @apply text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400;
   }
 
   /* ===== Status chips: one consistent form (tint + ring + dot) ===== */
@@ -254,7 +259,7 @@
 
     .table-sticky-first thead th:first-child {
       z-index: 3;
-      background-color: #f9fafb;
+      background-color: #fafaf9;
     }
   }
 

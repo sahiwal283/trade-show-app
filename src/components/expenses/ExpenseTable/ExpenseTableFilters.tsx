@@ -13,7 +13,7 @@ import { Expense, TradeShow } from '../../../App';
 // Mobile-first: 16px text + 44px height below sm so iOS doesn't zoom and
 // controls are thumb-friendly; sm: restores the original compact desktop recipe.
 const filterControl =
-  'w-full rounded-md border border-gray-200 bg-white px-2 py-2 min-h-[44px] text-base sm:py-1 sm:min-h-0 sm:text-xs text-gray-600 placeholder-gray-400 shadow-sm transition-all duration-150 hover:border-gray-300 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15';
+  'w-full rounded-md border border-stone-200 bg-white px-2 py-2 min-h-[44px] text-base sm:py-1 sm:min-h-0 sm:text-xs text-stone-600 placeholder-stone-400 shadow-sm transition-all duration-150 hover:border-stone-300 focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/15';
 
 interface ExpenseTableFiltersProps {
   // Filter values
@@ -77,7 +77,7 @@ export const ExpenseTableFilters: React.FC<ExpenseTableFiltersProps> = ({
   }
 
   return (
-    <tr className="border-t border-gray-200/80 bg-gray-50/60">
+    <tr className="border-t border-stone-200/80 bg-stone-50/60">
       {/* Date Filter (Month Dropdown) */}
       <th className="px-2 sm:px-3 lg:px-4 py-2">
         <select

@@ -77,8 +77,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
       <div className="card p-3 sm:p-5 md:p-6">
         <div className="mb-6">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Expenses by Trade Show</h3>
-            <span className="chip bg-gray-50 px-2 py-1 text-xs text-gray-500 ring-gray-200">Click to view details</span>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Expenses by Trade Show</h3>
+            <span className="chip bg-stone-50 px-2 py-1 text-xs text-stone-500 ring-stone-200">Click to view details</span>
           </div>
         </div>
         
@@ -93,7 +93,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 return (
                   <div 
                     key={eventName} 
-                    className="group cursor-pointer rounded-lg border border-gray-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 sm:p-4"
+                    className="group cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 sm:p-4"
                     onClick={() => onTradeShowClick?.(eventId)}
                     role="button"
                     tabIndex={0}
@@ -101,20 +101,20 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-900 truncate transition-colors group-hover:text-brand-700">
+                        <span className="text-sm font-medium text-stone-900 truncate transition-colors group-hover:text-brand-700">
                           {eventName}
                         </span>
-                        <span className="text-sm font-semibold tabular-nums text-gray-900">
+                        <span className="text-sm font-semibold tabular-nums text-stone-900">
                           ${amount.toLocaleString()}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2 ring-1 ring-inset ring-gray-200/60">
+                      <div className="w-full bg-stone-100 rounded-full h-2 ring-1 ring-inset ring-stone-200/60">
                         <div
                           className="h-2 rounded-full bg-gradient-to-r from-brand-500 to-accent-500 transition-all duration-500"
                           style={{ width: `${percentage}%` }}
                         ></div>
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-stone-500">
                         {expenses.filter(e => {
                           const event = events.find(ev => ev.id === e.tradeShowId);
                           return (event?.name || 'No Event') === eventName;
@@ -127,8 +127,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
           </div>
         ) : (
           <div className="text-center py-8">
-            <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No event data available</p>
+            <BarChart3 className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+            <p className="text-stone-500">No event data available</p>
           </div>
         )}
       </div>
@@ -138,7 +138,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
         {/* Category Breakdown */}
         <div className="card p-3 sm:p-5 md:p-6">
           <div className="mb-6">
-            <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Expenses by Category</h3>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Expenses by Category</h3>
           </div>
         
         {categories.length > 0 ? (
@@ -150,12 +150,12 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
               return (
                 <div key={category} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900">{category}</span>
-                    <span className="text-sm font-semibold tabular-nums text-gray-900">
+                    <span className="text-sm font-medium text-stone-900">{category}</span>
+                    <span className="text-sm font-semibold tabular-nums text-stone-900">
                       ${amount.toLocaleString()}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2 ring-1 ring-inset ring-gray-200/60">
+                  <div className="w-full bg-stone-100 rounded-full h-2 ring-1 ring-inset ring-stone-200/60">
                     <div
                       className={`h-2 rounded-full ${getCategoryColor(category)} transition-all duration-500`}
                       style={{ width: `${percentage}%` }}
@@ -167,8 +167,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
           </div>
         ) : (
           <div className="text-center py-8">
-            <PieChart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No expense data available</p>
+            <PieChart className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+            <p className="text-stone-500">No expense data available</p>
           </div>
         )}
       </div>
@@ -176,9 +176,9 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
       {/* Monthly Trend - Visual Chart */}
       <div className="card p-3 sm:p-5 md:p-6">
         <div className="mb-6">
-          <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Monthly Spending Trend</h3>
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Monthly Spending Trend</h3>
           {monthlyEntries.length > 1 && (
-            <p className="text-xs text-gray-500 mt-1">Visual comparison across months</p>
+            <p className="text-xs text-stone-500 mt-1">Visual comparison across months</p>
           )}
         </div>
         
@@ -188,7 +188,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                 phones (min bar width per month) instead of squeezing the page */}
             <div className="relative h-80 overflow-x-auto sm:overflow-x-visible">
               {/* Y-axis labels */}
-              <div className="absolute left-0 top-0 bottom-12 w-12 flex flex-col justify-between text-xs text-gray-500">
+              <div className="absolute left-0 top-0 bottom-12 w-12 flex flex-col justify-between text-[10px] font-medium tabular-nums text-stone-400">
                 {[...Array(5)].map((_, i) => {
                   const maxMonthly = Math.max(...monthlyEntries.map(([, d]) => d.amount));
                   const value = maxMonthly * (1 - i * 0.25);
@@ -201,7 +201,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
               </div>
               
               {/* Chart area */}
-              <div className="ml-12 h-full w-max min-w-full sm:w-auto sm:min-w-0 flex items-end justify-around gap-4 pb-12 border-l-2 border-b-2 border-gray-200">
+              <div className="ml-12 h-full w-max min-w-full sm:w-auto sm:min-w-0 flex items-end justify-around gap-4 pb-12 border-l-2 border-b-2 border-stone-200">
                 {/* Bars */}
                 {monthlyEntries.map(([month, data], index) => {
                   const maxMonthly = Math.max(...monthlyEntries.map(([, d]) => d.amount));
@@ -231,10 +231,10 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                   return (
                     <div key={month} className="flex-1 min-w-[2.5rem] sm:min-w-0 flex flex-col items-center justify-end h-full group relative">
                       {/* Hover tooltip */}
-                      <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap pointer-events-none z-10 shadow-elevation-3">
+                      <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-stone-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap pointer-events-none z-10 shadow-elevation-3">
                         <div className="font-semibold">{formatLocalDate(month + '-01', { year: 'numeric', month: 'long' })}</div>
-                        <div className="text-gray-200 mt-1">${data.amount.toLocaleString()}</div>
-                        <div className="text-gray-400 text-[10px]">{data.count} expense{data.count !== 1 ? 's' : ''}</div>
+                        <div className="text-stone-200 mt-1">${data.amount.toLocaleString()}</div>
+                        <div className="text-stone-400 text-[10px]">{data.count} expense{data.count !== 1 ? 's' : ''}</div>
                       </div>
                       
                       {/* Trend indicator above bar */}
@@ -242,7 +242,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                         <div className="mb-1">
                           {trend === 'up' && <TrendingUp className="w-3 h-3 text-red-500" />}
                           {trend === 'down' && <TrendingDown className="w-3 h-3 text-accent-500" />}
-                          {trend === 'flat' && <Minus className="w-3 h-3 text-gray-400" />}
+                          {trend === 'flat' && <Minus className="w-3 h-3 text-stone-400" />}
                         </div>
                       )}
                       
@@ -253,7 +253,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                       />
                       
                       {/* Month label */}
-                      <div className="absolute -bottom-8 text-xs text-gray-600 font-medium">
+                      <div className="absolute -bottom-8 text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                         {monthLabel}
                       </div>
                     </div>
@@ -263,22 +263,22 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
             </div>
             
             {/* Summary Stats */}
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-stone-200">
               <div className="text-center">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Total</div>
-                <div className="font-display text-lg font-bold tracking-tight tabular-nums text-gray-900">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">Total</div>
+                <div className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
                   ${monthlyEntries.reduce((sum, [, data]) => sum + data.amount, 0).toLocaleString()}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Average</div>
-                <div className="font-display text-lg font-bold tracking-tight tabular-nums text-gray-900">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">Average</div>
+                <div className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
                   ${(monthlyEntries.reduce((sum, [, data]) => sum + data.amount, 0) / monthlyEntries.length).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               </div>
               <div className="text-center">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Months</div>
-                <div className="font-display text-lg font-bold tracking-tight tabular-nums text-gray-900">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">Months</div>
+                <div className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
                   {monthlyEntries.length}
                 </div>
               </div>
@@ -286,8 +286,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
           </div>
         ) : (
           <div className="text-center py-8">
-            <BarChart3 className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No monthly data available</p>
+            <BarChart3 className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+            <p className="text-stone-500">No monthly data available</p>
           </div>
         )}
       </div>

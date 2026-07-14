@@ -26,7 +26,7 @@ const tabs: Tab[] = [
 
 export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({ activeTab, onTabChange }) => {
   return (
-    <div className="border-b border-gray-200 overflow-x-auto">
+    <div className="border-b border-stone-200 overflow-x-auto">
       <nav className="flex space-x-4 md:space-x-8 px-4 md:px-6 min-w-max" aria-label="Tabs">
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -37,7 +37,7 @@ export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({ 
               className={`py-3 md:py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
               }`}
             >
               <div className="flex items-center space-x-2">

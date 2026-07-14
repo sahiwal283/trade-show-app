@@ -9,7 +9,7 @@ interface ApprovalCardsProps {
 // Stat-strip anatomy: soft tinted icon wells with an inset ring, uppercase
 // micro-labels, and one brand hairline across the strip.
 const approvalStats = {
-  total: { well: 'bg-brand-50 text-brand-600 ring-brand-100', value: 'text-gray-900' },
+  total: { well: 'bg-brand-50 text-brand-600 ring-brand-100', value: 'text-stone-900' },
   pending: { well: 'bg-amber-50 text-amber-600 ring-amber-100', value: 'text-amber-700' },
   reimbursements: { well: 'bg-orange-50 text-orange-600 ring-orange-100', value: 'text-orange-700' },
   unassigned: { well: 'bg-red-50 text-red-600 ring-red-100', value: 'text-red-700' },
@@ -37,14 +37,14 @@ export const ApprovalCards: React.FC<ApprovalCardsProps> = ({ expenses }) => {
             <DollarSign className="w-5 h-5" />
           </div>
           <div>
-            <p className={`font-display text-lg font-bold tracking-tight tabular-nums ${approvalStats.total.value}`}>
+            <p className={`font-display text-xl font-bold tracking-tight tabular-nums ${approvalStats.total.value}`}>
               ${totalPendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Pending Total</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Pending Total</p>
           </div>
         </div>
 
-        <div className="hidden sm:block w-px h-10 bg-gray-200" />
+        <div className="hidden sm:block w-px h-10 bg-stone-200" />
 
         {/* Pending Approval */}
         <div className="flex items-center gap-3">
@@ -52,14 +52,14 @@ export const ApprovalCards: React.FC<ApprovalCardsProps> = ({ expenses }) => {
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
-            <p className={`font-display text-lg font-bold tracking-tight tabular-nums ${approvalStats.pending.value}`}>
+            <p className={`font-display text-xl font-bold tracking-tight tabular-nums ${approvalStats.pending.value}`}>
               {pendingExpenses.length}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Pending Approval</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Pending Approval</p>
           </div>
         </div>
 
-        <div className="hidden sm:block w-px h-10 bg-gray-200" />
+        <div className="hidden sm:block w-px h-10 bg-stone-200" />
 
         {/* Reimbursements */}
         <div className="flex items-center gap-3">
@@ -67,14 +67,14 @@ export const ApprovalCards: React.FC<ApprovalCardsProps> = ({ expenses }) => {
             <CreditCard className="w-5 h-5" />
           </div>
           <div>
-            <p className={`font-display text-lg font-bold tracking-tight tabular-nums ${approvalStats.reimbursements.value}`}>
+            <p className={`font-display text-xl font-bold tracking-tight tabular-nums ${approvalStats.reimbursements.value}`}>
               {pendingReimbursements.length}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Reimbursements</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Reimbursements</p>
           </div>
         </div>
 
-        <div className="hidden sm:block w-px h-10 bg-gray-200" />
+        <div className="hidden sm:block w-px h-10 bg-stone-200" />
 
         {/* Unassigned Entities */}
         <div className="flex items-center gap-3">
@@ -82,10 +82,10 @@ export const ApprovalCards: React.FC<ApprovalCardsProps> = ({ expenses }) => {
             <Building2 className="w-5 h-5" />
           </div>
           <div>
-            <p className={`font-display text-lg font-bold tracking-tight tabular-nums ${approvalStats.unassigned.value}`}>
+            <p className={`font-display text-xl font-bold tracking-tight tabular-nums ${approvalStats.unassigned.value}`}>
               {unassignedEntities.length}
             </p>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Unassigned</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Unassigned</p>
           </div>
         </div>
       </div>

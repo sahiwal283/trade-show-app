@@ -74,10 +74,10 @@ export const InactivityWarning: React.FC<InactivityWarningProps> = ({
                 {minutes}:{seconds.toString().padStart(2, '0')}
               </div>
             </div>
-            <p className="text-gray-700 text-lg mb-2">
+            <p className="text-stone-700 text-lg mb-2">
               You will be automatically logged out due to inactivity
             </p>
-            <p className="text-gray-500 text-sm">
+            <p className="text-stone-500 text-sm">
               Any unsaved changes will be lost
             </p>
           </div>
@@ -98,7 +98,7 @@ export const InactivityWarning: React.FC<InactivityWarningProps> = ({
             </button>
             <button
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+              className="flex-1 px-6 py-3 border border-stone-300 text-stone-700 rounded-lg font-semibold hover:bg-stone-50 transition-colors"
             >
               Dismiss
             </button>

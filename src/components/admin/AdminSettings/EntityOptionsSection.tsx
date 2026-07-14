@@ -37,17 +37,17 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
   onSaveEdit
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 md:p-5 lg:p-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
           <Building2 className="w-6 h-6 text-white" />
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Entity Options</h3>
-            <span className="text-xs text-gray-500">{entityOptions?.length || 0} configured</span>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Entity Options</h3>
+            <span className="text-xs text-stone-500">{entityOptions?.length || 0} configured</span>
           </div>
-          <p className="text-gray-600">Manage Zoho entity assignments</p>
+          <p className="text-sm text-stone-600">Manage Zoho entity assignments</p>
         </div>
       </div>
 
@@ -58,7 +58,7 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
             value={newEntityOption}
             onChange={(e) => setNewEntityOption(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && onAddEntity()}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter new entity option..."
           />
           <button
@@ -73,14 +73,14 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
 
         <div className="space-y-2">
           {entityOptions.map((option, index) => (
-            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
+            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-stone-50 p-3 rounded-lg">
               {editingEntityIndex === index ? (
                 <>
                   <input
                     type="text"
                     value={editEntityValue}
                     onChange={(e) => setEditEntityValue(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Entity name"
                   />
                   <div className="flex gap-2">
@@ -95,7 +95,7 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
                     <button
                       onClick={onCancelEdit}
                       disabled={isSaving}
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
                       title="Cancel"
                     >
                       <X className="w-4 h-4" />
@@ -104,12 +104,12 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
                 </>
               ) : (
                 <>
-                  <span className="flex-1 text-gray-900">{option}</span>
+                  <span className="flex-1 text-stone-900">{option}</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => onStartEdit(index)}
                       disabled={isSaving}
-                      className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-stone-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4" />
@@ -117,7 +117,7 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
                     <button
                       onClick={() => onRemoveEntity(option)}
                       disabled={isSaving}
-                      className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-stone-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />

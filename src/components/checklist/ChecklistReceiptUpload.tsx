@@ -187,19 +187,19 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+        <div className="sticky top-0 bg-white border-b border-stone-200 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Receipt className="w-6 h-6 text-blue-600" />
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Upload Receipt</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="font-display text-lg font-bold tracking-tight text-stone-900">Upload Receipt</h3>
+              <p className="text-sm text-stone-500">
                 {section.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} - {event.name}
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            className="p-1 text-stone-400 hover:text-stone-600 rounded-lg hover:bg-stone-100"
           >
             <X className="w-5 h-5" />
           </button>
@@ -208,9 +208,9 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
         <div className="p-6 space-y-4">
           {/* File Upload */}
           {!selectedFile ? (
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-              <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600 mb-2">Drop receipt here or click to upload (images or PDF, max 10MB)</p>
+            <div className="border-2 border-dashed border-stone-300 rounded-lg p-8 text-center">
+              <Upload className="w-12 h-12 text-stone-400 mx-auto mb-3" />
+              <p className="text-stone-600 mb-2">Drop receipt here or click to upload (images or PDF, max 10MB)</p>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -240,9 +240,9 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
           ) : (
             <div className="space-y-4">
               {/* File Preview */}
-              <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center gap-3 p-3 bg-stone-50 rounded-lg">
                 <FileImage className="w-5 h-5 text-blue-600" />
-                <span className="text-sm text-gray-700 flex-1">{selectedFile.name}</span>
+                <span className="text-sm text-stone-700 flex-1">{selectedFile.name}</span>
                 <button
                   onClick={() => {
                     setSelectedFile(null);
@@ -264,49 +264,49 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
               {/* Form Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
                     Merchant *
                   </label>
                   <input
                     type="text"
                     value={formData.merchant}
                     onChange={(e) => setFormData({ ...formData, merchant: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                     placeholder="e.g., Expo Services, Airline, Hotel Name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
                     Amount *
                   </label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                    <DollarSign className="absolute left-3 top-2.5 w-4 h-4 text-stone-400" />
                     <input
                       type="number"
                       step="0.01"
                       value={formData.amount}
                       onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                      className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      className="w-full pl-9 pr-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       placeholder="0.00"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
                     Date
                   </label>
                   <input
                     type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
                     Card Used
                   </label>
                   <select
@@ -320,7 +320,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
                         zohoEntity: selectedCardOption?.entity || ''
                       });
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select card...</option>
                     {cardOptions.map((card, idx) => (
@@ -332,13 +332,13 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
                     Description
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
                     rows={2}
                     placeholder={`Expense for ${section.replace(/_/g, ' ')}`}
                   />
@@ -358,7 +358,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
               <div className="flex gap-3 justify-end pt-4 border-t">
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50"
                   disabled={processing}
                 >
                   Cancel

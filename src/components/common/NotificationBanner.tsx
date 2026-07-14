@@ -99,10 +99,10 @@ const NotificationItem: React.FC<{
         };
       case 'offline':
         return {
-          bg: 'bg-gray-50 border-gray-300',
-          icon: 'text-gray-600',
-          text: 'text-gray-900',
-          subtext: 'text-gray-700'
+          bg: 'bg-stone-50 border-stone-300',
+          icon: 'text-stone-600',
+          text: 'text-stone-900',
+          subtext: 'text-stone-700'
         };
       case 'syncing':
         return {

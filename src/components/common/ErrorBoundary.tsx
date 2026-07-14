@@ -58,17 +58,17 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-stone-50 px-4">
           <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6">
             <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full">
               <AlertTriangle className="w-6 h-6 text-red-600" />
             </div>
             
-            <h2 className="mt-4 text-xl font-semibold text-gray-900 text-center">
+            <h2 className="mt-4 text-xl font-semibold text-stone-900 text-center">
               Oops! Something went wrong
             </h2>
             
-            <p className="mt-2 text-sm text-gray-600 text-center">
+            <p className="mt-2 text-sm text-stone-600 text-center">
               We're sorry, but something unexpected happened. Please try refreshing the page.
             </p>
 
@@ -99,7 +99,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </button>
               <button
                 onClick={() => window.location.href = '/'}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex-1 px-4 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors"
               >
                 Go Home
               </button>

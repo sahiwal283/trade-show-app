@@ -42,7 +42,7 @@ export const BoothOrderCard: React.FC<BoothOrderCardProps> = ({
 }) => {
 
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+    <div className="border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors">
       <button
         onClick={onBoothToggle}
         disabled={saving}
@@ -51,13 +51,13 @@ export const BoothOrderCard: React.FC<BoothOrderCardProps> = ({
         {checklist.booth_ordered ? (
           <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 group-hover:scale-110 transition-transform" />
         ) : (
-          <Circle className="w-6 h-6 text-gray-400 flex-shrink-0 group-hover:text-gray-600 transition-colors" />
+          <Circle className="w-6 h-6 text-stone-400 flex-shrink-0 group-hover:text-stone-600 transition-colors" />
         )}
         <div className="flex-1">
-          <p className={`font-medium ${checklist.booth_ordered ? 'text-gray-900' : 'text-gray-700'}`}>
+          <p className={`font-semibold ${checklist.booth_ordered ? 'text-stone-900' : 'text-stone-700'}`}>
             Booth Space Ordered
           </p>
-          <p className="text-sm text-gray-500 mt-1">Reserve exhibition space at the venue</p>
+          <p className="text-sm text-stone-500 mt-1">Reserve exhibition space at the venue</p>
         </div>
       </button>
 
@@ -67,7 +67,7 @@ export const BoothOrderCard: React.FC<BoothOrderCardProps> = ({
           onChange={(e) => setBoothNotes(e.target.value)}
           onBlur={onNotesBlur}
           placeholder="Add notes (booth number, size, location, etc.)"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
+          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
           rows={2}
         />
         

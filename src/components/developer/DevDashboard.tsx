@@ -154,7 +154,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <RefreshCw className="w-12 h-12 animate-spin mx-auto text-blue-500" />
-          <p className="mt-4 text-gray-600">Loading Developer Dashboard...</p>
+          <p className="mt-4 text-stone-600">Loading Developer Dashboard...</p>
         </div>
       </div>
     );
@@ -170,8 +170,8 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
               <Code className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-gray-900">Developer Dashboard</h1>
-              <p className="text-sm text-gray-600">System health, logs, and analytics</p>
+              <h1 className="text-xl md:text-2xl font-bold text-stone-900">Developer Dashboard</h1>
+              <p className="text-sm text-stone-600">System health, logs, and analytics</p>
             </div>
           </div>
         </div>
@@ -179,7 +179,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            className="px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
           >
             <option value="1h">Last Hour</option>
             <option value="24h">Last 24 Hours</option>
@@ -201,7 +201,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
       {summary && <DashboardSummaryCards summary={summary} />}
 
       {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
         <DashboardTabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
 
         {/* Tab Content */}

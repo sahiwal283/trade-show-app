@@ -32,13 +32,13 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
               <UserX className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Reject User Registration</h3>
-              <p className="text-xs sm:text-sm text-gray-600">This action cannot be undone</p>
+              <h3 className="text-xl font-bold text-stone-900">Reject User Registration</h3>
+              <p className="text-xs sm:text-sm text-stone-600">This action cannot be undone</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
+            className="text-stone-400 hover:text-stone-600"
           >
             <X className="w-6 h-6" />
           </button>
@@ -58,7 +58,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
           </div>
         </div>
 
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+        <div className="mb-4 p-4 bg-stone-50 rounded-lg">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
               <span className="text-white font-medium text-sm">
@@ -66,8 +66,8 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
               </span>
             </div>
             <div>
-              <div className="font-medium text-gray-900">{user.name}</div>
-              <div className="text-xs sm:text-sm text-gray-600">{user.username} • {user.email}</div>
+              <div className="font-medium text-stone-900">{user.name}</div>
+              <div className="text-xs sm:text-sm text-stone-600">{user.username} • {user.email}</div>
             </div>
           </div>
         </div>
@@ -75,7 +75,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
         <div className="flex space-x-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            className="flex-1 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
           >
             Cancel
           </button>

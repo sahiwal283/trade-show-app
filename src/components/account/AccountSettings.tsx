@@ -99,17 +99,18 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h2 className="text-xl font-semibold text-gray-900">Account</h2>
-        <p className="text-sm text-gray-600 mt-1">
+      <div className="bg-white rounded-xl border border-stone-200 p-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Settings</p>
+        <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">Account</h2>
+        <p className="text-sm text-stone-600 mt-1">
           Logged in as <span className="font-medium">{user.name}</span> ({user.username})
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+      <div className="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Telegram Integration</h3>
-          <p className="text-sm text-gray-600 mt-1">
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Telegram Integration</h3>
+          <p className="text-sm text-stone-600 mt-1">
             Connect your Telegram account to submit receipts and run app actions through the bot.
           </p>
         </div>
@@ -127,7 +128,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
         )}
 
         {loading ? (
-          <div className="text-sm text-gray-500">Loading Telegram status...</div>
+          <div className="text-sm text-stone-500">Loading Telegram status...</div>
         ) : status.linked ? (
           <div className="space-y-3">
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
@@ -140,7 +141,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
               <button
                 type="button"
                 onClick={loadStatus}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-50"
               >
                 Refresh status
               </button>
@@ -172,21 +173,21 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
               <button
                 type="button"
                 onClick={loadStatus}
-                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 rounded-lg border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-50"
               >
                 Refresh status
               </button>
             </div>
 
             {startInfo && (
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
-                <p className="text-sm text-gray-700">
+              <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 space-y-3">
+                <p className="text-sm text-stone-700">
                   <span className="font-semibold">Manual command:</span> Send{' '}
                   <code className="bg-white px-1.5 py-0.5 rounded border">/link {startInfo.linkCode}</code>{' '}
                   to the bot.
                 </p>
                 {startInfo.deepLinkUrl && (
-                  <p className="text-sm text-gray-700">
+                  <p className="text-sm text-stone-700">
                     <span className="font-semibold">Deep link:</span>{' '}
                     <a
                       href={startInfo.deepLinkUrl}
@@ -198,7 +199,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
                     </a>
                   </p>
                 )}
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-stone-500">
                   Expires at: {new Date(startInfo.expiresAt).toLocaleString()}
                 </p>
               </div>

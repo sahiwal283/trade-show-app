@@ -138,15 +138,15 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4">
         <div className="max-w-md w-full">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="text-center">
               <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-white" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">Registration Successful!</h2>
-              <p className="text-gray-600 mb-6">
+              <h2 className="font-display text-2xl font-bold tracking-tight text-stone-900 mb-4">Registration Successful!</h2>
+              <p className="text-stone-600 mb-6">
                 Your account has been created successfully. An administrator will review your account and assign your role.
                 You'll be able to log in once your account is activated.
               </p>
@@ -164,12 +164,12 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-stone-50 flex items-center justify-center px-4 py-8">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-2xl shadow-xl p-8">
           <button
             onClick={onBack}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+            className="flex items-center text-stone-600 hover:text-stone-900 mb-6 transition-colors"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             Back to Login
@@ -179,8 +179,8 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
             <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <User className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-            <p className="text-gray-600 mt-2">Register for TradeShow Expense Manager</p>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-stone-900">Create Account</h1>
+            <p className="text-stone-600 mt-2">Register for TradeShow Expense Manager</p>
           </div>
 
           {error && (
@@ -203,17 +203,17 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
                 Full Name
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Enter your full name"
                   required
                 />
@@ -221,17 +221,17 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border ${fieldErrors.email ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                  className={`w-full pl-10 pr-4 py-3 border ${fieldErrors.email ? 'border-red-300' : 'border-stone-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                   placeholder="Enter your email"
                   required
                 />
@@ -242,17 +242,17 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
                 Username
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
                 <input
                   type="text"
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border ${fieldErrors.username ? 'border-red-300' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                  className={`w-full pl-10 pr-4 py-3 border ${fieldErrors.username ? 'border-red-300' : 'border-stone-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
                   placeholder="Choose a username"
                   required
                 />
@@ -263,24 +263,24 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
                 Password
               </label>
               <div className="relative">
-                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-12 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Create a strong password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-600"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -288,14 +288,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
               {passwordStrength && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-sm mb-1">
-                    <span className="text-gray-600">Password Strength:</span>
+                    <span className="text-stone-600">Password Strength:</span>
                     <span className={`font-medium ${
                       passwordStrength.label === 'Strong' ? 'text-green-600' :
                       passwordStrength.label === 'Good' ? 'text-blue-600' :
                       passwordStrength.label === 'Fair' ? 'text-yellow-600' : 'text-red-600'
                     }`}>{passwordStrength.label}</span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="w-full bg-stone-200 rounded-full h-2">
                     <div className={`${passwordStrength.color} h-2 rounded-full transition-all`} style={{ width: `${(passwordStrength.strength / 4) * 100}%` }} />
                   </div>
                 </div>
@@ -303,24 +303,24 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-stone-700 mb-2">
                 Confirm Password
               </label>
               <div className="relative">
-                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-12 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="Confirm your password"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-600"
                 >
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>

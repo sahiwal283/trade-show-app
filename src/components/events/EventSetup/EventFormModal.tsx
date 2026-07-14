@@ -70,14 +70,14 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   if (!showForm) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-gray-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
       <div className="modal-sheet-h w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-t-xl rounded-b-none bg-white p-4 shadow-elevation-3 sm:rounded-xl md:p-6 lg:p-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 mb-8">
           <div>
-            <h2 className="font-display text-xl md:text-2xl font-bold tracking-tight text-gray-900">
+            <h2 className="font-display text-xl md:text-2xl font-bold tracking-tight text-stone-900">
               {editingEvent ? 'Edit Event' : 'Create New Event'}
             </h2>
-            <p className="mt-0.5 text-sm text-gray-500">Set up your trade show details and invite participants</p>
+            <p className="mt-0.5 text-sm text-stone-500">Set up your trade show details and invite participants</p>
           </div>
           <button
             onClick={() => {
@@ -151,7 +151,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
             
             {/* Show Dates */}
             <div className="md:col-span-2">
-              <h3 className="mb-3 flex items-center border-t border-gray-100 pt-4 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <h3 className="mb-3 flex items-center border-t border-stone-100 pt-4 text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 <span className="chip-dot mr-2 bg-brand-500"></span>
                 Show Dates
               </h3>
@@ -189,7 +189,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
 
             {/* Travel Dates */}
             <div className="md:col-span-2">
-              <h3 className="mb-3 mt-2 flex items-center border-t border-gray-100 pt-4 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+              <h3 className="mb-3 mt-2 flex items-center border-t border-stone-100 pt-4 text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 <span className="chip-dot mr-2 bg-accent-500"></span>
                 Travel Dates
               </h3>
@@ -245,7 +245,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
           
           {/* Participants Section */}
           <div className="space-y-4">
-            <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900 border-t border-gray-100 pt-6">Participants</h3>
+            <h3 className="border-t border-stone-100 pt-6 text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Participants</h3>
             
             <div className="space-y-4">
               <div>
@@ -281,10 +281,10 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
 
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
+                  <div className="w-full border-t border-stone-300" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Or add new participant</span>
+                  <span className="px-2 bg-white text-stone-500">Or add new participant</span>
                 </div>
               </div>
 
@@ -318,10 +318,10 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
             </div>
 
             {(formData.participants?.length || 0) > 0 && (
-              <div className="rounded-lg bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70">
+              <div className="rounded-lg bg-stone-50/80 p-4 ring-1 ring-inset ring-stone-200/70">
                 <div className="space-y-2">
                   {formData.participants.map((participant) => (
-                    <div key={participant.id} className="flex flex-col items-start justify-between gap-3 rounded-lg bg-white p-3 shadow-elevation-1 ring-1 ring-gray-200/70 sm:flex-row sm:items-center sm:gap-0">
+                    <div key={participant.id} className="flex flex-col items-start justify-between gap-3 rounded-lg bg-white p-3 shadow-elevation-1 ring-1 ring-stone-200/70 sm:flex-row sm:items-center sm:gap-0">
                       <div className="flex items-center space-x-3">
                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-accent-500">
                           <span className="text-white text-sm font-medium">
@@ -329,14 +329,14 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
                           </span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{participant.name}</p>
-                          <p className="text-sm text-gray-500">{participant.email}</p>
+                          <p className="font-medium text-stone-900">{participant.name}</p>
+                          <p className="text-sm text-stone-500">{participant.email}</p>
                         </div>
                       </div>
                       <button
                         type="button"
                         onClick={() => onRemoveParticipant(participant.id)}
-                        className="tap-target rounded-lg p-2 text-gray-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
+                        className="tap-target rounded-lg p-2 text-stone-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -348,7 +348,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
           </div>
           
           {/* Sticky on phones/tablets so Save stays reachable while the long form scrolls; lg: restores the original static bar */}
-          <div className="sticky bottom-0 z-10 -mx-4 flex items-center justify-end gap-3 border-t border-gray-200 bg-white/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur md:-mx-6 md:px-6 lg:static lg:z-auto lg:mx-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:pb-0 lg:backdrop-blur-none">
+          <div className="sticky bottom-0 z-10 -mx-4 flex items-center justify-end gap-3 border-t border-stone-200 bg-white/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur md:-mx-6 md:px-6 lg:static lg:z-auto lg:mx-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:pb-0 lg:backdrop-blur-none">
             <button
               type="button"
               onClick={() => {

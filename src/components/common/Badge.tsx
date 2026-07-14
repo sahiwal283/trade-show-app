@@ -29,9 +29,9 @@ interface BadgeProps {
 
 const colorClasses: Record<BadgeColor, Record<BadgeVariant, string>> = {
   gray: {
-    light: 'bg-gray-100 text-gray-800',
-    solid: 'bg-gray-600 text-white',
-    outline: 'border border-gray-300 text-gray-700'
+    light: 'bg-stone-100 text-stone-800',
+    solid: 'bg-stone-600 text-white',
+    outline: 'border border-stone-300 text-stone-700'
   },
   blue: {
     light: 'bg-blue-100 text-blue-800',

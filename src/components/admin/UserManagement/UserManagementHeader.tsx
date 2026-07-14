@@ -15,8 +15,9 @@ export const UserManagementHeader: React.FC<UserManagementHeaderProps> = ({ onAd
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
       <div>
-        <h1 className="text-xl md:text-2xl font-bold text-gray-900">User Management</h1>
-        <p className="text-gray-600 mt-1">Manage team members and their access levels</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Administration</p>
+        <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">User Management</h1>
+        <p className="text-stone-600 mt-1">Manage team members and their access levels</p>
       </div>
       <button
         onClick={onAddUser}

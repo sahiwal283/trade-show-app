@@ -409,10 +409,13 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
+              <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
+                Expenses
+              </p>
+              <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">
                 {expense ? 'Edit Expense' : 'Add New Expense'}
               </h1>
-              <p className="mt-0.5 text-sm text-gray-500">Upload receipt for automatic OCR data extraction, or enter manually</p>
+              <p className="mt-0.5 text-sm text-stone-500">Upload receipt for automatic OCR data extraction, or enter manually</p>
             </div>
           </div>
           <button
@@ -426,8 +429,8 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Receipt Upload - First Field */}
           <div className="rounded-card border border-brand-200/70 bg-brand-50/50 p-4 sm:p-5 md:p-6">
-            <label className="field-label mb-3 text-gray-900">
-              Receipt Image {expense ? <span className="text-gray-600">(Optional - Upload to replace)</span> : <span className="text-red-600">* (Upload First - Required)</span>}
+            <label className="field-label mb-3 text-stone-900">
+              Receipt Image {expense ? <span className="text-stone-600">(Optional - Upload to replace)</span> : <span className="text-red-600">* (Upload First - Required)</span>}
             </label>
             <div className="space-y-4">
               <div className="flex items-center justify-center w-full">
@@ -435,12 +438,12 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <Camera className="w-9 h-9 mb-2 text-brand-500 sm:hidden" />
                     <Upload className="hidden sm:block w-8 h-8 mb-2 text-brand-500" />
-                    <p className="mb-2 text-sm text-gray-700">
+                    <p className="mb-2 text-sm text-stone-700">
                       <span className="font-semibold text-brand-700 sm:hidden">Tap to snap or upload receipt</span>
                       <span className="hidden sm:inline font-semibold text-brand-700">Click to upload receipt</span>
                     </p>
-                    <p className="text-xs text-gray-500 sm:hidden">Opens your camera or photo library</p>
-                    <p className="hidden sm:block text-xs text-gray-500">PNG, JPG, PDF up to 10MB</p>
+                    <p className="text-xs text-stone-500 sm:hidden">Opens your camera or photo library</p>
+                    <p className="hidden sm:block text-xs text-stone-500">PNG, JPG, PDF up to 10MB</p>
                   </div>
                   <input
                     type="file"
@@ -462,12 +465,12 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                     <img
                       src={formData.receiptUrl}
                       alt="Receipt preview"
-                      className="w-full h-48 object-cover rounded-lg ring-1 ring-gray-200 transition-shadow duration-200 group-hover:shadow-elevation-3"
+                      className="w-full h-48 object-cover rounded-lg ring-1 ring-stone-200 transition-shadow duration-200 group-hover:shadow-elevation-3"
                     />
                     {!isProcessingOCR && (
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all flex items-center justify-center">
                         <div className="bg-white bg-opacity-90 px-4 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                          <p className="text-sm font-medium text-gray-900">Click to view full size</p>
+                          <p className="text-sm font-medium text-stone-900">Click to view full size</p>
                         </div>
                       </div>
                     )}
@@ -476,7 +479,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                     <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center rounded-lg">
                       <div className="text-center">
                         <div className="w-8 h-8 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                        <p className="text-sm text-gray-700 font-medium">Processing receipt...</p>
+                        <p className="text-sm text-stone-700 font-medium">Processing receipt...</p>
                       </div>
                     </div>
                   )}
@@ -498,8 +501,8 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
             </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-6">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-4">
+          <div className="border-t border-stone-100 pt-6">
+            <h2 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-4">
               Expense Details
             </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
@@ -574,7 +577,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                 <button
                   type="button"
                   onClick={() => setShowPastEvents(!showPastEvents)}
-                  className="mt-1 flex min-h-[44px] items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors lg:min-h-0"
+                  className="mt-1 flex min-h-[44px] items-center gap-1 text-xs text-stone-500 hover:text-stone-700 transition-colors lg:min-h-0"
                 >
                   <Clock className="w-3 h-3" />
                   {showPastEvents ? 'Hide past events' : `Show ${pastEvents.length} past event${pastEvents.length === 1 ? '' : 's'}`}
@@ -670,14 +673,14 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                   );
                 })}
               </select>
-              <p className="text-xs text-gray-500 mt-2 italic">
+              <p className="text-xs text-stone-500 mt-2 italic">
                 Note: Last 4 digits may differ when using Apple Pay.
               </p>
             </div>
           </div>
           </div>
 
-          <div className="border-t border-gray-100 pt-6">
+          <div className="border-t border-stone-100 pt-6">
             <label className="field-label">
               Description
             </label>
@@ -692,7 +695,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
               }`}
               placeholder="Additional details about this expense..."
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-stone-500 mt-1">
               Zoho Books combined text: {zohoComposedPreview.length}/{ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH} characters
               (includes your name, event, dates, and reimbursement flag).
             </p>
@@ -711,14 +714,14 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                 value={formData.ocrText}
                 readOnly
                 rows={4}
-                className="input-field min-h-[44px] bg-gray-50 text-gray-600"
+                className="input-field min-h-[44px] bg-stone-50 text-stone-600"
                 placeholder="OCR text will appear here after receipt processing..."
               />
             </div>
           )}
 
           {/* Sticky on phones/tablets so Save stays reachable while the form scrolls; lg: restores the original static bar */}
-          <div className="sticky bottom-0 z-10 -mx-4 flex items-center justify-end gap-3 border-t border-gray-200 bg-white/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:static lg:z-auto lg:mx-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:pb-0 lg:backdrop-blur-none">
+          <div className="sticky bottom-0 z-10 -mx-4 flex items-center justify-end gap-3 border-t border-stone-200 bg-white/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:static lg:z-auto lg:mx-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:pb-0 lg:backdrop-blur-none">
             <button
               type="button"
               onClick={onCancel}
@@ -755,10 +758,10 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
         >
           <button
             onClick={() => setShowFullReceipt(false)}
-            className="tap-target absolute top-[max(1rem,env(safe-area-inset-top))] right-4 p-2 bg-white rounded-full hover:bg-gray-100 transition-colors z-10"
+            className="tap-target absolute top-[max(1rem,env(safe-area-inset-top))] right-4 p-2 bg-white rounded-full hover:bg-stone-100 transition-colors z-10"
             title="Close"
           >
-            <X className="w-6 h-6 text-gray-900" />
+            <X className="w-6 h-6 text-stone-900" />
           </button>
           <div className="max-w-5xl max-h-[90vh] overflow-auto">
             <img

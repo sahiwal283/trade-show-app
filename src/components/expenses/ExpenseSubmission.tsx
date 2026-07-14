@@ -684,7 +684,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
       {/* ✅ REFACTORED: Expense Details Modal with 8 sub-components */}
       {viewingExpense && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-gray-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <div className="modal-sheet-h w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-t-xl rounded-b-none bg-white shadow-elevation-3 sm:rounded-xl">
             
             <ExpenseModalHeader

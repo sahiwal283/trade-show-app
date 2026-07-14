@@ -32,9 +32,9 @@ const DetailItem: React.FC<DetailItemProps> = ({ icon, label, value, bgColor, ic
       <div className={iconColor}>{icon}</div>
     </div>
     <div className="min-w-0">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">{label}</p>
       <p
-        className={`mt-0.5 font-semibold text-gray-900 ${
+        className={`mt-0.5 font-semibold text-stone-900 ${
           label === 'Amount' ? 'font-display text-xl tracking-tight tabular-nums' : 'text-base'
         }`}
       >
@@ -105,9 +105,9 @@ export const ExpenseModalDetailsView: React.FC<ExpenseModalDetailsViewProps> = (
 
       {/* Description */}
       {expense.description && (
-        <div className="rounded-lg bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Description</p>
-          <p className="text-sm text-gray-900">{expense.description}</p>
+        <div className="rounded-lg bg-stone-50/80 p-4 ring-1 ring-inset ring-stone-200/70">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1.5">Description</p>
+          <p className="text-sm text-stone-900">{expense.description}</p>
         </div>
       )}
     </>

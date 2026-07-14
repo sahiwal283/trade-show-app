@@ -125,20 +125,20 @@ export const PendingActions: React.FC = () => {
       case 'APPROVE':
         return 'bg-purple-100 text-purple-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-stone-100 text-stone-800';
     }
   };
 
   const renderQueueItem = (item: SyncQueueItem) => (
     <div
       key={item.id}
-      className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+      className="bg-white border border-stone-200 rounded-lg p-4 hover:shadow-md transition-shadow"
     >
       <div className="flex items-start justify-between">
         {/* Left: Item Info */}
         <div className="flex items-start space-x-3 flex-1">
           {/* Icon */}
-          <div className="text-gray-600 mt-1">
+          <div className="text-stone-600 mt-1">
             {getEntityIcon(item.entity)}
           </div>
 
@@ -149,18 +149,18 @@ export const PendingActions: React.FC = () => {
               <span className={`px-2 py-1 rounded-full text-xs font-medium ${getActionColor(item.action)}`}>
                 {item.action}
               </span>
-              <span className="text-sm font-semibold text-gray-900 capitalize">
+              <span className="text-sm font-semibold text-stone-900 capitalize">
                 {item.entity}
               </span>
             </div>
 
             {/* Data Preview */}
-            <div className="text-sm text-gray-600 mb-2">
+            <div className="text-sm text-stone-600 mb-2">
               {item.entity === 'expense' && (
                 <div>
                   <span className="font-medium">{item.data.merchant || 'Unknown'}</span>
                   {item.data.amount && (
-                    <span className="ml-2 text-gray-500">
+                    <span className="ml-2 text-stone-500">
                       ${item.data.amount.toFixed(2)}
                     </span>
                   )}
@@ -175,7 +175,7 @@ export const PendingActions: React.FC = () => {
             </div>
 
             {/* Metadata */}
-            <div className="flex items-center space-x-4 text-xs text-gray-500">
+            <div className="flex items-center space-x-4 text-xs text-stone-500">
               <div className="flex items-center space-x-1">
                 <Clock className="w-3 h-3" />
                 <span>{formatTimestamp(item.timestamp)}</span>
@@ -204,7 +204,7 @@ export const PendingActions: React.FC = () => {
         {item.status === 'failed' && (
           <button
             onClick={() => handleClearItem(item.id)}
-            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Delete item"
           >
             <Trash2 className="w-4 h-4" />
@@ -217,21 +217,21 @@ export const PendingActions: React.FC = () => {
   const displayItems = activeTab === 'pending' ? pendingItems : failedItems;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
+    <div className="min-h-screen bg-stone-50 p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-stone-900 mb-2">
             Pending Actions
           </h1>
-          <p className="text-gray-600">
+          <p className="text-stone-600">
             View and manage items waiting to sync with the server
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
-          <div className="border-b border-gray-200">
+        <div className="bg-white rounded-xl shadow-sm border border-stone-200 mb-6">
+          <div className="border-b border-stone-200">
             <div className="flex">
               <button
                 onClick={() => setActiveTab('pending')}
@@ -239,7 +239,7 @@ export const PendingActions: React.FC = () => {
                   flex-1 py-4 px-6 font-medium text-sm transition-colors
                   ${activeTab === 'pending'
                     ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-stone-500 hover:text-stone-700'
                   }
                 `}
               >
@@ -255,7 +255,7 @@ export const PendingActions: React.FC = () => {
                   flex-1 py-4 px-6 font-medium text-sm transition-colors
                   ${activeTab === 'failed'
                     ? 'border-b-2 border-red-500 text-red-600'
-                    : 'text-gray-500 hover:text-gray-700'
+                    : 'text-stone-500 hover:text-stone-700'
                   }
                 `}
               >
@@ -268,7 +268,7 @@ export const PendingActions: React.FC = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="p-4 border-b border-gray-200 flex flex-col sm:flex-row gap-3">
+          <div className="p-4 border-b border-stone-200 flex flex-col sm:flex-row gap-3">
             <button
               onClick={handleSyncNow}
               disabled={syncing || pendingItems.length === 0}
@@ -315,13 +315,13 @@ export const PendingActions: React.FC = () => {
               </div>
             ) : displayItems.length === 0 ? (
               <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
-                  <CheckCircle className="w-8 h-8 text-gray-400" />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-stone-100 rounded-full mb-4">
+                  <CheckCircle className="w-8 h-8 text-stone-400" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-1">
+                <h3 className="text-lg font-medium text-stone-900 mb-1">
                   {activeTab === 'pending' ? 'No Pending Items' : 'No Failed Items'}
                 </h3>
-                <p className="text-gray-500">
+                <p className="text-stone-500">
                   {activeTab === 'pending' 
                     ? 'All your changes have been synced successfully'
                     : 'No items have failed to sync'

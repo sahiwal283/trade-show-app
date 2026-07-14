@@ -55,7 +55,7 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
   };
 
   return (
-    <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 rounded-b-none border-t border-gray-200 bg-gray-50/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:gap-3 sm:rounded-b-xl sm:px-6 sm:py-4 sm:pb-4">
+    <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 rounded-b-none border-t border-stone-200 bg-stone-50/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:gap-3 sm:rounded-b-xl sm:px-6 sm:py-4 sm:pb-4">
       {!isEditingExpense ? (
         <>
           <button
@@ -109,7 +109,7 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
               </div>
               
               {/* Compatibility Note (always visible, small text) */}
-              <div className="flex items-center gap-1 text-xs text-gray-500">
+              <div className="flex items-center gap-1 text-xs text-stone-500">
                 <Info className="w-3 h-3" />
                 <span className="hidden sm:inline">Chrome only</span>
               </div>

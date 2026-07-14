@@ -67,7 +67,7 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
   };
 
   return (
-    <div className="rounded-card bg-gray-50/80 p-6 ring-1 ring-inset ring-gray-200/70">
+    <div className="rounded-card bg-stone-50/80 p-6 ring-1 ring-inset ring-stone-200/70">
       <button
         onClick={() => setShowAuditTrail(!showAuditTrail)}
         className="w-full flex items-center justify-between mb-4 hover:opacity-80 transition-opacity"
@@ -76,7 +76,7 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
             <History className="w-4 h-4" />
           </span>
-          <h3 className="font-display font-semibold tracking-tight text-gray-900">Change History</h3>
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Change History</h3>
           {historyCount > 0 && (
             <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">
               {historyCount}
@@ -90,10 +90,10 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
         (loadingAudit ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-6 h-6 animate-spin text-brand-600" />
-            <span className="ml-2 text-sm text-gray-600">Loading history...</span>
+            <span className="ml-2 text-sm text-stone-600">Loading history...</span>
           </div>
         ) : auditTrail.length === 0 ? (
-          <div className="text-center py-8 text-gray-500 text-sm">No changes recorded yet</div>
+          <div className="text-center py-8 text-stone-500 text-sm">No changes recorded yet</div>
         ) : (
           <div className="space-y-3">
             {auditTrail.map((entry) => {
@@ -104,13 +104,13 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center space-x-2">
                       <span
-                        className={`chip px-2 py-1 text-xs ${actionColors[entry.action] || 'bg-gray-50 text-gray-700 ring-gray-200'}`}
+                        className={`chip px-2 py-1 text-xs ${actionColors[entry.action] || 'bg-stone-50 text-stone-700 ring-stone-200'}`}
                       >
                         {actionLabels[entry.action] || entry.action}
                       </span>
-                      <span className="text-sm font-medium text-gray-900">{entry.userName}</span>
+                      <span className="text-sm font-medium text-stone-900">{entry.userName}</span>
                     </div>
-                    <span className="text-xs text-gray-400 tabular-nums">
+                    <span className="text-xs text-stone-400 tabular-nums">
                       {timestamp.toLocaleDateString()} {timestamp.toLocaleTimeString()}
                     </span>
                   </div>
@@ -119,7 +119,7 @@ export const ExpenseModalAuditTrail: React.FC<ExpenseModalAuditTrailProps> = ({
                     <div className="mt-2 space-y-1">
                       {Object.entries(entry.changes).map(([field, change]) => {
                         return (
-                          <div key={field} className="text-xs text-gray-700">
+                          <div key={field} className="text-xs text-stone-700">
                             <span className="font-medium">{fieldLabels[field] || field}:</span>{' '}
                             {change.old !== null && change.old !== undefined && (
                               <span className="text-red-500/80 line-through">

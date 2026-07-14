@@ -70,17 +70,17 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
   onSaveEdit
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 md:p-5 lg:p-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
           <Tag className="w-6 h-6 text-white" />
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Expense Categories</h3>
-            <span className="text-xs text-gray-500">{categoryOptions?.length || 0} configured</span>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Expense Categories</h3>
+            <span className="text-xs text-stone-500">{categoryOptions?.length || 0} configured</span>
           </div>
-          <p className="text-gray-600">Manage expense category options</p>
+          <p className="text-sm text-stone-600">Manage expense category options</p>
         </div>
       </div>
 
@@ -92,7 +92,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
               value={newCategoryOption}
               onChange={(e) => setNewCategoryOption(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && onAddCategory()}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter new category name..."
             />
           </div>
@@ -101,21 +101,21 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
               type="text"
               value={newCategoryZohoHauteId}
               onChange={(e) => setNewCategoryZohoHauteId(e.target.value)}
-              className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Haute Zoho ID"
             />
             <input
               type="text"
               value={newCategoryZohoBoomId}
               onChange={(e) => setNewCategoryZohoBoomId(e.target.value)}
-              className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Boomin Zoho ID"
             />
             <input
               type="text"
               value={newCategoryZohoNirvanaId}
               onChange={(e) => setNewCategoryZohoNirvanaId(e.target.value)}
-              className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Nirvana Zoho ID"
             />
           </div>
@@ -131,14 +131,14 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
 
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {categoryOptions.map((option, index) => (
-            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
+            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-stone-50 p-3 rounded-lg">
               {editingCategoryIndex === index ? (
                 <div className="w-full space-y-2">
                   <input
                     type="text"
                     value={editCategoryValue}
                     onChange={(e) => setEditCategoryValue(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Category name"
                   />
                   <div className="grid grid-cols-3 gap-2">
@@ -146,21 +146,21 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                       type="text"
                       value={editCategoryZohoHauteId}
                       onChange={(e) => setEditCategoryZohoHauteId(e.target.value)}
-                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Haute Zoho ID"
                     />
                     <input
                       type="text"
                       value={editCategoryZohoBoomId}
                       onChange={(e) => setEditCategoryZohoBoomId(e.target.value)}
-                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Boomin Zoho ID"
                     />
                     <input
                       type="text"
                       value={editCategoryZohoNirvanaId}
                       onChange={(e) => setEditCategoryZohoNirvanaId(e.target.value)}
-                      className="px-3 py-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Nirvana Zoho ID"
                     />
                   </div>
@@ -176,7 +176,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     <button
                       onClick={onCancelEdit}
                       disabled={isSaving}
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
                       title="Cancel"
                     >
                       <X className="w-4 h-4" />
@@ -186,7 +186,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
               ) : (
                 <>
                   <div className="flex-1">
-                    <span className="text-gray-900 font-medium">{option.name}</span>
+                    <span className="text-stone-900 font-medium">{option.name}</span>
                     {(option.zohoExpenseAccountIds?.haute_brands || option.zohoExpenseAccountIds?.boomin_brands || option.zohoExpenseAccountIds?.nirvana_kulture) && (
                       <div className="text-xs mt-1 space-y-0.5">
                         {option.zohoExpenseAccountIds.haute_brands && (
@@ -205,7 +205,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     <button
                       onClick={() => onStartEdit(index)}
                       disabled={isSaving}
-                      className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-stone-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4" />
@@ -213,7 +213,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     <button
                       onClick={() => onRemoveCategory(option)}
                       disabled={isSaving}
-                      className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-stone-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />

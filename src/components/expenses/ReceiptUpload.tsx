@@ -288,9 +288,9 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
             )}
 
             {/* Action Buttons — sticky on phones/tablets so Create Expense stays reachable; lg: restores the original static bar */}
-            <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t border-gray-200 bg-white/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:static lg:z-auto lg:mx-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:pb-0 lg:backdrop-blur-none">
+            <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-3 border-t border-stone-200 bg-white/95 px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:-mx-5 sm:px-5 md:-mx-6 md:px-6 lg:static lg:z-auto lg:mx-0 lg:bg-transparent lg:px-0 lg:pt-6 lg:pb-0 lg:backdrop-blur-none">
               {ocrResults && selectedEvent && (
-                <p className="text-xs text-gray-500 text-right">
+                <p className="text-xs text-stone-500 text-right">
                   Zoho Books combined description: {receiptZohoComposedLength}/{ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH} characters
                 </p>
               )}

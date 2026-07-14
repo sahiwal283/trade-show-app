@@ -72,15 +72,15 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
               <AlertTriangle className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-              <p className="text-sm text-gray-600">{message}</p>
+              <h3 className="text-lg font-semibold text-stone-900 mb-2">{title}</h3>
+              <p className="text-sm text-stone-600">{message}</p>
             </div>
             <button
               onClick={onCancel}
-              className="tap-target flex-shrink-0 p-1 -mt-1 -mr-1 hover:bg-gray-100 rounded-lg transition-colors lg:mt-0 lg:mr-0"
+              className="tap-target flex-shrink-0 p-1 -mt-1 -mr-1 hover:bg-stone-100 rounded-lg transition-colors lg:mt-0 lg:mr-0"
               aria-label="Close"
             >
-              <X className="w-5 h-5 text-gray-500" />
+              <X className="w-5 h-5 text-stone-500" />
             </button>
           </div>
 
@@ -88,7 +88,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <div className="flex gap-3 justify-end">
             <button
               onClick={onCancel}
-              className="px-4 py-2 min-h-[44px] flex-1 sm:flex-initial lg:min-h-0 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              className="px-4 py-2 min-h-[44px] flex-1 sm:flex-initial lg:min-h-0 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
             >
               {cancelText}
             </button>

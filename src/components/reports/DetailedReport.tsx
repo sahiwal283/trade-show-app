@@ -59,8 +59,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 ring-1 ring-inset ring-brand-100">
           <FileText className="w-8 h-8" />
         </div>
-        <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900 mb-1.5">No Detailed Data Available</h3>
-        <p className="mx-auto max-w-md text-sm text-gray-500">
+        <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900 mb-1.5">No Detailed Data Available</h3>
+        <p className="mx-auto max-w-md text-sm text-stone-500">
           Apply filters to see detailed expense reports or submit some expenses to get started.
         </p>
       </div>
@@ -74,8 +74,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
       {/* Category Breakdown Chart */}
       <div className="card p-3 sm:p-5 md:p-6">
         <div className="mb-6">
-          <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Expenses by Category</h3>
-          <p className="mt-1 text-sm text-gray-500">For selected filters</p>
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Expenses by Category</h3>
+          <p className="mt-1 text-sm text-stone-500">For selected filters</p>
         </div>
         
         {categories.length > 0 ? (
@@ -87,12 +87,12 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
               return (
                 <div key={category} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900">{category}</span>
-                    <span className="text-sm font-semibold tabular-nums text-gray-900">
+                    <span className="text-sm font-medium text-stone-900">{category}</span>
+                    <span className="text-sm font-semibold tabular-nums text-stone-900">
                       ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2 ring-1 ring-inset ring-gray-200/60">
+                  <div className="w-full bg-stone-100 rounded-full h-2 ring-1 ring-inset ring-stone-200/60">
                     <div
                       className={`h-2 rounded-full ${getCategoryBarColor(category)} transition-all duration-500`}
                       style={{ width: `${percentage}%` }}
@@ -104,22 +104,22 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
           </div>
         ) : (
           <div className="text-center py-8">
-            <p className="text-gray-500">No category data available</p>
+            <p className="text-stone-500">No category data available</p>
           </div>
         )}
       </div>
 
       {/* Detailed Expense Table */}
       <div className="card overflow-hidden">
-      <div className="px-6 py-4 bg-gray-50/80 border-b border-gray-200/80">
+      <div className="px-6 py-4 bg-stone-50/80 border-b border-stone-200/80">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
               <FileText className="w-4 h-4" />
             </span>
-            <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Detailed Expense Report</h3>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Detailed Expense Report</h3>
           </div>
-          <div className="text-sm text-gray-500 tabular-nums">
+          <div className="text-sm text-stone-500 tabular-nums">
             {expenses.length} entries • ${expenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()} total
           </div>
         </div>
@@ -127,41 +127,41 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50/80">
+          <thead className="bg-stone-50/80">
             <tr>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Date & Event
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Merchant & Location
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Category
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Card Used
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Amount
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Status
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Reimbursement
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Entity
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Description
               </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                 Details
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
+          <tbody className="bg-white divide-y divide-stone-100">
             {expenses.map((expense) => {
               const event = events.find(e => e.id === expense.tradeShowId);
               
@@ -169,12 +169,12 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                 <tr key={expense.id} className="transition-colors duration-150 hover:bg-brand-50/40">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div>
-                      <div className="flex items-center text-sm text-gray-900">
+                      <div className="flex items-center text-sm text-stone-900">
                         <Calendar className="w-4 h-4 mr-1" />
                         {formatLocalDate(expense.date)}
                       </div>
                       {event && (
-                        <div className="text-xs text-gray-500 mt-1">
+                        <div className="text-xs text-stone-500 mt-1">
                           {event.name}
                         </div>
                       )}
@@ -182,9 +182,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   </td>
                   <td className="px-6 py-4">
                     <div>
-                      <div className="text-sm font-medium text-gray-900">{expense.merchant}</div>
+                      <div className="text-sm font-medium text-stone-900">{expense.merchant}</div>
                       {expense.location && (
-                        <div className="flex items-center text-xs text-gray-500 mt-1">
+                        <div className="flex items-center text-xs text-stone-500 mt-1">
                           <MapPin className="w-3 h-3 mr-1" />
                           {expense.location}
                         </div>
@@ -194,12 +194,12 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   <td className="px-6 py-4 whitespace-nowrap">
                     <CategoryBadge category={expense.category} size="sm" />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                     {expense.cardUsed}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="inline-flex items-center text-sm font-semibold tabular-nums text-gray-900">
-                      <DollarSign className="w-4 h-4 mr-0.5 text-gray-400" />
+                    <div className="inline-flex items-center text-sm font-semibold tabular-nums text-stone-900">
+                      <DollarSign className="w-4 h-4 mr-0.5 text-stone-400" />
                       {expense.amount.toFixed(2)}
                     </div>
                   </td>
@@ -210,7 +210,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <span className={`chip px-2 py-1 text-xs ${
                       expense.reimbursementRequired
                         ? 'bg-orange-50 text-orange-700 ring-orange-200/70'
-                        : 'bg-gray-50 text-gray-500 ring-gray-200'
+                        : 'bg-stone-50 text-stone-500 ring-stone-200'
                     }`}>
                       {expense.reimbursementRequired ? 
                         `Required (${expense.reimbursementStatus || 'pending review'})` : 
@@ -218,15 +218,15 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       }
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
                     {expense.zohoEntity || (
-                      <span className="text-gray-400 italic">Unassigned</span>
+                      <span className="text-stone-400 italic">Unassigned</span>
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 max-w-xs truncate" title={expense.description}>
+                    <div className="text-sm text-stone-900 max-w-xs truncate" title={expense.description}>
                       {expense.description || (
-                        <span className="text-gray-400 italic">No description</span>
+                        <span className="text-stone-400 italic">No description</span>
                       )}
                     </div>
                   </td>
@@ -234,7 +234,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <div className="flex justify-center">
                       <button
                         onClick={() => setViewingExpense(expense)}
-                        className="inline-flex items-center justify-center rounded-lg p-2 text-gray-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
+                        className="inline-flex items-center justify-center rounded-lg p-2 text-stone-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
                         title="View Details & Receipt"
                       >
                         <Eye className="w-4 h-4" />
@@ -271,37 +271,37 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
       </div>
 
       {/* Summary Footer */}
-      <div className="px-6 py-4 bg-gray-50/80 border-t border-gray-200/80">
+      <div className="px-6 py-4 bg-stone-50/80 border-t border-stone-200/80">
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6">
             <div className="flex items-center">
-              <span className="text-gray-600">Total Expenses:</span>
-              <span className="ml-1 font-semibold text-gray-900">
+              <span className="text-stone-600">Total Expenses:</span>
+              <span className="ml-1 font-semibold text-stone-900">
                 {expenses.length}
               </span>
             </div>
             <div className="flex items-center">
-              <span className="text-gray-600">Approved:</span>
+              <span className="text-stone-600">Approved:</span>
               <span className="ml-1 font-semibold tabular-nums text-accent-600">
                 {expenses.filter(e => e.status === 'approved').length}
               </span>
             </div>
             <div className="flex items-center">
-              <span className="text-gray-600">Pending:</span>
+              <span className="text-stone-600">Pending:</span>
               <span className="ml-1 font-semibold tabular-nums text-amber-600">
                 {expenses.filter(e => e.status === 'pending').length}
               </span>
             </div>
             <div className="flex items-center">
-              <span className="text-gray-600">Reimbursement Required:</span>
+              <span className="text-stone-600">Reimbursement Required:</span>
               <span className="ml-1 font-semibold tabular-nums text-orange-600">
                 {expenses.filter(e => e.reimbursementRequired).length}
               </span>
             </div>
           </div>
           <div className="flex items-center">
-            <span className="text-gray-600">Total Amount:</span>
-            <span className="ml-1 font-display text-lg font-bold tracking-tight tabular-nums text-gray-900">
+            <span className="text-stone-600">Total Amount:</span>
+            <span className="ml-1 font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
               ${expenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()}
             </span>
           </div>
@@ -312,7 +312,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
       {/* View Expense Details Modal */}
       {viewingExpense && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-elevation-3">
             <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-xl bg-gradient-to-r from-brand-700 via-brand-600 to-accent-600 px-6 py-4 text-white">
               <div>
@@ -340,8 +340,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <Calendar className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Date</p>
-                    <p className="font-semibold text-gray-900">{formatLocalDate(viewingExpense.date)}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Date</p>
+                    <p className="font-semibold text-stone-900">{formatLocalDate(viewingExpense.date)}</p>
                   </div>
                 </div>
 
@@ -350,8 +350,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <DollarSign className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Amount</p>
-                    <p className="font-display text-xl font-semibold tracking-tight tabular-nums text-gray-900">${viewingExpense.amount.toFixed(2)}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Amount</p>
+                    <p className="font-display text-xl font-bold tracking-tight tabular-nums text-stone-900">${viewingExpense.amount.toFixed(2)}</p>
                   </div>
                 </div>
 
@@ -360,8 +360,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <FileText className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Category</p>
-                    <p className="font-semibold text-gray-900">{viewingExpense.category}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Category</p>
+                    <p className="font-semibold text-stone-900">{viewingExpense.category}</p>
                   </div>
                 </div>
 
@@ -370,8 +370,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <Store className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Merchant</p>
-                    <p className="font-semibold text-gray-900">{viewingExpense.merchant}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Merchant</p>
+                    <p className="font-semibold text-stone-900">{viewingExpense.merchant}</p>
                   </div>
                 </div>
 
@@ -380,8 +380,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <CreditCard className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Card Used</p>
-                    <p className="font-semibold text-gray-900">{viewingExpense.cardUsed}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Card Used</p>
+                    <p className="font-semibold text-stone-900">{viewingExpense.cardUsed}</p>
                   </div>
                 </div>
 
@@ -391,8 +391,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       <MapPin className="w-5 h-5 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Location</p>
-                      <p className="font-semibold text-gray-900">{viewingExpense.location}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Location</p>
+                      <p className="font-semibold text-stone-900">{viewingExpense.location}</p>
                     </div>
                   </div>
                 )}
@@ -403,39 +403,39 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       <User className="w-5 h-5 text-teal-600" />
                     </div>
                     <div>
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Submitted By</p>
-                      <p className="font-semibold text-gray-900">{viewingExpense.user_name}</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Submitted By</p>
+                      <p className="font-semibold text-stone-900">{viewingExpense.user_name}</p>
                     </div>
                   </div>
                 )}
               </div>
 
               {viewingExpense.description && (
-                <div className="rounded-lg bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1.5">Description</p>
-                  <p className="text-sm text-gray-900">{viewingExpense.description}</p>
+                <div className="rounded-lg bg-stone-50/80 p-4 ring-1 ring-inset ring-stone-200/70">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1.5">Description</p>
+                  <p className="text-sm text-stone-900">{viewingExpense.description}</p>
                 </div>
               )}
 
               {/* Status and Reimbursement */}
               <div className="flex flex-wrap gap-3">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Status</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">Status</p>
                   <StatusBadge status={viewingExpense.status} size="md" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Reimbursement</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">Reimbursement</p>
                   <span className={`chip px-3 py-1 text-sm ${
                     viewingExpense.reimbursementRequired
                       ? 'bg-orange-50 text-orange-700 ring-orange-200/70'
-                      : 'bg-gray-50 text-gray-500 ring-gray-200'
+                      : 'bg-stone-50 text-stone-500 ring-stone-200'
                   }`}>
                     {viewingExpense.reimbursementRequired ? 'Required' : 'Not Required'}
                   </span>
                 </div>
                 {viewingExpense.zohoEntity && (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Entity</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">Entity</p>
                     <span className="chip px-3 py-1 text-sm bg-brand-50 text-brand-700 ring-brand-200/70">
                       {viewingExpense.zohoEntity}
                     </span>
@@ -445,9 +445,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
               {/* Receipt */}
               {viewingExpense.receiptUrl && (
-                <div className="rounded-card bg-gray-50/80 p-6 ring-1 ring-inset ring-gray-200/70">
+                <div className="rounded-card bg-stone-50/80 p-6 ring-1 ring-inset ring-stone-200/70">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Receipt</h3>
+                    <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Receipt</h3>
                     <button
                       onClick={() => setShowFullReceipt(!showFullReceipt)}
                       className="btn-secondary px-4 py-2"
@@ -467,11 +467,11 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                               href={displayUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-gray-700 no-underline transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/40"
+                              className="flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 px-4 py-8 text-stone-700 no-underline transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/40"
                             >
                               <FileText className="w-14 h-14 text-red-600" />
                               <span className="font-medium">PDF Receipt</span>
-                              <span className="text-sm text-gray-500">Click to open in a new tab</span>
+                              <span className="text-sm text-stone-500">Click to open in a new tab</span>
                             </a>
                           );
                         }
@@ -479,7 +479,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                           <img
                             src={displayUrl}
                             alt="Receipt"
-                            className="w-full h-auto max-h-[600px] object-contain rounded-lg ring-1 ring-gray-200"
+                            className="w-full h-auto max-h-[600px] object-contain rounded-lg ring-1 ring-stone-200"
                           />
                         );
                       })()}
@@ -490,7 +490,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
             </div>
 
             {/* Close Button */}
-            <div className="sticky bottom-0 rounded-b-xl border-t border-gray-200 bg-gray-50/95 px-6 py-4 backdrop-blur-sm">
+            <div className="sticky bottom-0 rounded-b-xl border-t border-stone-200 bg-stone-50/95 px-6 py-4 backdrop-blur-sm">
               <button
                 onClick={() => {
                   setViewingExpense(null);

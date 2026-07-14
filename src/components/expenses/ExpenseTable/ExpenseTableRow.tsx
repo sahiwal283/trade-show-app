@@ -75,18 +75,18 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
   return (
     <tr key={expense.id} className="group transition-colors duration-150 hover:bg-brand-50/40">
       {/* Date */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-600 tabular-nums whitespace-nowrap">
+      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-stone-600 tabular-nums whitespace-nowrap">
         {formatLocalDate(expense.date)}
       </td>
 
       {/* User (Approval Users Only) */}
       {hasApprovalPermission && (
-        <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-700">{userName}</td>
+        <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-stone-700">{userName}</td>
       )}
 
       {/* Event */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-900">
-        {event ? event.name : <span className="text-gray-400">No Event</span>}
+      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-stone-900">
+        {event ? event.name : <span className="text-stone-400">No Event</span>}
       </td>
 
       {/* Category */}
@@ -98,7 +98,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
         <div>
           <div className="flex items-center gap-2">
-            <div className="text-xs sm:text-sm font-medium text-gray-900">{expense.merchant}</div>
+            <div className="text-xs sm:text-sm font-medium text-stone-900">{expense.merchant}</div>
             {expense.duplicateCheck && expense.duplicateCheck.length > 0 && (
               <div className="relative group/dup">
                 <div className="flex items-center text-amber-500 cursor-help">
@@ -118,8 +118,8 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
                         day: 'numeric',
                       });
                       return (
-                        <div key={idx} className="text-xs text-gray-700 tabular-nums">
-                          <span className="font-semibold text-gray-900">${dup.amount.toFixed(2)}</span>{' '}
+                        <div key={idx} className="text-xs text-stone-700 tabular-nums">
+                          <span className="font-semibold text-stone-900">${dup.amount.toFixed(2)}</span>{' '}
                           at {dup.merchant} on {formattedDate}
                         </div>
                       );
@@ -129,17 +129,17 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
               </div>
             )}
           </div>
-          {expense.location && <div className="text-xs text-gray-500">{expense.location}</div>}
+          {expense.location && <div className="text-xs text-stone-500">{expense.location}</div>}
         </div>
       </td>
 
       {/* Amount */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-gray-900 tabular-nums whitespace-nowrap">
+      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-stone-900 tabular-nums whitespace-nowrap">
         ${expense.amount.toFixed(2)}
       </td>
 
       {/* Card Used */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-gray-600">{expense.cardUsed}</td>
+      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-stone-600">{expense.cardUsed}</td>
 
       {/* Status */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
@@ -162,7 +162,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
               {formatReimbursementStatus(expense.reimbursementStatus)}
             </span>
           ) : (
-            <span className="chip px-2 py-1 text-xs bg-gray-50 text-gray-500 ring-gray-200">
+            <span className="chip px-2 py-1 text-xs bg-stone-50 text-stone-500 ring-stone-200">
               Not Required
             </span>
           )}
@@ -210,8 +210,8 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
             onChange={(e) => onAssignEntity(expense, e.target.value)}
             className={`w-full min-w-[120px] rounded-lg border px-2 py-2 min-h-[44px] text-base sm:py-1 sm:min-h-0 sm:text-xs shadow-sm transition-all duration-150 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15 ${
               expense.zohoEntity
-                ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed'
-                : 'border-gray-300 bg-white text-gray-900 hover:border-gray-400'
+                ? 'border-stone-200 bg-stone-50 text-stone-500 cursor-not-allowed'
+                : 'border-stone-300 bg-white text-stone-900 hover:border-stone-400'
             }`}
             disabled={!!expense.zohoEntity}
             title={expense.zohoEntity ? 'Entity assigned - use View Details to change' : ''}
@@ -235,7 +235,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
         <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
           <div className="flex justify-center">
             {!expense.zohoEntity ? (
-              <span className="text-xs text-gray-400 italic">No entity</span>
+              <span className="text-xs text-stone-400 italic">No entity</span>
             ) : expense.zohoExpenseId || pushedExpenses.has(expense.id) ? (
               <span className="chip px-2 py-1 text-xs bg-accent-50 text-accent-800 ring-accent-200/70">
                 <CheckCircle2 className="w-3.5 h-3.5" />
@@ -269,7 +269,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
           {/* View Details (All Users) */}
           <button
             onClick={() => onViewExpense(expense)}
-            className="tap-target rounded-lg p-2 text-gray-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
+            className="tap-target rounded-lg p-2 text-stone-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
             title="View Details & Receipt"
           >
             <Eye className="w-4 h-4" />
@@ -278,7 +278,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
           {(expense.userId === currentUserId || hasApprovalPermission) && (
             <button
               onClick={() => onDeleteExpense(expense.id)}
-              className="tap-target rounded-lg p-2 text-gray-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
+              className="tap-target rounded-lg p-2 text-stone-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
               title="Delete"
             >
               <Trash2 className="w-4 h-4" />

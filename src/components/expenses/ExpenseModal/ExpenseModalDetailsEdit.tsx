@@ -280,7 +280,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
           }`}
           placeholder="Optional additional details"
         />
-        <p className="text-xs text-gray-500 mt-1">
+        <p className="text-xs text-stone-500 mt-1">
           Zoho Books combined text: {zohoComposedPreview.length}/{ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH} characters
           (includes submitter name, event, dates, and reimbursement flag).
         </p>
@@ -296,26 +296,26 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
           id="edit-reimbursement"
           checked={formData.reimbursementRequired || false}
           onChange={(e) => onChange({ reimbursementRequired: e.target.checked })}
-          className="h-5 w-5 lg:h-4 lg:w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+          className="h-5 w-5 lg:h-4 lg:w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
         />
-        <label htmlFor="edit-reimbursement" className="text-sm font-medium text-gray-700">
+        <label htmlFor="edit-reimbursement" className="text-sm font-medium text-stone-700">
           Reimbursement Required (Personal Card)
         </label>
       </div>
 
       {/* Receipt Management */}
       {onReceiptUpload && (
-        <div className="border-t border-gray-200 pt-4 mt-4">
+        <div className="border-t border-stone-200 pt-4 mt-4">
           <label className="field-label mb-3">Receipt</label>
           
           {/* Current Receipt Display */}
           {receiptImageUrl ? (
             <div className="space-y-3">
-              <div className="rounded-lg bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70">
+              <div className="rounded-lg bg-stone-50/80 p-4 ring-1 ring-inset ring-stone-200/70">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <Receipt className="w-5 h-5 text-brand-600" />
-                    <span className="text-sm font-medium text-gray-900">Current Receipt</span>
+                    <span className="text-sm font-medium text-stone-900">Current Receipt</span>
                   </div>
                 </div>
                 <div className="card rounded-lg p-3">
@@ -324,7 +324,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
                       href={receiptImageUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 py-6 text-gray-700 no-underline transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/40"
+                      className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-stone-300 bg-stone-50 py-6 text-stone-700 no-underline transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50/40"
                     >
                       <FileText className="w-10 h-10 text-red-600" />
                       <span className="text-sm font-medium">PDF Receipt – click to open</span>
@@ -363,7 +363,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
             <button
               onClick={handleAddReceipt}
               disabled={uploadingReceipt}
-              className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-2 text-sm font-medium text-gray-600 transition-colors duration-150 hover:border-brand-400 hover:bg-brand-50/60 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed lg:min-h-0"
+              className="flex w-full min-h-[44px] items-center justify-center gap-2 rounded-lg border-2 border-dashed border-stone-300 px-4 py-2 text-sm font-medium text-stone-600 transition-colors duration-150 hover:border-brand-400 hover:bg-brand-50/60 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed lg:min-h-0"
             >
               {uploadingReceipt ? (
                 <>

@@ -22,7 +22,7 @@ const getActivityStatus = (lastActivity: string) => {
   
   if (diffMinutes < 5) return { label: 'Active', color: 'text-emerald-600', icon: CheckCircle2 };
   if (diffMinutes < 30) return { label: 'Idle', color: 'text-yellow-600', icon: Clock };
-  return { label: 'Stale', color: 'text-gray-500', icon: X };
+  return { label: 'Stale', color: 'text-stone-500', icon: X };
 };
 
 const formatTimeAgo = (timestamp: string) => {
@@ -55,23 +55,23 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({ sessions }) => {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-lg border border-stone-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50">
+            <thead className="bg-stone-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">User</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Last Active</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">IP Address</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Browser</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-600 uppercase">Created</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">User</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">Status</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">Last Active</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">IP Address</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">Browser</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">Created</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-stone-200">
               {sessions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-stone-500">
                     No active sessions found
                   </td>
                 </tr>
@@ -81,24 +81,24 @@ export const SessionsTab: React.FC<SessionsTabProps> = ({ sessions }) => {
                   const StatusIcon = status.icon;
                   
                   return (
-                    <tr key={session.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 font-medium text-gray-900">{session.user_name}</td>
+                    <tr key={session.id} className="hover:bg-stone-50">
+                      <td className="px-4 py-3 font-medium text-stone-900">{session.user_name}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center space-x-1">
                           <StatusIcon className={`w-4 h-4 ${status.color}`} />
                           <span className={`${status.color} font-medium`}>{status.label}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">
+                      <td className="px-4 py-3 text-stone-700">
                         {formatTimeAgo(session.last_activity)}
                       </td>
-                      <td className="px-4 py-3 text-gray-700 font-mono text-xs">
+                      <td className="px-4 py-3 text-stone-700 font-mono text-xs">
                         {session.ip_address}
                       </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs max-w-xs truncate" title={session.user_agent}>
+                      <td className="px-4 py-3 text-stone-600 text-xs max-w-xs truncate" title={session.user_agent}>
                         {session.user_agent}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">
+                      <td className="px-4 py-3 text-stone-600">
                         {formatTimeAgo(session.created_at)}
                       </td>
                     </tr>

@@ -143,7 +143,7 @@ export const ModelTrainingDashboard: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <RefreshCw className="w-8 h-8 animate-spin text-blue-500" />
-        <span className="ml-3 text-gray-600">Loading training data...</span>
+        <span className="ml-3 text-stone-600">Loading training data...</span>
       </div>
     );
   }
@@ -153,25 +153,25 @@ export const ModelTrainingDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+          <h2 className="text-2xl font-bold text-stone-900 flex items-center">
             <Brain className="w-8 h-8 text-purple-600 mr-3" />
             AI Model Training
           </h2>
-          <p className="text-gray-600 mt-1">
+          <p className="text-stone-600 mt-1">
             Monitor and manage the adaptive learning system
           </p>
         </div>
         <div className="flex space-x-3">
           <button
             onClick={() => handleExport('json')}
-            className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+            className="flex items-center px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition-colors"
           >
             <Download className="w-4 h-4 mr-2" />
             Export JSON
           </button>
           <button
             onClick={() => handleExport('csv')}
-            className="flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
+            className="flex items-center px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition-colors"
           >
             <Download className="w-4 h-4 mr-2" />
             Export CSV
@@ -233,14 +233,14 @@ export const ModelTrainingDashboard: React.FC = () => {
       )}
 
       {/* Tabs */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-stone-200">
         <nav className="flex space-x-8">
           <button
             onClick={() => setActiveTab('overview')}
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'overview'
                 ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
             }`}
           >
             Overview
@@ -250,7 +250,7 @@ export const ModelTrainingDashboard: React.FC = () => {
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'patterns'
                 ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
             }`}
           >
             Learned Patterns ({patterns.length})
@@ -260,7 +260,7 @@ export const ModelTrainingDashboard: React.FC = () => {
             className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
               activeTab === 'accuracy'
                 ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
             }`}
           >
             Accuracy Metrics
@@ -272,8 +272,8 @@ export const ModelTrainingDashboard: React.FC = () => {
       {activeTab === 'overview' && stats && (
         <div className="space-y-6">
           {/* Corrections by Field */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Corrections by Field</h3>
+          <div className="bg-white rounded-lg border border-stone-200 p-6">
+            <h3 className="text-lg font-semibold text-stone-900 mb-4">Corrections by Field</h3>
             <div className="space-y-3">
               {stats.byField.map((item) => {
                 const total = stats.overall.total_corrections;
@@ -281,10 +281,10 @@ export const ModelTrainingDashboard: React.FC = () => {
                 return (
                   <div key={item.field}>
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700 capitalize">{item.field}</span>
-                      <span className="text-sm text-gray-500">{item.correction_count} ({percentage.toFixed(1)}%)</span>
+                      <span className="text-sm font-medium text-stone-700 capitalize">{item.field}</span>
+                      <span className="text-sm text-stone-500">{item.correction_count} ({percentage.toFixed(1)}%)</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-stone-200 rounded-full h-2">
                       <div 
                         className="bg-purple-600 h-2 rounded-full transition-all duration-500"
                         style={{ width: `${percentage}%` }}
@@ -297,13 +297,13 @@ export const ModelTrainingDashboard: React.FC = () => {
           </div>
 
           {/* Recent Trend */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Correction Trend (Last 30 Days)</h3>
+          <div className="bg-white rounded-lg border border-stone-200 p-6">
+            <h3 className="text-lg font-semibold text-stone-900 mb-4">Correction Trend (Last 30 Days)</h3>
             <div className="space-y-2">
               {stats.recentTrend.slice(0, 10).map((item) => (
-                <div key={item.date} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-                  <span className="text-sm text-gray-600">{new Date(item.date).toLocaleDateString()}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.corrections} corrections</span>
+                <div key={item.date} className="flex items-center justify-between py-2 border-b border-stone-100 last:border-0">
+                  <span className="text-sm text-stone-600">{new Date(item.date).toLocaleDateString()}</span>
+                  <span className="text-sm font-medium text-stone-900">{item.corrections} corrections</span>
                 </div>
               ))}
             </div>
@@ -331,14 +331,14 @@ export const ModelTrainingDashboard: React.FC = () => {
       {activeTab === 'patterns' && (
         <div className="space-y-4">
           {/* Filters */}
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <div className="bg-white rounded-lg border border-stone-200 p-4">
             <div className="flex items-center space-x-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Filter by Field</label>
+                <label className="block text-sm font-medium text-stone-700 mb-1">Filter by Field</label>
                 <select
                   value={selectedField}
                   onChange={(e) => setSelectedField(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 >
                   <option value="all">All Fields</option>
                   <option value="merchant">Merchant</option>
@@ -348,62 +348,62 @@ export const ModelTrainingDashboard: React.FC = () => {
                 </select>
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Min Frequency</label>
+                <label className="block text-sm font-medium text-stone-700 mb-1">Min Frequency</label>
                 <input
                   type="number"
                   value={minFrequency}
                   onChange={(e) => setMinFrequency(parseInt(e.target.value) || 1)}
                   min="1"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
             </div>
           </div>
 
           {/* Patterns List */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-lg border border-stone-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-stone-200">
+                <thead className="bg-stone-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Field</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Original (OCR)</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Corrected To</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Confidence</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Users</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Field</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Original (OCR)</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Corrected To</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Frequency</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Confidence</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">Users</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white divide-y divide-stone-200">
                   {filteredPatterns.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={6} className="px-6 py-8 text-center text-stone-500">
                         No learned patterns yet. System needs at least 3 identical corrections to learn a pattern.
                       </td>
                     </tr>
                   ) : (
                     filteredPatterns.map((pattern, idx) => (
-                      <tr key={idx} className="hover:bg-gray-50">
+                      <tr key={idx} className="hover:bg-stone-50">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800 capitalize">
                             {pattern.field}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate" title={pattern.pattern.original}>
+                          <div className="text-sm text-stone-900 max-w-xs truncate" title={pattern.pattern.original}>
                             {pattern.pattern.original}
                           </div>
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-stone-500">
                             OCR confidence: {(pattern.pattern.originalConfidence * 100).toFixed(0)}%
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{pattern.pattern.corrected}</div>
+                          <div className="text-sm font-medium text-stone-900">{pattern.pattern.corrected}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                            <span className="text-sm text-gray-900">{pattern.frequency}</span>
+                            <span className="text-sm text-stone-900">{pattern.frequency}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -417,8 +417,8 @@ export const ModelTrainingDashboard: React.FC = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
-                            <Users className="w-4 h-4 text-gray-400 mr-1" />
-                            <span className="text-sm text-gray-900">{pattern.userCount}</span>
+                            <Users className="w-4 h-4 text-stone-400 mr-1" />
+                            <span className="text-sm text-stone-900">{pattern.userCount}</span>
                           </div>
                         </td>
                       </tr>
@@ -443,8 +443,8 @@ export const ModelTrainingDashboard: React.FC = () => {
                 'red';
 
               return (
-                <div key={field.field} className="bg-white rounded-lg border border-gray-200 p-6">
-                  <h4 className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2 capitalize">
+                <div key={field.field} className="bg-white rounded-lg border border-stone-200 p-6">
+                  <h4 className="text-sm font-medium text-stone-500 uppercase tracking-wider mb-2 capitalize">
                     {field.field}
                   </h4>
                   <div className="flex items-baseline">
@@ -455,7 +455,7 @@ export const ModelTrainingDashboard: React.FC = () => {
                       <CheckCircle className="w-6 h-6 text-green-500 ml-2" />
                     )}
                   </div>
-                  <div className="mt-4 space-y-1 text-sm text-gray-600">
+                  <div className="mt-4 space-y-1 text-sm text-stone-600">
                     <div className="flex justify-between">
                       <span>Total extractions:</span>
                       <span className="font-medium">{field.totalExtractions}</span>
@@ -471,8 +471,8 @@ export const ModelTrainingDashboard: React.FC = () => {
           </div>
 
           {/* Target Accuracy */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Target Accuracy Goals</h3>
+          <div className="bg-white rounded-lg border border-stone-200 p-6">
+            <h3 className="text-lg font-semibold text-stone-900 mb-4">Target Accuracy Goals</h3>
             <div className="space-y-4">
               {[
                 { field: 'merchant', current: accuracy.find(a => a.field === 'merchant')?.accuracyRate || 0, target: 85 },
@@ -486,15 +486,15 @@ export const ModelTrainingDashboard: React.FC = () => {
                 return (
                   <div key={item.field}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700 capitalize">{item.field}</span>
+                      <span className="text-sm font-medium text-stone-700 capitalize">{item.field}</span>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-500">
+                        <span className="text-sm text-stone-500">
                           {item.current.toFixed(1)}% / {item.target}%
                         </span>
                         {isReached && <CheckCircle className="w-4 h-4 text-green-500" />}
                       </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
+                    <div className="w-full bg-stone-200 rounded-full h-3">
                       <div 
                         className={`h-3 rounded-full transition-all duration-500 ${
                           isReached ? 'bg-green-500' : 'bg-blue-500'

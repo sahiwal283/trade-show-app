@@ -26,9 +26,9 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
   const [showBoothMapViewer, setShowBoothMapViewer] = useState(false);
 
   return (
-    <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+    <div className="border border-stone-200 rounded-lg p-3 bg-stone-50">
       <div className="flex items-center justify-between mb-2">
-        <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+        <label className="text-xs font-medium text-stone-700 flex items-center gap-1">
           <Map className="w-4 h-4" />
           Booth Floor Plan
         </label>
@@ -49,7 +49,7 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
             <img
               src={`${import.meta.env.VITE_API_BASE_URL || '/api'}${boothMapUrl}`}
               alt="Booth Map"
-              className="w-full h-32 object-contain bg-white rounded border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+              className="w-full h-32 object-contain bg-white rounded border border-stone-200 cursor-pointer hover:opacity-90 transition-opacity"
               onClick={() => setShowBoothMapViewer(true)}
               title="Click to view full size"
             />
@@ -57,7 +57,7 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
           <div className="flex gap-2">
             <button
               onClick={() => boothMapInputRef.current?.click()}
-              className="flex-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm flex items-center justify-center gap-1 transition-colors"
+              className="flex-1 px-3 py-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg text-sm flex items-center justify-center gap-1 transition-colors"
             >
               <Upload className="w-4 h-4" />
               Replace
@@ -68,7 +68,7 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
         <button
           onClick={() => boothMapInputRef.current?.click()}
           disabled={uploadingMap}
-          className="w-full py-2 px-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm text-gray-600 flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full py-2 px-3 border-2 border-dashed border-stone-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm text-stone-600 flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {uploadingMap ? (
             <>
@@ -84,7 +84,7 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
         </button>
       )}
       
-      <p className="text-xs text-gray-500 mt-1">
+      <p className="text-xs text-stone-500 mt-1">
         Upload booth layout/map (JPG, PNG, GIF, PDF • Max 10MB)
       </p>
 

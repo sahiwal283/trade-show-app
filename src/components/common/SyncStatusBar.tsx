@@ -103,7 +103,7 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
   };
 
   const getStatusColor = () => {
-    if (!networkState.isOnline) return 'bg-gray-600';
+    if (!networkState.isOnline) return 'bg-stone-600';
     if (isSyncing) return 'bg-blue-600';
     if (syncStatus && syncStatus.failedCount > 0) return 'bg-red-600';
     if (syncStatus && syncStatus.pendingCount > 0) return 'bg-amber-600';

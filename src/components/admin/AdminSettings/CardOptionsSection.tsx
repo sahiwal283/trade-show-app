@@ -70,17 +70,17 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
   onSaveEdit
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 md:p-5 lg:p-6">
+    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 md:p-5 lg:p-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
           <CreditCard className="w-6 h-6 text-white" />
         </div>
         <div className="flex-1">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Card Options</h3>
-            <span className="text-xs text-gray-500">{cardOptions?.length || 0} configured</span>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Card Options</h3>
+            <span className="text-xs text-stone-500">{cardOptions?.length || 0} configured</span>
           </div>
-          <p className="text-gray-600">Manage available payment card options</p>
+          <p className="text-sm text-stone-600">Manage available payment card options</p>
         </div>
       </div>
 
@@ -92,7 +92,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
               type="text"
               value={newCardName}
               onChange={(e) => setNewCardName(e.target.value)}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Card name (e.g., Haute Inc USD Amex)"
             />
             <input
@@ -102,7 +102,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                 const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                 setNewCardLastFour(value);
               }}
-              className="w-32 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-32 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Last 4"
               maxLength={4}
             />
@@ -113,7 +113,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
             <select
               value={newCardEntity}
               onChange={(e) => setNewCardEntity(e.target.value)}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="">Personal Card (No Entity)</option>
               {entityOptions.map((entity, idx) => (
@@ -128,7 +128,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
               type="text"
               value={newCardZohoAccountId}
               onChange={(e) => setNewCardZohoAccountId(e.target.value)}
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Zoho Payment Account ID (optional)"
             />
             <button
@@ -144,7 +144,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
 
         <div className="space-y-2">
           {cardOptions.map((option, index) => (
-            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-gray-50 p-3 rounded-lg">
+            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-stone-50 p-3 rounded-lg">
               {editingCardIndex === index ? (
                 <div className="w-full space-y-2">
                   <div className="flex gap-2">
@@ -152,7 +152,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                       type="text"
                       value={editCardName}
                       onChange={(e) => setEditCardName(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Card name"
                     />
                     <input
@@ -162,7 +162,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                         const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                         setEditCardLastFour(value);
                       }}
-                      className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-24 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Last 4"
                       maxLength={4}
                     />
@@ -171,7 +171,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                     <select
                       value={editCardEntity}
                       onChange={(e) => setEditCardEntity(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                      className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                     >
                       <option value="">Personal Card (No Entity)</option>
                       {entityOptions.map((entity, idx) => (
@@ -184,7 +184,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                       type="text"
                       value={editCardZohoAccountId}
                       onChange={(e) => setEditCardZohoAccountId(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Zoho Payment Account ID"
                     />
                     <button
@@ -198,7 +198,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                     <button
                       onClick={onCancelEdit}
                       disabled={isSaving}
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
                       title="Cancel"
                     >
                       <X className="w-4 h-4" />
@@ -208,12 +208,12 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
               ) : (
                 <>
                   <div className="flex-1">
-                    <div className="text-gray-900 font-medium">{option.name} | {option.lastFour}</div>
+                    <div className="text-stone-900 font-medium">{option.name} | {option.lastFour}</div>
                     <div className="text-sm mt-0.5 space-y-0.5">
                       {option.entity ? (
                         <span className="text-blue-600 font-medium">{option.entity}</span>
                       ) : (
-                        <span className="text-gray-500">Personal Card</span>
+                        <span className="text-stone-500">Personal Card</span>
                       )}
                       {option.zohoPaymentAccountId && (
                         <div className="text-xs text-emerald-600">
@@ -226,7 +226,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                     <button
                       onClick={() => onStartEdit(index)}
                       disabled={isSaving}
-                      className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-stone-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4" />
@@ -234,7 +234,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                     <button
                       onClick={() => onRemoveCard(option)}
                       disabled={isSaving}
-                      className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="p-2 text-stone-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />

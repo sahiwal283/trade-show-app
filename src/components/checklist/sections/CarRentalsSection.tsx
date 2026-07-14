@@ -212,11 +212,11 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
       {/* Add New Rental Form */}
       {showAddForm && (
         <div className="border border-orange-200 rounded-lg p-4 mb-3 bg-orange-50">
-          <h4 className="font-medium text-gray-900 mb-3">New Car Rental</h4>
+          <h4 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-3">New Car Rental</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {/* Rental Type */}
             <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-stone-700 mb-1">
                 Rental Type
               </label>
               <div className="flex gap-4">
@@ -230,7 +230,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                     className="text-orange-500 focus:ring-orange-500"
                   />
                   <Users className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm text-gray-700">Group Rental (Shared)</span>
+                  <span className="text-sm text-stone-700">Group Rental (Shared)</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -242,7 +242,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                     className="text-orange-500 focus:ring-orange-500"
                   />
                   <UserIcon className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm text-gray-700">Individual Rental</span>
+                  <span className="text-sm text-stone-700">Individual Rental</span>
                 </label>
               </div>
             </div>
@@ -250,7 +250,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
             {/* Assigned Participant (only for individual rentals) */}
             {newRental.rental_type === 'individual' && (
               <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-gray-700 mb-1">
+                <label className="block text-xs font-medium text-stone-700 mb-1">
                   Assign to Participant
                 </label>
                 <select
@@ -264,7 +264,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                       assigned_to_name: participant?.name || null
                     });
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                 >
                   <option value="">Select participant...</option>
                   {event.participants.map((participant) => (
@@ -277,7 +277,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
             )}
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-stone-700 mb-1">
                 Provider
               </label>
               <input
@@ -285,12 +285,12 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                 value={newRental.provider || ''}
                 onChange={(e) => setNewRental({ ...newRental, provider: e.target.value })}
                 placeholder="e.g., Enterprise, Hertz"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-stone-700 mb-1">
                 Confirmation Number
               </label>
               <input
@@ -298,24 +298,24 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                 value={newRental.confirmation_number || ''}
                 onChange={(e) => setNewRental({ ...newRental, confirmation_number: e.target.value })}
                 placeholder="Reservation number"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-stone-700 mb-1">
                 Pickup Date
               </label>
               <input
                 type="date"
                 value={newRental.pickup_date || ''}
                 onChange={(e) => setNewRental({ ...newRental, pickup_date: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-stone-700 mb-1">
                 Return Date
               </label>
               <input
@@ -323,33 +323,33 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                 value={newRental.return_date || ''}
                 onChange={(e) => setNewRental({ ...newRental, return_date: e.target.value })}
                 min={newRental.pickup_date || ''}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
               />
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-stone-700 mb-1">
                 Notes
               </label>
               <textarea
                 value={newRental.notes || ''}
                 onChange={(e) => setNewRental({ ...newRental, notes: e.target.value })}
                 placeholder="Vehicle type, pickup/return locations, insurance, etc."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm resize-none"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm resize-none"
                 rows={2}
               />
             </div>
 
             {/* Receipt Upload */}
             <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-stone-700 mb-1">
                 Receipt (Optional)
               </label>
               <div className="flex items-center gap-3">
                 <label className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors">
+                  <div className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-stone-300 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors">
                     <Receipt className="w-4 h-4 text-orange-600" />
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-stone-700">
                       {newRentalReceipt ? newRentalReceipt.name : 'Upload receipt (optional)'}
                     </span>
                   </div>
@@ -373,7 +373,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                   </button>
                 )}
               </div>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-stone-500 mt-1">
                 Upload the rental receipt now to save time
               </p>
             </div>
@@ -393,7 +393,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                 setNewRentalReceipt(null);
               }}
               disabled={saving[-1]}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm font-medium disabled:opacity-50"
+              className="px-4 py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300 transition-colors text-sm font-medium disabled:opacity-50"
             >
               Cancel
             </button>
@@ -403,7 +403,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
 
       {/* Existing Rentals */}
       {checklist.carRentals.length === 0 ? (
-        <p className="text-gray-500 text-sm">No car rentals added yet.</p>
+        <p className="text-stone-500 text-sm">No car rentals added yet.</p>
       ) : (
         <div className="space-y-3">
           {checklist.carRentals
@@ -420,7 +420,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
             return (
               <div
                 key={rental.id}
-                className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                className="border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -431,12 +431,12 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                       {rental.booked ? (
                         <CheckCircle2 className="w-6 h-6 text-green-600 hover:scale-110 transition-transform" />
                       ) : (
-                        <Circle className="w-6 h-6 text-gray-400 hover:text-gray-600 transition-colors" />
+                        <Circle className="w-6 h-6 text-stone-400 hover:text-stone-600 transition-colors" />
                       )}
                     </button>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-gray-900">{currentData.provider || 'Unnamed Rental'}</p>
+                        <p className="font-semibold text-stone-900">{currentData.provider || 'Unnamed Rental'}</p>
                         {currentData.rental_type === 'individual' && currentData.assigned_to_name && (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
                             <UserIcon className="w-3 h-3" />
@@ -476,7 +476,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-9">
                   {/* Rental Type */}
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Rental Type
                     </label>
                     <div className="flex gap-4">
@@ -494,7 +494,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                           className="text-orange-500 focus:ring-orange-500"
                         />
                         <Users className="w-4 h-4 text-orange-600" />
-                        <span className="text-sm text-gray-700">Group Rental (Shared)</span>
+                        <span className="text-sm text-stone-700">Group Rental (Shared)</span>
                       </label>
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
@@ -506,7 +506,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                           className="text-orange-500 focus:ring-orange-500"
                         />
                         <UserIcon className="w-4 h-4 text-orange-600" />
-                        <span className="text-sm text-gray-700">Individual Rental</span>
+                        <span className="text-sm text-stone-700">Individual Rental</span>
                       </label>
                     </div>
                   </div>
@@ -514,7 +514,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                   {/* Assigned Participant (only for individual rentals) */}
                   {currentData.rental_type === 'individual' && (
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
+                      <label className="block text-xs font-medium text-stone-700 mb-1">
                         Assigned to Participant
                       </label>
                       <select
@@ -525,7 +525,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                           handleFieldChange(rental.id!, 'assigned_to_id', participantId || null);
                           handleFieldChange(rental.id!, 'assigned_to_name', participant?.name || null);
                         }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                        className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                       >
                         <option value="">Select participant...</option>
                         {event.participants.map((participant) => (
@@ -538,7 +538,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                   )}
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Provider
                     </label>
                     <input
@@ -546,12 +546,12 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                       value={currentData.provider || ''}
                       onChange={(e) => handleFieldChange(rental.id!, 'provider', e.target.value)}
                       placeholder="e.g., Enterprise, Hertz"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Confirmation Number
                     </label>
                     <input
@@ -559,24 +559,24 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                       value={currentData.confirmation_number || ''}
                       onChange={(e) => handleFieldChange(rental.id!, 'confirmation_number', e.target.value)}
                       placeholder="Reservation number"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Pickup Date
                     </label>
                     <input
                       type="date"
                       value={currentData.pickup_date || ''}
                       onChange={(e) => handleFieldChange(rental.id!, 'pickup_date', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Return Date
                     </label>
                     <input
@@ -584,19 +584,19 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
                       value={currentData.return_date || ''}
                       onChange={(e) => handleFieldChange(rental.id!, 'return_date', e.target.value)}
                       min={currentData.pickup_date || ''}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Notes
                     </label>
                     <textarea
                       value={currentData.notes || ''}
                       onChange={(e) => handleFieldChange(rental.id!, 'notes', e.target.value)}
                       placeholder="Vehicle type, pickup/return locations, insurance, etc."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm resize-none"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm resize-none"
                       rows={2}
                     />
                   </div>

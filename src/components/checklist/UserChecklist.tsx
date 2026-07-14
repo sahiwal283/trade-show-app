@@ -17,14 +17,17 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user }) => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Checklist</h1>
-        <p className="text-gray-600 mt-1">Personal preparation checklist for trade shows</p>
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
+          Preparation
+        </p>
+        <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">My Checklist</h1>
+        <p className="text-stone-500 mt-1 text-sm">Personal preparation checklist for trade shows</p>
       </div>
 
       {/* Checklist Items */}
       <div className="space-y-4">
         {/* Trade Show Guidelines Document */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0">
               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
@@ -33,13 +36,13 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user }) => {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">Trade Show Guidelines Document</h3>
+                <h3 className="font-display text-lg font-bold tracking-tight text-stone-900">Trade Show Guidelines Document</h3>
                 <span className="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   Coming Soon
                 </span>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-stone-600 text-sm">
                 Access comprehensive guidelines and best practices for trade show participation.
               </p>
             </div>
@@ -47,7 +50,7 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user }) => {
         </div>
 
         {/* Packing List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0">
               <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
@@ -56,13 +59,13 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user }) => {
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-3 mb-2">
-                <h3 className="text-lg font-semibold text-gray-900">Packing List</h3>
+                <h3 className="font-display text-lg font-bold tracking-tight text-stone-900">Packing List</h3>
                 <span className="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-medium rounded-full flex items-center gap-1">
                   <Clock className="w-3 h-3" />
                   Coming Soon
                 </span>
               </div>
-              <p className="text-gray-600 text-sm">
+              <p className="text-stone-600 text-sm">
                 Get a personalized packing checklist based on your event and travel details.
               </p>
             </div>

@@ -36,7 +36,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
             viewMode === 'active'
               ? 'bg-gradient-to-r from-brand-600 to-accent-500 text-white shadow-brand'
-              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
           }`}
         >
           Active Events ({activeEventsCount})
@@ -46,7 +46,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
           className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
             viewMode === 'past'
               ? 'bg-gradient-to-r from-brand-600 to-accent-500 text-white shadow-brand'
-              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
           }`}
         >
           Past Events ({pastEventsCount})
@@ -60,7 +60,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
               filterMode === 'all'
                 ? 'bg-brand-600 text-white shadow-brand'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
             }`}
           >
             All Events
@@ -70,7 +70,7 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
             className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
               filterMode === 'my'
                 ? 'bg-brand-600 text-white shadow-brand'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
             }`}
           >
             My Events

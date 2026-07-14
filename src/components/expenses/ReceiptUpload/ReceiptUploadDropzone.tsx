@@ -27,7 +27,7 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
       className={`relative rounded-card border-2 border-dashed p-6 sm:p-12 text-center transition-colors duration-200 ${
         dragActive
           ? 'border-brand-500 bg-brand-50/70'
-          : 'border-gray-300 hover:border-brand-300 hover:bg-brand-50/30 active:bg-brand-50/50'
+          : 'border-stone-300 hover:border-brand-300 hover:bg-brand-50/30 active:bg-brand-50/50'
       }`}
       onDragEnter={onDrag}
       onDragLeave={onDrag}
@@ -51,11 +51,11 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
         </div>
 
         <div>
-          <h3 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-gray-900 mb-2">
+          <h3 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-stone-900 mb-2">
             <span className="sm:hidden">Tap to scan your receipt</span>
             <span className="hidden sm:inline">Drop your receipt here, or click to browse</span>
           </h3>
-          <p className="text-sm text-gray-500 max-w-md mx-auto">
+          <p className="text-sm text-stone-500 max-w-md mx-auto">
             <span className="sm:hidden">Snap a photo with your camera or pick one from your library. </span>
             Supports images (JPG, PNG, HEIC, WebP) and PDF files. Our OCR will automatically extract expense details.
           </p>
@@ -67,8 +67,8 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
               <Camera className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-gray-900">EasyOCR Engine</h4>
-              <p className="text-xs text-gray-500">High-accuracy AI OCR</p>
+              <h4 className="text-sm font-semibold text-stone-900">EasyOCR Engine</h4>
+              <p className="text-xs text-stone-500">High-accuracy AI OCR</p>
             </div>
           </div>
           <div className="flex items-center gap-3 text-left">
@@ -76,8 +76,8 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
               <FileText className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-gray-900">PDF Support</h4>
-              <p className="text-xs text-gray-500">Multi-page PDFs supported</p>
+              <h4 className="text-sm font-semibold text-stone-900">PDF Support</h4>
+              <p className="text-xs text-stone-500">Multi-page PDFs supported</p>
             </div>
           </div>
           <div className="flex items-center gap-3 text-left">
@@ -85,8 +85,8 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
               <Scan className="w-5 h-5" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-gray-900">Smart Fields</h4>
-              <p className="text-xs text-gray-500">Amount, date, merchant & more</p>
+              <h4 className="text-sm font-semibold text-stone-900">Smart Fields</h4>
+              <p className="text-xs text-stone-500">Amount, date, merchant & more</p>
             </div>
           </div>
         </div>

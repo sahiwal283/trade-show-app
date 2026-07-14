@@ -430,7 +430,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
           <UserManagement user={user} />
           
           {/* Divider */}
-          <div className="border-t border-gray-200"></div>
+          <div className="border-t border-stone-200"></div>
           
           {/* Role Management Section (Collapsible) */}
           <RoleManagement />

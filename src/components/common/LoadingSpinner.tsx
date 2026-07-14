@@ -32,7 +32,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         aria-label="Loading"
       />
       {text && (
-        <p className="mt-3 text-sm text-gray-600 animate-pulse">{text}</p>
+        <p className="mt-3 text-sm text-stone-600 animate-pulse">{text}</p>
       )}
     </div>
   );
@@ -67,7 +67,7 @@ export const LoadingSkeleton: React.FC<{ lines?: number }> = ({ lines = 3 }) => 
   return (
     <div className="animate-pulse space-y-4">
       {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className="h-4 bg-gray-200 rounded w-full" />
+        <div key={i} className="h-4 bg-stone-200 rounded w-full" />
       ))}
     </div>
   );

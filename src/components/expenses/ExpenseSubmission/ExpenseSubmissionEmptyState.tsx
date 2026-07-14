@@ -27,10 +27,10 @@ export const ExpenseSubmissionEmptyState: React.FC<ExpenseSubmissionEmptyStatePr
       <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 ring-1 ring-inset ring-brand-100">
         <Receipt className="w-8 h-8" />
       </div>
-      <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900 mb-1.5">
+      <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900 mb-1.5">
         No Expenses Found
       </h3>
-      <p className="mx-auto mb-6 max-w-md text-sm text-gray-500">
+      <p className="mx-auto mb-6 max-w-md text-sm text-stone-500">
         {hasActiveFilters
           ? 'Try adjusting your filters to see more expenses.'
           : 'Start by submitting your first expense with automatic OCR extraction from receipts.'

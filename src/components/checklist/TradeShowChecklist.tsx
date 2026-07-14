@@ -258,11 +258,14 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
     <div className="space-y-6">
       {/* Header with Tabs */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Checklist</h1>
-        <p className="text-gray-600 mt-1">Manage logistics and preparations for trade shows</p>
+        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
+          Logistics
+        </p>
+        <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">Checklist</h1>
+        <p className="text-stone-500 mt-1 text-sm">Manage logistics and preparations for trade shows</p>
         
         {/* Tabs */}
-        <div className="mt-4 border-b border-gray-200">
+        <div className="mt-4 border-b border-stone-200">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab('admin')}
@@ -270,7 +273,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
                 py-4 px-1 border-b-2 font-medium text-sm transition-colors
                 ${activeTab === 'admin'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
                 }
               `}
             >
@@ -282,7 +285,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
                 py-4 px-1 border-b-2 font-medium text-sm transition-colors
                 ${activeTab === 'user'
                   ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
                 }
               `}
             >
@@ -303,7 +306,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
               <select
                 value={selectedEventId || ''}
                 onChange={(e) => setSelectedEventId(e.target.value)}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2.5 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {events.length === 0 ? (
                   <option value="">No events available</option>
@@ -333,10 +336,10 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
       )}
 
       {selectedEvent && loading && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
+        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-12">
           <div className="flex flex-col items-center justify-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-gray-600">Loading checklist...</p>
+            <p className="mt-4 text-stone-600">Loading checklist...</p>
           </div>
         </div>
       )}
@@ -358,12 +361,12 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
       {selectedEvent && !loading && checklist && (
         <div>
           {/* Progress Bar */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-lg font-semibold text-gray-900">Overall Progress</h3>
-              <span className="text-2xl font-bold text-blue-600">{getProgress()}%</span>
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Overall Progress</h3>
+              <span className="font-display text-2xl font-bold tracking-tight text-stone-900 tabular-nums">{getProgress()}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-stone-200 rounded-full h-3">
               <div 
                 className="bg-gradient-to-r from-blue-500 to-emerald-500 h-3 rounded-full transition-all duration-300"
                 style={{ width: `${getProgress()}%` }}

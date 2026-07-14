@@ -34,7 +34,7 @@ interface ExpenseModalStatusManagementProps {
 
 // System control recipe for compact status selects (matches .input-field anatomy)
 const statusSelect =
-  'rounded-lg border border-gray-300 bg-white px-3 py-1.5 min-h-[44px] lg:min-h-0 text-base sm:text-sm font-medium text-gray-900 shadow-sm transition-all duration-150 hover:border-gray-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15';
+  'rounded-lg border border-stone-300 bg-white px-3 py-1.5 min-h-[44px] lg:min-h-0 text-base sm:text-sm font-medium text-stone-900 shadow-sm transition-all duration-150 hover:border-stone-400 focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15';
 
 // SIMPLIFIED: Helper to count edits (DRY principle)
 const getEditCount = (auditTrail: AuditEntry[]): number => {
@@ -76,7 +76,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
     <div className="flex flex-wrap gap-6">
       {/* Status - Editable by admin/accountant, or read-only (auto-updates on entity/reimbursement/push) */}
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Status</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Status</p>
         <div className="flex items-center space-x-2">
           {hasApprovalPermission && onStatusChange ? (
             <select
@@ -107,7 +107,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
                   ? 'Needs Further Review'
                   : expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
               </span>
-              {hasApprovalPermission && <span className="text-xs text-gray-400 italic">(auto-updates)</span>}
+              {hasApprovalPermission && <span className="text-xs text-stone-400 italic">(auto-updates)</span>}
             </>
           )}
         </div>
@@ -116,7 +116,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
       {/* Reimbursement Status */}
       {expense.reimbursementRequired ? (
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Reimbursement</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Reimbursement</p>
           {hasApprovalPermission ? (
             <select
               value={expense.reimbursementStatus || 'pending review'}
@@ -157,8 +157,8 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
         </div>
       ) : (
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Reimbursement</p>
-          <span className="chip px-3 py-1 text-sm bg-gray-50 text-gray-500 ring-gray-200">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Reimbursement</p>
+          <span className="chip px-3 py-1 text-sm bg-stone-50 text-stone-500 ring-stone-200">
             Not Required
           </span>
         </div>
@@ -166,7 +166,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
 
       {/* Entity */}
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Entity</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Entity</p>
         {hasApprovalPermission ? (
           <select
             value={expense.zohoEntity || ''}
@@ -203,7 +203,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
             {expense.zohoEntity}
           </span>
         ) : (
-          <span className="chip px-3 py-1 text-sm bg-gray-50 text-gray-500 ring-gray-200">
+          <span className="chip px-3 py-1 text-sm bg-stone-50 text-stone-500 ring-stone-200">
             Unassigned
           </span>
         )}
@@ -212,14 +212,14 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
       {/* Zoho Push Status */}
       {hasApprovalPermission && expense.zohoEntity && (
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Zoho Status</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Zoho Status</p>
           {expense.zohoExpenseId ? (
             <div className="flex items-center space-x-2">
               <span className="chip px-3 py-1 text-sm bg-accent-50 text-accent-800 ring-accent-200/70">
                 <span className="chip-dot bg-accent-500" />
                 Pushed
               </span>
-              <span className="text-xs text-gray-500">ID: {expense.zohoExpenseId}</span>
+              <span className="text-xs text-stone-500">ID: {expense.zohoExpenseId}</span>
               <EditWarning count={editCount} message="after push - Zoho data may be stale" />
             </div>
           ) : (

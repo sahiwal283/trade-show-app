@@ -172,12 +172,13 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <h1 className="font-display text-xl md:text-2xl font-bold tracking-tight text-gray-900">Reports & Analytics</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Trade show expenses</p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">Reports & Analytics</h1>
+          <p className="mt-1 text-sm text-stone-500">
             Analyze expenses and generate comprehensive reports
-            <span className="ml-3 text-sm text-gray-500">
+            <span className="ml-3 text-sm text-stone-500">
               • {filteredExpenses.length} expenses found
-              <span className="ml-3 font-semibold text-gray-700">
+              <span className="ml-3 font-semibold text-stone-700">
                 • Total: ${reportStats.totalAmount.toLocaleString()}
               </span>
             </span>
@@ -273,8 +274,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <Calendar className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="card-title">Trade Show Breakdown</h3>
-              <p className="text-xs text-gray-500">Entity expenses by trade show • Click to view details</p>
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Trade Show Breakdown</h3>
+              <p className="text-xs text-stone-500">Entity expenses by trade show • Click to view details</p>
             </div>
           </div>
           
@@ -286,14 +287,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 onKeyPress={(e) => e.key === 'Enter' && handleTradeShowClick(eventId)}
                 role="button"
                 tabIndex={0}
-                className="group min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-gray-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                className="group min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1 truncate" title={name}>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1 truncate" title={name}>
                       {name}
                     </p>
-                    <p className="font-display text-lg font-bold tracking-tight tabular-nums text-gray-900">
+                    <p className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
                       ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </p>
                   </div>
@@ -315,8 +316,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <Building2 className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="card-title">Entity Running Totals</h3>
-              <p className="text-xs text-gray-500">For selected filters • Click to view details</p>
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Entity Running Totals</h3>
+              <p className="text-xs text-stone-500">For selected filters • Click to view details</p>
             </div>
           </div>
           
@@ -328,14 +329,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 onKeyPress={(e) => e.key === 'Enter' && handleEntityClick(entity)}
                 role="button"
                 tabIndex={0}
-                className="group min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-gray-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
+                className="group min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1 truncate" title={entity}>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1 truncate" title={entity}>
                       {entity}
                     </p>
-                    <p className="font-display text-lg font-bold tracking-tight tabular-nums text-gray-900">
+                    <p className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
                       ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </p>
                   </div>
@@ -394,8 +395,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Category Averages Across Trade Shows</h3>
-              <p className="text-sm text-gray-500">Average spending per category based on {events.length} trade show{events.length !== 1 ? 's' : ''}</p>
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Category Averages Across Trade Shows</h3>
+              <p className="text-sm text-stone-500">Average spending per category based on {events.length} trade show{events.length !== 1 ? 's' : ''}</p>
             </div>
           </div>
 
@@ -443,10 +444,10 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             if (sortedAverages.length === 0) {
               return (
                 <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <TrendingUp className="w-8 h-8 text-gray-400" />
+                  <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <TrendingUp className="w-8 h-8 text-stone-400" />
                   </div>
-                  <p className="text-gray-500 text-sm">No category data available for the selected filters</p>
+                  <p className="text-stone-500 text-sm">No category data available for the selected filters</p>
                 </div>
               );
             }
@@ -456,10 +457,10 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 {sortedAverages.map(({ category, total, count, average }) => (
                   <div 
                     key={category}
-                    className="rounded-lg border border-gray-200/80 bg-white p-4 shadow-elevation-1 transition-shadow duration-200 hover:shadow-elevation-2"
+                    className="rounded-lg border border-stone-200/80 bg-white p-4 shadow-elevation-1 transition-shadow duration-200 hover:shadow-elevation-2"
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-gray-900 flex-1 pr-2">
+                      <h4 className="text-sm font-semibold text-stone-900 flex-1 pr-2">
                         {category}
                       </h4>
                       <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100">
@@ -469,18 +470,18 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                     
                     <div className="space-y-2">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-0.5">Average per Trade Show</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-0.5">Average per Trade Show</p>
                         <p className="font-display text-2xl font-bold tracking-tight tabular-nums text-amber-600">
                           ${average.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
                       
-                      <div className="pt-2 border-t border-gray-200">
-                        <div className="flex items-center justify-between text-xs text-gray-600">
+                      <div className="pt-2 border-t border-stone-200">
+                        <div className="flex items-center justify-between text-xs text-stone-600">
                           <span>Total Spent:</span>
                           <span className="font-semibold">${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
-                        <div className="flex items-center justify-between text-xs text-gray-600 mt-1">
+                        <div className="flex items-center justify-between text-xs text-stone-600 mt-1">
                           <span>Trade Shows:</span>
                           <span className="font-semibold">{count} of {events.length}</span>
                         </div>
@@ -496,24 +497,24 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Filter Modal */}
       {showFilterModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-gray-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-900/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
           <div className="modal-sheet-h w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-t-xl rounded-b-none bg-white shadow-elevation-3 sm:rounded-xl">
             {/* Modal Header */}
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex flex-row items-center justify-between gap-3 sticky top-0 z-10 bg-white rounded-t-xl">
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-stone-200 flex flex-row items-center justify-between gap-3 sticky top-0 z-10 bg-white rounded-t-xl">
               <div className="flex items-center space-x-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
                   <Filter className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Filter Reports</h3>
-                  <p className="text-sm text-gray-500">Customize your report view</p>
+                  <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900">Filter Reports</h3>
+                  <p className="text-sm text-stone-500">Customize your report view</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowFilterModal(false)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 hover:bg-gray-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 sm:h-8 sm:w-8"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 hover:bg-stone-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 sm:h-8 sm:w-8"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-stone-500" />
               </button>
             </div>
 
@@ -590,7 +591,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             </div>
 
             {/* Modal Actions — pinned on phones so Apply stays above the home indicator */}
-            <div className="sticky bottom-0 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:static sm:px-6 sm:py-4 sm:pb-4 bg-gray-50 rounded-b-none sm:rounded-b-xl flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 border-t border-gray-200">
+            <div className="sticky bottom-0 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:static sm:px-6 sm:py-4 sm:pb-4 bg-stone-50 rounded-b-none sm:rounded-b-xl flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 border-t border-stone-200">
               <button
                 onClick={() => {
                   setSelectedEvent('all');

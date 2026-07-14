@@ -36,8 +36,8 @@ export const EventList: React.FC<EventListProps> = ({
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 ring-1 ring-inset ring-brand-100">
           <Calendar className="w-8 h-8" />
         </div>
-        <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900 mb-1.5">No events found</h3>
-        <p className="text-sm text-gray-500">Create your first trade show event to get started.</p>
+        <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900 mb-1.5">No events found</h3>
+        <p className="text-sm text-stone-500">Create your first trade show event to get started.</p>
       </div>
     );
   }
@@ -48,8 +48,8 @@ export const EventList: React.FC<EventListProps> = ({
         <div key={event.id} className="card card-hover p-4 md:p-5 lg:p-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start mb-4">
             <div>
-              <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">{event.name}</h3>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+              <h3 className="font-display text-lg font-bold tracking-tight text-stone-900">{event.name}</h3>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-stone-500">
                 <div className="flex items-center gap-1">
                   <MapPin className="w-4 h-4" />
                   {event.venue}, {event.city}, {event.state}
@@ -95,20 +95,20 @@ export const EventList: React.FC<EventListProps> = ({
           
           {/* Participants with hover popup */}
           <div className="relative inline-block group">
-            <div className="flex items-center gap-1.5 text-sm text-gray-500 cursor-help">
+            <div className="flex items-center gap-1.5 text-sm text-stone-500 cursor-help">
               <Users className="w-4 h-4" />
               <span>{event.participants?.length || 0} participants</span>
             </div>
             
             {/* Popup on hover */}
             {event.participants && event.participants.length > 0 && (
-              <div className="absolute left-0 top-full z-10 mt-2 min-w-[200px] rounded-lg bg-white p-3 opacity-0 invisible shadow-elevation-3 ring-1 ring-gray-200 transition-all duration-200 group-hover:visible group-hover:opacity-100">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Participants</div>
+              <div className="absolute left-0 top-full z-10 mt-2 min-w-[200px] rounded-lg bg-white p-3 opacity-0 invisible shadow-elevation-3 ring-1 ring-stone-200 transition-all duration-200 group-hover:visible group-hover:opacity-100">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Participants</div>
                 <div className="space-y-1">
                   {event.participants.map((participant, index) => (
                     <div
                       key={index}
-                      className="text-sm text-gray-600 flex items-center gap-2"
+                      className="text-sm text-stone-600 flex items-center gap-2"
                     >
                       <span className="chip-dot bg-brand-500"></span>
                       {participant.name}

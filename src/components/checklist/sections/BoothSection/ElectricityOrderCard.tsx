@@ -32,7 +32,7 @@ export const ElectricityOrderCard: React.FC<ElectricityOrderCardProps> = ({
   onUploadReceipt
 }) => {
   return (
-    <div className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+    <div className="border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors">
       <button
         onClick={onElectricityToggle}
         disabled={saving}
@@ -41,15 +41,15 @@ export const ElectricityOrderCard: React.FC<ElectricityOrderCardProps> = ({
         {checklist.electricity_ordered ? (
           <CheckCircle2 className="w-6 h-6 text-green-600 flex-shrink-0 group-hover:scale-110 transition-transform" />
         ) : (
-          <Circle className="w-6 h-6 text-gray-400 flex-shrink-0 group-hover:text-gray-600 transition-colors" />
+          <Circle className="w-6 h-6 text-stone-400 flex-shrink-0 group-hover:text-stone-600 transition-colors" />
         )}
         <div className="flex-1 flex items-center gap-2">
           <Zap className="w-5 h-5 text-yellow-600" />
           <div>
-            <p className={`font-medium ${checklist.electricity_ordered ? 'text-gray-900' : 'text-gray-700'}`}>
+            <p className={`font-semibold ${checklist.electricity_ordered ? 'text-stone-900' : 'text-stone-700'}`}>
               Electricity Ordered
             </p>
-            <p className="text-sm text-gray-500 mt-1">Order power/electrical hookups for the booth</p>
+            <p className="text-sm text-stone-500 mt-1">Order power/electrical hookups for the booth</p>
           </div>
         </div>
       </button>
@@ -60,7 +60,7 @@ export const ElectricityOrderCard: React.FC<ElectricityOrderCardProps> = ({
           onChange={(e) => setElectricityNotes(e.target.value)}
           onBlur={onNotesBlur}
           placeholder="Add notes (voltage, number of outlets, special requirements, etc.)"
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm resize-none"
+          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm resize-none"
           rows={2}
         />
         <div className="flex items-center gap-2">

@@ -107,7 +107,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
     <>
       <div className="p-4 sm:p-6">
       {participants.length === 0 ? (
-        <p className="text-gray-500 text-sm">No participants added to this event yet.</p>
+        <p className="text-stone-500 text-sm">No participants added to this event yet.</p>
       ) : (
         <div className="space-y-3">
           {participants
@@ -127,7 +127,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
             return (
               <div
                 key={participant.id}
-                className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                className="border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -139,12 +139,12 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
                       {flight?.booked ? (
                         <CheckCircle2 className="w-6 h-6 text-green-600 hover:scale-110 transition-transform" />
                       ) : (
-                        <Circle className="w-6 h-6 text-gray-400 hover:text-gray-600 transition-colors" />
+                        <Circle className="w-6 h-6 text-stone-400 hover:text-stone-600 transition-colors" />
                       )}
                     </button>
                     <div>
-                      <p className="font-medium text-gray-900">{participant.name}</p>
-                      <p className="text-xs text-gray-500">{participant.email}</p>
+                      <p className="font-semibold text-stone-900">{participant.name}</p>
+                      <p className="text-xs text-stone-500">{participant.email}</p>
                     </div>
                   </div>
                   
@@ -162,7 +162,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-9">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Carrier
                     </label>
                     <input
@@ -170,12 +170,12 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
                       value={currentData?.carrier || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'carrier', e.target.value)}
                       placeholder="e.g., Delta, United"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Confirmation Number
                     </label>
                     <input
@@ -183,19 +183,19 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
                       value={currentData?.confirmation_number || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'confirmation_number', e.target.value)}
                       placeholder="Booking reference"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Notes
                     </label>
                     <textarea
                       value={currentData?.notes || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'notes', e.target.value)}
                       placeholder="Flight times, layovers, seat preferences, etc."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
                       rows={2}
                     />
                   </div>

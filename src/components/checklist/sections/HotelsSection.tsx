@@ -112,7 +112,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
     <>
       <div className="p-4 sm:p-6">
       {participants.length === 0 ? (
-        <p className="text-gray-500 text-sm">No participants added to this event yet.</p>
+        <p className="text-stone-500 text-sm">No participants added to this event yet.</p>
       ) : (
         <div className="space-y-3">
           {participants
@@ -132,7 +132,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
             return (
               <div
                 key={participant.id}
-                className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors"
+                className="border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -144,12 +144,12 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
                       {hotel?.booked ? (
                         <CheckCircle2 className="w-6 h-6 text-green-600 hover:scale-110 transition-transform" />
                       ) : (
-                        <Circle className="w-6 h-6 text-gray-400 hover:text-gray-600 transition-colors" />
+                        <Circle className="w-6 h-6 text-stone-400 hover:text-stone-600 transition-colors" />
                       )}
                     </button>
                     <div>
-                      <p className="font-medium text-gray-900">{participant.name}</p>
-                      <p className="text-xs text-gray-500">{participant.email}</p>
+                      <p className="font-semibold text-stone-900">{participant.name}</p>
+                      <p className="text-xs text-stone-500">{participant.email}</p>
                     </div>
                   </div>
                   
@@ -167,7 +167,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-9">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Property Name
                     </label>
                     <input
@@ -175,12 +175,12 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
                       value={currentData?.property_name || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'property_name', e.target.value)}
                       placeholder="e.g., Marriott Downtown"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Confirmation Number
                     </label>
                     <input
@@ -188,24 +188,24 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
                       value={currentData?.confirmation_number || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'confirmation_number', e.target.value)}
                       placeholder="Reservation number"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Check-In Date
                     </label>
                     <input
                       type="date"
                       value={currentData?.check_in_date || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'check_in_date', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Check-Out Date
                     </label>
                     <input
@@ -213,19 +213,19 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
                       value={currentData?.check_out_date || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'check_out_date', e.target.value)}
                       min={currentData?.check_in_date || ''}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                    <label className="block text-xs font-medium text-stone-700 mb-1">
                       Notes
                     </label>
                     <textarea
                       value={currentData?.notes || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'notes', e.target.value)}
                       placeholder="Room type, special requests, loyalty numbers, etc."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm resize-none"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm resize-none"
                       rows={2}
                     />
                   </div>

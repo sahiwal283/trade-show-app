@@ -98,8 +98,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   if (!config) {
     console.warn(`[StatusBadge] Unknown status: ${status}`);
     return (
-      <span className={`chip ${sizeClasses['sm']} bg-gray-50 text-gray-700 ring-gray-200 ${className}`}>
-        <span className="chip-dot bg-gray-400" />
+      <span className={`chip ${sizeClasses['sm']} bg-stone-50 text-stone-700 ring-stone-200 ${className}`}>
+        <span className="chip-dot bg-stone-400" />
         {status}
       </span>
     );

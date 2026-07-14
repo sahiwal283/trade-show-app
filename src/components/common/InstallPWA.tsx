@@ -86,7 +86,7 @@ export const InstallPWA: React.FC = () => {
       <div className="fixed bottom-4 left-4 right-4 md:left-auto md:w-96 bg-white rounded-xl shadow-2xl border-2 border-blue-500 p-4 z-50 animate-slide-up">
         <button
           onClick={handleDismiss}
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600"
+          className="absolute top-2 right-2 text-stone-400 hover:text-stone-600"
         >
           <X className="w-4 h-4" />
         </button>
@@ -95,8 +95,8 @@ export const InstallPWA: React.FC = () => {
             <Download className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 mb-1">Install App</h3>
-            <p className="text-sm text-gray-600 mb-3">
+            <h3 className="font-semibold text-stone-900 mb-1">Install App</h3>
+            <p className="text-sm text-stone-600 mb-3">
               Add to your home screen for quick access and offline support
             </p>
             <div className="flex space-x-2">
@@ -108,7 +108,7 @@ export const InstallPWA: React.FC = () => {
               </button>
               <button
                 onClick={handleDismiss}
-                className="px-4 py-2 text-gray-600 text-sm font-medium hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-stone-600 text-sm font-medium hover:bg-stone-100 rounded-lg transition-colors"
               >
                 Not now
               </button>

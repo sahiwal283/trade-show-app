@@ -47,8 +47,8 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 ring-1 ring-inset ring-brand-100">
             <Building2 className="w-8 h-8" />
           </div>
-          <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900 mb-1.5">No Entity Data Available</h3>
-          <p className="mx-auto max-w-md text-sm text-gray-500">
+          <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900 mb-1.5">No Entity Data Available</h3>
+          <p className="mx-auto max-w-md text-sm text-stone-500">
             Assign expenses to Zoho entities to see detailed breakdowns by organization.
           </p>
         </div>
@@ -70,19 +70,19 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
                       <Building2 className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">
+                      <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900">
                         {entityName === 'Unassigned' ? '⚠️ Unassigned' : entityName}
                       </h3>
-                      <p className="text-sm text-gray-500 tabular-nums">
+                      <p className="text-sm text-stone-500 tabular-nums">
                         {percentage.toFixed(1)}% of total expenses
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-display text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-gray-900">
+                    <p className="font-display text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-stone-900">
                       ${data.totalAmount.toLocaleString()}
                     </p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-stone-500">
                       {data.expenseCount} expenses
                     </p>
                   </div>
@@ -90,7 +90,7 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
 
                 {/* Progress Bar */}
                 <div className="mb-6">
-                  <div className="w-full bg-gray-100 rounded-full h-2 ring-1 ring-inset ring-gray-200/60">
+                  <div className="w-full bg-stone-100 rounded-full h-2 ring-1 ring-inset ring-stone-200/60">
                     <div
                       className="h-2 rounded-full bg-gradient-to-r from-brand-500 to-accent-500 transition-all duration-500"
                       style={{ width: `${percentage}%` }}
@@ -100,12 +100,12 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
 
                 {/* Top Categories */}
                 <div className="space-y-4">
-                  <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Top Categories</h4>
+                  <h4 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Top Categories</h4>
                   <div className="space-y-2">
                     {topCategories.map(([category, amount]) => (
                       <div key={category} className="flex items-center justify-between">
                         <CategoryBadge category={category} size="sm" />
-                        <span className="text-sm font-semibold tabular-nums text-gray-900">
+                        <span className="text-sm font-semibold tabular-nums text-stone-900">
                           ${amount.toLocaleString()}
                         </span>
                       </div>
@@ -115,8 +115,8 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
 
                 {/* Associated Events */}
                 {data.events.size > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
-                    <h4 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">Associated Events</h4>
+                  <div className="mt-4 pt-4 border-t border-stone-100">
+                    <h4 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Associated Events</h4>
                     <div className="flex flex-wrap gap-1">
                       {Array.from(data.events).slice(0, 3).map((eventName) => (
                         <span
@@ -127,7 +127,7 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
                         </span>
                       ))}
                       {data.events.size > 3 && (
-                        <span className="chip bg-gray-50 px-2 py-1 text-xs text-gray-500 ring-gray-200">
+                        <span className="chip bg-stone-50 px-2 py-1 text-xs text-stone-500 ring-stone-200">
                           +{data.events.size - 3} more
                         </span>
                       )}
@@ -144,8 +144,8 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
       {entities.length > 0 && (
         <div className="card p-3 sm:p-5 md:p-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Entity Summary</h3>
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-50 text-gray-500 ring-1 ring-inset ring-gray-200/70">
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Entity Summary</h3>
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-50 text-stone-500 ring-1 ring-inset ring-stone-200/70">
               <FileText className="w-4 h-4" />
             </span>
           </div>
@@ -155,28 +155,28 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
                 <Building2 className="w-7 h-7" />
               </div>
-              <p className="font-display text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-gray-900">{entities.length}</p>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Total Entities</p>
+              <p className="font-display text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-stone-900">{entities.length}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Total Entities</p>
             </div>
 
             <div className="text-center">
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-50 text-accent-600 ring-1 ring-inset ring-accent-100">
                 <DollarSign className="w-7 h-7" />
               </div>
-              <p className="font-display text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-gray-900">
+              <p className="font-display text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-stone-900">
                 ${Math.round(totalAmount / entities.length).toLocaleString()}
               </p>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Avg per Entity</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Avg per Entity</p>
             </div>
 
             <div className="text-center">
               <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-orange-600 ring-1 ring-inset ring-orange-100">
                 <FileText className="w-7 h-7" />
               </div>
-              <p className="font-display text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-gray-900">
+              <p className="font-display text-xl sm:text-2xl font-bold tracking-tight tabular-nums text-stone-900">
                 {entityData['Unassigned']?.expenseCount || 0}
               </p>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">Unassigned Expenses</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Unassigned Expenses</p>
             </div>
           </div>
         </div>

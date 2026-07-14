@@ -56,7 +56,7 @@ export const AlertsTab: React.FC<AlertsTabProps> = ({ alerts, alertStatus, onSta
         <select
           value={alertStatus}
           onChange={(e) => onStatusChange(e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500"
         >
           <option value="active">Active Alerts</option>
           <option value="acknowledged">Acknowledged</option>
@@ -67,9 +67,9 @@ export const AlertsTab: React.FC<AlertsTabProps> = ({ alerts, alertStatus, onSta
       {/* Alerts List */}
       <div className="space-y-3">
         {alerts.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+          <div className="bg-white rounded-lg border border-stone-200 p-8 text-center">
             <CheckCircle2 className="w-12 h-12 mx-auto text-emerald-500 mb-3" />
-            <p className="text-gray-600">No {alertStatus} alerts</p>
+            <p className="text-stone-600">No {alertStatus} alerts</p>
           </div>
         ) : (
           alerts.map((alert) => (
@@ -82,19 +82,19 @@ export const AlertsTab: React.FC<AlertsTabProps> = ({ alerts, alertStatus, onSta
                   <div className="flex items-center space-x-2 mb-2">
                     {alert.severity === 'critical' && <AlertCircle className="w-5 h-5 text-red-600" />}
                     {alert.severity === 'warning' && <AlertTriangle className="w-5 h-5 text-yellow-600" />}
-                    <h4 className="font-semibold text-gray-900">{alert.title}</h4>
+                    <h4 className="font-semibold text-stone-900">{alert.title}</h4>
                     <span className="px-2 py-0.5 text-xs font-medium rounded-full capitalize">
                       {alert.severity}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 mb-2">{alert.description}</p>
+                  <p className="text-sm text-stone-700 mb-2">{alert.description}</p>
                   {alert.metric_value && (
-                    <p className="text-xs text-gray-600">
+                    <p className="text-xs text-stone-600">
                       Value: {alert.metric_value} 
                       {alert.threshold_value && ` (Threshold: ${alert.threshold_value})`}
                     </p>
                   )}
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-stone-500 mt-2">
                     {new Date(alert.created_at).toLocaleString()}
                   </p>
                 </div>

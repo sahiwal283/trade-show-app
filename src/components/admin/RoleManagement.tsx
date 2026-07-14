@@ -128,17 +128,17 @@ export const RoleManagement: React.FC = () => {
   ];
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200">
+    <div className="bg-white rounded-lg border border-stone-200">
       {/* Collapsible Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-stone-50 transition-colors"
       >
         <div className="flex items-center space-x-3">
-          <Shield className="w-5 h-5 text-gray-400" />
+          <Shield className="w-5 h-5 text-stone-400" />
           <div className="text-left">
-            <h3 className="text-base font-semibold text-gray-900">Role Management</h3>
-            <p className="text-xs text-gray-500">Manage user roles and permissions ({roles.length} roles)</p>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Role Management</h3>
+            <p className="text-xs text-stone-500">Manage user roles and permissions ({roles.length} roles)</p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -155,22 +155,22 @@ export const RoleManagement: React.FC = () => {
             </button>
           )}
           {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
+            <ChevronUp className="w-5 h-5 text-stone-400" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-stone-400" />
           )}
         </div>
       </button>
 
       {/* Collapsible Content */}
       {isExpanded && (
-        <div className="px-4 pb-4 border-t border-gray-200">
+        <div className="px-4 pb-4 border-t border-stone-200">
           {/* Roles Grid - More Compact */}
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
             {roles.map(role => (
               <div
                 key={role.id}
-                className="bg-gray-50 rounded-lg border border-gray-200 p-4 hover:border-blue-300 transition-colors"
+                className="bg-stone-50 rounded-lg border border-stone-200 p-4 hover:border-blue-300 transition-colors"
               >
                 <div className="flex items-center justify-between mb-3">
                   <span className={`px-2.5 py-1 text-sm font-medium rounded ${role.color}`}>
@@ -181,11 +181,11 @@ export const RoleManagement: React.FC = () => {
                   )}
                 </div>
 
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2 min-h-[40px]">
+                <p className="text-sm text-stone-600 mb-3 line-clamp-2 min-h-[40px]">
                   {role.description || 'No description'}
                 </p>
 
-                <div className="text-xs text-gray-500 mb-3 font-mono">
+                <div className="text-xs text-stone-500 mb-3 font-mono">
                   {role.name}
                 </div>
 
@@ -218,15 +218,15 @@ export const RoleManagement: React.FC = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+              <h3 className="text-lg font-semibold text-stone-900">
                 {editingRole ? 'Edit Role' : 'Create New Role'}
               </h3>
               <button
                 onClick={handleCloseForm}
-                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1 hover:bg-stone-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-stone-500" />
               </button>
             </div>
 
@@ -235,7 +235,7 @@ export const RoleManagement: React.FC = () => {
               {/* Role Name (only for new roles) */}
               {!editingRole && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-stone-700 mb-1">
                     Role Name (Internal) *
                   </label>
                   <input
@@ -243,10 +243,10 @@ export const RoleManagement: React.FC = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., project_manager"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-stone-500 mt-1">
                     Lowercase, no spaces (will be converted automatically)
                   </p>
                 </div>
@@ -254,7 +254,7 @@ export const RoleManagement: React.FC = () => {
 
               {/* Role Label */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Display Label *
                 </label>
                 <input
@@ -262,14 +262,14 @@ export const RoleManagement: React.FC = () => {
                   value={formData.label}
                   onChange={(e) => setFormData({ ...formData, label: e.target.value })}
                   placeholder="e.g., Project Manager"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 />
               </div>
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-stone-700 mb-1">
                   Description
                 </label>
                 <textarea
@@ -277,13 +277,13 @@ export const RoleManagement: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Brief description of this role's responsibilities..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               {/* Color */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-stone-700 mb-2">
                   Badge Color
                 </label>
                 <div className="grid grid-cols-5 gap-2">
@@ -295,7 +295,7 @@ export const RoleManagement: React.FC = () => {
                       className={`relative p-2 rounded-lg border-2 transition-all ${
                         formData.color === option.value
                           ? 'border-blue-500 ring-2 ring-blue-200'
-                          : 'border-gray-200 hover:border-gray-300'
+                          : 'border-stone-200 hover:border-stone-300'
                       }`}
                     >
                       <div className={`${option.value} px-2 py-1 rounded text-xs font-medium text-center`}>
@@ -325,7 +325,7 @@ export const RoleManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors"
                 >
                   Cancel
                 </button>

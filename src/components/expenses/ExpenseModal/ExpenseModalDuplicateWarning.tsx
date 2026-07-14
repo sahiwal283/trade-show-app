@@ -42,10 +42,10 @@ export const ExpenseModalDuplicateWarning: React.FC<ExpenseModalDuplicateWarning
           return (
             <div
               key={index}
-              className="rounded-lg bg-white p-2.5 text-sm text-gray-700 ring-1 ring-inset ring-amber-200/60"
+              className="rounded-lg bg-white p-2.5 text-sm text-stone-700 ring-1 ring-inset ring-amber-200/60"
             >
               Expense #{dup.expenseId} —{' '}
-              <span className="font-semibold text-gray-900 tabular-nums">${dup.amount.toFixed(2)}</span> at{' '}
+              <span className="font-semibold text-stone-900 tabular-nums">${dup.amount.toFixed(2)}</span> at{' '}
               {dup.merchant} on {formattedDate}
             </div>
           );

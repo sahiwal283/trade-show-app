@@ -126,11 +126,11 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
   };
 
   return (
-    <div className="rounded-card bg-gray-50/80 p-4 ring-1 ring-inset ring-gray-200/70 sm:p-5 md:p-6">
+    <div className="rounded-card bg-stone-50/80 p-4 ring-1 ring-inset ring-stone-200/70 sm:p-5 md:p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div className="flex flex-wrap items-center gap-2">
           <CheckCircle className="w-6 h-6 text-accent-600" />
-          <h3 className="font-display text-lg font-semibold tracking-tight text-gray-900">Extracted Data</h3>
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Extracted Data</h3>
           <span className={`chip px-2 py-1 text-xs ${
             ocrResults.confidence >= 0.7 ? 'bg-accent-50 text-accent-800 ring-accent-200/70' :
             ocrResults.confidence >= 0.5 ? 'bg-amber-50 text-amber-800 ring-amber-200/70' :
@@ -197,7 +197,7 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
               }`}>
                 <span className="font-medium">⚠️ {warning.reason}</span>
                 {warning.suggestedAction && (
-                  <div className="ml-4 mt-0.5 text-gray-600 italic">
+                  <div className="ml-4 mt-0.5 text-stone-600 italic">
                     → {warning.suggestedAction}
                   </div>
                 )}
@@ -370,7 +370,7 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
             <button
               type="button"
               onClick={() => setShowPastEvents(!showPastEvents)}
-              className="mt-1 flex min-h-[44px] items-center gap-1 text-xs text-gray-500 hover:text-gray-700 transition-colors lg:min-h-0"
+              className="mt-1 flex min-h-[44px] items-center gap-1 text-xs text-stone-500 hover:text-stone-700 transition-colors lg:min-h-0"
             >
               <Clock className="w-3 h-3" />
               {showPastEvents ? 'Hide past events' : `Show ${pastEvents.length} past event${pastEvents.length === 1 ? '' : 's'}`}
