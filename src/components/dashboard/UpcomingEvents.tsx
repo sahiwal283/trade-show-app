@@ -34,20 +34,22 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-900">Upcoming Events</h3>
-        <button onClick={() => onPageChange('events')} className="text-blue-600 hover:text-blue-700 font-medium">View All</button>
+    <div className="card">
+      <div className="flex items-center justify-between px-5 md:px-6 pt-5 pb-4 border-b border-gray-100">
+        <h3 className="card-title">Upcoming Events</h3>
+        <button onClick={() => onPageChange('events')} className="card-link">View All</button>
       </div>
 
       {upcomingEvents.length === 0 ? (
-        <div className="text-center py-8">
-          <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No upcoming events</p>
+        <div className="text-center py-12 px-6">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-50 ring-1 ring-inset ring-gray-100">
+            <Calendar className="w-6 h-6 text-gray-300" />
+          </div>
+          <p className="text-sm font-medium text-gray-600">No upcoming events</p>
           <p className="text-sm text-gray-400 mt-1">Create your first trade show event</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 p-4 md:p-5">
           {upcomingEvents.map((event) => {
             // Check if event is currently in progress (between start and end date)
             const startDate = parseLocalDate(event.startDate);
@@ -59,38 +61,42 @@ export const UpcomingEvents: React.FC<UpcomingEventsProps> = ({ events, onPageCh
             const daysUntil = isInProgress ? 0 : getDaysUntil(event.startDate);
             
             return (
-              <div key={event.id} className="p-4 border border-gray-200 rounded-lg hover:shadow-sm transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <h4 className="font-semibold text-gray-900">{event.name}</h4>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                    daysUntil === 0 ? 'bg-orange-100 text-orange-800' : 
-                    daysUntil <= 7 ? 'bg-yellow-100 text-yellow-800' : 
-                    'bg-blue-100 text-blue-800'
+              <div key={event.id} className="group relative rounded-lg border border-gray-200/80 p-4 transition-all duration-200 hover:border-brand-200 hover:shadow-elevation-2">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <h4 className="text-sm font-semibold text-gray-900">{event.name}</h4>
+                  <span className={`chip shrink-0 px-2 py-0.5 text-[11px] ${
+                    daysUntil === 0 ? 'bg-orange-50 text-orange-700 ring-orange-200/70' :
+                    daysUntil <= 7 ? 'bg-amber-50 text-amber-800 ring-amber-200/70' :
+                    'bg-brand-50 text-brand-700 ring-brand-200/70'
                   }`}>
-                    {getDaysUntilLabel(daysUntil)}
+                    <span className={`chip-dot ${
+                      daysUntil === 0 ? 'bg-orange-500' :
+                      daysUntil <= 7 ? 'bg-amber-500' : 'bg-brand-500'
+                    }`} />
+                    {daysUntil === 0 ? 'In progress' : getDaysUntilLabel(daysUntil)}
                   </span>
                 </div>
-                
-                <div className="space-y-2 text-sm text-gray-600">
+
+                <div className="space-y-1.5 text-xs text-gray-500">
                   <div className="flex items-center">
-                    <MapPin className="w-4 h-4 mr-2" />
+                    <MapPin className="w-3.5 h-3.5 mr-2 text-gray-400" />
                     <span>{event.venue}, {event.city}, {event.state}</span>
                   </div>
                   <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-2" />
+                    <Clock className="w-3.5 h-3.5 mr-2 text-gray-400" />
                     <span>{formatDateRange(event.startDate, event.endDate)}</span>
                   </div>
                   <div className="flex items-center">
-                    <Users className="w-4 h-4 mr-2" />
+                    <Users className="w-3.5 h-3.5 mr-2 text-gray-400" />
                     <span>{event.participants?.length || 0} participants</span>
                   </div>
                 </div>
 
                 {event.budget && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Budget</span>
-                      <span className="font-medium text-gray-900">${event.budget.toLocaleString()}</span>
+                  <div className="mt-3 pt-3 border-t border-dashed border-gray-100">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500">Budget</span>
+                      <span className="font-display font-bold text-gray-900 tabular-nums">${event.budget.toLocaleString()}</span>
                     </div>
                   </div>
                 )}

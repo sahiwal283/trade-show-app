@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.39.0] - 2026-07-14 - Performance overhaul, dead-code purge, UI refresh (phase 1)
+
+### Performance
+- **Code-split views**: every page component now loads via `React.lazy` behind `Suspense`; initial/login payload drops from 188.6 KB gz (whole app in one chunk) to ~106 KB gz, with views fetched on first navigation. Vendor chunks (react, lucide icons, dexie) are split for stable long-term caching, and `console.log/debug` are stripped from production bundles.
+- **Parallel data loading**: Dashboard and Expenses screens fetch their independent endpoints with `Promise.allSettled` instead of 3-4 serial round trips.
+- **Backend request overhead**: `sessionTracker` middleware no longer blocks every authenticated request on a `user_sessions` UPDATE; activity writes are fire-and-forget and throttled to once per minute per session.
+- **Render hot paths**: memoized permission filtering in ExpenseSubmission and repeated filter/reduce computations in Reports.
+
+### Removed (dead code — verified unreferenced by code and tests)
+- Legacy in-backend OCR layer superseded by the external OCR microservice: `OCRService`, Tesseract/EasyOCR/PaddleOCR providers, `LLMProvider`, `AdaptiveInferenceEngine`, four orphaned Python processors, and the `copy-py` build step.
+- Dead frontend cluster: `filterUtils`, `useApi`/`useDataFetching`/`useUsers`/`useApiError`/`useResourceLoader` hooks and barrel, standalone `EventForm`, and the Approvals page + subcomponents removed from navigation in v1.3.0.
+- `backend/src/services/monitoring/prometheus.ts` (zero importers; its missing `prom-client` dependency was failing `tsc`).
+- Unused dependencies: `@supabase/supabase-js`, `axios` (frontend); `sharp`, `tesseract.js` (backend).
+- 52 stale test-report/handoff markdown files and one-off deploy scripts from the repo root.
+
+### Changed (UI refresh, phase 1)
+- New design-token layer in `tailwind.config.js` (brand/accent color scales, elevation shadows, card radius) plus shared `.card`/`.btn`/badge component classes in `index.css`.
+- Refreshed login screen, sidebar + header app frame, dashboard stat/overview cards, and status/category badges to the new system. Remaining screens (expense table, forms/modals, reports, mobile pass) are queued as phase 2.
+
 ### Changed
 - **OCR service upgraded to RapidOCR (infrastructure)**: The external OCR microservice (`OCR_SERVICE_URL`) that `/api/ocr/v2/process` delegates to now ships a `rapidocr` provider — PaddleOCR PP-OCR detection/recognition models running on onnxruntime (CPU). Production switched from `PRIMARY_OCR_PROVIDER=tesseract` to `rapidocr` (with `tesseract` as fallback), replacing the low-accuracy Tesseract path for receipt scans. Free/local (no metered cloud calls), no app-side code change required — the provider name surfaces in the existing `X-OCR-Provider` response header. The OCR microservice source now lives in [`ocr-service/`](ocr-service/) in this repo (service v0.14.0); production provider order is `rapidocr` → `document_ai` (low-confidence fallback), with `rapidocr` as the ledger-unavailable fallback.
 

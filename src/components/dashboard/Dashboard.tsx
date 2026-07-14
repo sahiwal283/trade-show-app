@@ -30,13 +30,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl text-white p-4 md:p-6 lg:p-8">
-        <div className="flex items-center justify-between mb-4">
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-600 via-brand-500 to-accent-500 text-white shadow-elevation-2 p-5 md:p-8">
+        {/* Layered atmosphere: soft light blooms, no images */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 -right-16 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-32 left-1/3 h-72 w-72 rounded-full bg-accent-300/20 blur-3xl" />
+        </div>
+        <div className="relative flex items-center justify-between gap-6 mb-5">
           <div>
-            <h1 className="text-3xl font-bold mb-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-white/70 mb-2">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </p>
+            <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight mb-2">
               {getGreeting()}, {user.name.split(' ')[0]}!
             </h1>
-            <p className="text-blue-100">
+            <p className="text-sm md:text-base text-blue-50/90 max-w-xl">
               {user.role === 'coordinator' && 'Manage your trade shows and track expenses'}
               {user.role === 'salesperson' && 'Submit your expenses and view your activity'}
               {user.role === 'accountant' && 'Review expenses and manage entity mappings'}
@@ -45,14 +53,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
               {user.role === 'temporary' && 'View trade show information and dashboard'}
             </p>
           </div>
-          <div className="hidden md:block">
-            <div className="w-32 h-32 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-              <Calendar className="w-16 h-16 text-white" />
+          <div className="hidden md:block shrink-0">
+            <div className="w-28 h-28 rounded-2xl bg-white/10 ring-1 ring-inset ring-white/20 backdrop-blur-sm flex items-center justify-center rotate-3">
+              <Calendar className="w-12 h-12 text-white/90" />
             </div>
           </div>
         </div>
         {/* PWA Install Button */}
-        <div className="flex justify-start">
+        <div className="relative flex justify-start">
           <InstallPWA />
         </div>
       </div>

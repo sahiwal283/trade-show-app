@@ -136,70 +136,80 @@ export const UI_CONSTANTS = {
 } as const;
 
 // ========== COLOR SCHEMES ==========
+// Status chips share one visual form: soft tint + inset ring (+ dot where rendered)
 export const STATUS_COLORS = {
   [EXPENSE_STATUS.PENDING]: {
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-800',
-    border: 'border-yellow-300',
+    bg: 'bg-amber-50',
+    text: 'text-amber-800',
+    ring: 'ring-1 ring-inset ring-amber-200/70',
+    border: 'border-amber-300',
   },
   [EXPENSE_STATUS.APPROVED]: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
-    border: 'border-emerald-300',
+    bg: 'bg-accent-50',
+    text: 'text-accent-800',
+    ring: 'ring-1 ring-inset ring-accent-200/70',
+    border: 'border-accent-300',
   },
   [EXPENSE_STATUS.REJECTED]: {
-    bg: 'bg-red-100',
-    text: 'text-red-800',
+    bg: 'bg-red-50',
+    text: 'text-red-700',
+    ring: 'ring-1 ring-inset ring-red-200/70',
     border: 'border-red-300',
   },
   [EXPENSE_STATUS.NEEDS_FURTHER_REVIEW]: {
-    bg: 'bg-orange-100',
-    text: 'text-orange-800',
+    bg: 'bg-orange-50',
+    text: 'text-orange-700',
+    ring: 'ring-1 ring-inset ring-orange-200/70',
     border: 'border-orange-300',
   },
 } as const;
 
+// Categories are metadata — quieter tints, same chip form as status
 export const CATEGORY_COLORS = {
   // Legacy categories (kept for backward compatibility)
-  Flights: { bg: 'bg-blue-100', text: 'text-blue-800' },
-  Hotels: { bg: 'bg-emerald-100', text: 'text-emerald-800' },
-  Meals: { bg: 'bg-orange-100', text: 'text-orange-800' },
-  Supplies: { bg: 'bg-purple-100', text: 'text-purple-800' },
-  Transportation: { bg: 'bg-yellow-100', text: 'text-yellow-800' },
-  'Marketing Materials': { bg: 'bg-pink-100', text: 'text-pink-800' },
-  Shipping: { bg: 'bg-indigo-100', text: 'text-indigo-800' },
-  
+  Flights: { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-1 ring-inset ring-blue-200/60' },
+  Hotels: { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-1 ring-inset ring-emerald-200/60' },
+  Meals: { bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-1 ring-inset ring-orange-200/60' },
+  Supplies: { bg: 'bg-purple-50', text: 'text-purple-700', ring: 'ring-1 ring-inset ring-purple-200/60' },
+  Transportation: { bg: 'bg-yellow-50', text: 'text-yellow-700', ring: 'ring-1 ring-inset ring-yellow-200/60' },
+  'Marketing Materials': { bg: 'bg-pink-50', text: 'text-pink-700', ring: 'ring-1 ring-inset ring-pink-200/60' },
+  Shipping: { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-1 ring-inset ring-indigo-200/60' },
+
   // Current categories
-  'Booth / Marketing / Tools': { bg: 'bg-purple-100', text: 'text-purple-800' },
-  'Travel - Flight': { bg: 'bg-blue-100', text: 'text-blue-800' },
-  'Accommodation - Hotel': { bg: 'bg-emerald-100', text: 'text-emerald-800' },
-  'Transportation - Uber / Lyft / Others': { bg: 'bg-yellow-100', text: 'text-yellow-800' },
-  'Parking Fees': { bg: 'bg-cyan-100', text: 'text-cyan-800' },
-  'Rental - Car / U-haul': { bg: 'bg-teal-100', text: 'text-teal-800' },
-  'Meal and Entertainment': { bg: 'bg-orange-100', text: 'text-orange-800' },
-  'Gas / Fuel': { bg: 'bg-amber-100', text: 'text-amber-800' },
-  'Show Allowances - Per Diem': { bg: 'bg-lime-100', text: 'text-lime-800' },
-  'Model': { bg: 'bg-fuchsia-100', text: 'text-fuchsia-800' },
-  'Shipping Charges': { bg: 'bg-indigo-100', text: 'text-indigo-800' },
-  Other: { bg: 'bg-gray-100', text: 'text-gray-800' },
+  'Booth / Marketing / Tools': { bg: 'bg-purple-50', text: 'text-purple-700', ring: 'ring-1 ring-inset ring-purple-200/60' },
+  'Travel - Flight': { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-1 ring-inset ring-blue-200/60' },
+  'Accommodation - Hotel': { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-1 ring-inset ring-emerald-200/60' },
+  'Transportation - Uber / Lyft / Others': { bg: 'bg-yellow-50', text: 'text-yellow-700', ring: 'ring-1 ring-inset ring-yellow-200/60' },
+  'Parking Fees': { bg: 'bg-cyan-50', text: 'text-cyan-700', ring: 'ring-1 ring-inset ring-cyan-200/60' },
+  'Rental - Car / U-haul': { bg: 'bg-teal-50', text: 'text-teal-700', ring: 'ring-1 ring-inset ring-teal-200/60' },
+  'Meal and Entertainment': { bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-1 ring-inset ring-orange-200/60' },
+  'Gas / Fuel': { bg: 'bg-amber-50', text: 'text-amber-700', ring: 'ring-1 ring-inset ring-amber-200/60' },
+  'Show Allowances - Per Diem': { bg: 'bg-lime-50', text: 'text-lime-700', ring: 'ring-1 ring-inset ring-lime-200/60' },
+  'Model': { bg: 'bg-fuchsia-50', text: 'text-fuchsia-700', ring: 'ring-1 ring-inset ring-fuchsia-200/60' },
+  'Shipping Charges': { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-1 ring-inset ring-indigo-200/60' },
+  Other: { bg: 'bg-gray-50', text: 'text-gray-600', ring: 'ring-1 ring-inset ring-gray-200' },
 } as const;
 
 export const REIMBURSEMENT_COLORS = {
   [REIMBURSEMENT_STATUS.PENDING_REVIEW]: {
-    bg: 'bg-yellow-100',
-    text: 'text-yellow-800',
+    bg: 'bg-amber-50',
+    text: 'text-amber-800',
+    ring: 'ring-1 ring-inset ring-amber-200/70',
   },
   [REIMBURSEMENT_STATUS.APPROVED]: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-800',
+    bg: 'bg-accent-50',
+    text: 'text-accent-800',
+    ring: 'ring-1 ring-inset ring-accent-200/70',
   },
   [REIMBURSEMENT_STATUS.REJECTED]: {
-    bg: 'bg-red-100',
-    text: 'text-red-800',
+    bg: 'bg-red-50',
+    text: 'text-red-700',
+    ring: 'ring-1 ring-inset ring-red-200/70',
   },
   [REIMBURSEMENT_STATUS.PAID]: {
-    bg: 'bg-blue-100',
-    text: 'text-blue-800',
+    bg: 'bg-brand-50',
+    text: 'text-brand-700',
+    ring: 'ring-1 ring-inset ring-brand-200/70',
   },
 } as const;
 
@@ -325,7 +335,7 @@ export const hasPermission = (role: UserRole, permission: keyof typeof PERMISSIO
  */
 export const getStatusColor = (status: string): string => {
   const colors = STATUS_COLORS[status as ExpenseStatus] ?? STATUS_COLORS[EXPENSE_STATUS.PENDING];
-  return `${colors.bg} ${colors.text}`;
+  return `${colors.bg} ${colors.text} ${colors.ring}`;
 };
 
 /**
@@ -334,7 +344,7 @@ export const getStatusColor = (status: string): string => {
  */
 export const getCategoryColor = (category: string): string => {
   const colors = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ?? CATEGORY_COLORS.Other;
-  return `${colors.bg} ${colors.text}`;
+  return `${colors.bg} ${colors.text} ${colors.ring}`;
 };
 
 /**
@@ -344,7 +354,7 @@ export const getCategoryColor = (category: string): string => {
 export const getReimbursementStatusColor = (status: string | undefined): string => {
   if (!status) return getReimbursementStatusColor(REIMBURSEMENT_STATUS.PENDING_REVIEW);
   const colors = REIMBURSEMENT_COLORS[status as ReimbursementStatus] ?? REIMBURSEMENT_COLORS[REIMBURSEMENT_STATUS.PENDING_REVIEW];
-  return `${colors.bg} ${colors.text}`;
+  return `${colors.bg} ${colors.text} ${colors.ring}`;
 };
 
 /**

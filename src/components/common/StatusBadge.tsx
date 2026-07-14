@@ -31,32 +31,38 @@ interface StatusBadgeProps {
 
 const statusConfig = {
   pending: {
-    color: 'bg-yellow-100 text-yellow-800',
+    color: 'bg-amber-50 text-amber-800 ring-amber-200/70',
+    dot: 'bg-amber-500',
     icon: Clock,
     label: 'Pending'
   },
   approved: {
-    color: 'bg-emerald-100 text-emerald-800',
+    color: 'bg-accent-50 text-accent-800 ring-accent-200/70',
+    dot: 'bg-accent-500',
     icon: CheckCircle,
     label: 'Approved'
   },
   rejected: {
-    color: 'bg-red-100 text-red-800',
+    color: 'bg-red-50 text-red-700 ring-red-200/70',
+    dot: 'bg-red-500',
     icon: XCircle,
     label: 'Rejected'
   },
   paid: {
-    color: 'bg-blue-100 text-blue-800',
+    color: 'bg-brand-50 text-brand-700 ring-brand-200/70',
+    dot: 'bg-brand-500',
     icon: FileCheck,
     label: 'Paid'
   },
   reimbursed: {
-    color: 'bg-purple-100 text-purple-800',
+    color: 'bg-violet-50 text-violet-700 ring-violet-200/70',
+    dot: 'bg-violet-500',
     icon: CheckCircle,
     label: 'Reimbursed'
   },
   needs_further_review: {
-    color: 'bg-orange-100 text-orange-800',
+    color: 'bg-orange-50 text-orange-700 ring-orange-200/70',
+    dot: 'bg-orange-500',
     icon: AlertCircle,
     label: 'Needs Review'
   }
@@ -87,7 +93,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   if (!config) {
     console.warn(`[StatusBadge] Unknown status: ${status}`);
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800 ${className}`}>
+      <span className={`chip ${sizeClasses['sm']} bg-gray-50 text-gray-700 ring-gray-200 ${className}`}>
+        <span className="chip-dot bg-gray-400" />
         {status}
       </span>
     );
@@ -96,15 +103,15 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   const Icon = config.icon;
 
   return (
-    <span 
+    <span
       className={`
-        ${sizeClasses[size]} 
-        ${config.color} 
-        font-medium rounded-full whitespace-nowrap inline-flex items-center gap-1
+        chip
+        ${sizeClasses[size]}
+        ${config.color}
         ${className}
       `}
     >
-      {showIcon && <Icon className={iconSizes[size]} />}
+      {showIcon ? <Icon className={iconSizes[size]} /> : <span className={`chip-dot ${config.dot}`} />}
       {config.label}
     </span>
   );

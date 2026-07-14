@@ -17,16 +17,18 @@ interface CategoryBadgeProps {
   className?: string;
 }
 
+// Categories are metadata, not status — keep them quiet and uniform in form
+// (soft tint + inset ring) so status chips carry the semantic color weight.
 const categoryColors: Record<string, string> = {
-  'Travel': 'bg-blue-100 text-blue-800',
-  'Meals & Entertainment': 'bg-purple-100 text-purple-800',
-  'Accommodation': 'bg-indigo-100 text-indigo-800',
-  'Supplies': 'bg-green-100 text-green-800',
-  'Shipping': 'bg-orange-100 text-orange-800',
-  'Technology': 'bg-cyan-100 text-cyan-800',
-  'Marketing': 'bg-pink-100 text-pink-800',
-  'Professional Services': 'bg-teal-100 text-teal-800',
-  'Other': 'bg-gray-100 text-gray-800'
+  'Travel': 'bg-blue-50 text-blue-700 ring-blue-200/60',
+  'Meals & Entertainment': 'bg-purple-50 text-purple-700 ring-purple-200/60',
+  'Accommodation': 'bg-indigo-50 text-indigo-700 ring-indigo-200/60',
+  'Supplies': 'bg-green-50 text-green-700 ring-green-200/60',
+  'Shipping': 'bg-orange-50 text-orange-700 ring-orange-200/60',
+  'Technology': 'bg-cyan-50 text-cyan-700 ring-cyan-200/60',
+  'Marketing': 'bg-pink-50 text-pink-700 ring-pink-200/60',
+  'Professional Services': 'bg-teal-50 text-teal-700 ring-teal-200/60',
+  'Other': 'bg-gray-50 text-gray-600 ring-gray-200'
 };
 
 const sizeClasses = {
@@ -44,11 +46,11 @@ export const CategoryBadge: React.FC<CategoryBadgeProps> = ({
   const colorClass = categoryColors[category] || categoryColors['Other'];
 
   return (
-    <span 
+    <span
       className={`
-        ${sizeClasses[size]} 
-        ${colorClass} 
-        font-medium rounded-full whitespace-nowrap inline-block
+        chip
+        ${sizeClasses[size]}
+        ${colorClass}
         ${className}
       `}
     >

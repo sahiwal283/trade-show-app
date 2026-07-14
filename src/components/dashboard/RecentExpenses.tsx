@@ -13,52 +13,54 @@ export const RecentExpenses: React.FC<RecentExpensesProps> = ({ expenses, onPage
   const recentExpenses = expenses.slice(0, 5);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 sm:p-5 md:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Recent Expenses</h3>
-        <button onClick={() => onPageChange('expenses')} className="text-blue-600 hover:text-blue-700 font-medium">View All</button>
+    <div className="card">
+      <div className="flex items-center justify-between px-5 md:px-6 pt-5 pb-4 border-b border-gray-100">
+        <h3 className="card-title">Recent Expenses</h3>
+        <button onClick={() => onPageChange('expenses')} className="card-link">View All</button>
       </div>
 
       {recentExpenses.length === 0 ? (
-        <div className="text-center py-8">
-          <DollarSign className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No expenses yet</p>
+        <div className="text-center py-12 px-6">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-50 ring-1 ring-inset ring-gray-100">
+            <DollarSign className="w-6 h-6 text-gray-300" />
+          </div>
+          <p className="text-sm font-medium text-gray-600">No expenses yet</p>
           <p className="text-sm text-gray-400 mt-1">Submit your first expense to get started</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="divide-y divide-gray-50 px-2 py-2">
           {recentExpenses.map((expense) => (
-            <div key={expense.id} className="flex items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
+            <div key={expense.id} className="flex items-center justify-between gap-3 rounded-lg px-3 py-3 hover:bg-gray-50 transition-colors">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 flex items-center justify-center">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-medium text-gray-900">{expense.merchant}</p>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{expense.merchant}</p>
                     {expense.event_name && (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                      <span className="chip shrink-0 px-2 py-0.5 text-[11px] bg-brand-50 text-brand-700 ring-brand-200/60">
                         <Calendar className="w-3 h-3" />
                         {expense.event_name}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
                     <Clock className="w-3 h-3" />
                     <span>{formatLocalDate(expense.date)}</span>
                     {expense.location && (
                       <>
-                        <MapPin className="w-3 h-3 ml-2" />
-                        <span>{expense.location}</span>
+                        <MapPin className="w-3 h-3 ml-1.5" />
+                        <span className="truncate">{expense.location}</span>
                       </>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <CategoryBadge category={expense.category} size="sm" />
+              <div className="flex items-center gap-2.5 shrink-0">
+                <span className="hidden sm:inline-flex"><CategoryBadge category={expense.category} size="sm" /></span>
                 <StatusBadge status={expense.status} size="sm" />
-                <p className="font-semibold text-gray-900">${expense.amount.toFixed(2)}</p>
+                <p className="font-display text-sm font-bold text-gray-900 tabular-nums">${expense.amount.toFixed(2)}</p>
               </div>
             </div>
           ))}

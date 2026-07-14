@@ -85,38 +85,58 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full px-3 sm:px-0">
-        <div className="bg-white rounded-2xl shadow-xl p-3 sm:p-4 sm:p-5 md:p-6 lg:p-8">
-          <div className="text-center mb-8">
-            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Key className="w-8 h-8 text-white" />
+    <div className="relative min-h-screen overflow-hidden bg-gray-50 flex items-center justify-center px-4">
+      {/* Layered background: soft brand washes + faint grid texture (pure CSS) */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-brand-200/40 blur-3xl" />
+        <div className="absolute -bottom-48 -right-32 h-[28rem] w-[28rem] rounded-full bg-accent-200/40 blur-3xl" />
+        <div
+          className="absolute inset-0 opacity-[0.4]"
+          style={{
+            backgroundImage:
+              'linear-gradient(to right, rgba(15,23,42,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(15,23,42,0.045) 1px, transparent 1px)',
+            backgroundSize: '32px 32px',
+            maskImage: 'radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent)',
+            WebkitMaskImage: 'radial-gradient(ellipse 80% 60% at 50% 40%, black, transparent)',
+          }}
+        />
+      </div>
+
+      <div className="relative max-w-md w-full px-3 sm:px-0 py-10">
+        <div className="bg-white/95 backdrop-blur rounded-2xl shadow-elevation-3 ring-1 ring-gray-900/5 p-6 sm:p-8 md:p-10">
+          <div className="text-center mb-10">
+            <div className="w-14 h-14 bg-gradient-to-br from-brand-500 to-accent-500 rounded-2xl shadow-brand flex items-center justify-center mx-auto mb-5">
+              <Key className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Welcome Back</h1>
-            <p className="text-gray-600 mt-2">Sign in to TradeShow Expense Manager</p>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">Welcome back</h1>
+            <p className="text-sm text-gray-500 mt-2">Sign in to TradeShow Expense Manager</p>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-6">
-              <div className="flex items-center">
-                <AlertCircle className="w-5 h-5 text-red-600 mr-2" />
-                <span className="text-red-700 text-sm">{error}</span>
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-3.5" role="alert">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="mt-0.5 w-5 h-5 shrink-0 text-red-500" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">Sign in failed</p>
+                  <p className="text-sm text-red-700 mt-0.5">{error}</p>
+                </div>
               </div>
             </div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 md:space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="field-label" htmlFor="login-username">
                 Username or email
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 <input
+                  id="login-username"
                   type="text"
                   name="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="input-field pl-10 py-3"
                   placeholder="Username or email"
                   autoComplete="username"
                   autoCapitalize="off"
@@ -129,17 +149,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="field-label" htmlFor="login-password">
                 Password
               </label>
               <div className="relative">
-                <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Key className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 <input
+                  id="login-password"
                   type="password"
                   name="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="input-field pl-10 py-3"
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   autoCapitalize="off"
@@ -149,48 +170,49 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 />
               </div>
             </div>
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white py-3 px-4 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center group disabled:opacity-50"
+              className="btn-primary w-full py-3 text-base group mt-2"
             >
               {isLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
                   Sign In
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
           {/* New User Registration Button */}
-          <div className="mt-6">
+          <div className="mt-8">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Don't have an account?</span>
+                <span className="px-3 bg-white text-gray-500">Don't have an account?</span>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setShowRegistration(true)}
-              className="mt-4 w-full bg-white border-2 border-blue-500 text-blue-600 py-3 px-4 rounded-lg font-medium hover:bg-blue-50 transition-all duration-200 flex items-center justify-center group"
+              className="btn-secondary mt-4 w-full py-3 text-brand-700 border-brand-200 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-800"
             >
-              <UserPlus className="mr-2 w-5 h-5" />
+              <UserPlus className="w-4 h-4" />
               Create New Account
             </button>
           </div>
 
           {displayUsers.length > 0 && (
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <h3 className="text-sm font-medium text-gray-700 mb-3">
-                {isSandbox ? 'Sandbox Test Accounts:' : 'Production Accounts:'}
+            <div className="mt-10 pt-5 border-t border-dashed border-gray-200">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-3">
+                {isSandbox ? 'Sandbox test accounts' : 'Production accounts'}
               </h3>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-1">
                 {displayUsers.map((user, index) => (
                   <button
                     key={index}
@@ -198,14 +220,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                       setUsername(user.username);
                       setPassword(user.password);
                     }}
-                    className="text-left p-3 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-100"
+                    className="text-left px-3 py-2 text-sm rounded-lg transition-colors hover:bg-gray-50 focus-visible:bg-gray-50"
                   >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <span className="font-semibold">{user.username}</span>
-                        <span className="text-gray-500 ml-2">({user.role})</span>
+                    <div className="flex justify-between items-center gap-2">
+                      <div className="min-w-0 truncate">
+                        <span className="font-medium text-gray-700">{user.username}</span>
+                        <span className="text-gray-400 ml-2 text-xs">{user.role}</span>
                       </div>
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{user.password}</span>
+                      <span className="shrink-0 text-[11px] font-mono text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{user.password}</span>
                     </div>
                   </button>
                 ))}

@@ -10,12 +10,99 @@
   }
 
   body {
-    @apply text-base;
+    @apply text-base text-gray-900 antialiased;
   }
 
   /* Better touch targets for mobile */
   button, a, input, select, textarea {
     @apply touch-manipulation;
+  }
+
+  /* App-wide visible keyboard focus that matches the brand */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand-500/70 ring-offset-2 ring-offset-white;
+  }
+}
+
+@layer components {
+  /* ===== Card system ===== */
+  .card {
+    @apply bg-white rounded-card border border-gray-200/80 shadow-elevation-1;
+  }
+
+  .card-hover {
+    @apply transition-shadow duration-200 hover:shadow-elevation-2;
+  }
+
+  .card-title {
+    @apply font-display text-base font-semibold tracking-tight text-gray-900;
+  }
+
+  .card-link {
+    @apply text-sm font-medium text-brand-600 hover:text-brand-700 hover:underline underline-offset-4 rounded transition-colors;
+  }
+
+  /* ===== Buttons ===== */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg
+      bg-gradient-to-r from-brand-600 to-accent-500 px-4 py-2.5
+      text-sm font-semibold text-white shadow-brand
+      transition-all duration-200
+      hover:from-brand-700 hover:to-accent-600 hover:shadow-brand-lg
+      active:translate-y-px active:shadow-elevation-1
+      focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg
+      border border-gray-300 bg-white px-4 py-2.5
+      text-sm font-semibold text-gray-700 shadow-elevation-1
+      transition-all duration-200
+      hover:border-gray-400 hover:bg-gray-50 hover:text-gray-900
+      active:translate-y-px
+      focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2
+      text-sm font-medium text-gray-600
+      transition-colors duration-150
+      hover:bg-gray-100 hover:text-gray-900
+      focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg
+      bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-elevation-1
+      transition-all duration-200
+      hover:bg-red-700 active:translate-y-px
+      focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2
+      disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  /* ===== Form fields ===== */
+  .field-label {
+    @apply block text-sm font-medium text-gray-700 mb-1.5;
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5
+      text-sm text-gray-900 placeholder-gray-400 shadow-sm
+      transition-all duration-150
+      hover:border-gray-400
+      focus:outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15;
+  }
+
+  /* ===== Status chips: one consistent form (tint + ring + dot) ===== */
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full font-medium whitespace-nowrap
+      ring-1 ring-inset;
+  }
+
+  .chip-dot {
+    @apply h-1.5 w-1.5 shrink-0 rounded-full;
   }
 }
 

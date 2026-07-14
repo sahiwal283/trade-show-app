@@ -36,64 +36,68 @@ export const BudgetOverview: React.FC<BudgetOverviewProps> = ({ events, expenses
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 sm:p-5 md:p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Budget Overview</h3>
-        <TrendingUp className="w-5 h-5 text-blue-600" />
+    <div className="card">
+      <div className="flex items-center justify-between px-5 md:px-6 pt-5 pb-4 border-b border-gray-100">
+        <h3 className="card-title">Budget Overview</h3>
+        <TrendingUp className="w-4 h-4 text-brand-500" />
       </div>
 
       {budgetData.length === 0 ? (
-        <div className="text-center py-8">
-          <CheckCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No budget data available</p>
+        <div className="text-center py-12 px-6">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-gray-50 ring-1 ring-inset ring-gray-100">
+            <CheckCircle className="w-6 h-6 text-gray-300" />
+          </div>
+          <p className="text-sm font-medium text-gray-600">No budget data available</p>
           <p className="text-sm text-gray-400 mt-1">Create events and add expenses to see budget tracking</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="divide-y divide-gray-50">
           {budgetData.map(event => {
             const status = getBudgetStatus(event.budgetUsed);
             const StatusIcon = status.icon;
-            
+
             return (
-              <div key={event.id} className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-gray-900">{event.name}</h4>
-                    <p className="text-sm text-gray-600">{event.expenseCount} expenses submitted</p>
+              <div key={event.id} className="px-5 md:px-6 py-4 space-y-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="text-sm font-semibold text-gray-900 truncate">{event.name}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">{event.expenseCount} expenses submitted</p>
                   </div>
-                  <div className={`flex items-center space-x-1 text-sm font-medium ${
-                    status.color === 'red' ? 'text-red-600' :
-                    status.color === 'orange' ? 'text-orange-600' : 'text-emerald-600'
+                  <span className={`chip shrink-0 px-2 py-0.5 text-xs ${
+                    status.color === 'red' ? 'bg-red-50 text-red-700 ring-red-200/70' :
+                    status.color === 'orange' ? 'bg-orange-50 text-orange-700 ring-orange-200/70' :
+                    'bg-accent-50 text-accent-800 ring-accent-200/70'
                   }`}>
-                    <StatusIcon className="w-4 h-4" />
-                    <span>{status.status}</span>
-                  </div>
+                    <StatusIcon className="w-3.5 h-3.5" />
+                    {status.status}
+                  </span>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Spent: ${event.totalSpent.toLocaleString()}</span>
-                    <span className="text-gray-600">Budget: ${event.budget.toLocaleString()}</span>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>Spent <span className="font-semibold text-gray-700 tabular-nums">${event.totalSpent.toLocaleString()}</span></span>
+                    <span>Budget <span className="font-semibold text-gray-700 tabular-nums">${event.budget.toLocaleString()}</span></span>
                   </div>
-                  
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
+
+                  <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden ring-1 ring-inset ring-gray-200/60">
+                    <div
                       className={`h-2 rounded-full transition-all duration-500 ${
-                        status.color === 'red' ? 'bg-red-500' :
-                        status.color === 'orange' ? 'bg-orange-500' : 'bg-emerald-500'
+                        status.color === 'red' ? 'bg-gradient-to-r from-red-400 to-red-500' :
+                        status.color === 'orange' ? 'bg-gradient-to-r from-orange-400 to-orange-500' :
+                        'bg-gradient-to-r from-brand-500 to-accent-500'
                       }`}
                       style={{ width: `${Math.min(event.budgetUsed, 100)}%` }}
                     ></div>
                   </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className={`font-medium ${
+
+                  <div className="flex justify-between text-xs">
+                    <span className={`font-semibold tabular-nums ${
                       status.color === 'red' ? 'text-red-600' :
-                      status.color === 'orange' ? 'text-orange-600' : 'text-emerald-600'
+                      status.color === 'orange' ? 'text-orange-600' : 'text-accent-700'
                     }`}>
                       {event.budgetUsed.toFixed(1)}% used
                     </span>
-                    <span className="text-gray-600">
+                    <span className="text-gray-500 tabular-nums">
                       ${event.remaining.toLocaleString()} remaining
                     </span>
                   </div>
