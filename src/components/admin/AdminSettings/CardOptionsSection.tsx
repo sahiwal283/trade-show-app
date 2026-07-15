@@ -86,13 +86,14 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
 
       <div className="space-y-4">
         <div className="space-y-3">
-          {/* Card Name and Last 4 */}
+          {/* Card Name and Last 4 — min-w-0 lets the name input shrink so the
+              pair never overflows the card on narrow screens */}
           <div className="flex gap-3">
             <input
               type="text"
               value={newCardName}
               onChange={(e) => setNewCardName(e.target.value)}
-              className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Card name (e.g., Haute Inc USD Amex)"
             />
             <input
@@ -102,7 +103,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                 const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                 setNewCardLastFour(value);
               }}
-              className="w-32 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-20 shrink-0 px-3 py-3 sm:w-32 sm:px-4 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Last 4"
               maxLength={4}
             />
@@ -128,7 +129,7 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
               type="text"
               value={newCardZohoAccountId}
               onChange={(e) => setNewCardZohoAccountId(e.target.value)}
-              className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Zoho Payment Account ID (optional)"
             />
             <button

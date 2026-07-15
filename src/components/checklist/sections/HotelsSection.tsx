@@ -1,9 +1,16 @@
+/**
+ * HotelsSection — one ledger-style row per attendee: name leads, email
+ * stays quiet, a booked/pending chip closes the line, and the reservation
+ * fields sit underneath. Unbooked rows sort first.
+ */
+
 import React, { useState } from 'react';
-import { Hotel, CheckCircle2, Circle, Save, Receipt } from 'lucide-react';
+import { Save, Receipt } from 'lucide-react';
 import { ChecklistData, HotelData } from '../TradeShowChecklist';
 import { TradeShow, User } from '../../../App';
 import { api } from '../../../utils/api';
 import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
+import { CheckToggle, StatusChip, FieldLabel, InlineAction } from '../ChecklistPrimitives';
 
 interface HotelsSectionProps {
   checklist: ChecklistData;
@@ -57,8 +64,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
 
     try {
       const existingHotel = getHotelForAttendee(attendeeId);
-      const isNewHotel = !existingHotel || !existingHotel.id;
-      
+
       const payload = {
         attendeeId: hotelData.attendee_id,
         attendeeName: hotelData.attendee_name,
@@ -110,9 +116,9 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
 
   return (
     <>
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-5">
       {participants.length === 0 ? (
-        <p className="text-stone-500 text-sm">No participants added to this event yet.</p>
+        <p className="text-sm text-stone-500">No participants added to this event yet.</p>
       ) : (
         <div className="space-y-3">
           {participants
@@ -132,112 +138,102 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
             return (
               <div
                 key={participant.id}
-                className="border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors"
+                className="rounded-xl border border-stone-200 p-3 transition-colors hover:border-stone-300 sm:p-4"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => hotel?.id && toggleBooked(participant.id)}
+                {/* Ledger line: toggle · name (lead) · email (quiet) · status */}
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                    <CheckToggle
+                      checked={!!hotel?.booked}
+                      onToggle={() => hotel?.id && toggleBooked(participant.id)}
                       disabled={!hotel?.id}
-                      className="disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {hotel?.booked ? (
-                        <CheckCircle2 className="w-6 h-6 text-green-600 hover:scale-110 transition-transform" />
-                      ) : (
-                        <Circle className="w-6 h-6 text-stone-400 hover:text-stone-600 transition-colors" />
-                      )}
-                    </button>
-                    <div>
-                      <p className="font-semibold text-stone-900">{participant.name}</p>
-                      <p className="text-xs text-stone-500">{participant.email}</p>
+                      label={`Mark hotel for ${participant.name} as ${hotel?.booked ? 'not booked' : 'booked'}`}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-stone-900">{participant.name}</p>
+                      <p className="truncate text-xs text-stone-400">{participant.email}</p>
                     </div>
                   </div>
-                  
-                  {isModified && (
-                    <button
-                      onClick={() => handleSave(participant.id)}
-                      disabled={saving[participant.id]}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors text-sm disabled:opacity-50"
-                    >
-                      <Save className="w-4 h-4" />
-                      Save
-                    </button>
-                  )}
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    {isModified ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSave(participant.id)}
+                        disabled={saving[participant.id]}
+                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50 lg:min-h-0"
+                      >
+                        <Save aria-hidden="true" className="w-4 h-4" />
+                        Save
+                      </button>
+                    ) : (
+                      <StatusChip done={!!hotel?.booked} />
+                    )}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-9">
+                {/* Reservation fields */}
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 sm:pl-9">
                   <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Property Name
-                    </label>
+                    <FieldLabel>Property Name</FieldLabel>
                     <input
                       type="text"
                       value={currentData?.property_name || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'property_name', e.target.value)}
                       placeholder="e.g., Marriott Downtown"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                      className="input-field"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Confirmation Number
-                    </label>
+                    <FieldLabel>Confirmation Number</FieldLabel>
                     <input
                       type="text"
                       value={currentData?.confirmation_number || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'confirmation_number', e.target.value)}
                       placeholder="Reservation number"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                      className="input-field"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Check-In Date
-                    </label>
+                    <FieldLabel>Check-In Date</FieldLabel>
                     <input
                       type="date"
                       value={currentData?.check_in_date || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'check_in_date', e.target.value)}
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                      className="input-field"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Check-Out Date
-                    </label>
+                    <FieldLabel>Check-Out Date</FieldLabel>
                     <input
                       type="date"
                       value={currentData?.check_out_date || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'check_out_date', e.target.value)}
                       min={currentData?.check_in_date || ''}
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
+                      className="input-field"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Notes
-                    </label>
+                    <FieldLabel>Notes</FieldLabel>
                     <textarea
                       value={currentData?.notes || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'notes', e.target.value)}
                       placeholder="Room type, special requests, loyalty numbers, etc."
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm resize-none"
+                      className="input-field resize-none"
                       rows={2}
                     />
                   </div>
-                  
-                  <div className="md:col-span-2">
-                    <button
+
+                  <div className="md:col-span-2 -ml-2.5">
+                    <InlineAction
+                      icon={Receipt}
+                      label="Upload Receipt"
                       onClick={() => setShowReceiptUpload({ attendeeId: participant.id, attendeeName: participant.name })}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors"
-                    >
-                      <Receipt className="w-4 h-4" />
-                      Upload Receipt
-                    </button>
+                    />
                   </div>
                 </div>
               </div>
@@ -264,4 +260,3 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
     </>
   );
 };
-

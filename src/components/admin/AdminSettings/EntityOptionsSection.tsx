@@ -58,7 +58,7 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
             value={newEntityOption}
             onChange={(e) => setNewEntityOption(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && onAddEntity()}
-            className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter new entity option..."
           />
           <button
@@ -80,7 +80,7 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
                     type="text"
                     value={editEntityValue}
                     onChange={(e) => setEditEntityValue(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="min-w-0 flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Entity name"
                   />
                   <div className="flex gap-2">

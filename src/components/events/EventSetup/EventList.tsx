@@ -60,36 +60,40 @@ export const EventList: React.FC<EventListProps> = ({
                 </div>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Mobile: budget chip on its own line, then one evenly-spread
+                action row. Desktop: everything inline as before. */}
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               {event.budget && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant') && (
-                <span className="chip bg-accent-50 px-2.5 py-1 text-xs text-accent-800 ring-accent-200/70">
+                <span className="chip self-start bg-accent-50 px-2.5 py-1 text-xs text-accent-800 ring-accent-200/70">
                   <DollarSign className="w-3.5 h-3.5" />
                   <span className="font-semibold tabular-nums">${event.budget.toLocaleString()}</span>
                 </span>
               )}
-              <button
-                onClick={() => onViewDetails(event)}
-                className="btn-ghost px-3 py-1.5"
-              >
-                <Info className="w-4 h-4" />
-                Details
-              </button>
-              {canManageEvents && (
-                <>
-                  <button
-                    onClick={() => onEdit(event)}
-                    className="rounded-lg px-3 py-1.5 min-h-[44px] lg:min-h-0 text-sm font-medium text-brand-600 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => onDelete(event.id)}
-                    className="rounded-lg px-3 py-1.5 min-h-[44px] lg:min-h-0 text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
+              <div className="flex items-center gap-1 sm:gap-2">
+                <button
+                  onClick={() => onViewDetails(event)}
+                  className="btn-ghost flex-1 justify-center px-3 py-1.5 sm:flex-initial"
+                >
+                  <Info className="w-4 h-4" />
+                  Details
+                </button>
+                {canManageEvents && (
+                  <>
+                    <button
+                      onClick={() => onEdit(event)}
+                      className="inline-flex flex-1 items-center justify-center rounded-lg px-3 py-1.5 min-h-[44px] lg:min-h-0 text-sm font-medium text-brand-600 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 sm:flex-initial"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => onDelete(event.id)}
+                      className="inline-flex flex-1 items-center justify-center rounded-lg px-3 py-1.5 min-h-[44px] lg:min-h-0 text-sm font-medium text-red-600 transition-colors duration-150 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 sm:flex-initial"
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           

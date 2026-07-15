@@ -1,9 +1,16 @@
+/**
+ * FlightsSection — one ledger-style row per attendee: name leads, email
+ * stays quiet, a booked/pending chip closes the line, and the booking
+ * fields sit underneath. Unbooked rows sort first.
+ */
+
 import React, { useState } from 'react';
-import { Plane, Plus, CheckCircle2, Circle, Trash2, Save, Receipt } from 'lucide-react';
+import { Save, Receipt } from 'lucide-react';
 import { ChecklistData, FlightData } from '../TradeShowChecklist';
 import { TradeShow, User } from '../../../App';
 import { api } from '../../../utils/api';
 import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
+import { CheckToggle, StatusChip, FieldLabel, InlineAction } from '../ChecklistPrimitives';
 
 interface FlightsSectionProps {
   checklist: ChecklistData;
@@ -55,8 +62,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
 
     try {
       const existingFlight = getFlightForAttendee(attendeeId);
-      const isNewFlight = !existingFlight || !existingFlight.id;
-      
+
       const payload = {
         attendeeId: flightData.attendee_id,
         attendeeName: flightData.attendee_name,
@@ -105,9 +111,9 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
 
   return (
     <>
-      <div className="p-4 sm:p-6">
+      <div className="p-4 sm:p-5">
       {participants.length === 0 ? (
-        <p className="text-stone-500 text-sm">No participants added to this event yet.</p>
+        <p className="text-sm text-stone-500">No participants added to this event yet.</p>
       ) : (
         <div className="space-y-3">
           {participants
@@ -127,87 +133,81 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
             return (
               <div
                 key={participant.id}
-                className="border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors"
+                className="rounded-xl border border-stone-200 p-3 transition-colors hover:border-stone-300 sm:p-4"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => flight?.id && toggleBooked(participant.id)}
+                {/* Ledger line: toggle · name (lead) · email (quiet) · status */}
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                    <CheckToggle
+                      checked={!!flight?.booked}
+                      onToggle={() => flight?.id && toggleBooked(participant.id)}
                       disabled={!flight?.id}
-                      className="disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {flight?.booked ? (
-                        <CheckCircle2 className="w-6 h-6 text-green-600 hover:scale-110 transition-transform" />
-                      ) : (
-                        <Circle className="w-6 h-6 text-stone-400 hover:text-stone-600 transition-colors" />
-                      )}
-                    </button>
-                    <div>
-                      <p className="font-semibold text-stone-900">{participant.name}</p>
-                      <p className="text-xs text-stone-500">{participant.email}</p>
+                      label={`Mark flight for ${participant.name} as ${flight?.booked ? 'not booked' : 'booked'}`}
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-stone-900">{participant.name}</p>
+                      <p className="truncate text-xs text-stone-400">{participant.email}</p>
                     </div>
                   </div>
-                  
-                  {isModified && (
-                    <button
-                      onClick={() => handleSave(participant.id)}
-                      disabled={saving[participant.id]}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm disabled:opacity-50"
-                    >
-                      <Save className="w-4 h-4" />
-                      Save
-                    </button>
-                  )}
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    {isModified ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSave(participant.id)}
+                        disabled={saving[participant.id]}
+                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50 lg:min-h-0"
+                      >
+                        <Save aria-hidden="true" className="w-4 h-4" />
+                        Save
+                      </button>
+                    ) : (
+                      <StatusChip done={!!flight?.booked} />
+                    )}
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-9">
+                {/* Booking fields */}
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 sm:pl-9">
                   <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Carrier
-                    </label>
+                    <FieldLabel>Carrier</FieldLabel>
                     <input
                       type="text"
                       value={currentData?.carrier || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'carrier', e.target.value)}
                       placeholder="e.g., Delta, United"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="input-field"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Confirmation Number
-                    </label>
+                    <FieldLabel>Confirmation Number</FieldLabel>
                     <input
                       type="text"
                       value={currentData?.confirmation_number || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'confirmation_number', e.target.value)}
                       placeholder="Booking reference"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="input-field"
                     />
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Notes
-                    </label>
+                    <FieldLabel>Notes</FieldLabel>
                     <textarea
                       value={currentData?.notes || ''}
                       onChange={(e) => handleFieldChange(participant.id, 'notes', e.target.value)}
                       placeholder="Flight times, layovers, seat preferences, etc."
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none"
+                      className="input-field resize-none"
                       rows={2}
                     />
                   </div>
-                  
-                  <div className="md:col-span-2">
-                    <button
+
+                  <div className="md:col-span-2 -ml-2.5">
+                    <InlineAction
+                      icon={Receipt}
+                      label="Upload Receipt"
                       onClick={() => setShowReceiptUpload({ attendeeId: participant.id, attendeeName: participant.name })}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
-                    >
-                      <Receipt className="w-4 h-4" />
-                      Upload Receipt
-                    </button>
+                    />
                   </div>
                 </div>
               </div>
@@ -234,4 +234,3 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
     </>
   );
 };
-

@@ -1,3 +1,11 @@
+/**
+ * TradeShowChecklist — Editorial Finance layout for show logistics.
+ *
+ * One designed surface: masthead with the event switcher, a segmented
+ * Admin/My tab control, the readiness story (display numeral + per-section
+ * stats), then section cards sorted incomplete-first.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
@@ -8,6 +16,7 @@ import { HotelsSection } from './sections/HotelsSection';
 import { CarRentalsSection } from './sections/CarRentalsSection';
 import { CustomItemsSection } from './sections/CustomItemsSection';
 import { CollapsibleSection } from './CollapsibleSection';
+import { ChecklistProgressCard, SectionStat } from './ChecklistProgressCard';
 import { sectionHasItems } from '../../utils/checklistUtils';
 import { UserChecklist } from './UserChecklist';
 
@@ -89,6 +98,39 @@ interface TradeShowChecklistProps {
 
 type ChecklistTab = 'admin' | 'user';
 
+/** Overall completion — same counting rules the page has always used:
+ *  booth (1) + electricity (1) + every flight/hotel/rental + shipping (1). */
+function getProgressSummary(checklist: ChecklistData | null): {
+  completed: number;
+  total: number;
+  pct: number;
+} {
+  if (!checklist) return { completed: 0, total: 0, pct: 0 };
+
+  let completed = 0;
+  let total = 0;
+
+  total += 1;
+  if (checklist.booth_ordered) completed += 1;
+
+  total += 1;
+  if (checklist.electricity_ordered) completed += 1;
+
+  total += checklist.flights.length;
+  completed += checklist.flights.filter(f => f.booked).length;
+
+  total += checklist.hotels.length;
+  completed += checklist.hotels.filter(h => h.booked).length;
+
+  total += checklist.carRentals.length;
+  completed += checklist.carRentals.filter(c => c.booked).length;
+
+  total += 1;
+  if (checklist.boothShipping.length > 0 && checklist.boothShipping[0].shipped) completed += 1;
+
+  return { completed, total, pct: total > 0 ? Math.round((completed / total) * 100) : 0 };
+}
+
 export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) => {
   const isPrivilegedUser = user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer';
   const [activeTab, setActiveTab] = useState<ChecklistTab>(isPrivilegedUser ? 'admin' : 'user');
@@ -116,20 +158,20 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         console.log('[Checklist] Fetching events...');
         const data = await api.getEvents();
         console.log('[Checklist] API response:', data);
-        
+
         // Defensive check: ensure data is an array
         if (!data) {
           console.error('[Checklist] API returned null/undefined');
           setEvents([]);
           return;
         }
-        
+
         // Normalize to array if needed
         const eventsArray = Array.isArray(data) ? data : [];
-        
+
         console.log('[Checklist] Loaded events:', eventsArray.length, 'events');
         setEvents(eventsArray);
-        
+
         if (eventsArray.length > 0 && !selectedEventId) {
           console.log('[Checklist] Auto-selecting first event:', eventsArray[0].id);
           setSelectedEventId(eventsArray[0].id);
@@ -148,17 +190,17 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         console.log('[Checklist] Loading checklist for event:', eventId);
         const data = await api.checklist.getChecklist(eventId) as unknown;
         console.log('[Checklist] Checklist loaded:', data);
-        
+
         // Defensive normalization: ensure all arrays exist and are actually arrays
         if (!data || typeof data !== 'object') {
           console.warn('[Checklist] No data received from API or invalid data type');
           setChecklist(null);
           return;
         }
-        
+
         // Type guard: ensure data is an object with expected structure
         const dataObj = data as Record<string, unknown>;
-        
+
         // Normalize response data to ensure all arrays exist
         const normalizedData: ChecklistData = {
           id: typeof dataObj.id === 'number' ? dataObj.id : 0,
@@ -179,7 +221,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
           // Ensure customItems is an array
           customItems: Array.isArray(dataObj.customItems) ? dataObj.customItems as CustomItemData[] : [],
         };
-        
+
         console.log('[Checklist] Normalized checklist data:', normalizedData);
         setChecklist(normalizedData);
       }
@@ -193,7 +235,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
 
   const updateChecklist = async (updates: Partial<ChecklistData>) => {
     if (!checklist) return;
-    
+
     setSaving(true);
     try {
       if (api.USE_SERVER) {
@@ -214,304 +256,257 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
   };
 
   const selectedEvent = events.find(e => e.id === selectedEventId);
-  
-  const getProgress = () => {
-    if (!checklist) return 0;
-    
-    let completed = 0;
-    let total = 0;
-    
-    // Booth (1 item)
-    total += 1;
-    if (checklist.booth_ordered) completed += 1;
-    
-    // Electricity (1 item)
-    total += 1;
-    if (checklist.electricity_ordered) completed += 1;
-    
-    // Flights (count booked)
-    total += checklist.flights.length;
-    completed += checklist.flights.filter(f => f.booked).length;
-    
-    // Hotels (count booked)
-    total += checklist.hotels.length;
-    completed += checklist.hotels.filter(h => h.booked).length;
-    
-    // Car rentals (count booked)
-    total += checklist.carRentals.length;
-    completed += checklist.carRentals.filter(c => c.booked).length;
-    
-    // Booth shipping (1 item)
-    total += 1;
-    if (checklist.boothShipping.length > 0 && checklist.boothShipping[0].shipped) completed += 1;
-    
-    return total > 0 ? Math.round((completed / total) * 100) : 0;
-  };
 
   // For regular users, show only User Checklist
   if (!isPrivilegedUser) {
     return <UserChecklist user={user} />;
   }
 
+  const progress = getProgressSummary(checklist);
+
+  const tabClasses = (tab: ChecklistTab) =>
+    `min-h-[44px] rounded-full px-4 py-1.5 text-sm font-semibold transition-colors lg:min-h-0 ${
+      activeTab === tab
+        ? 'bg-white text-stone-900 shadow-elevation-1'
+        : 'text-stone-500 hover:text-stone-800'
+    }`;
+
   // For privileged users, show tabs
   return (
-    <div className="space-y-6">
-      {/* Header with Tabs */}
-      <div>
-        <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
-          Logistics
-        </p>
-        <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">Checklist</h1>
-        <p className="text-stone-500 mt-1 text-sm">Manage logistics and preparations for trade shows</p>
-        
-        {/* Tabs */}
-        <div className="mt-4 border-b border-stone-200">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setActiveTab('admin')}
-              className={`
-                py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                ${activeTab === 'admin'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
-                }
-              `}
-            >
-              Admin Checklist
-            </button>
-            <button
-              onClick={() => setActiveTab('user')}
-              className={`
-                py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                ${activeTab === 'user'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
-                }
-              `}
-            >
-              My Checklist
-            </button>
-          </nav>
+    <div className="mx-auto max-w-6xl space-y-4 md:space-y-5">
+      {/* Masthead */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
+            Logistics
+          </p>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-stone-900 md:text-3xl">
+            Checklist
+          </h1>
+          <p className="mt-1 text-sm text-stone-500">
+            Manage logistics and preparations for trade shows
+          </p>
         </div>
+
+        {activeTab === 'admin' && (
+          <label className="inline-flex min-h-[44px] w-full items-center sm:w-auto lg:min-h-0">
+            <span className="sr-only">Select event</span>
+            <select
+              value={selectedEventId || ''}
+              onChange={(e) => setSelectedEventId(e.target.value)}
+              className="w-full max-w-full cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-600 shadow-elevation-1 transition-colors hover:border-stone-300 focus-visible:ring-2 focus-visible:ring-brand-500 sm:w-auto sm:text-xs"
+            >
+              {events.length === 0 ? (
+                <option value="">No events available</option>
+              ) : (
+                events.map(event => (
+                  <option key={event.id} value={event.id}>
+                    {event.name} - {new Date(event.startDate).toLocaleDateString()}
+                  </option>
+                ))
+              )}
+            </select>
+          </label>
+        )}
+      </div>
+
+      {/* Tabs — segmented control */}
+      <div className="inline-flex rounded-full bg-stone-100 p-1">
+        <button type="button" onClick={() => setActiveTab('admin')} className={tabClasses('admin')}>
+          Admin Checklist
+        </button>
+        <button type="button" onClick={() => setActiveTab('user')} className={tabClasses('user')}>
+          My Checklist
+        </button>
       </div>
 
       {/* Tab Content */}
       {activeTab === 'user' ? (
-        <UserChecklist user={user} />
+        <UserChecklist user={user} embedded />
       ) : (
         <>
-          {/* Event Selector (Admin Checklist only) */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-end gap-4">
-            <div className="w-full sm:w-auto">
-              <select
-                value={selectedEventId || ''}
-                onChange={(e) => setSelectedEventId(e.target.value)}
-                className="w-full px-4 py-2.5 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {events.length === 0 ? (
-                  <option value="">No events available</option>
-                ) : (
-                  events.map(event => (
-                    <option key={event.id} value={event.id}>
-                      {event.name} - {new Date(event.startDate).toLocaleDateString()}
-                    </option>
-                  ))
-                )}
-              </select>
+          {!selectedEvent && (
+            <div className="card flex items-start gap-3 p-4 md:p-5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50">
+                <AlertCircle aria-hidden="true" className="w-5 h-5 text-amber-600" />
+              </span>
+              <div>
+                <p className="font-semibold text-stone-900">No Event Selected</p>
+                <p className="mt-1 text-sm text-stone-500">
+                  Please select an event from the dropdown above to manage its checklist.
+                </p>
+              </div>
             </div>
-          </div>
+          )}
 
-      {!selectedEvent && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium text-yellow-900">No Event Selected</p>
-              <p className="text-sm text-yellow-700 mt-1">
-                Please select an event from the dropdown above to manage its checklist.
-              </p>
+          {selectedEvent && loading && (
+            <div aria-busy="true" className="card p-10 md:p-12">
+              <div className="flex flex-col items-center justify-center">
+                <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-brand-600" />
+                <p className="mt-4 text-sm text-stone-500">Loading checklist...</p>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {selectedEvent && loading && (
-        <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-12">
-          <div className="flex flex-col items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <p className="mt-4 text-stone-600">Loading checklist...</p>
-          </div>
-        </div>
-      )}
-
-      {selectedEvent && !loading && !checklist && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-medium text-red-900">Failed to Load Checklist</p>
-              <p className="text-sm text-red-700 mt-1">
-                Unable to load the checklist data. Please try refreshing the page or contact support if the issue persists.
-              </p>
+          {selectedEvent && !loading && !checklist && (
+            <div className="card flex items-start gap-3 p-4 md:p-5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-50">
+                <AlertCircle aria-hidden="true" className="w-5 h-5 text-red-600" />
+              </span>
+              <div>
+                <p className="font-semibold text-stone-900">Failed to Load Checklist</p>
+                <p className="mt-1 text-sm text-stone-500">
+                  Unable to load the checklist data. Please try refreshing the page or contact support if the issue persists.
+                </p>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {selectedEvent && !loading && checklist && (
-        <div>
-          {/* Progress Bar */}
-          <div className="bg-white rounded-lg shadow-sm border border-stone-200 p-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Overall Progress</h3>
-              <span className="font-display text-2xl font-bold tracking-tight text-stone-900 tabular-nums">{getProgress()}%</span>
-            </div>
-            <div className="w-full bg-stone-200 rounded-full h-3">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-emerald-500 h-3 rounded-full transition-all duration-300"
-                style={{ width: `${getProgress()}%` }}
-              />
-            </div>
-          </div>
+          {selectedEvent && !loading && checklist && (() => {
+            // Section definitions drive both the readiness stats and the cards.
+            const sections = [
+              {
+                key: 'booth',
+                title: 'Booth & Facilities',
+                statLabel: 'Booth',
+                icon: <Building2 className="w-5 h-5" />,
+                itemCount: 2,
+                completedCount:
+                  (checklist.booth_ordered ? 1 : 0) + (checklist.electricity_ordered ? 1 : 0),
+                isComplete: checklist.booth_ordered && checklist.electricity_ordered,
+                content: (
+                  <BoothSection
+                    checklist={checklist}
+                    user={user}
+                    event={selectedEvent}
+                    onUpdate={updateChecklist}
+                    onReload={() => loadChecklist(selectedEventId!)}
+                    saving={saving}
+                  />
+                ),
+              },
+              {
+                key: 'flights',
+                title: 'Flights',
+                statLabel: 'Airfare',
+                icon: <Plane className="w-5 h-5" />,
+                itemCount: checklist.flights.length,
+                completedCount: checklist.flights.filter(f => f.booked).length,
+                isComplete: checklist.flights.length > 0 && checklist.flights.every(f => f.booked),
+                content: (
+                  <FlightsSection
+                    checklist={checklist}
+                    user={user}
+                    event={selectedEvent}
+                    onReload={() => loadChecklist(selectedEventId!)}
+                  />
+                ),
+              },
+              {
+                key: 'hotels',
+                title: 'Hotels',
+                statLabel: 'Lodging',
+                icon: <Hotel className="w-5 h-5" />,
+                itemCount: checklist.hotels.length,
+                completedCount: checklist.hotels.filter(h => h.booked).length,
+                isComplete: checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked),
+                content: (
+                  <HotelsSection
+                    checklist={checklist}
+                    user={user}
+                    event={selectedEvent}
+                    onReload={() => loadChecklist(selectedEventId!)}
+                  />
+                ),
+              },
+              {
+                key: 'car_rentals',
+                title: 'Car Rentals',
+                statLabel: 'Cars',
+                icon: <Car className="w-5 h-5" />,
+                itemCount: checklist.carRentals.length,
+                completedCount: checklist.carRentals.filter(c => c.booked).length,
+                isComplete:
+                  checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked),
+                content: (
+                  <CarRentalsSection
+                    checklist={checklist}
+                    user={user}
+                    event={selectedEvent}
+                    onReload={() => loadChecklist(selectedEventId!)}
+                  />
+                ),
+              },
+              {
+                key: 'custom',
+                title: 'Custom Tasks',
+                statLabel: 'Tasks',
+                icon: <List className="w-5 h-5" />,
+                itemCount: checklist.customItems.length,
+                completedCount: checklist.customItems.filter(i => i.completed).length,
+                isComplete:
+                  checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed),
+                content: (
+                  <CustomItemsSection
+                    checklist={checklist}
+                    onReload={() => loadChecklist(selectedEventId!)}
+                    canEdit={user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer'}
+                    isAdmin={user.role === 'admin' || user.role === 'developer'}
+                  />
+                ),
+              },
+            ];
 
-          {/* Checklist Sections - Sorted by completion (incomplete first) */}
-          <div className="space-y-4">
-            {(() => {
-              // Define sections with their completion status
-              const sections = [
-                {
-                  key: 'booth',
-                  isComplete: checklist.booth_ordered && checklist.electricity_ordered,
-                  component: (
-                    <CollapsibleSection
-                      title="Booth & Facilities"
-                      icon={<Building2 className="w-5 h-5" />}
-                      isComplete={checklist.booth_ordered && checklist.electricity_ordered}
-                      itemCount={2}
-                      completedCount={(checklist.booth_ordered ? 1 : 0) + (checklist.electricity_ordered ? 1 : 0)}
-                      defaultCollapsed={checklist.booth_ordered && checklist.electricity_ordered}
-                    >
-                      <BoothSection 
-                        checklist={checklist} 
-                        user={user}
-                        event={selectedEvent}
-                        onUpdate={updateChecklist}
-                        onReload={() => loadChecklist(selectedEventId!)}
-                        saving={saving}
-                      />
-                    </CollapsibleSection>
-                  )
-                },
-                {
-                  key: 'flights',
-                  isComplete: checklist.flights.length > 0 && checklist.flights.every(f => f.booked),
-                  component: (
-                    <CollapsibleSection
-                      title="Flights"
-                      icon={<Plane className="w-5 h-5" />}
-                      isComplete={checklist.flights.length > 0 && checklist.flights.every(f => f.booked)}
-                      itemCount={checklist.flights.length}
-                      completedCount={checklist.flights.filter(f => f.booked).length}
-                      defaultCollapsed={checklist.flights.length > 0 && checklist.flights.every(f => f.booked)}
-                    >
-                      <FlightsSection 
-                        checklist={checklist}
-                        user={user}
-                        event={selectedEvent}
-                        onReload={() => loadChecklist(selectedEventId!)}
-                      />
-                    </CollapsibleSection>
-                  )
-                },
-                {
-                  key: 'hotels',
-                  isComplete: checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked),
-                  component: (
-                    <CollapsibleSection
-                      title="Hotels"
-                      icon={<Hotel className="w-5 h-5" />}
-                      isComplete={checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked)}
-                      itemCount={checklist.hotels.length}
-                      completedCount={checklist.hotels.filter(h => h.booked).length}
-                      defaultCollapsed={checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked)}
-                    >
-                      <HotelsSection 
-                        checklist={checklist}
-                        user={user}
-                        event={selectedEvent}
-                        onReload={() => loadChecklist(selectedEventId!)}
-                      />
-                    </CollapsibleSection>
-                  )
-                },
-                {
-                  key: 'car_rentals',
-                  isComplete: checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked),
-                  component: (
-                    <CollapsibleSection
-                      title="Car Rentals"
-                      icon={<Car className="w-5 h-5" />}
-                      isComplete={checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked)}
-                      itemCount={checklist.carRentals.length}
-                      completedCount={checklist.carRentals.filter(c => c.booked).length}
-                      defaultCollapsed={checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked)}
-                    >
-                      <CarRentalsSection 
-                        checklist={checklist}
-                        user={user}
-                        event={selectedEvent}
-                        onReload={() => loadChecklist(selectedEventId!)}
-                      />
-                    </CollapsibleSection>
-                  )
-                },
-                {
-                  key: 'custom',
-                  isComplete: checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed),
-                  component: (
-                    <CollapsibleSection
-                      title="Custom Tasks"
-                      icon={<List className="w-5 h-5" />}
-                      isComplete={checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed)}
-                      itemCount={checklist.customItems.length}
-                      completedCount={checklist.customItems.filter(i => i.completed).length}
-                      defaultCollapsed={checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed)}
-                    >
-                      <CustomItemsSection 
-                        checklist={checklist}
-                        onReload={() => loadChecklist(selectedEventId!)}
-                        canEdit={user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer'}
-                        isAdmin={user.role === 'admin' || user.role === 'developer'}
-                      />
-                    </CollapsibleSection>
-                  )
-                }
-              ];
+            const stats: SectionStat[] = sections.map(s => ({
+              key: s.key,
+              label: s.statLabel,
+              completed: s.completedCount,
+              total: s.itemCount,
+            }));
 
-              // Sort: incomplete sections with items first, completed sections next, empty sections last
-              return sections
-                .sort((a, b) => {
-                  // Check if sections have items using helper
-                  const aHasItems = sectionHasItems(a.key, checklist);
-                  const bHasItems = sectionHasItems(b.key, checklist);
-                  
-                  // Empty sections go to bottom
-                  if (!aHasItems && bHasItems) return 1;
-                  if (aHasItems && !bHasItems) return -1;
-                  if (!aHasItems && !bHasItems) return 0;
-                  
-                  // Among sections with items: incomplete first, completed last
-                  if (a.isComplete === b.isComplete) return 0;
-                  return a.isComplete ? 1 : -1;
-                })
-                .map(section => <div key={section.key}>{section.component}</div>);
-            })()}
-          </div>
-        </div>
-      )}
+            // Sort: incomplete sections with items first, completed next, empty last
+            const sorted = [...sections].sort((a, b) => {
+              const aHasItems = sectionHasItems(a.key, checklist);
+              const bHasItems = sectionHasItems(b.key, checklist);
+
+              if (!aHasItems && bHasItems) return 1;
+              if (aHasItems && !bHasItems) return -1;
+              if (!aHasItems && !bHasItems) return 0;
+
+              if (a.isComplete === b.isComplete) return 0;
+              return a.isComplete ? 1 : -1;
+            });
+
+            return (
+              <>
+                <ChecklistProgressCard
+                  completed={progress.completed}
+                  total={progress.total}
+                  pct={progress.pct}
+                  stats={stats}
+                />
+
+                <div className="space-y-4">
+                  {sorted.map(section => (
+                    <div key={section.key}>
+                      <CollapsibleSection
+                        title={section.title}
+                        icon={section.icon}
+                        isComplete={section.isComplete}
+                        itemCount={section.itemCount}
+                        completedCount={section.completedCount}
+                        defaultCollapsed={section.isComplete}
+                      >
+                        {section.content}
+                      </CollapsibleSection>
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
         </>
       )}
     </div>
   );
 };
-

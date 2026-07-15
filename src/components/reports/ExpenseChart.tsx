@@ -228,8 +228,10 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                     ? 'from-accent-400 to-accent-600'
                     : 'from-brand-400 to-brand-600';
                   
+                  // max-w keeps sparse data (1-2 months) from rendering as a
+                  // wall-to-wall slab; justify-around centers the columns
                   return (
-                    <div key={month} className="flex-1 min-w-[2.5rem] sm:min-w-0 flex flex-col items-center justify-end h-full group relative">
+                    <div key={month} className="flex-1 min-w-[2.5rem] max-w-28 sm:min-w-0 flex flex-col items-center justify-end h-full group relative">
                       {/* Hover tooltip */}
                       <div className="absolute bottom-full mb-2 opacity-0 group-hover:opacity-100 transition-opacity bg-stone-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap pointer-events-none z-10 shadow-elevation-3">
                         <div className="font-semibold">{formatLocalDate(month + '-01', { year: 'numeric', month: 'long' })}</div>

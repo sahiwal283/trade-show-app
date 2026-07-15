@@ -18,16 +18,16 @@ interface KpiCardProps {
 // and a quiet context line (trend or what-to-do-next).
 function KpiCard({ well, icon, value, label, context }: KpiCardProps) {
   return (
-    <div className="card flex items-start gap-3 p-4">
-      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset ${well}`}>
+    <div className="card flex flex-col items-start gap-2 p-3 sm:flex-row sm:gap-3 sm:p-4">
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-inset sm:h-10 sm:w-10 ${well}`}>
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="font-display text-xl font-bold tracking-tight tabular-nums text-stone-900 md:text-2xl">
+        <p className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900 sm:text-xl md:text-2xl">
           {value}
         </p>
         <p className="micro-label">{label}</p>
-        <div className="mt-1 text-xs text-stone-400">{context}</div>
+        <div className="mt-0.5 text-[11px] text-stone-400 sm:mt-1 sm:text-xs">{context}</div>
       </div>
     </div>
   );
@@ -67,7 +67,7 @@ export const ApprovalCards: React.FC<ApprovalCardsProps> = ({ expenses }) => {
     `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
-    <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="mb-4 grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
       <KpiCard
         well="bg-brand-50 text-brand-600 ring-brand-100"
         icon={<DollarSign className="h-5 w-5" />}
