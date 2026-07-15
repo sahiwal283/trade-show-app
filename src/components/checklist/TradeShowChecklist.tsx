@@ -1,23 +1,17 @@
 /**
- * TradeShowChecklist — Editorial Finance layout for show logistics.
+ * TradeShowChecklist — Editorial Finance booking board for show logistics.
  *
  * One designed surface: masthead with the event switcher, a segmented
- * Admin/My tab control, the readiness story (display numeral + per-section
- * stats), then section cards sorted incomplete-first.
+ * Admin/My tab control, the readiness story (display numeral), then a
+ * booking board — Booth / Flights / Hotels / Cars / Tasks tabs, each
+ * labeled with its done/total count. Only the active tab renders.
  */
 
 import React, { useState, useEffect } from 'react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
-import { Plane, Hotel, Car, Building2, AlertCircle, List } from 'lucide-react';
-import { BoothSection } from './sections/BoothSection';
-import { FlightsSection } from './sections/FlightsSection';
-import { HotelsSection } from './sections/HotelsSection';
-import { CarRentalsSection } from './sections/CarRentalsSection';
-import { CustomItemsSection } from './sections/CustomItemsSection';
-import { CollapsibleSection } from './CollapsibleSection';
-import { ChecklistProgressCard, SectionStat } from './ChecklistProgressCard';
-import { sectionHasItems } from '../../utils/checklistUtils';
+import { AlertCircle } from 'lucide-react';
+import { BookingBoard } from './BookingBoard';
 import { UserChecklist } from './UserChecklist';
 
 export interface ChecklistData {
@@ -362,149 +356,17 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
             </div>
           )}
 
-          {selectedEvent && !loading && checklist && (() => {
-            // Section definitions drive both the readiness stats and the cards.
-            const sections = [
-              {
-                key: 'booth',
-                title: 'Booth & Facilities',
-                statLabel: 'Booth',
-                icon: <Building2 className="w-5 h-5" />,
-                itemCount: 2,
-                completedCount:
-                  (checklist.booth_ordered ? 1 : 0) + (checklist.electricity_ordered ? 1 : 0),
-                isComplete: checklist.booth_ordered && checklist.electricity_ordered,
-                content: (
-                  <BoothSection
-                    checklist={checklist}
-                    user={user}
-                    event={selectedEvent}
-                    onUpdate={updateChecklist}
-                    onReload={() => loadChecklist(selectedEventId!)}
-                    saving={saving}
-                  />
-                ),
-              },
-              {
-                key: 'flights',
-                title: 'Flights',
-                statLabel: 'Airfare',
-                icon: <Plane className="w-5 h-5" />,
-                itemCount: checklist.flights.length,
-                completedCount: checklist.flights.filter(f => f.booked).length,
-                isComplete: checklist.flights.length > 0 && checklist.flights.every(f => f.booked),
-                content: (
-                  <FlightsSection
-                    checklist={checklist}
-                    user={user}
-                    event={selectedEvent}
-                    onReload={() => loadChecklist(selectedEventId!)}
-                  />
-                ),
-              },
-              {
-                key: 'hotels',
-                title: 'Hotels',
-                statLabel: 'Lodging',
-                icon: <Hotel className="w-5 h-5" />,
-                itemCount: checklist.hotels.length,
-                completedCount: checklist.hotels.filter(h => h.booked).length,
-                isComplete: checklist.hotels.length > 0 && checklist.hotels.every(h => h.booked),
-                content: (
-                  <HotelsSection
-                    checklist={checklist}
-                    user={user}
-                    event={selectedEvent}
-                    onReload={() => loadChecklist(selectedEventId!)}
-                  />
-                ),
-              },
-              {
-                key: 'car_rentals',
-                title: 'Car Rentals',
-                statLabel: 'Cars',
-                icon: <Car className="w-5 h-5" />,
-                itemCount: checklist.carRentals.length,
-                completedCount: checklist.carRentals.filter(c => c.booked).length,
-                isComplete:
-                  checklist.carRentals.length > 0 && checklist.carRentals.every(c => c.booked),
-                content: (
-                  <CarRentalsSection
-                    checklist={checklist}
-                    user={user}
-                    event={selectedEvent}
-                    onReload={() => loadChecklist(selectedEventId!)}
-                  />
-                ),
-              },
-              {
-                key: 'custom',
-                title: 'Custom Tasks',
-                statLabel: 'Tasks',
-                icon: <List className="w-5 h-5" />,
-                itemCount: checklist.customItems.length,
-                completedCount: checklist.customItems.filter(i => i.completed).length,
-                isComplete:
-                  checklist.customItems.length > 0 && checklist.customItems.every(i => i.completed),
-                content: (
-                  <CustomItemsSection
-                    checklist={checklist}
-                    onReload={() => loadChecklist(selectedEventId!)}
-                    canEdit={user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer'}
-                    isAdmin={user.role === 'admin' || user.role === 'developer'}
-                  />
-                ),
-              },
-            ];
-
-            const stats: SectionStat[] = sections.map(s => ({
-              key: s.key,
-              label: s.statLabel,
-              completed: s.completedCount,
-              total: s.itemCount,
-            }));
-
-            // Sort: incomplete sections with items first, completed next, empty last
-            const sorted = [...sections].sort((a, b) => {
-              const aHasItems = sectionHasItems(a.key, checklist);
-              const bHasItems = sectionHasItems(b.key, checklist);
-
-              if (!aHasItems && bHasItems) return 1;
-              if (aHasItems && !bHasItems) return -1;
-              if (!aHasItems && !bHasItems) return 0;
-
-              if (a.isComplete === b.isComplete) return 0;
-              return a.isComplete ? 1 : -1;
-            });
-
-            return (
-              <>
-                <ChecklistProgressCard
-                  completed={progress.completed}
-                  total={progress.total}
-                  pct={progress.pct}
-                  stats={stats}
-                />
-
-                <div className="space-y-4">
-                  {sorted.map(section => (
-                    <div key={section.key}>
-                      <CollapsibleSection
-                        title={section.title}
-                        icon={section.icon}
-                        isComplete={section.isComplete}
-                        itemCount={section.itemCount}
-                        completedCount={section.completedCount}
-                        defaultCollapsed={section.isComplete}
-                      >
-                        {section.content}
-                      </CollapsibleSection>
-                    </div>
-                  ))}
-                </div>
-              </>
-            );
-          })()}
+          {selectedEvent && !loading && checklist && (
+            <BookingBoard
+              checklist={checklist}
+              user={user}
+              event={selectedEvent}
+              saving={saving}
+              onUpdate={updateChecklist}
+              onReload={() => loadChecklist(selectedEventId!)}
+              progress={progress}
+            />
+          )}
         </>
       )}
     </div>

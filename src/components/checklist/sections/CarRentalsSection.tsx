@@ -1,10 +1,21 @@
+/**
+ * CarRentalsSection — booking-board rows for existing rentals (provider ·
+ * conf · dates · assigned-to) with inline expand-to-edit, plus the Add
+ * Rental flow. All save/add/delete/toggle handlers and the receipt-to-
+ * expense flow are unchanged.
+ */
+
 import React, { useState } from 'react';
-import { Car, Plus, CheckCircle2, Circle, Trash2, Save, Receipt, Users, User as UserIcon, X } from 'lucide-react';
+import { Plus, Trash2, Save, Receipt } from 'lucide-react';
 import { ChecklistData, CarRentalData } from '../TradeShowChecklist';
 import { User, TradeShow } from '../../../App';
 import { api } from '../../../utils/api';
 import { getZohoExpenseDescriptionValidationMessage } from '../../../utils/zohoExpenseDescription';
 import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
+import { CheckToggle, StatusChip, InlineAction } from '../ChecklistPrimitives';
+import { BookingRow } from '../BookingRow';
+import { joinSummary, formatDateRange } from '../bookingText';
+import { CarRentalFields, CarRentalAddForm } from './CarRentalForm';
 
 interface CarRentalsSectionProps {
   checklist: ChecklistData;
@@ -13,24 +24,26 @@ interface CarRentalsSectionProps {
   onReload: () => void;
 }
 
+const EMPTY_RENTAL: CarRentalData = {
+  provider: null,
+  confirmation_number: null,
+  pickup_date: null,
+  return_date: null,
+  notes: null,
+  booked: false,
+  rental_type: 'group',
+  assigned_to_id: null,
+  assigned_to_name: null,
+};
+
 export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist, user, event, onReload }) => {
   const [editingRentals, setEditingRentals] = useState<{ [key: number]: CarRentalData }>({});
   const [saving, setSaving] = useState<{ [key: number]: boolean }>({});
   const [showAddForm, setShowAddForm] = useState(false);
   const [showReceiptUpload, setShowReceiptUpload] = useState<number | null>(null);
-  const [newRental, setNewRental] = useState<CarRentalData>({
-    provider: null,
-    confirmation_number: null,
-    pickup_date: null,
-    return_date: null,
-    notes: null,
-    booked: false,
-    rental_type: 'group',
-    assigned_to_id: null,
-    assigned_to_name: null
-  });
+  const [newRental, setNewRental] = useState<CarRentalData>(EMPTY_RENTAL);
   const [newRentalReceipt, setNewRentalReceipt] = useState<File | null>(null);
-  const [processingReceipt, setProcessingReceipt] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const handleFieldChange = <K extends keyof CarRentalData>(
     rentalId: number,
@@ -48,6 +61,13 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
         [field]: value
       }
     });
+  };
+
+  const handleNewRentalChange = <K extends keyof CarRentalData>(
+    field: K,
+    value: CarRentalData[K]
+  ) => {
+    setNewRental(prev => ({ ...prev, [field]: value }));
   };
 
   const handleSave = async (rentalId: number) => {
@@ -101,7 +121,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
         return;
       }
     }
-    
+
     try {
       // Create the rental first
       await api.checklist.createCarRental(checklist.id, {
@@ -139,17 +159,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
       }
 
       // Reset form
-      setNewRental({
-        provider: null,
-        confirmation_number: null,
-        pickup_date: null,
-        return_date: null,
-        notes: null,
-        booked: false,
-        rental_type: 'group',
-        assigned_to_id: null,
-        assigned_to_name: null
-      });
+      setNewRental(EMPTY_RENTAL);
       setNewRentalReceipt(null);
       setShowAddForm(false);
       onReload();
@@ -197,441 +207,139 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
 
   return (
     <>
-      <div className="p-4 sm:p-6">
-      <div className="flex items-center justify-between mb-4">
-        
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Rental
-        </button>
-      </div>
-
-      {/* Add New Rental Form */}
-      {showAddForm && (
-        <div className="border border-orange-200 rounded-lg p-4 mb-3 bg-orange-50">
-          <h4 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-3">New Car Rental</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* Rental Type */}
-            <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-stone-700 mb-1">
-                Rental Type
-              </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="newRentalType"
-                    value="group"
-                    checked={newRental.rental_type === 'group'}
-                    onChange={(e) => setNewRental({ ...newRental, rental_type: 'group', assigned_to_id: null, assigned_to_name: null })}
-                    className="text-orange-500 focus:ring-orange-500"
-                  />
-                  <Users className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm text-stone-700">Group Rental (Shared)</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="newRentalType"
-                    value="individual"
-                    checked={newRental.rental_type === 'individual'}
-                    onChange={(e) => setNewRental({ ...newRental, rental_type: 'individual' })}
-                    className="text-orange-500 focus:ring-orange-500"
-                  />
-                  <UserIcon className="w-4 h-4 text-orange-600" />
-                  <span className="text-sm text-stone-700">Individual Rental</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Assigned Participant (only for individual rentals) */}
-            {newRental.rental_type === 'individual' && (
-              <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-stone-700 mb-1">
-                  Assign to Participant
-                </label>
-                <select
-                  value={newRental.assigned_to_id || ''}
-                  onChange={(e) => {
-                    const participantId = e.target.value;
-                    const participant = event.participants.find(p => p.id === participantId);
-                    setNewRental({
-                      ...newRental,
-                      assigned_to_id: participantId || null,
-                      assigned_to_name: participant?.name || null
-                    });
-                  }}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-                >
-                  <option value="">Select participant...</option>
-                  {event.participants.map((participant) => (
-                    <option key={participant.id} value={participant.id}>
-                      {participant.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-medium text-stone-700 mb-1">
-                Provider
-              </label>
-              <input
-                type="text"
-                value={newRental.provider || ''}
-                onChange={(e) => setNewRental({ ...newRental, provider: e.target.value })}
-                placeholder="e.g., Enterprise, Hertz"
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-stone-700 mb-1">
-                Confirmation Number
-              </label>
-              <input
-                type="text"
-                value={newRental.confirmation_number || ''}
-                onChange={(e) => setNewRental({ ...newRental, confirmation_number: e.target.value })}
-                placeholder="Reservation number"
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-stone-700 mb-1">
-                Pickup Date
-              </label>
-              <input
-                type="date"
-                value={newRental.pickup_date || ''}
-                onChange={(e) => setNewRental({ ...newRental, pickup_date: e.target.value })}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-stone-700 mb-1">
-                Return Date
-              </label>
-              <input
-                type="date"
-                value={newRental.return_date || ''}
-                onChange={(e) => setNewRental({ ...newRental, return_date: e.target.value })}
-                min={newRental.pickup_date || ''}
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-stone-700 mb-1">
-                Notes
-              </label>
-              <textarea
-                value={newRental.notes || ''}
-                onChange={(e) => setNewRental({ ...newRental, notes: e.target.value })}
-                placeholder="Vehicle type, pickup/return locations, insurance, etc."
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm resize-none"
-                rows={2}
-              />
-            </div>
-
-            {/* Receipt Upload */}
-            <div className="md:col-span-2">
-              <label className="block text-xs font-medium text-stone-700 mb-1">
-                Receipt (Optional)
-              </label>
-              <div className="flex items-center gap-3">
-                <label className="flex-1 cursor-pointer">
-                  <div className="flex items-center gap-2 px-4 py-2 border-2 border-dashed border-stone-300 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-colors">
-                    <Receipt className="w-4 h-4 text-orange-600" />
-                    <span className="text-sm text-stone-700">
-                      {newRentalReceipt ? newRentalReceipt.name : 'Upload receipt (optional)'}
-                    </span>
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) setNewRentalReceipt(file);
-                    }}
-                    className="hidden"
-                  />
-                </label>
-                {newRentalReceipt && (
-                  <button
-                    onClick={() => setNewRentalReceipt(null)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Remove receipt"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-              <p className="text-xs text-stone-500 mt-1">
-                Upload the rental receipt now to save time
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-2 mt-3">
+      <div className="p-4 sm:p-5">
+        {/* Section actions */}
+        {!showAddForm && (
+          <div className="mb-4 flex justify-end">
             <button
-              onClick={handleAddRental}
-              disabled={saving[-1]}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              onClick={() => setShowAddForm(true)}
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 lg:min-h-0"
             >
-              {saving[-1] ? 'Saving...' : 'Add'}
-            </button>
-            <button
-              onClick={() => {
-                setShowAddForm(false);
-                setNewRentalReceipt(null);
-              }}
-              disabled={saving[-1]}
-              className="px-4 py-2 bg-stone-200 text-stone-700 rounded-lg hover:bg-stone-300 transition-colors text-sm font-medium disabled:opacity-50"
-            >
-              Cancel
+              <Plus aria-hidden="true" className="w-4 h-4" />
+              Add Rental
             </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Existing Rentals */}
-      {checklist.carRentals.length === 0 ? (
-        <p className="text-stone-500 text-sm">No car rentals added yet.</p>
-      ) : (
-        <div className="space-y-3">
-          {checklist.carRentals
-            .sort((a, b) => {
-              // Unbooked rentals first, booked rentals last
-              if (a.booked === b.booked) return 0;
-              return a.booked ? 1 : -1;
-            })
-            .map(rental => {
-            const editing = editingRentals[rental.id!];
-            const currentData = editing || rental;
-            const isModified = !!editing;
+        {/* Add new rental */}
+        {showAddForm && (
+          <CarRentalAddForm
+            data={newRental}
+            participants={event.participants}
+            receipt={newRentalReceipt}
+            onReceiptChange={setNewRentalReceipt}
+            saving={!!saving[-1]}
+            onChange={handleNewRentalChange}
+            onSubmit={handleAddRental}
+            onCancel={() => {
+              setShowAddForm(false);
+              setNewRentalReceipt(null);
+            }}
+          />
+        )}
 
-            return (
-              <div
-                key={rental.id}
-                className="border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => toggleBooked(rental.id!)}
-                      className="disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {rental.booked ? (
-                        <CheckCircle2 className="w-6 h-6 text-green-600 hover:scale-110 transition-transform" />
+        {/* Existing rentals */}
+        {checklist.carRentals.length === 0 ? (
+          <p className="text-sm text-stone-500">No car rentals added yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {checklist.carRentals
+              .sort((a, b) => {
+                // Unbooked rentals first, booked rentals last
+                if (a.booked === b.booked) return 0;
+                return a.booked ? 1 : -1;
+              })
+              .map(rental => {
+                const editing = editingRentals[rental.id!];
+                const currentData = editing || rental;
+                const isModified = !!editing;
+                const expanded = expandedId === rental.id;
+
+                const summary = joinSummary([
+                  rental.confirmation_number ? `Conf ${rental.confirmation_number}` : null,
+                  formatDateRange(rental.pickup_date, rental.return_date),
+                  rental.rental_type === 'individual'
+                    ? rental.assigned_to_name || 'Unassigned'
+                    : 'Group',
+                ]);
+
+                return (
+                  <BookingRow
+                    key={rental.id}
+                    toggle={
+                      <CheckToggle
+                        checked={!!rental.booked}
+                        onToggle={() => toggleBooked(rental.id!)}
+                        label={`Mark rental ${rental.provider || ''} as ${rental.booked ? 'not booked' : 'booked'}`}
+                      />
+                    }
+                    title={currentData.provider || 'Unnamed Rental'}
+                    summary={summary}
+                    status={
+                      isModified ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSave(rental.id!)}
+                          disabled={saving[rental.id!]}
+                          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50 lg:min-h-0"
+                        >
+                          <Save aria-hidden="true" className="w-4 h-4" />
+                          Save
+                        </button>
                       ) : (
-                        <Circle className="w-6 h-6 text-stone-400 hover:text-stone-600 transition-colors" />
-                      )}
-                    </button>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold text-stone-900">{currentData.provider || 'Unnamed Rental'}</p>
-                        {currentData.rental_type === 'individual' && currentData.assigned_to_name && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">
-                            <UserIcon className="w-3 h-3" />
-                            {currentData.assigned_to_name}
-                          </span>
-                        )}
-                        {currentData.rental_type === 'group' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                            <Users className="w-3 h-3" />
-                            Group
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    {isModified && (
+                        <StatusChip done={!!rental.booked} />
+                      )
+                    }
+                    trailing={
                       <button
-                        onClick={() => handleSave(rental.id!)}
-                        disabled={saving[rental.id!]}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm disabled:opacity-50"
+                        type="button"
+                        onClick={() => handleDeleteRental(rental.id!)}
+                        aria-label={`Delete rental ${rental.provider || ''}`}
+                        className="tap-target rounded-lg p-1.5 text-red-600 transition-colors hover:bg-red-50"
                       >
-                        <Save className="w-4 h-4" />
-                        Save
+                        <Trash2 aria-hidden="true" className="w-4 h-4" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleDeleteRental(rental.id!)}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
+                    }
+                    expanded={expanded}
+                    onToggleExpand={() => setExpandedId(expanded ? null : rental.id!)}
+                    expandLabel={`${expanded ? 'Close' : 'Edit'} rental details for ${rental.provider || 'unnamed rental'}`}
+                    contentId={`car-rental-row-${rental.id}`}
+                  >
+                    <CarRentalFields
+                      data={currentData}
+                      participants={event.participants}
+                      radioName={`rentalType-${rental.id}`}
+                      onChange={(field, value) => handleFieldChange(rental.id!, field, value)}
+                    />
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 ml-9">
-                  {/* Rental Type */}
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Rental Type
-                    </label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name={`rentalType-${rental.id}`}
-                          value="group"
-                          checked={currentData.rental_type === 'group'}
-                          onChange={(e) => {
-                            handleFieldChange(rental.id!, 'rental_type', 'group');
-                            handleFieldChange(rental.id!, 'assigned_to_id', null);
-                            handleFieldChange(rental.id!, 'assigned_to_name', null);
-                          }}
-                          className="text-orange-500 focus:ring-orange-500"
-                        />
-                        <Users className="w-4 h-4 text-orange-600" />
-                        <span className="text-sm text-stone-700">Group Rental (Shared)</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name={`rentalType-${rental.id}`}
-                          value="individual"
-                          checked={currentData.rental_type === 'individual'}
-                          onChange={(e) => handleFieldChange(rental.id!, 'rental_type', 'individual')}
-                          className="text-orange-500 focus:ring-orange-500"
-                        />
-                        <UserIcon className="w-4 h-4 text-orange-600" />
-                        <span className="text-sm text-stone-700">Individual Rental</span>
-                      </label>
+                    <div className="-ml-2.5 mt-3">
+                      <InlineAction
+                        icon={Receipt}
+                        label="Upload Receipt"
+                        onClick={() => setShowReceiptUpload(rental.id!)}
+                      />
                     </div>
-                  </div>
-
-                  {/* Assigned Participant (only for individual rentals) */}
-                  {currentData.rental_type === 'individual' && (
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-medium text-stone-700 mb-1">
-                        Assigned to Participant
-                      </label>
-                      <select
-                        value={currentData.assigned_to_id || ''}
-                        onChange={(e) => {
-                          const participantId = e.target.value;
-                          const participant = event.participants.find(p => p.id === participantId);
-                          handleFieldChange(rental.id!, 'assigned_to_id', participantId || null);
-                          handleFieldChange(rental.id!, 'assigned_to_name', participant?.name || null);
-                        }}
-                        className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-                      >
-                        <option value="">Select participant...</option>
-                        {event.participants.map((participant) => (
-                          <option key={participant.id} value={participant.id}>
-                            {participant.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Provider
-                    </label>
-                    <input
-                      type="text"
-                      value={currentData.provider || ''}
-                      onChange={(e) => handleFieldChange(rental.id!, 'provider', e.target.value)}
-                      placeholder="e.g., Enterprise, Hertz"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Confirmation Number
-                    </label>
-                    <input
-                      type="text"
-                      value={currentData.confirmation_number || ''}
-                      onChange={(e) => handleFieldChange(rental.id!, 'confirmation_number', e.target.value)}
-                      placeholder="Reservation number"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Pickup Date
-                    </label>
-                    <input
-                      type="date"
-                      value={currentData.pickup_date || ''}
-                      onChange={(e) => handleFieldChange(rental.id!, 'pickup_date', e.target.value)}
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Return Date
-                    </label>
-                    <input
-                      type="date"
-                      value={currentData.return_date || ''}
-                      onChange={(e) => handleFieldChange(rental.id!, 'return_date', e.target.value)}
-                      min={currentData.pickup_date || ''}
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-stone-700 mb-1">
-                      Notes
-                    </label>
-                    <textarea
-                      value={currentData.notes || ''}
-                      onChange={(e) => handleFieldChange(rental.id!, 'notes', e.target.value)}
-                      placeholder="Vehicle type, pickup/return locations, insurance, etc."
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm resize-none"
-                      rows={2}
-                    />
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <button
-                      onClick={() => setShowReceiptUpload(rental.id!)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition-colors"
-                    >
-                      <Receipt className="w-4 h-4" />
-                      Upload Receipt
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  </BookingRow>
+                );
+              })}
+          </div>
+        )}
       </div>
 
-    {/* Receipt Upload Modal */}
-    {showReceiptUpload && (
-      <ChecklistReceiptUpload
-        user={user}
-        event={event}
-        section="car_rental"
-        onClose={() => setShowReceiptUpload(null)}
-        onExpenseCreated={() => {
-          setShowReceiptUpload(null);
-          onReload();
-        }}
-      />
-    )}
+      {/* Receipt Upload Modal */}
+      {showReceiptUpload && (
+        <ChecklistReceiptUpload
+          user={user}
+          event={event}
+          section="car_rental"
+          onClose={() => setShowReceiptUpload(null)}
+          onExpenseCreated={() => {
+            setShowReceiptUpload(null);
+            onReload();
+          }}
+        />
+      )}
     </>
   );
 };
-

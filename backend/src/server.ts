@@ -21,6 +21,7 @@ import trainingSyncRoutes from './routes/trainingSync';
 import checklistRoutes from './routes/checklist';
 import userChecklistRoutes from './routes/userChecklist';
 import telegramRoutes from './routes/telegram';
+import pushRoutes from './routes/push';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
@@ -91,6 +92,7 @@ app.use('/api/retraining', authenticateToken, sessionTracker, modelRetrainingRou
 app.use('/api/training/sync', authenticateToken, sessionTracker, trainingSyncRoutes);
 app.use('/api/checklist', authenticateToken, sessionTracker, checklistRoutes);
 app.use('/api/user-checklist', authenticateToken, sessionTracker, userChecklistRoutes);
+app.use('/api/push', authenticateToken, sessionTracker, pushRoutes);
 
 // Health check (with database connectivity test) - existing contract
 app.get('/api/health', async (req, res) => {

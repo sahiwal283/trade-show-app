@@ -1,7 +1,8 @@
 /**
- * HotelsSection — one ledger-style row per attendee: name leads, email
- * stays quiet, a booked/pending chip closes the line, and the reservation
- * fields sit underneath. Unbooked rows sort first.
+ * HotelsSection — one compact booking-board row per attendee: name leads,
+ * a quiet "Marriott · Conf 88231 · Mar 3–7" summary follows when booked,
+ * and a booked/pending chip closes the line. Edit expands a single row
+ * inline into the reservation form. Unbooked rows sort first.
  */
 
 import React, { useState } from 'react';
@@ -11,6 +12,8 @@ import { TradeShow, User } from '../../../App';
 import { api } from '../../../utils/api';
 import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
 import { CheckToggle, StatusChip, FieldLabel, InlineAction } from '../ChecklistPrimitives';
+import { BookingRow } from '../BookingRow';
+import { joinSummary, formatDateRange } from '../bookingText';
 
 interface HotelsSectionProps {
   checklist: ChecklistData;
@@ -23,6 +26,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
   const [editingHotels, setEditingHotels] = useState<{ [key: string]: HotelData }>({});
   const [saving, setSaving] = useState<{ [key: string]: boolean }>({});
   const [showReceiptUpload, setShowReceiptUpload] = useState<{attendeeId: string; attendeeName: string} | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const participants = event.participants || [];
 
@@ -134,46 +138,52 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
             const editing = editingHotels[participant.id];
             const currentData = editing || hotel;
             const isModified = !!editing;
+            const expanded = expandedId === participant.id;
+
+            const summary = hotel?.booked
+              ? joinSummary([
+                  hotel.property_name,
+                  hotel.confirmation_number ? `Conf ${hotel.confirmation_number}` : null,
+                  formatDateRange(hotel.check_in_date, hotel.check_out_date),
+                ]) || 'Booked'
+              : null;
 
             return (
-              <div
+              <BookingRow
                 key={participant.id}
-                className="rounded-xl border border-stone-200 p-3 transition-colors hover:border-stone-300 sm:p-4"
+                toggle={
+                  <CheckToggle
+                    checked={!!hotel?.booked}
+                    onToggle={() => hotel?.id && toggleBooked(participant.id)}
+                    disabled={!hotel?.id}
+                    label={`Mark hotel for ${participant.name} as ${hotel?.booked ? 'not booked' : 'booked'}`}
+                  />
+                }
+                title={participant.name}
+                subtitle={participant.email}
+                summary={summary}
+                status={
+                  isModified ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSave(participant.id)}
+                      disabled={saving[participant.id]}
+                      className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50 lg:min-h-0"
+                    >
+                      <Save aria-hidden="true" className="w-4 h-4" />
+                      Save
+                    </button>
+                  ) : (
+                    <StatusChip done={!!hotel?.booked} />
+                  )
+                }
+                expanded={expanded}
+                onToggleExpand={() => setExpandedId(expanded ? null : participant.id)}
+                expandLabel={`${expanded ? 'Close' : 'Edit'} hotel details for ${participant.name}`}
+                contentId={`hotel-row-${participant.id}`}
               >
-                {/* Ledger line: toggle · name (lead) · email (quiet) · status */}
-                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                    <CheckToggle
-                      checked={!!hotel?.booked}
-                      onToggle={() => hotel?.id && toggleBooked(participant.id)}
-                      disabled={!hotel?.id}
-                      label={`Mark hotel for ${participant.name} as ${hotel?.booked ? 'not booked' : 'booked'}`}
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-stone-900">{participant.name}</p>
-                      <p className="truncate text-xs text-stone-400">{participant.email}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-2">
-                    {isModified ? (
-                      <button
-                        type="button"
-                        onClick={() => handleSave(participant.id)}
-                        disabled={saving[participant.id]}
-                        className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50 lg:min-h-0"
-                      >
-                        <Save aria-hidden="true" className="w-4 h-4" />
-                        Save
-                      </button>
-                    ) : (
-                      <StatusChip done={!!hotel?.booked} />
-                    )}
-                  </div>
-                </div>
-
                 {/* Reservation fields */}
-                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 sm:pl-9">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div>
                     <FieldLabel>Property Name</FieldLabel>
                     <input
@@ -236,7 +246,7 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
                     />
                   </div>
                 </div>
-              </div>
+              </BookingRow>
             );
           })}
         </div>

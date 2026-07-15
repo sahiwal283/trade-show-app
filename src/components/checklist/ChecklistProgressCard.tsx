@@ -20,7 +20,8 @@ interface ChecklistProgressCardProps {
   completed: number;
   total: number;
   pct: number;
-  stats: SectionStat[];
+  /** Optional per-section stat row; omit when the counts live elsewhere (e.g. board tabs). */
+  stats?: SectionStat[];
 }
 
 export const ChecklistProgressCard: React.FC<ChecklistProgressCardProps> = ({
@@ -59,6 +60,7 @@ export const ChecklistProgressCard: React.FC<ChecklistProgressCardProps> = ({
       </div>
 
       {/* Per-section stats */}
+      {stats && stats.length > 0 && (
       <div className="mt-4 flex flex-wrap gap-x-6 gap-y-3 border-t border-stone-100 pt-4">
         {stats.map(stat => {
           const isDone = stat.total > 0 && stat.completed === stat.total;
@@ -85,6 +87,7 @@ export const ChecklistProgressCard: React.FC<ChecklistProgressCardProps> = ({
           );
         })}
       </div>
+      )}
     </section>
   );
 };

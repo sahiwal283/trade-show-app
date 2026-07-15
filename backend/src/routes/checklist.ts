@@ -7,10 +7,32 @@ import express, { Response, NextFunction } from 'express';
 import { authorize, AuthRequest } from '../middleware/auth';
 import { uploadBoothMap } from '../config/upload';
 import { checklistRepository } from '../database/repositories';
+import { pushService, PushPayload } from '../services/PushService';
 import multer from 'multer';
 import fs from 'fs';
 
 const router = express.Router();
+
+/**
+ * Fire-and-forget push notification for booking confirmations.
+ * Never delays or fails the API response.
+ */
+const notifyBooking = (userId: string | null | undefined, payload: PushPayload): void => {
+  if (!userId) return;
+  void pushService.sendToUser(userId, payload).catch((error) => {
+    console.error('[Checklist] Failed to send booking notification:', error);
+  });
+};
+
+/**
+ * Format a date value for notification bodies (dates come back from pg as Date or string).
+ */
+const formatNotificationDate = (value?: string | Date | null): string | null => {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) return null;
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
 
 // Get checklist for an event (all authenticated users can view)
 router.get('/:eventId', authorize('admin', 'coordinator', 'developer', 'accountant', 'salesperson'), async (req: AuthRequest, res: Response) => {
@@ -276,6 +298,14 @@ router.post('/:checklistId/flights', authorize('admin', 'coordinator', 'develope
       booked: booked || false
     });
 
+    if (flight.booked && flight.confirmation_number && flight.attendee_id) {
+      notifyBooking(flight.attendee_id, {
+        title: 'Flight booked ✈️',
+        body: `Confirmation ${flight.confirmation_number}${flight.carrier ? ` · ${flight.carrier}` : ''}`,
+        url: '/'
+      });
+    }
+
     res.json(flight);
   } catch (error) {
     console.error('[Checklist] Error adding flight:', error);
@@ -295,6 +325,14 @@ router.put('/flights/:flightId', authorize('admin', 'coordinator', 'developer'),
       notes,
       booked
     });
+
+    if (flight.booked && flight.confirmation_number && flight.attendee_id) {
+      notifyBooking(flight.attendee_id, {
+        title: 'Flight booked ✈️',
+        body: `Confirmation ${flight.confirmation_number}${flight.carrier ? ` · ${flight.carrier}` : ''}`,
+        url: '/'
+      });
+    }
 
     res.json(flight);
   } catch (error) {
@@ -333,6 +371,15 @@ router.post('/:checklistId/hotels', authorize('admin', 'coordinator', 'developer
       booked: booked || false
     });
 
+    if (hotel.booked && hotel.confirmation_number && hotel.attendee_id) {
+      const checkIn = formatNotificationDate(hotel.check_in_date);
+      notifyBooking(hotel.attendee_id, {
+        title: 'Hotel booked 🏨',
+        body: `Confirmation ${hotel.confirmation_number}${hotel.property_name ? ` · ${hotel.property_name}` : ''}${checkIn ? ` · Check-in ${checkIn}` : ''}`,
+        url: '/'
+      });
+    }
+
     res.json(hotel);
   } catch (error) {
     console.error('[Checklist] Error adding hotel:', error);
@@ -354,6 +401,15 @@ router.put('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer'), a
       notes,
       booked
     });
+
+    if (hotel.booked && hotel.confirmation_number && hotel.attendee_id) {
+      const checkIn = formatNotificationDate(hotel.check_in_date);
+      notifyBooking(hotel.attendee_id, {
+        title: 'Hotel booked 🏨',
+        body: `Confirmation ${hotel.confirmation_number}${hotel.property_name ? ` · ${hotel.property_name}` : ''}${checkIn ? ` · Check-in ${checkIn}` : ''}`,
+        url: '/'
+      });
+    }
 
     res.json(hotel);
   } catch (error) {
@@ -393,6 +449,14 @@ router.post('/:checklistId/car-rentals', authorize('admin', 'coordinator', 'deve
       assignedToName: assignedToName || null
     });
 
+    if (rental.booked && rental.confirmation_number && rental.assigned_to_id) {
+      notifyBooking(rental.assigned_to_id, {
+        title: 'Car rental booked 🚗',
+        body: `Confirmation ${rental.confirmation_number}${rental.provider ? ` · ${rental.provider}` : ''}`,
+        url: '/'
+      });
+    }
+
     res.json(rental);
   } catch (error) {
     console.error('[Checklist] Error adding car rental:', error);
@@ -417,6 +481,14 @@ router.put('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'develope
       assigned_to_id: assignedToId || null,
       assigned_to_name: assignedToName || null
     });
+
+    if (rental.booked && rental.confirmation_number && rental.assigned_to_id) {
+      notifyBooking(rental.assigned_to_id, {
+        title: 'Car rental booked 🚗',
+        body: `Confirmation ${rental.confirmation_number}${rental.provider ? ` · ${rental.provider}` : ''}`,
+        url: '/'
+      });
+    }
 
     res.json(rental);
   } catch (error) {

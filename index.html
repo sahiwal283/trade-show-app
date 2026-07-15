@@ -50,11 +50,16 @@
     
     <!-- Service Worker Cleanup - runs before app loads -->
     <script>
-      // Immediately unregister any service workers and clear caches
-      // This ensures users get fresh content without broken SW interference
+      // Unregister stale service workers and clear caches so users get fresh content.
+      // The push notification worker (push-sw.js) is kept — it has no fetch handler
+      // or caching, so it can't serve stale content.
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(function(regs) {
-          regs.forEach(function(reg) { reg.unregister(); });
+          regs.forEach(function(reg) {
+            var worker = reg.active || reg.waiting || reg.installing;
+            var isPushWorker = !!(worker && worker.scriptURL && worker.scriptURL.indexOf('push-sw.js') !== -1);
+            if (!isPushWorker) { reg.unregister(); }
+          });
         });
       }
       if ('caches' in window) {
