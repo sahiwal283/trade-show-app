@@ -7,3 +7,4 @@
 
 export { ExpenseToolbar } from './ExpenseToolbar';
 export { ExpenseTableRow } from './ExpenseTableRow';
+export { ExpenseCardList } from './ExpenseCardList';

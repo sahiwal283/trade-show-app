@@ -8,7 +8,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, ChevronsUpDown } from 'lucide-react';
 import { Expense, TradeShow, User } from '../../../App';
-import { ExpenseToolbar, ExpenseTableRow } from '../ExpenseTable';
+import { ExpenseToolbar, ExpenseTableRow, ExpenseCardList } from '../ExpenseTable';
 
 const PAGE_SIZES = [10, 25, 50];
 
@@ -250,13 +250,19 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
         </div>
       )}
 
-      {/* Mobile scroll affordance */}
-      <div className="flex items-center justify-between gap-2 border-b border-stone-100 px-3 py-1.5 text-[11px] text-stone-400 lg:hidden" aria-hidden="true">
-        <span>Swipe sideways for more columns</span>
-        <span className="tracking-widest">&rsaquo;&rsaquo;</span>
+      {/* Mobile (< lg): tappable card list — the detail modal carries all
+          row actions. Desktop keeps the full table. */}
+      <div className="lg:hidden">
+        <ExpenseCardList
+          expenses={pageRows}
+          events={events}
+          users={users}
+          hasApprovalPermission={hasApprovalPermission}
+          onViewExpense={props.onViewExpense}
+        />
       </div>
 
-      <div className={`overflow-x-auto ${hasApprovalPermission ? 'table-sticky-2' : 'table-sticky-first'}`}>
+      <div className={`hidden overflow-x-auto lg:block ${hasApprovalPermission ? 'table-sticky-2' : 'table-sticky-first'}`}>
         <table className="w-full min-w-max">
           <thead className="bg-stone-50/80">
             <tr>
