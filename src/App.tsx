@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { LoginForm } from './components/auth/LoginForm';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
@@ -103,24 +103,34 @@ function App() {
   const [timeRemaining, setTimeRemaining] = useState(0); // Will be set by sessionManager
   const notifications = useNotifications();
 
+  // Several requests can 401 at once when the token expires (parallel
+  // dashboard fetches, health checks). Handle expiry exactly once — one
+  // banner, one logout — until the next successful login resets the guard.
+  const sessionExpiredRef = useRef(false);
+
   // Register API unauthorized callback to auto-logout on token expiration
   useEffect(() => {
     console.log('[App] Registering API unauthorized callback');
     apiClient.setUnauthorizedCallback(() => {
       console.log('[App] API detected unauthorized access (401)');
-      
+
+      if (sessionExpiredRef.current) {
+        return; // Expiry already being handled — swallow the duplicate 401s
+      }
+
       // Check if session manager is showing warning or about to show it
       const timeRemaining = sessionManager.getTimeRemaining();
-      
+
       if (timeRemaining > 0 && timeRemaining <= 300) {
         // Within 5 minutes of logout - let session manager handle it with warning
         console.log('[App] Session manager will handle logout with warning, time remaining:', timeRemaining);
         return;
       }
-      
+
       // Token expired unexpectedly (not due to inactivity timeout)
       // This can happen if token refresh failed or backend restarted
       console.log('[App] Token expired unexpectedly, forcing immediate logout');
+      sessionExpiredRef.current = true;
       notifications.showWarning(
         'Session Expired',
         'Your session has expired. Please log in again.',
@@ -132,6 +142,13 @@ function App() {
       }, 500);
     });
   }, [notifications]);
+
+  // A fresh login means a fresh session — re-arm the expiry guard.
+  useEffect(() => {
+    if (user) {
+      sessionExpiredRef.current = false;
+    }
+  }, [user]);
 
   // Initialize session manager
   useEffect(() => {
