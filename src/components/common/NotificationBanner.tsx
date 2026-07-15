@@ -5,7 +5,7 @@
  * Supports multiple notification types and persistence.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { X, CheckCircle, AlertCircle, AlertTriangle, Wifi, WifiOff, Loader } from 'lucide-react';
 import { generateUUID } from '../../utils/uuid';
 
@@ -204,7 +204,11 @@ export const NotificationBanner: React.FC<NotificationBannerProps> = ({
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const addNotification = (notification: Omit<Notification, 'id'>) => {
+  // Every callback is stable (useCallback) and the returned object is
+  // memoized: consumers key effects on this object (App.tsx network/sync
+  // listeners), and a fresh identity per render reset their closures —
+  // which is how offline/syncing banners got orphaned on screen.
+  const addNotification = useCallback((notification: Omit<Notification, 'id'>) => {
     const id = generateUUID();
     const newNotification: Notification = {
       id,
@@ -214,54 +218,54 @@ export const useNotifications = () => {
     console.log('[Notifications] Adding:', newNotification);
     setNotifications(prev => [...prev, newNotification]);
     return id;
-  };
+  }, []);
 
-  const removeNotification = (id: string) => {
+  const removeNotification = useCallback((id: string) => {
     console.log('[Notifications] Removing:', id);
     setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+  }, []);
 
-  const clearAll = () => {
+  const clearAll = useCallback(() => {
     console.log('[Notifications] Clearing all');
     setNotifications([]);
-  };
+  }, []);
 
   // Convenience methods
-  const showSuccess = (title: string, message: string, duration?: number) => {
+  const showSuccess = useCallback((title: string, message: string, duration?: number) => {
     return addNotification({ type: 'success', title, message, duration });
-  };
+  }, [addNotification]);
 
-  const showError = (title: string, message: string, persistent: boolean = true) => {
+  const showError = useCallback((title: string, message: string, persistent: boolean = true) => {
     return addNotification({ type: 'error', title, message, persistent });
-  };
+  }, [addNotification]);
 
-  const showWarning = (title: string, message: string, duration?: number) => {
+  const showWarning = useCallback((title: string, message: string, duration?: number) => {
     return addNotification({ type: 'warning', title, message, duration });
-  };
+  }, [addNotification]);
 
-  const showInfo = (title: string, message: string, duration?: number) => {
+  const showInfo = useCallback((title: string, message: string, duration?: number) => {
     return addNotification({ type: 'info', title, message, duration });
-  };
+  }, [addNotification]);
 
-  const showOffline = (message: string = 'No internet connection. Changes will be saved locally and synced when back online.') => {
+  const showOffline = useCallback((message: string = 'No internet connection. Changes will be saved locally and synced when back online.') => {
     return addNotification({
       type: 'offline',
       title: 'Working Offline',
       message,
       persistent: true
     });
-  };
+  }, [addNotification]);
 
-  const showSyncing = (message: string = 'Syncing your changes...') => {
+  const showSyncing = useCallback((message: string = 'Syncing your changes...') => {
     return addNotification({
       type: 'syncing',
       title: 'Syncing',
       message,
       duration: 0  // Will be dismissed manually
     });
-  };
+  }, [addNotification]);
 
-  return {
+  return useMemo(() => ({
     notifications,
     addNotification,
     removeNotification,
@@ -272,7 +276,7 @@ export const useNotifications = () => {
     showInfo,
     showOffline,
     showSyncing
-  };
+  }), [notifications, addNotification, removeNotification, clearAll, showSuccess, showError, showWarning, showInfo, showOffline, showSyncing]);
 };
 
 export default NotificationBanner;

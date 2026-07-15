@@ -83,6 +83,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
     setOcrResults,
     ocrFailed,
     setOcrFailed,
+    ocrErrorMessage,
     fieldWarnings,
     processReceipt: processReceiptHook,
     getFieldWarnings
@@ -279,6 +280,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
             {ocrFailed && !processing && !ocrResults && (
               <OcrFailedState
                 selectedFile={selectedFile}
+                errorMessage={ocrErrorMessage}
                 onRetry={handleRetryOcr}
                 onManualEntry={(defaultData) => {
                   setOcrResults(defaultData);

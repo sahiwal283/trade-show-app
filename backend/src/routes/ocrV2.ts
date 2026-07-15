@@ -127,7 +127,18 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
   } catch (error: any) {
     console.error('[OCR v2] Processing error:', error.message, { originalname: req.file.originalname, mimetype: req.file.mimetype });
     
-    const isTimeout = error.message?.includes('timeout') || error.code === 'ECONNABORTED' || error.response?.status === 500;
+    // Auth failures from the OCR service are a server misconfiguration
+    // (missing/rotated X-Internal-Token) — never a user problem. Say so
+    // plainly instead of hiding it behind a generic OCR failure.
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      throw new Error(
+        'OCR service rejected the request (authentication misconfigured). Please contact your administrator — receipt details can be entered manually.'
+      );
+    }
+
+    // Note: upstream HTTP 500 is a service error, not a timeout — only
+    // classify real timeouts here.
+    const isTimeout = error.message?.includes('timeout') || error.code === 'ECONNABORTED';
     const isUnsupportedOrPdf = (error.message || '').toLowerCase().includes('pdf') ||
       (error.response?.data?.error || '').toLowerCase().includes('unsupported') ||
       (error.response?.data?.error || '').toLowerCase().includes('pdf') ||
@@ -135,6 +146,9 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
 
     if (isTimeout) {
       throw new Error('OCR processing is taking too long. Please enter the receipt details manually.');
+    }
+    if (error.response?.status === 500) {
+      throw new Error('The OCR service hit an internal error processing this receipt. Please try again or enter the details manually.');
     }
     if (isPdf && isUnsupportedOrPdf) {
       throw new Error('PDF could not be processed by OCR. You can still attach the receipt and enter the expense details manually.');

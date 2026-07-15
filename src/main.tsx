@@ -11,20 +11,25 @@ createRoot(document.getElementById('root')!).render(
 
 
 // Service Worker Management
-// TEMPORARILY DISABLED: Unregister all service workers to fix broken cache state
-// Re-enable after Feb 16, 2026 when all users have recovered
+// Legacy caching service workers stay banned (broken cache state, Feb 2026),
+// but the push-only worker (push-sw.js, no fetch/cache handlers) must survive
+// or push notification subscriptions silently die on every page load.
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    // Unregister ALL service workers to fix broken state
     navigator.serviceWorker.getRegistrations().then((registrations) => {
-      if (registrations.length > 0) {
-        console.log("[Main] Unregistering", registrations.length, "service workers...");
-        registrations.forEach((registration) => {
-          registration.unregister().then(() => {
-            console.log("[Main] Service worker unregistered");
-          });
+      registrations.forEach((registration) => {
+        const scriptUrl =
+          registration.active?.scriptURL ||
+          registration.waiting?.scriptURL ||
+          registration.installing?.scriptURL ||
+          "";
+        if (scriptUrl.includes("push-sw.js")) {
+          return; // keep the push worker
+        }
+        registration.unregister().then(() => {
+          console.log("[Main] Legacy service worker unregistered");
         });
-      }
+      });
     });
     
     // Clear all caches to ensure fresh content

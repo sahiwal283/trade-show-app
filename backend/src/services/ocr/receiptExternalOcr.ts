@@ -17,6 +17,20 @@ const execAsync = promisify(exec);
 const EXTERNAL_OCR_URL = process.env.OCR_SERVICE_URL || 'http://192.168.1.195:8000';
 const OCR_TIMEOUT = parseInt(process.env.OCR_TIMEOUT || '120000', 10);
 
+// The OCR microservice enforces service-token auth (OCR_REQUIRE_SERVICE_TOKEN)
+// on /ocr/ — requests without X-Internal-Token get 401. /health/ready stays
+// open, which is why readiness probes pass even when this is misconfigured.
+const OCR_SERVICE_TOKEN = process.env.OCR_SERVICE_INTERNAL_TOKEN || '';
+if (!OCR_SERVICE_TOKEN) {
+  console.warn(
+    '[receiptExternalOcr] OCR_SERVICE_INTERNAL_TOKEN is not set — OCR requests will be rejected (401) if the OCR service enforces service-token auth'
+  );
+}
+
+function ocrAuthHeaders(): Record<string, string> {
+  return OCR_SERVICE_TOKEN ? { 'X-Internal-Token': OCR_SERVICE_TOKEN } : {};
+}
+
 export async function checkExternalOcrReady(): Promise<boolean> {
   try {
     const response = await axios.get(`${EXTERNAL_OCR_URL}/health/ready`, { timeout: 5000 });
@@ -88,7 +102,7 @@ export async function postFileToExternalOcr(processedPath: string): Promise<any>
   formData.append('file', fs.createReadStream(processedPath));
   const start = Date.now();
   const response = await axios.post(`${EXTERNAL_OCR_URL}/ocr/`, formData, {
-    headers: formData.getHeaders(),
+    headers: { ...formData.getHeaders(), ...ocrAuthHeaders() },
     timeout: OCR_TIMEOUT,
     maxContentLength: Infinity,
     maxBodyLength: Infinity,

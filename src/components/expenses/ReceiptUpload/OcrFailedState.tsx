@@ -13,12 +13,15 @@ interface OcrFailedStateProps {
   selectedFile: File | null;
   onRetry: () => void;
   onManualEntry: (defaultData: ReceiptData) => void;
+  /** Specific reason from the server; falls back to the generic copy. */
+  errorMessage?: string | null;
 }
 
 export const OcrFailedState: React.FC<OcrFailedStateProps> = ({
   selectedFile,
   onRetry,
-  onManualEntry
+  onManualEntry,
+  errorMessage
 }) => {
   const handleManualEntry = () => {
     if (!selectedFile) return;
@@ -42,7 +45,8 @@ export const OcrFailedState: React.FC<OcrFailedStateProps> = ({
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-orange-900 mb-2">OCR Processing Failed</h3>
           <p className="text-sm text-orange-800 mb-4">
-            We couldn't automatically extract data from your receipt. This might be due to image quality, file format, or service availability.
+            {errorMessage ||
+              "We couldn't automatically extract data from your receipt. This might be due to image quality, file format, or service availability."}
           </p>
           <div className="flex flex-wrap gap-3">
             <button

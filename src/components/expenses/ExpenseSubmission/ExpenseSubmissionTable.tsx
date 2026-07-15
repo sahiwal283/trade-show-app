@@ -115,11 +115,31 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
   const [bulkEntity, setBulkEntity] = useState('');
   const [isBulkAssigning, setIsBulkAssigning] = useState(false);
 
-  // Filter/data changes invalidate both the current page and the selection.
+  // Filter changes invalidate the current page and the selection.
   useEffect(() => {
     setPage(1);
     setSelectedIds(new Set());
-  }, [filteredExpenses.length]);
+  }, [
+    props.dateFilter,
+    props.eventFilter,
+    props.categoryFilter,
+    props.merchantFilter,
+    props.cardFilter,
+    props.statusFilter,
+    props.reimbursementFilter,
+  ]);
+
+  // Data reloads (approve, entity assign, delete) can swap the rows without
+  // changing any filter — prune selections that no longer exist so the bulk
+  // bar's count always matches what a bulk action would actually touch.
+  useEffect(() => {
+    setSelectedIds(prev => {
+      if (prev.size === 0) return prev;
+      const validIds = new Set(filteredExpenses.map(e => e.id));
+      const next = new Set([...prev].filter(id => validIds.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [filteredExpenses]);
 
   const pageCount = Math.max(1, Math.ceil(filteredExpenses.length / pageSize));
   const safePage = Math.min(page, pageCount);

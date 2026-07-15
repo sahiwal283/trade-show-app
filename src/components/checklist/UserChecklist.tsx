@@ -67,12 +67,18 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
   useEffect(() => {
     if (!selectedEventId) return;
 
+    // Cancellation guard: switching shows while a slow fetch is in flight
+    // must not let the stale response overwrite the newer show's bookings —
+    // wrong confirmation numbers are worse than a spinner.
+    let cancelled = false;
+
     const loadItinerary = async () => {
       setLoadingItinerary(true);
       setLoadFailed(false);
       try {
         if (!api.USE_SERVER) return;
         const data = (await api.checklist.getChecklist(selectedEventId)) as Record<string, unknown> | null;
+        if (cancelled) return;
         if (!data || typeof data !== 'object') {
           setItinerary(null);
           setLoadFailed(true);
@@ -84,15 +90,22 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
           carRentals: Array.isArray(data.carRentals) ? (data.carRentals as CarRentalData[]) : [],
         });
       } catch (error) {
+        if (cancelled) return;
         console.error('[UserChecklist] Error loading itinerary:', error);
         setItinerary(null);
         setLoadFailed(true);
       } finally {
-        setLoadingItinerary(false);
+        if (!cancelled) {
+          setLoadingItinerary(false);
+        }
       }
     };
 
     loadItinerary();
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedEventId]);
 
   const flight = itinerary?.flights.find(f => f.attendee_id?.toString() === user.id);

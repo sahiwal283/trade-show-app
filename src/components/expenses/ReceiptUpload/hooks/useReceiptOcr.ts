@@ -28,6 +28,9 @@ interface UseReceiptOcrReturn {
   setOcrResults: React.Dispatch<React.SetStateAction<ReceiptData | null>>;
   ocrFailed: boolean;
   setOcrFailed: (failed: boolean) => void;
+  /** Server-provided failure reason, when one was returned (e.g. service
+   *  misconfiguration vs. image quality) — null for generic failures. */
+  ocrErrorMessage: string | null;
   fieldWarnings: FieldWarning[];
   processReceipt: (file: File, cardOptions: CardOption[]) => Promise<void>;
   getFieldWarnings: (fieldName: string) => FieldWarning[];
@@ -37,6 +40,7 @@ export function useReceiptOcr(): UseReceiptOcrReturn {
   const [processing, setProcessing] = useState(false);
   const [ocrResults, setOcrResults] = useState<ReceiptData | null>(null);
   const [ocrFailed, setOcrFailed] = useState(false);
+  const [ocrErrorMessage, setOcrErrorMessage] = useState<string | null>(null);
   const [fieldWarnings, setFieldWarnings] = useState<FieldWarning[]>([]);
 
   const getFieldWarnings = useCallback((fieldName: string) => {
@@ -46,7 +50,8 @@ export function useReceiptOcr(): UseReceiptOcrReturn {
   const processReceipt = useCallback(async (file: File, cardOptions: CardOption[]) => {
     setProcessing(true);
     setOcrFailed(false);
-    
+    setOcrErrorMessage(null);
+
     try {
       const formData = new FormData();
       formData.append('receipt', file);
@@ -67,7 +72,16 @@ export function useReceiptOcr(): UseReceiptOcrReturn {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('OCR v2 failed:', errorText);
-        throw new Error('OCR processing failed');
+        // Surface the backend's reason (it distinguishes timeouts, service
+        // misconfiguration, PDFs, etc.) instead of a one-size-fits-all error.
+        let serverMessage: string | null = null;
+        try {
+          const parsed = JSON.parse(errorText) as { error?: string; message?: string };
+          serverMessage = parsed.error || parsed.message || null;
+        } catch {
+          serverMessage = null;
+        }
+        throw new Error(serverMessage || 'OCR processing failed');
       }
 
       const result = await response.json();
@@ -117,6 +131,7 @@ export function useReceiptOcr(): UseReceiptOcrReturn {
       }
     } catch (error) {
       console.error('OCR v2 Error:', error);
+      setOcrErrorMessage(error instanceof Error && error.message !== 'OCR processing failed' ? error.message : null);
       setOcrFailed(true);
     } finally {
       setProcessing(false);
@@ -129,6 +144,7 @@ export function useReceiptOcr(): UseReceiptOcrReturn {
     setOcrResults,
     ocrFailed,
     setOcrFailed,
+    ocrErrorMessage,
     fieldWarnings,
     processReceipt,
     getFieldWarnings

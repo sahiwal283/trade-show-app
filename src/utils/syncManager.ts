@@ -122,18 +122,21 @@ export class SyncManager {
     }
 
     this.isProcessing = true;
-    this.notifyListeners('sync-start');
 
     console.log('[SyncManager] Processing sync queue...');
 
     try {
       const pendingItems = await offlineDb.getPendingQueueItems();
-      
+
       if (pendingItems.length === 0) {
+        // No sync-start emitted for an empty queue: emitting it without a
+        // matching sync-complete left a permanent "Syncing..." banner.
         console.log('[SyncManager] No pending items to sync');
         this.isProcessing = false;
         return { success: true, synced: 0, failed: 0, errors: [] };
       }
+
+      this.notifyListeners('sync-start');
 
       console.log(`[SyncManager] Found ${pendingItems.length} pending items`);
 
@@ -420,7 +423,9 @@ export class SyncManager {
    * Get current user ID from auth
    */
   private getCurrentUserId(): string {
-    const userStr = localStorage.getItem('currentUser');
+    // Must match useAuth's storage key — 'currentUser' never existed, so
+    // every queued action was attributed to user "unknown".
+    const userStr = localStorage.getItem('tradeshow_current_user');
     if (userStr) {
       try {
         const user = JSON.parse(userStr);

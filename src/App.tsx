@@ -162,12 +162,13 @@ function App() {
           setShowInactivityWarning(true);
           setTimeRemaining(sessionManager.getTimeRemaining());
         },
-        // On logout callback
+        // On logout callback — must go through handleLogout so the
+        // inactivity path also wipes IndexedDB + encryption keys (bare
+        // logout() left the previous user's data behind on shared devices).
         () => {
           console.log('[App] Session expired, logging out user');
           setShowInactivityWarning(false);
-          setCurrentPage('dashboard'); // Reset to dashboard to avoid redirect loops
-          logout();
+          handleLogout();
         }
       );
 

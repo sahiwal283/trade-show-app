@@ -129,8 +129,9 @@ export function useShowDashboard({
     if (show) {
       const start = parseLocalDate(show.showStartDate || show.startDate);
       const end = parseLocalDate(show.showEndDate || show.endDate);
+      // Math.round on both: DST days are 23/25h, so floor would drift by one.
       dayTotal = Math.max(1, Math.round((end.getTime() - start.getTime()) / MS_PER_DAY) + 1);
-      const elapsed = Math.floor((today.getTime() - start.getTime()) / MS_PER_DAY) + 1;
+      const elapsed = Math.round((today.getTime() - start.getTime()) / MS_PER_DAY) + 1;
       dayCurrent = Math.min(Math.max(elapsed, 1), dayTotal);
     }
 
@@ -154,16 +155,18 @@ export function useShowDashboard({
     const sortedDates = [...byDate.keys()].sort();
     const spendByDay: SpendPoint[] = [];
     if (sortedDates.length > 0) {
-      const first = parseLocalDate(sortedDates[0]);
+      // Calendar increment (setDate), not +24h: DST days are 23/25 hours, so
+      // millisecond stepping dropped or duplicated a day around transitions.
+      const cursor = parseLocalDate(sortedDates[0]);
       const last = parseLocalDate(sortedDates[sortedDates.length - 1]);
-      for (let t = first.getTime(); t <= last.getTime(); t += MS_PER_DAY) {
-        const d = new Date(t);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      while (cursor.getTime() <= last.getTime()) {
+        const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
         spendByDay.push({
           date: key,
-          label: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          label: cursor.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           total: byDate.get(key) || 0,
         });
+        cursor.setDate(cursor.getDate() + 1);
       }
     }
 

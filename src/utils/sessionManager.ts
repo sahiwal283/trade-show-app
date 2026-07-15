@@ -11,6 +11,8 @@
  * - Auto-logout and redirect on timeout
  */
 
+import { STORAGE_KEYS } from '../constants/appConstants';
+
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
 const WARNING_TIME = 5 * 60 * 1000; // 5 minutes before logout
 const TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // Refresh token every 10 minutes
@@ -173,7 +175,10 @@ export class SessionManager {
    */
   private async refreshToken(): Promise<void> {
     try {
-      const token = localStorage.getItem('jwt_token');
+      // Must match TokenManager's storage key (apiClient) — this previously
+      // read a nonexistent 'jwt_token' key, so tokens never refreshed and
+      // every session died with an unexpected 401 mid-work.
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
       if (!token) {
         console.log('[SessionManager] No token found, skipping refresh');
         return;
@@ -197,7 +202,7 @@ export class SessionManager {
       if (response.ok) {
         const data = await response.json();
         if (data.token) {
-          localStorage.setItem('jwt_token', data.token);
+          localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, data.token);
           console.log('[SessionManager] Token refreshed successfully');
         } else {
           console.warn('[SessionManager] Token refresh response missing token');
