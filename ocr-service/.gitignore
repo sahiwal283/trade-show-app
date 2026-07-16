@@ -82,3 +82,5 @@ htmlcov/
 .EasyOCR/
 easyocr_models/
 
+.venv-eval/
+eval/corrections-eval.json

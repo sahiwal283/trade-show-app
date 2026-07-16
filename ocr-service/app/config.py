@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     
     # Service Info
     SERVICE_NAME: str = os.getenv("SERVICE_NAME", "ocr-service")
-    VERSION: str = "0.14.0"  # v0.14.0: rapidocr provider (PP-OCR on onnxruntime) — fast local CPU OCR for receipts
+    VERSION: str = "0.15.0"  # v0.15.0: corrections-driven extraction rules (merchant/amount/date/category accuracy overhaul)
     APP_VERSION: str = os.getenv("APP_VERSION", "0.3.0")
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     
