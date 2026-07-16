@@ -357,14 +357,17 @@ _MONTH_RE = (r'(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|'
              r'dec(?:ember)?)')
 
 # (regex, group order) -> (month, day, year)
+# Components must not cross line breaks ([ \t] rather than \s) and the day may
+# not be the tail of a longer number ((?<!\d)) — otherwise "…28203\nMar 16, 2026"
+# parses as "03 Mar 16" → 2016-03-03.
 _DATE_FORMATS: List[Tuple[re.Pattern, Tuple[int, int, int]]] = [
     # Range "Mar 30 - Apr 2, 2026": the start date is the transaction-relevant one.
-    (re.compile(_MONTH_RE + r'\.?\s*(\d{1,2})\s*[-–—]\s*(?:' + _MONTH_RE.replace('(', '(?:', 1)
-                + r'\.?\s*)?\d{1,2},?\s+(\d{4})', re.I), (1, 2, 3)),
+    (re.compile(_MONTH_RE + r'\.?[ \t]*(\d{1,2})[ \t]*[-–—][ \t]*(?:' + _MONTH_RE.replace('(', '(?:', 1)
+                + r'\.?[ \t]*)?\d{1,2},?[ \t]+(\d{4})', re.I), (1, 2, 3)),
     # Month DD, YYYY / Mar 16, 2026 / Jan19'26
-    (re.compile(_MONTH_RE + r"\.?\s*(\d{1,2})(?:st|nd|rd|th)?[,'\s]+\s*(\d{2,4})", re.I), (1, 2, 3)),
+    (re.compile(_MONTH_RE + r"\.?[ \t]*(\d{1,2})(?:st|nd|rd|th)?[,' \t]+(\d{2,4})", re.I), (1, 2, 3)),
     # DD Month YYYY / 03 Mar 2025 / 01-Apr-2026 / 20 Jan'26
-    (re.compile(r"(\d{1,2})[\s.-]*" + _MONTH_RE + r"[\s.,'-]*(\d{2,4})", re.I), (2, 1, 3)),
+    (re.compile(r"(?<!\d)(\d{1,2})[ \t.-]*" + _MONTH_RE + r"[ \t.,'-]*(\d{2,4})", re.I), (2, 1, 3)),
 ]
 # Leading/trailing '-' allowed so ranges like 3/16/2026-3/19/2026 parse from the start.
 _NUMERIC_DATE_RE = re.compile(r'(?<![\d/.])(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})(?![\d/])')
