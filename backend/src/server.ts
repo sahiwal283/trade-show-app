@@ -28,6 +28,7 @@ import { authenticateToken } from './middleware/auth';
 import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
 import { travelReminderService } from './services/TravelReminderService';
+import { runMigrations } from './database/migrate';
 
 dotenv.config();
 
@@ -180,12 +181,23 @@ app.use(errorHandler);
 // Initialize upload directories on startup
 initializeUploadDirectories();
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Version: ${VERSION}`);
-  console.log(`Listening on 0.0.0.0:${PORT}`);
+// Apply pending database migrations BEFORE serving traffic. This was
+// documented behavior but never actually wired up — production ran new code
+// against old schemas after every deploy. Migration failure exits hard: a
+// half-migrated schema must never serve requests.
+runMigrations({ exitOnDone: false })
+  .then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`Version: ${VERSION}`);
+      console.log(`Listening on 0.0.0.0:${PORT}`);
 
-  // Flight check-in / departure push reminders (no-op if push not configured)
-  travelReminderService.start();
-});
+      // Flight check-in / departure push reminders (no-op if push not configured)
+      travelReminderService.start();
+    });
+  })
+  .catch((error) => {
+    console.error('[Server] Failed to run migrations at startup:', error);
+    process.exit(1);
+  });

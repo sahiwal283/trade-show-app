@@ -1,0 +1,132 @@
+<h2>Which design direction should the redesign take?</h2>
+<p class="subtitle">Three directions for the flagship Dashboard, using your real data (live shows, budget burn, recent receipts, Zoho status). Click the one that feels right — the whole app follows this direction.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="command-center" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0b1220;padding:14px;">
+      <div style="font-family:ui-sans-serif,system-ui;color:#e2e8f0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-size:10px;letter-spacing:2px;color:#64748b;">LIVE · ASD MARKET WEEK</div>
+          <div style="font-size:9px;color:#34d399;">● 3 users on floor</div>
+        </div>
+        <div style="font-size:26px;font-weight:800;background:linear-gradient(90deg,#60a5fa,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent;">$12,480</div>
+        <div style="font-size:9px;color:#94a3b8;margin-bottom:8px;">of $20,000 budget · day 2 of 4</div>
+        <div style="height:6px;background:#1e293b;border-radius:3px;margin-bottom:12px;">
+          <div style="width:62%;height:6px;border-radius:3px;background:linear-gradient(90deg,#3b82f6,#10b981);box-shadow:0 0 10px rgba(59,130,246,.6);"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;">
+          <div style="background:#111a2e;border:1px solid #1e293b;border-radius:8px;padding:8px;">
+            <div style="font-size:8px;color:#64748b;">MEALS</div>
+            <div style="font-size:12px;font-weight:700;color:#e2e8f0;">$3.2k</div>
+            <div style="height:22px;display:flex;align-items:flex-end;gap:2px;">
+              <div style="width:6px;height:8px;background:#3b82f6;border-radius:1px;"></div>
+              <div style="width:6px;height:14px;background:#3b82f6;border-radius:1px;"></div>
+              <div style="width:6px;height:19px;background:#60a5fa;border-radius:1px;"></div>
+            </div>
+          </div>
+          <div style="background:#111a2e;border:1px solid #1e293b;border-radius:8px;padding:8px;">
+            <div style="font-size:8px;color:#64748b;">TRAVEL</div>
+            <div style="font-size:12px;font-weight:700;color:#e2e8f0;">$6.1k</div>
+            <div style="height:22px;display:flex;align-items:flex-end;gap:2px;">
+              <div style="width:6px;height:18px;background:#10b981;border-radius:1px;"></div>
+              <div style="width:6px;height:10px;background:#10b981;border-radius:1px;"></div>
+              <div style="width:6px;height:6px;background:#34d399;border-radius:1px;"></div>
+            </div>
+          </div>
+          <div style="background:#111a2e;border:1px solid #7c3aed44;border-radius:8px;padding:8px;">
+            <div style="font-size:8px;color:#a78bfa;">NEEDS REVIEW</div>
+            <div style="font-size:12px;font-weight:700;color:#c4b5fd;">4</div>
+            <div style="font-size:7px;color:#64748b;margin-top:6px;">2 low-confidence OCR</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Command Center (dark, immersive)</h3>
+      <p>A dark mission-control cockpit. Live budget burn with glowing meters, real-time "who's spending on the floor", alert tiles for stuck approvals. Feels like operations software for show day. Boldest change; forms/tables stay light so data entry stays easy.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="editorial-finance" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#faf9f7;padding:14px;">
+      <div style="font-family:ui-sans-serif,system-ui;color:#1c1917;">
+        <div style="font-size:9px;letter-spacing:1.5px;color:#a8a29e;margin-bottom:2px;">MARCH — ASD MARKET WEEK</div>
+        <div style="display:flex;align-items:baseline;gap:8px;">
+          <div style="font-size:30px;font-weight:800;letter-spacing:-1px;">$12,480</div>
+          <div style="font-size:10px;color:#059669;font-weight:600;">62% of budget</div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:10px;">
+          <div style="flex:1.6;background:#fff;border:1px solid #e7e5e4;border-radius:12px;padding:10px;box-shadow:0 1px 3px rgba(0,0,0,.05);">
+            <div style="font-size:8px;color:#a8a29e;margin-bottom:6px;">SPEND BY DAY</div>
+            <svg width="100%" height="38" viewBox="0 0 120 38" preserveAspectRatio="none">
+              <path d="M0,32 C15,30 25,20 40,22 C55,24 65,10 80,12 C95,14 105,6 120,8" fill="none" stroke="#2563eb" stroke-width="2"/>
+              <path d="M0,32 C15,30 25,20 40,22 C55,24 65,10 80,12 C95,14 105,6 120,8 L120,38 L0,38 Z" fill="rgba(37,99,235,.08)"/>
+            </svg>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
+            <div style="background:#fff;border:1px solid #e7e5e4;border-radius:12px;padding:8px;">
+              <div style="font-size:8px;color:#a8a29e;">RECEIPTS TODAY</div>
+              <div style="font-size:14px;font-weight:700;">14</div>
+            </div>
+            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:12px;padding:8px;">
+              <div style="font-size:8px;color:#059669;">PUSHED TO ZOHO</div>
+              <div style="font-size:14px;font-weight:700;color:#047857;">38 / 42</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:8px;background:#fff;border:1px solid #e7e5e4;border-radius:12px;padding:8px;display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:9px;"><span style="font-weight:700;">Hertz</span> <span style="color:#a8a29e;">· Travel · ZEESHAN</span></div>
+          <div style="font-size:10px;font-weight:700;">$229.53</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Editorial Finance (light, luxury)</h3>
+      <p>Warm-light fintech in the Mercury/Ramp mold: oversized numbers, generous whitespace, elegant line charts, receipts presented like a well-set ledger. Calm and premium — reads beautifully in bright convention halls. Least risk to usability, big jump in perceived quality.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="bento-hybrid" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#f1f5f9;padding:14px;">
+      <div style="font-family:ui-sans-serif,system-ui;display:grid;grid-template-columns:1.5fr 1fr 1fr;grid-template-rows:auto auto;gap:7px;">
+        <div style="grid-row:span 2;background:linear-gradient(135deg,#1d4ed8,#059669);border-radius:12px;padding:10px;color:#fff;">
+          <div style="font-size:8px;opacity:.75;">ASD MARKET WEEK · LIVE</div>
+          <div style="font-size:20px;font-weight:800;margin:4px 0;">$12,480</div>
+          <div style="height:5px;background:rgba(255,255,255,.25);border-radius:3px;margin-bottom:6px;"><div style="width:62%;height:5px;background:#fff;border-radius:3px;"></div></div>
+          <div style="font-size:8px;opacity:.85;">62% · $7.5k left · 2 days to go</div>
+          <div style="margin-top:10px;display:flex;gap:3px;align-items:flex-end;height:26px;">
+            <div style="width:9px;height:10px;background:rgba(255,255,255,.5);border-radius:2px;"></div>
+            <div style="width:9px;height:18px;background:rgba(255,255,255,.7);border-radius:2px;"></div>
+            <div style="width:9px;height:26px;background:#fff;border-radius:2px;"></div>
+            <div style="width:9px;height:14px;background:rgba(255,255,255,.6);border-radius:2px;"></div>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:8px;box-shadow:0 1px 3px rgba(15,23,42,.08);">
+          <div style="font-size:8px;color:#94a3b8;">PENDING</div>
+          <div style="font-size:15px;font-weight:800;color:#0f172a;">7</div>
+        </div>
+        <div style="background:#fff;border-radius:12px;padding:8px;box-shadow:0 1px 3px rgba(15,23,42,.08);">
+          <div style="font-size:8px;color:#94a3b8;">REIMBURSE</div>
+          <div style="font-size:15px;font-weight:800;color:#0f172a;">$1.9k</div>
+        </div>
+        <div style="grid-column:span 2;background:#fff;border-radius:12px;padding:8px;box-shadow:0 1px 3px rgba(15,23,42,.08);">
+          <div style="font-size:8px;color:#94a3b8;margin-bottom:4px;">CATEGORY MIX</div>
+          <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;">
+            <div style="width:34%;background:#2563eb;"></div>
+            <div style="width:28%;background:#10b981;"></div>
+            <div style="width:20%;background:#f59e0b;"></div>
+            <div style="width:18%;background:#8b5cf6;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Bento Grid (data-dense hybrid)</h3>
+      <p>A bento-box dashboard: one hero gradient tile for the live show's budget burn, surrounded by compact stat and chart tiles that rearrange per role (salesperson vs accountant vs admin). Modern, screenshot-worthy, keeps everything one glance away. Middle ground between A and B.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:16px;">All three keep your blue→green brand and the component system we already shipped. Tell me in the terminal if you want a blend (e.g. "B but with A's live-show banner").</p>

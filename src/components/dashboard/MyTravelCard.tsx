@@ -11,6 +11,7 @@ import type { LucideIcon } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { formatDateRange, joinSummary } from '../checklist/bookingText';
+import { haptics } from '../../utils/haptics';
 import type { FlightData, HotelData, CarRentalData } from '../checklist/TradeShowChecklist';
 
 interface MyTravelCardProps {
@@ -59,6 +60,7 @@ function TravelRow({ icon: Icon, label, booked, vendor, detail, confirmation }: 
     if (!confirmation) return;
     try {
       await navigator.clipboard.writeText(confirmation);
+      haptics.success();
       setCopied(true);
     } catch (error) {
       console.error('[MyTravelCard] Failed to copy confirmation:', error);

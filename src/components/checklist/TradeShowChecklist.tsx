@@ -168,7 +168,13 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         console.log('[Checklist] Loaded events:', eventsArray.length, 'events');
         setEvents(eventsArray);
 
-        if (eventsArray.length > 0 && !selectedEventId) {
+        // Deep link from an event card (#event=<id>) wins over the default
+        const hash = window.location.hash;
+        const linkedId = hash.startsWith('#event=') ? hash.replace('#event=', '') : null;
+        if (linkedId && eventsArray.some((e) => e.id === linkedId)) {
+          setSelectedEventId(linkedId);
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        } else if (eventsArray.length > 0 && !selectedEventId) {
           console.log('[Checklist] Auto-selecting first event:', eventsArray[0].id);
           setSelectedEventId(eventsArray[0].id);
         }

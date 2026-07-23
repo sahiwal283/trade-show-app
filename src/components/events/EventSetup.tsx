@@ -10,10 +10,22 @@ import { EventList } from './EventSetup/EventList';
 import { EventDetailsModal } from './EventSetup/EventDetailsModal';
 
 interface EventSetupProps {
+  /** Navigate to another page (event workspace quick actions) */
+  onPageChange?: (page: string) => void;
   user: User;
 }
 
-export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
+export const EventSetup: React.FC<EventSetupProps> = ({ user, onPageChange }) => {
+  // Event-card quick actions: land on the destination page pre-scoped to
+  // the event via the #event= deep link each page consumes.
+  const handleOpenWorkspace = (
+    eventId: string,
+    destination: 'checklist' | 'expenses' | 'reports'
+  ) => {
+    window.location.hash = `event=${eventId}`;
+    onPageChange?.(destination);
+  };
+
   // Custom hooks for data fetching and form management
   const { events, allUsers, loading, loadError, reload } = useEventData();
   const {
@@ -233,6 +245,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user }) => {
         onViewDetails={setViewingEvent}
         onEdit={handleEditClick}
         onDelete={handleDelete}
+        onOpenWorkspace={onPageChange ? handleOpenWorkspace : undefined}
       />
 
       {/* Event Details Modal */}

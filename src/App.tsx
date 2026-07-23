@@ -390,7 +390,7 @@ function App() {
                 the ease-in — the app feels alive instead of snapping */}
             <div key={currentPage} className="animate-page-in">
               {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
-              {currentPage === 'events' && <EventSetup user={user} />}
+              {currentPage === 'events' && <EventSetup user={user} onPageChange={handlePageChange} />}
               {currentPage === 'checklist' && <TradeShowChecklist user={user} />}
               {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
               {currentPage === 'account' && <AccountSettings user={user} />}

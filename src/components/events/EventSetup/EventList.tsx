@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Calendar, MapPin, DollarSign, Users, Info } from 'lucide-react';
+import { Calendar, MapPin, DollarSign, Users, Info, CheckSquare, Receipt, BarChart3 } from 'lucide-react';
 import { TradeShow, User } from '../../../App';
 import { formatDateRange } from '../../../utils/dateUtils';
 
@@ -16,6 +16,8 @@ interface EventListProps {
   onViewDetails: (event: TradeShow) => void;
   onEdit: (event: TradeShow) => void;
   onDelete: (eventId: string) => void;
+  /** Jump into another page pre-scoped to this event (checklist/expenses/reports) */
+  onOpenWorkspace?: (eventId: string, destination: 'checklist' | 'expenses' | 'reports') => void;
 }
 
 export const EventList: React.FC<EventListProps> = ({
@@ -24,8 +26,12 @@ export const EventList: React.FC<EventListProps> = ({
   canManageEvents,
   onViewDetails,
   onEdit,
-  onDelete
+  onDelete,
+  onOpenWorkspace
 }) => {
+  const canSeeReports =
+    user.role === 'admin' || user.role === 'accountant' || user.role === 'developer';
+  const canSeeExpenses = user.role !== 'temporary';
   if (events.length === 0) {
     return (
       <div className="card relative overflow-hidden p-12 text-center">
@@ -97,6 +103,39 @@ export const EventList: React.FC<EventListProps> = ({
             </div>
           </div>
           
+          {/* Workspace quick actions — the event card is a hub, not a dead
+              end: jump straight into this show's checklist, expenses, or
+              report instead of re-selecting it on every page. */}
+          {onOpenWorkspace && (
+            <div className="mt-3 flex flex-wrap gap-2 border-t border-stone-100 pt-3">
+              <button
+                onClick={() => onOpenWorkspace(event.id, 'checklist')}
+                className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand-50 px-3 py-2 text-sm font-semibold text-brand-700 ring-1 ring-inset ring-brand-100 transition-colors hover:bg-brand-100 focus-visible:ring-2 focus-visible:ring-brand-500 sm:flex-initial lg:min-h-0"
+              >
+                <CheckSquare className="h-4 w-4" />
+                Checklist
+              </button>
+              {canSeeExpenses && (
+                <button
+                  onClick={() => onOpenWorkspace(event.id, 'expenses')}
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-lg bg-accent-50 px-3 py-2 text-sm font-semibold text-accent-700 ring-1 ring-inset ring-accent-100 transition-colors hover:bg-accent-100 focus-visible:ring-2 focus-visible:ring-accent-500 sm:flex-initial lg:min-h-0"
+                >
+                  <Receipt className="h-4 w-4" />
+                  Expenses
+                </button>
+              )}
+              {canSeeReports && (
+                <button
+                  onClick={() => onOpenWorkspace(event.id, 'reports')}
+                  className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-lg bg-stone-100 px-3 py-2 text-sm font-semibold text-stone-700 ring-1 ring-inset ring-stone-200 transition-colors hover:bg-stone-200 focus-visible:ring-2 focus-visible:ring-brand-500 sm:flex-initial lg:min-h-0"
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Report
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Participants with hover popup */}
           <div className="relative inline-block group">
             <div className="flex items-center gap-1.5 text-sm text-stone-500 cursor-help">

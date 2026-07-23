@@ -47,17 +47,21 @@ async function recordMigration(version: string): Promise<void> {
   }
 }
 
-async function runMigrations() {
+export async function runMigrations(options: { exitOnDone?: boolean } = { exitOnDone: true }) {
+  const { exitOnDone = true } = options;
   try {
     console.log('Running database migrations...');
-    
-    // Step 1: Run base schema
-    console.log('Applying base schema.sql...');
-    const schemaSQL = fs.readFileSync(
-      path.join(__dirname, 'schema.sql'),
-      'utf-8'
-    );
-    await pool.query(schemaSQL);
+
+    // Step 1: Run base schema (optional — an established database no longer
+    // needs it, and production packages historically omitted the file)
+    const schemaPath = path.join(__dirname, 'schema.sql');
+    if (fs.existsSync(schemaPath)) {
+      console.log('Applying base schema.sql...');
+      const schemaSQL = fs.readFileSync(schemaPath, 'utf-8');
+      await pool.query(schemaSQL);
+    } else {
+      console.log('schema.sql not packaged — skipping base schema (existing database assumed)');
+    }
     console.log('✓ Base schema applied successfully');
     
     // Step 2: Check if migration tracking table exists
@@ -135,11 +139,16 @@ async function runMigrations() {
     }
     
     console.log('\n✓ All migrations completed successfully!');
-    process.exit(0);
+    if (exitOnDone) process.exit(0);
   } catch (error) {
     console.error('\n✗ Migration failed:', error);
+    // A half-migrated schema must never serve traffic — fail hard either way.
     process.exit(1);
   }
 }
 
-runMigrations();
+// CLI entrypoint (npm run migrate / node dist/database/migrate.js).
+// When imported by server.ts the caller invokes runMigrations() itself.
+if (require.main === module) {
+  runMigrations();
+}

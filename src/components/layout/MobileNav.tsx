@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { LayoutDashboard, Receipt, Calendar, CheckSquare, BarChart3, Menu, Camera } from 'lucide-react';
 import { User } from '../../App';
 import { setPendingCapture } from '../../utils/pendingCapture';
+import { haptics } from '../../utils/haptics';
 
 interface MobileNavProps {
   user: User;
@@ -37,6 +38,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   // comes back, park it in the pendingCapture slot and deep-link into the
   // expense flow, which picks it up and starts OCR immediately.
   const handleCameraTap = () => {
+    haptics.action();
     captureInputRef.current?.click();
   };
 
@@ -70,7 +72,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     return (
       <button
         key={id}
-        onClick={() => onNavigate(id)}
+        onClick={() => {
+          haptics.tap();
+          onNavigate(id);
+        }}
         aria-current={isActive ? 'page' : undefined}
         className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 ${
           isActive ? 'text-brand-600' : 'text-stone-400 active:text-stone-600'
@@ -117,7 +122,10 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         {rightTabs.map(renderTab)}
 
         <button
-          onClick={onOpenMenu}
+          onClick={() => {
+            haptics.tap();
+            onOpenMenu();
+          }}
           className="flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg text-stone-400 transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 active:text-stone-600"
         >
           <Menu className="h-5 w-5" strokeWidth={2} />

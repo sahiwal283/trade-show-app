@@ -145,6 +145,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         if (captured) setPendingReceiptFile(captured);
         setShowReceiptUpload(true);
         history.replaceState(null, '', window.location.pathname + window.location.search);
+      } else if (window.location.hash.startsWith('#event=')) {
+        // Deep link from an event card: land pre-filtered to that show
+        setEventFilter(window.location.hash.replace('#event=', ''));
+        history.replaceState(null, '', window.location.pathname + window.location.search);
       }
     };
     openFromHash();

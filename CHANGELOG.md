@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.54.0] - 2026-07-23 - Event workspace hub, self-migrating deploys, haptics
+
+### Fixed — production migrations never ran (root cause of the broken reminder scheduler)
+- CLAUDE.md claimed migrations "auto-apply at startup," but `server.ts` never called the runner — production has been running new code against old schemas after every backend deploy (v1.52.0's scheduler failed every 5 minutes on the missing `departure_at` column). The server now runs `runMigrations()` before listening and exits hard on failure; the backend build packages `schema.sql` (previously missing from dist, which broke the standalone runner too); `migrate.ts` is importable with a CLI guard and tolerates a missing schema.sql on established databases.
+
+### Added — Events page is a workspace, not a dead end
+- Every event card gains **Checklist / Expenses / Report** quick actions that land on the destination page pre-scoped to that event (`#event=` deep link). Checklist preselects the show; Expenses arrives pre-filtered; Reports uses its existing event view. Role-gated (Reports for admin/accountant/developer; Expenses hidden for temporary attendees).
+
+### Added — haptics
+- `haptics` utility (Vibration API, Android; silently no-ops on iOS web): light tick on bottom-nav taps, action pulse on camera capture, double-pulse on confirmation copy. Respects prefers-reduced-motion.
+
 ## [1.53.0] - 2026-07-23 - Remaining design-review findings
 
 ### Fixed
