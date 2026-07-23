@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { FileText, Calendar, MapPin, User, DollarSign, Eye, X, Store, CreditCard, CheckCircle } from 'lucide-react';
+import {
+  FileText,
+  Calendar,
+  MapPin,
+  User,
+  DollarSign,
+  Eye,
+  X,
+  Store,
+  CreditCard,
+  CheckCircle,
+} from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { isPdfReceiptUrl } from '../../utils/fileValidation';
@@ -11,14 +22,17 @@ interface DetailedReportProps {
   expenses: Expense[];
   events: TradeShow[];
   onReimbursementApproval?: (expense: Expense, status: 'approved' | 'rejected') => void;
+  /** Hide the built-in category chart when an entity-aware one is rendered above */
+  showCategoryChart?: boolean;
 }
 
-export const DetailedReport: React.FC<DetailedReportProps> = ({ 
-  expenses, 
-  events, 
-  onReimbursementApproval 
+export const DetailedReport: React.FC<DetailedReportProps> = ({
+  expenses,
+  events,
+  onReimbursementApproval,
+  showCategoryChart = true,
 }) => {
-  const { toasts, addToast, removeToast } = useToast();
+  const { toasts, removeToast } = useToast();
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(true);
   // Literal bar classes (not derived strings) so Tailwind's scanner generates them.
@@ -45,10 +59,13 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   };
 
   // Calculate category breakdown
-  const categoryBreakdown = expenses.reduce((acc, expense) => {
-    acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
-    return acc;
-  }, {} as Record<string, number>);
+  const categoryBreakdown = expenses.reduce(
+    (acc, expense) => {
+      acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   const categories = Object.keys(categoryBreakdown);
   const maxAmount = Math.max(...Object.values(categoryBreakdown));
@@ -59,7 +76,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 text-brand-500 ring-1 ring-inset ring-brand-100">
           <FileText className="w-8 h-8" />
         </div>
-        <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900 mb-1.5">No Detailed Data Available</h3>
+        <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900 mb-1.5">
+          No Detailed Data Available
+        </h3>
         <p className="mx-auto max-w-md text-sm text-stone-500">
           Apply filters to see detailed expense reports or submit some expenses to get started.
         </p>
@@ -71,243 +90,258 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
     <>
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <div className="space-y-6">
-      {/* Category Breakdown Chart */}
-      <div className="card p-3 sm:p-5 md:p-6">
-        <div className="mb-6">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Expenses by Category</h3>
-          <p className="mt-1 text-sm text-stone-500">For selected filters</p>
-        </div>
-        
-        {categories.length > 0 ? (
-          <div className="space-y-4">
-            {categories.map((category) => {
-              const amount = categoryBreakdown[category];
-              const percentage = (amount / maxAmount) * 100;
-              
-              return (
-                <div key={category} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-stone-900">{category}</span>
-                    <span className="text-sm font-semibold tabular-nums text-stone-900">
-                      ${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  </div>
-                  <div className="w-full bg-stone-100 rounded-full h-2 ring-1 ring-inset ring-stone-200/60">
-                    <div
-                      className={`h-2 rounded-full ${getCategoryBarColor(category)} transition-all duration-500`}
-                      style={{ width: `${percentage}%` }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-stone-500">No category data available</p>
+        {/* Category Breakdown Chart */}
+        {showCategoryChart && (
+          <div className="card p-3 sm:p-5 md:p-6">
+            <div className="mb-6">
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                Expenses by Category
+              </h3>
+              <p className="mt-1 text-sm text-stone-500">For selected filters</p>
+            </div>
+
+            {categories.length > 0 ? (
+              <div className="space-y-4">
+                {categories.map((category) => {
+                  const amount = categoryBreakdown[category];
+                  const percentage = (amount / maxAmount) * 100;
+
+                  return (
+                    <div key={category} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-stone-900">{category}</span>
+                        <span className="text-sm font-semibold tabular-nums text-stone-900">
+                          $
+                          {amount.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                      </div>
+                      <div className="w-full bg-stone-100 rounded-full h-2 ring-1 ring-inset ring-stone-200/60">
+                        <div
+                          className={`h-2 rounded-full ${getCategoryBarColor(category)} transition-all duration-500`}
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-stone-500">No category data available</p>
+              </div>
+            )}
           </div>
         )}
-      </div>
 
-      {/* Detailed Expense Table */}
-      <div className="card overflow-hidden">
-      <div className="px-6 py-4 bg-stone-50/80 border-b border-stone-200/80">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
-              <FileText className="w-4 h-4" />
-            </span>
-            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Detailed Expense Report</h3>
+        {/* Detailed Expense Table */}
+        <div className="card overflow-hidden">
+          <div className="px-6 py-4 bg-stone-50/80 border-b border-stone-200/80">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+                  <FileText className="w-4 h-4" />
+                </span>
+                <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  Detailed Expense Report
+                </h3>
+              </div>
+              <div className="text-sm text-stone-500 tabular-nums">
+                {expenses.length} entries • $
+                {expenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()} total
+              </div>
+            </div>
           </div>
-          <div className="text-sm text-stone-500 tabular-nums">
-            {expenses.length} entries • ${expenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()} total
-          </div>
-        </div>
-      </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-stone-50/80">
-            <tr>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Date & Event
-              </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Merchant & Location
-              </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Category
-              </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Card Used
-              </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Amount
-              </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Status
-              </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Reimbursement
-              </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Entity
-              </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Description
-              </th>
-              <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Details
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-stone-100">
-            {expenses.map((expense) => {
-              const event = events.find(e => e.id === expense.tradeShowId);
-              
-              return (
-                <tr key={expense.id} className="transition-colors duration-150 hover:bg-brand-50/40">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="flex items-center text-sm text-stone-900">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        {formatLocalDate(expense.date)}
-                      </div>
-                      {event && (
-                        <div className="text-xs text-stone-500 mt-1">
-                          {event.name}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-stone-900">{expense.merchant}</div>
-                      {expense.location && (
-                        <div className="flex items-center text-xs text-stone-500 mt-1">
-                          <MapPin className="w-3 h-3 mr-1" />
-                          {expense.location}
-                        </div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <CategoryBadge category={expense.category} size="sm" />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                    {expense.cardUsed}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <div className="inline-flex items-center text-sm font-semibold tabular-nums text-stone-900">
-                      <DollarSign className="w-4 h-4 mr-0.5 text-stone-400" />
-                      {expense.amount.toFixed(2)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={expense.status} size="sm" />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`chip px-2 py-1 text-xs ${
-                      expense.reimbursementRequired
-                        ? 'bg-orange-50 text-orange-700 ring-orange-200/70'
-                        : 'bg-stone-50 text-stone-500 ring-stone-200'
-                    }`}>
-                      {expense.reimbursementRequired ? 
-                        `Required (${expense.reimbursementStatus || 'pending review'})` : 
-                        'Not Required'
-                      }
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                    {expense.zohoEntity || (
-                      <span className="text-stone-400 italic">Unassigned</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-stone-900 max-w-xs truncate" title={expense.description}>
-                      {expense.description || (
-                        <span className="text-stone-400 italic">No description</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex justify-center">
-                      <button
-                        onClick={() => setViewingExpense(expense)}
-                        className="inline-flex items-center justify-center rounded-lg p-2 text-stone-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
-                        title="View Details & Receipt"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                  {onReimbursementApproval && (
-                    <td className="px-6 py-4 text-right">
-                      {expense.reimbursementRequired && expense.reimbursementStatus === 'pending review' && (
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => onReimbursementApproval(expense, 'approved')}
-                            className="inline-flex items-center justify-center rounded-md p-1 text-accent-600 transition-colors duration-150 hover:bg-accent-50 hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-1"
-                            title="Approve Reimbursement"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => onReimbursementApproval(expense, 'rejected')}
-                            className="inline-flex items-center justify-center rounded-md p-1 text-red-600 transition-colors duration-150 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
-                            title="Reject Reimbursement"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  )}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-stone-50/80">
+                <tr>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Date & Event
+                  </th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Merchant & Location
+                  </th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Category
+                  </th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Card Used
+                  </th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Amount
+                  </th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Status
+                  </th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Reimbursement
+                  </th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Entity
+                  </th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Description
+                  </th>
+                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    Details
+                  </th>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </thead>
+              <tbody className="bg-white divide-y divide-stone-100">
+                {expenses.map((expense) => {
+                  const event = events.find((e) => e.id === expense.tradeShowId);
 
-      {/* Summary Footer */}
-      <div className="px-6 py-4 bg-stone-50/80 border-t border-stone-200/80">
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6">
-            <div className="flex items-center">
-              <span className="text-stone-600">Total Expenses:</span>
-              <span className="ml-1 font-semibold text-stone-900">
-                {expenses.length}
-              </span>
-            </div>
-            <div className="flex items-center">
-              <span className="text-stone-600">Approved:</span>
-              <span className="ml-1 font-semibold tabular-nums text-accent-600">
-                {expenses.filter(e => e.status === 'approved').length}
-              </span>
-            </div>
-            <div className="flex items-center">
-              <span className="text-stone-600">Pending:</span>
-              <span className="ml-1 font-semibold tabular-nums text-amber-600">
-                {expenses.filter(e => e.status === 'pending').length}
-              </span>
-            </div>
-            <div className="flex items-center">
-              <span className="text-stone-600">Reimbursement Required:</span>
-              <span className="ml-1 font-semibold tabular-nums text-orange-600">
-                {expenses.filter(e => e.reimbursementRequired).length}
-              </span>
-            </div>
+                  return (
+                    <tr
+                      key={expense.id}
+                      className="transition-colors duration-150 hover:bg-brand-50/40"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="flex items-center text-sm text-stone-900">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            {formatLocalDate(expense.date)}
+                          </div>
+                          {event && <div className="text-xs text-stone-500 mt-1">{event.name}</div>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div>
+                          <div className="text-sm font-medium text-stone-900">
+                            {expense.merchant}
+                          </div>
+                          {expense.location && (
+                            <div className="flex items-center text-xs text-stone-500 mt-1">
+                              <MapPin className="w-3 h-3 mr-1" />
+                              {expense.location}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <CategoryBadge category={expense.category} size="sm" />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
+                        {expense.cardUsed}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="inline-flex items-center text-sm font-semibold tabular-nums text-stone-900">
+                          <DollarSign className="w-4 h-4 mr-0.5 text-stone-400" />
+                          {expense.amount.toFixed(2)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <StatusBadge status={expense.status} size="sm" />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`chip px-2 py-1 text-xs ${
+                            expense.reimbursementRequired
+                              ? 'bg-orange-50 text-orange-700 ring-orange-200/70'
+                              : 'bg-stone-50 text-stone-500 ring-stone-200'
+                          }`}
+                        >
+                          {expense.reimbursementRequired
+                            ? `Required (${expense.reimbursementStatus || 'pending review'})`
+                            : 'Not Required'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
+                        {expense.zohoEntity || (
+                          <span className="text-stone-400 italic">Unassigned</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div
+                          className="text-sm text-stone-900 max-w-xs truncate"
+                          title={expense.description}
+                        >
+                          {expense.description || (
+                            <span className="text-stone-400 italic">No description</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center">
+                          <button
+                            onClick={() => setViewingExpense(expense)}
+                            className="inline-flex items-center justify-center rounded-lg p-2 text-stone-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
+                            title="View Details & Receipt"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                      {onReimbursementApproval && (
+                        <td className="px-6 py-4 text-right">
+                          {expense.reimbursementRequired &&
+                            expense.reimbursementStatus === 'pending review' && (
+                              <div className="flex items-center justify-end space-x-2">
+                                <button
+                                  onClick={() => onReimbursementApproval(expense, 'approved')}
+                                  className="inline-flex items-center justify-center rounded-md p-1 text-accent-600 transition-colors duration-150 hover:bg-accent-50 hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-1"
+                                  title="Approve Reimbursement"
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => onReimbursementApproval(expense, 'rejected')}
+                                  className="inline-flex items-center justify-center rounded-md p-1 text-red-600 transition-colors duration-150 hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
+                                  title="Reject Reimbursement"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-          <div className="flex items-center">
-            <span className="text-stone-600">Total Amount:</span>
-            <span className="ml-1 font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
-              ${expenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()}
-            </span>
+
+          {/* Summary Footer */}
+          <div className="px-6 py-4 bg-stone-50/80 border-t border-stone-200/80">
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center space-x-3 sm:space-x-4 md:space-x-6">
+                <div className="flex items-center">
+                  <span className="text-stone-600">Total Expenses:</span>
+                  <span className="ml-1 font-semibold text-stone-900">{expenses.length}</span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-stone-600">Approved:</span>
+                  <span className="ml-1 font-semibold tabular-nums text-accent-600">
+                    {expenses.filter((e) => e.status === 'approved').length}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-stone-600">Pending:</span>
+                  <span className="ml-1 font-semibold tabular-nums text-amber-600">
+                    {expenses.filter((e) => e.status === 'pending').length}
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <span className="text-stone-600">Reimbursement Required:</span>
+                  <span className="ml-1 font-semibold tabular-nums text-orange-600">
+                    {expenses.filter((e) => e.reimbursementRequired).length}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <span className="text-stone-600">Total Amount:</span>
+                <span className="ml-1 font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
+                  ${expenses.reduce((sum, exp) => sum + exp.amount, 0).toLocaleString()}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
       </div>
 
       {/* View Expense Details Modal */}
@@ -318,7 +352,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
               <div>
                 <h2 className="font-display text-xl font-bold tracking-tight">Expense Details</h2>
                 <p className="mt-1 text-sm text-brand-100">
-                  {events.find(e => e.id === viewingExpense.tradeShowId)?.name || 'N/A'}
+                  {events.find((e) => e.id === viewingExpense.tradeShowId)?.name || 'N/A'}
                 </p>
               </div>
               <button
@@ -340,8 +374,12 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <Calendar className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Date</p>
-                    <p className="font-semibold text-stone-900">{formatLocalDate(viewingExpense.date)}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                      Date
+                    </p>
+                    <p className="font-semibold text-stone-900">
+                      {formatLocalDate(viewingExpense.date)}
+                    </p>
                   </div>
                 </div>
 
@@ -350,8 +388,12 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <DollarSign className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Amount</p>
-                    <p className="font-display text-xl font-bold tracking-tight tabular-nums text-stone-900">${viewingExpense.amount.toFixed(2)}</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                      Amount
+                    </p>
+                    <p className="font-display text-xl font-bold tracking-tight tabular-nums text-stone-900">
+                      ${viewingExpense.amount.toFixed(2)}
+                    </p>
                   </div>
                 </div>
 
@@ -360,7 +402,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <FileText className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Category</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                      Category
+                    </p>
                     <p className="font-semibold text-stone-900">{viewingExpense.category}</p>
                   </div>
                 </div>
@@ -370,7 +414,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <Store className="w-5 h-5 text-orange-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Merchant</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                      Merchant
+                    </p>
                     <p className="font-semibold text-stone-900">{viewingExpense.merchant}</p>
                   </div>
                 </div>
@@ -380,7 +426,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                     <CreditCard className="w-5 h-5 text-indigo-600" />
                   </div>
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Card Used</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                      Card Used
+                    </p>
                     <p className="font-semibold text-stone-900">{viewingExpense.cardUsed}</p>
                   </div>
                 </div>
@@ -391,7 +439,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       <MapPin className="w-5 h-5 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Location</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                        Location
+                      </p>
                       <p className="font-semibold text-stone-900">{viewingExpense.location}</p>
                     </div>
                   </div>
@@ -403,7 +453,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       <User className="w-5 h-5 text-teal-600" />
                     </div>
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Submitted By</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                        Submitted By
+                      </p>
                       <p className="font-semibold text-stone-900">{viewingExpense.user_name}</p>
                     </div>
                   </div>
@@ -412,7 +464,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
               {viewingExpense.description && (
                 <div className="rounded-lg bg-stone-50/80 p-4 ring-1 ring-inset ring-stone-200/70">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1.5">Description</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1.5">
+                    Description
+                  </p>
                   <p className="text-sm text-stone-900">{viewingExpense.description}</p>
                 </div>
               )}
@@ -420,22 +474,30 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
               {/* Status and Reimbursement */}
               <div className="flex flex-wrap gap-3">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">Status</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">
+                    Status
+                  </p>
                   <StatusBadge status={viewingExpense.status} size="md" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">Reimbursement</p>
-                  <span className={`chip px-3 py-1 text-sm ${
-                    viewingExpense.reimbursementRequired
-                      ? 'bg-orange-50 text-orange-700 ring-orange-200/70'
-                      : 'bg-stone-50 text-stone-500 ring-stone-200'
-                  }`}>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">
+                    Reimbursement
+                  </p>
+                  <span
+                    className={`chip px-3 py-1 text-sm ${
+                      viewingExpense.reimbursementRequired
+                        ? 'bg-orange-50 text-orange-700 ring-orange-200/70'
+                        : 'bg-stone-50 text-stone-500 ring-stone-200'
+                    }`}
+                  >
                     {viewingExpense.reimbursementRequired ? 'Required' : 'Not Required'}
                   </span>
                 </div>
                 {viewingExpense.zohoEntity && (
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">Entity</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1">
+                      Entity
+                    </p>
                     <span className="chip px-3 py-1 text-sm bg-brand-50 text-brand-700 ring-brand-200/70">
                       {viewingExpense.zohoEntity}
                     </span>
@@ -447,7 +509,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
               {viewingExpense.receiptUrl && (
                 <div className="rounded-card bg-stone-50/80 p-6 ring-1 ring-inset ring-stone-200/70">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Receipt</h3>
+                    <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                      Receipt
+                    </h3>
                     <button
                       onClick={() => setShowFullReceipt(!showFullReceipt)}
                       className="btn-secondary px-4 py-2"
@@ -459,7 +523,10 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   {showFullReceipt && (
                     <div className="card rounded-lg p-4">
                       {(() => {
-                        const displayUrl = viewingExpense.receiptUrl.replace(/^\/uploads/, '/api/uploads');
+                        const displayUrl = viewingExpense.receiptUrl.replace(
+                          /^\/uploads/,
+                          '/api/uploads'
+                        );
                         const isPdf = isPdfReceiptUrl(viewingExpense.receiptUrl || '');
                         if (isPdf) {
                           return (
@@ -471,7 +538,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                             >
                               <FileText className="w-14 h-14 text-red-600" />
                               <span className="font-medium">PDF Receipt</span>
-                              <span className="text-sm text-stone-500">Click to open in a new tab</span>
+                              <span className="text-sm text-stone-500">
+                                Click to open in a new tab
+                              </span>
                             </a>
                           );
                         }

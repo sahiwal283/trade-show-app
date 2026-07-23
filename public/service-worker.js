@@ -1,6 +1,6 @@
 // ExpenseApp Service Worker
-// Version: 1.38.0 - Telegram event creation + participant notifications
-// Date: April 21, 2026
+// Version: 1.48.0 - Accountant reporting revamp (entity split, category filters, pivot matrix)
+// Date: July 23, 2026
 //
 // New Features:
 // - Trade Show Checklist management for coordinators
@@ -116,7 +116,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.38.0';
+const CACHE_NAME = 'trade-show-app-v1.48.0';
 const STATIC_CACHE = 'trade-show-app-static-v1.34.4';
 const urlsToCache = [
   '/',

@@ -1,35 +1,36 @@
 import React, { useEffect, useMemo } from 'react';
-import { Download, Filter, Calendar, DollarSign, TrendingUp, Building2, CheckCircle, X, ArrowLeft } from 'lucide-react';
+import {
+  Download,
+  Filter,
+  Calendar,
+  DollarSign,
+  TrendingUp,
+  Building2,
+  X,
+  ArrowLeft,
+} from 'lucide-react';
 import { User, Expense } from '../../App';
 import { ExpenseChart } from './ExpenseChart';
 import { EntityBreakdown } from './EntityBreakdown';
 import { DetailedReport } from './DetailedReport';
-import { AccountantDashboard } from '../accountant/AccountantDashboard';
+import { WhoPaidBreakdown } from './WhoPaidBreakdown';
+import { EntityCategoryMatrix } from './EntityCategoryMatrix';
 import { api } from '../../utils/api';
 import { useReportsData } from './hooks/useReportsData';
 import { useReportsFilters } from './hooks/useReportsFilters';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { useReportsStats } from './hooks/useReportsStats';
-import { calculateCategoryAverages, calculateTradeShowBreakdown } from '../../utils/reportUtils';
+import {
+  calculateCategoryAverages,
+  calculateTradeShowBreakdown,
+  buildEntityColorMap,
+} from '../../utils/reportUtils';
 
 interface ReportsProps {
   user: User;
 }
 
 export const Reports: React.FC<ReportsProps> = ({ user }) => {
-  // Access control: Only admin and accountant can access reports
-  if (user.role === 'coordinator' || user.role === 'salesperson') {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
-          <p className="text-red-700">
-            Access denied. {user.role === 'coordinator' ? 'Coordinators' : 'Salespeople'} do not have access to reports.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Check URL hash for initial event selection (e.g., #event=123)
   const getInitialEvent = () => {
     const hash = window.location.hash;
@@ -48,21 +49,36 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     setSelectedPeriod,
     selectedEntity,
     setSelectedEntity,
+    selectedCategories,
+    setSelectedCategories,
+    toggleCategory,
     reportType,
     setReportType,
     showFilterModal,
-    setShowFilterModal
+    setShowFilterModal,
   } = useReportsFilters({
     initialEvent: getInitialEvent(),
-    initialReportType: getInitialEvent() !== 'all' ? 'detailed' : 'overview'
+    initialReportType: getInitialEvent() !== 'all' ? 'detailed' : 'overview',
   });
-  const { filteredExpenses, reportStats, entityTotals } = useReportsStats({
+  const { baseExpenses, filteredExpenses, reportStats, entityTotals } = useReportsStats({
     expenses,
     selectedEvent,
     selectedPeriod,
     selectedEntity,
-    entityOptions: activeEntityOptions
+    selectedCategories,
+    entityOptions: activeEntityOptions,
   });
+
+  // Stable entity → color assignment shared by the donut, stacked bars, and matrix
+  const { colorMap: entityColorMap, entityOrder } = useMemo(
+    () => buildEntityColorMap(activeEntityOptions, expenses),
+    [activeEntityOptions, expenses]
+  );
+
+  const availableCategories = useMemo(
+    () => Array.from(new Set(baseExpenses.map((e) => e.category))).sort(),
+    [baseExpenses]
+  );
 
   const handleTradeShowClick = (eventId: string) => {
     setSelectedEvent(eventId);
@@ -88,10 +104,10 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         setReportType('detailed');
       }
     };
-    
+
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [setSelectedEvent, setReportType]);
 
   const handleUpdateExpense = async (updatedExpense: Expense) => {
     // Future: call API to update expense; for now refresh list from server
@@ -99,7 +115,9 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
       const refreshed = await api.getExpenses();
       setExpenses(Array.isArray(refreshed) ? refreshed : []);
     } else {
-      const updatedExpenses = expenses.map(expense => expense.id === updatedExpense.id ? updatedExpense : expense);
+      const updatedExpenses = expenses.map((expense) =>
+        expense.id === updatedExpense.id ? updatedExpense : expense
+      );
       setExpenses(updatedExpenses);
       localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
     }
@@ -110,39 +128,28 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     handleUpdateExpense(updatedExpense);
   };
 
-  // Calculate trade show breakdown for a specific entity (component-specific logic)
-  const tradeShowBreakdown = useMemo(() => {
-    if (selectedEntity === 'all') return [];
-    
-    const totals: Record<string, { eventId: string; amount: number; name: string }> = {};
-    filteredExpenses.forEach(expense => {
-      if (expense.zohoEntity === selectedEntity && expense.tradeShowId) {
-        const event = events.find(e => e.id === expense.tradeShowId);
-        if (event) {
-          if (!totals[expense.tradeShowId]) {
-            totals[expense.tradeShowId] = { eventId: expense.tradeShowId, amount: 0, name: event.name };
-          }
-          totals[expense.tradeShowId].amount += expense.amount;
-        }
-      }
-    });
-    return Object.values(totals).sort((a, b) => b.amount - a.amount);
-  }, [filteredExpenses, selectedEntity, events]);
+  // Calculate trade show breakdown for a specific entity
+  const tradeShowBreakdown = useMemo(
+    () => calculateTradeShowBreakdown(filteredExpenses, events, selectedEntity),
+    [filteredExpenses, selectedEntity, events]
+  );
 
   const handleExportCSV = () => {
     const csvContent = [
       ['Date', 'Event', 'Merchant', 'Category', 'Amount', 'Status', 'Entity', 'Location'],
-      ...filteredExpenses.map(expense => [
+      ...filteredExpenses.map((expense) => [
         expense.date,
-        events.find(e => e.id === expense.tradeShowId)?.name || 'N/A',
+        events.find((e) => e.id === expense.tradeShowId)?.name || 'N/A',
         expense.merchant,
         expense.category,
         expense.amount.toString(),
         expense.status,
         expense.zohoEntity || 'N/A',
-        expense.location || 'N/A'
-      ])
-    ].map(row => row.join(',')).join('\n');
+        expense.location || 'N/A',
+      ]),
+    ]
+      .map((row) => row.join(','))
+      .join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -154,13 +161,13 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   };
 
   const entities = useMemo(
-    () => Array.from(new Set(expenses.map(e => e.zohoEntity).filter(Boolean))),
+    () => Array.from(new Set(expenses.map((e) => e.zohoEntity).filter(Boolean))),
     [expenses]
   );
 
   // Computed once per filter change instead of 3x inline in JSX below.
   const unassignedExpenses = useMemo(
-    () => filteredExpenses.filter(e => !e.zohoEntity),
+    () => filteredExpenses.filter((e) => !e.zohoEntity),
     [filteredExpenses]
   );
   const unassignedTotal = useMemo(
@@ -168,12 +175,31 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     [unassignedExpenses]
   );
 
+  // Access control: Only admin and accountant can access reports.
+  // (After the hooks so React's hook order stays stable across renders.)
+  if (user.role === 'coordinator' || user.role === 'salesperson') {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+          <p className="text-red-700">
+            Access denied. {user.role === 'coordinator' ? 'Coordinators' : 'Salespeople'} do not
+            have access to reports.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Trade show expenses</p>
-          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">Reports & Analytics</h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
+            Trade show expenses
+          </p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">
+            Reports & Analytics
+          </h1>
           <p className="mt-1 text-sm text-stone-500">
             Analyze expenses and generate comprehensive reports
             <span className="ml-3 text-sm text-stone-500">
@@ -202,6 +228,32 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         </div>
       </div>
 
+      {/* Active category filters — every number on the page respects these */}
+      {selectedCategories.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.15em] text-stone-400">
+            Showing only:
+          </span>
+          {selectedCategories.map((category) => (
+            <button
+              key={category}
+              onClick={() => toggleCategory(category)}
+              className="chip inline-flex items-center gap-1.5 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 ring-brand-200/70 transition-colors hover:bg-brand-100"
+              title={`Remove ${category} filter`}
+            >
+              {category}
+              <X className="h-3 w-3" />
+            </button>
+          ))}
+          <button
+            onClick={() => setSelectedCategories([])}
+            className="text-xs font-medium text-stone-500 underline-offset-2 hover:text-stone-700 hover:underline"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
       {/* Trade Show Header Banner */}
       {selectedEvent !== 'all' && (
         <div className="rounded-card bg-gradient-to-r from-brand-600 to-accent-600 p-3 shadow-brand-lg sm:p-4 md:p-5 lg:p-6">
@@ -218,14 +270,18 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 <ArrowLeft className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
               </button>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">Viewing Trade Show</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">
+                  Viewing Trade Show
+                </p>
                 <h2 className="font-display text-xl md:text-2xl font-bold tracking-tight text-white">
-                  {events.find(e => e.id === selectedEvent)?.name || 'Unknown Event'}
+                  {events.find((e) => e.id === selectedEvent)?.name || 'Unknown Event'}
                 </h2>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">Total Expenses</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">
+                Total Expenses
+              </p>
               <p className="font-display text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-white">
                 ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
               </p>
@@ -250,14 +306,18 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 <ArrowLeft className="w-5 h-5 text-white group-hover:scale-110 transition-transform" />
               </button>
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">Viewing Entity</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">
+                  Viewing Entity
+                </p>
                 <h2 className="font-display text-xl md:text-2xl font-bold tracking-tight text-white">
                   {selectedEntity}
                 </h2>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">Total Expenses</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-white/70 mb-1">
+                Total Expenses
+              </p>
               <p className="font-display text-2xl sm:text-3xl font-bold tracking-tight tabular-nums text-white">
                 ${filteredExpenses.reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
               </p>
@@ -274,14 +334,18 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <Calendar className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Trade Show Breakdown</h3>
-              <p className="text-xs text-stone-500">Entity expenses by trade show • Click to view details</p>
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                Trade Show Breakdown
+              </h3>
+              <p className="text-xs text-stone-500">
+                Entity expenses by trade show • Click to view details
+              </p>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap gap-3">
             {tradeShowBreakdown.map(({ eventId, name, amount }) => (
-              <div 
+              <div
                 key={eventId}
                 onClick={() => handleTradeShowClick(eventId)}
                 onKeyPress={(e) => e.key === 'Enter' && handleTradeShowClick(eventId)}
@@ -291,11 +355,18 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1 truncate" title={name}>
+                    <p
+                      className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1 truncate"
+                      title={name}
+                    >
                       {name}
                     </p>
                     <p className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
-                      ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      $
+                      {amount.toLocaleString(undefined, {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      })}
                     </p>
                   </div>
                   <div className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
@@ -316,14 +387,16 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <Building2 className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Entity Running Totals</h3>
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                Entity Running Totals
+              </h3>
               <p className="text-xs text-stone-500">For selected filters • Click to view details</p>
             </div>
           </div>
-          
+
           <div className="flex flex-wrap gap-3">
             {entityTotals.map(({ entity, amount }) => (
-              <div 
+              <div
                 key={entity}
                 onClick={() => handleEntityClick(entity)}
                 onKeyPress={(e) => e.key === 'Enter' && handleEntityClick(entity)}
@@ -333,11 +406,18 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1 truncate" title={entity}>
+                    <p
+                      className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1 truncate"
+                      title={entity}
+                    >
                       {entity}
                     </p>
                     <p className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
-                      ${amount.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      $
+                      {amount.toLocaleString(undefined, {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      })}
                     </p>
                   </div>
                   <div className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 ring-1 ring-inset ring-purple-100">
@@ -353,8 +433,12 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <div className="flex items-center gap-2">
                 <span className="chip-dot bg-amber-500" />
                 <p className="text-xs text-amber-800">
-                  <span className="font-semibold">{unassignedExpenses.length} expenses</span> in current view have no entity assigned (
-                  <span className="font-semibold tabular-nums">${unassignedTotal.toLocaleString()}</span>)
+                  <span className="font-semibold">{unassignedExpenses.length} expenses</span> in
+                  current view have no entity assigned (
+                  <span className="font-semibold tabular-nums">
+                    ${unassignedTotal.toLocaleString()}
+                  </span>
+                  )
                 </p>
               </div>
             </div>
@@ -362,28 +446,60 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         </div>
       )}
 
+      {/* Who paid for what — entity split per category, click rows to filter */}
+      {reportType !== 'entity' && (
+        <>
+          <WhoPaidBreakdown
+            baseExpenses={baseExpenses}
+            filteredExpenses={filteredExpenses}
+            entityColorMap={entityColorMap}
+            entityOrder={entityOrder}
+            selectedCategories={selectedCategories}
+            onToggleCategory={toggleCategory}
+            onClearCategories={() => setSelectedCategories([])}
+          />
+
+          {/* Accountant's pivot: exact amounts per category per company */}
+          <EntityCategoryMatrix
+            expenses={filteredExpenses}
+            entityColorMap={entityColorMap}
+            entityOrder={entityOrder}
+          />
+        </>
+      )}
+
       {/* Report Content */}
       {reportType === 'overview' && (
-        <ExpenseChart 
-          expenses={filteredExpenses} 
-          events={events}
-          categoryBreakdown={reportStats.categoryBreakdown}
-          onTradeShowClick={handleTradeShowClick}
-        />
+        <>
+          <ExpenseChart
+            expenses={filteredExpenses}
+            events={events}
+            onTradeShowClick={handleTradeShowClick}
+          />
+          {/* Selecting categories pulls the matching transactions right here */}
+          {selectedCategories.length > 0 && (
+            <DetailedReport
+              expenses={filteredExpenses}
+              events={events}
+              showCategoryChart={false}
+              onReimbursementApproval={
+                user.role === 'accountant' ? handleReimbursementApproval : undefined
+              }
+            />
+          )}
+        </>
       )}
-      
-      {reportType === 'entity' && (
-        <EntityBreakdown 
-          expenses={filteredExpenses}
-          events={events}
-        />
-      )}
-      
+
+      {reportType === 'entity' && <EntityBreakdown expenses={filteredExpenses} events={events} />}
+
       {reportType === 'detailed' && (
-        <DetailedReport 
+        <DetailedReport
           expenses={filteredExpenses}
           events={events}
-          onReimbursementApproval={user.role === 'accountant' ? handleReimbursementApproval : undefined}
+          showCategoryChart={false}
+          onReimbursementApproval={
+            user.role === 'accountant' ? handleReimbursementApproval : undefined
+          }
         />
       )}
 
@@ -395,51 +511,18 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <TrendingUp className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Category Averages Across Trade Shows</h3>
-              <p className="text-sm text-stone-500">Average spending per category based on {events.length} trade show{events.length !== 1 ? 's' : ''}</p>
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                Category Averages Across Trade Shows
+              </h3>
+              <p className="text-sm text-stone-500">
+                Average spending per category based on {events.length} trade show
+                {events.length !== 1 ? 's' : ''}
+              </p>
             </div>
           </div>
 
           {(() => {
-            // Calculate category totals per trade show
-            const tradeShowCategoryTotals: Record<string, Record<string, number>> = {};
-            
-            filteredExpenses.forEach(expense => {
-              if (!expense.tradeShowId) return;
-              
-              if (!tradeShowCategoryTotals[expense.tradeShowId]) {
-                tradeShowCategoryTotals[expense.tradeShowId] = {};
-              }
-              
-              if (!tradeShowCategoryTotals[expense.tradeShowId][expense.category]) {
-                tradeShowCategoryTotals[expense.tradeShowId][expense.category] = 0;
-              }
-              
-              tradeShowCategoryTotals[expense.tradeShowId][expense.category] += expense.amount;
-            });
-
-            // Calculate averages per category
-            const categoryAverages: Record<string, { total: number; count: number; average: number }> = {};
-            
-            Object.values(tradeShowCategoryTotals).forEach(tradeShowCategories => {
-              Object.entries(tradeShowCategories).forEach(([category, amount]) => {
-                if (!categoryAverages[category]) {
-                  categoryAverages[category] = { total: 0, count: 0, average: 0 };
-                }
-                categoryAverages[category].total += amount;
-                categoryAverages[category].count += 1;
-              });
-            });
-
-            // Calculate final averages and sort by average amount (descending)
-            const sortedAverages = Object.entries(categoryAverages)
-              .map(([category, data]) => ({
-                category,
-                total: data.total,
-                count: data.count,
-                average: data.total / data.count
-              }))
-              .sort((a, b) => b.average - a.average);
+            const sortedAverages = calculateCategoryAverages(filteredExpenses, events);
 
             if (sortedAverages.length === 0) {
               return (
@@ -447,7 +530,9 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                   <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
                     <TrendingUp className="w-8 h-8 text-stone-400" />
                   </div>
-                  <p className="text-stone-500 text-sm">No category data available for the selected filters</p>
+                  <p className="text-stone-500 text-sm">
+                    No category data available for the selected filters
+                  </p>
                 </div>
               );
             }
@@ -455,7 +540,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             return (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sortedAverages.map(({ category, total, count, average }) => (
-                  <div 
+                  <div
                     key={category}
                     className="rounded-lg border border-stone-200/80 bg-white p-4 shadow-elevation-1 transition-shadow duration-200 hover:shadow-elevation-2"
                   >
@@ -467,23 +552,37 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                         <TrendingUp className="w-4 h-4" />
                       </div>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-0.5">Average per Trade Show</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-0.5">
+                          Average per Trade Show
+                        </p>
                         <p className="font-display text-2xl font-bold tracking-tight tabular-nums text-amber-600">
-                          ${average.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          $
+                          {average.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
                         </p>
                       </div>
-                      
+
                       <div className="pt-2 border-t border-stone-200">
                         <div className="flex items-center justify-between text-xs text-stone-600">
                           <span>Total Spent:</span>
-                          <span className="font-semibold">${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="font-semibold">
+                            $
+                            {total.toLocaleString(undefined, {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2,
+                            })}
+                          </span>
                         </div>
                         <div className="flex items-center justify-between text-xs text-stone-600 mt-1">
                           <span>Trade Shows:</span>
-                          <span className="font-semibold">{count} of {events.length}</span>
+                          <span className="font-semibold">
+                            {count} of {events.length}
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -506,7 +605,9 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                   <Filter className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900">Filter Reports</h3>
+                  <h3 className="font-display text-lg font-semibold tracking-tight text-stone-900">
+                    Filter Reports
+                  </h3>
                   <p className="text-sm text-stone-500">Customize your report view</p>
                 </div>
               </div>
@@ -523,26 +624,24 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <div className="space-y-6">
                 {/* Event Filter */}
                 <div>
-                  <label className="field-label">
-                    Event / Trade Show
-                  </label>
+                  <label className="field-label">Event / Trade Show</label>
                   <select
                     value={selectedEvent}
                     onChange={(e) => setSelectedEvent(e.target.value)}
                     className="input-field px-4 py-3"
                   >
                     <option value="all">All Events</option>
-                    {events.map(event => (
-                      <option key={event.id} value={event.id}>{event.name}</option>
+                    {events.map((event) => (
+                      <option key={event.id} value={event.id}>
+                        {event.name}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 {/* Period Filter */}
                 <div>
-                  <label className="field-label">
-                    Time Period
-                  </label>
+                  <label className="field-label">Time Period</label>
                   <select
                     value={selectedPeriod}
                     onChange={(e) => setSelectedPeriod(e.target.value)}
@@ -557,29 +656,59 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
                 {/* Entity Filter */}
                 <div>
-                  <label className="field-label">
-                    Zoho Entity
-                  </label>
+                  <label className="field-label">Zoho Entity</label>
                   <select
                     value={selectedEntity}
                     onChange={(e) => setSelectedEntity(e.target.value)}
                     className="input-field px-4 py-3"
                   >
                     <option value="all">All Entities</option>
-                    {entities.map(entity => (
-                      <option key={entity} value={entity}>{entity}</option>
+                    {entities.map((entity) => (
+                      <option key={entity} value={entity}>
+                        {entity}
+                      </option>
                     ))}
                   </select>
                 </div>
 
+                {/* Category Filter (multi-select) */}
+                {availableCategories.length > 0 && (
+                  <div>
+                    <label className="field-label">
+                      Categories
+                      <span className="ml-2 font-normal normal-case tracking-normal text-stone-400">
+                        {selectedCategories.length === 0
+                          ? 'All included'
+                          : `${selectedCategories.length} selected`}
+                      </span>
+                    </label>
+                    <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-stone-200 p-2">
+                      {availableCategories.map((category) => (
+                        <label
+                          key={category}
+                          className="flex min-h-[36px] cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-stone-700 transition-colors hover:bg-stone-50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedCategories.includes(category)}
+                            onChange={() => toggleCategory(category)}
+                            className="h-4 w-4 rounded border-stone-300 text-brand-600 focus:ring-brand-500"
+                          />
+                          {category}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Report Type */}
                 <div>
-                  <label className="field-label">
-                    Report Type
-                  </label>
+                  <label className="field-label">Report Type</label>
                   <select
                     value={reportType}
-                    onChange={(e) => setReportType(e.target.value as any)}
+                    onChange={(e) =>
+                      setReportType(e.target.value as 'overview' | 'detailed' | 'entity')
+                    }
                     className="input-field px-4 py-3"
                   >
                     <option value="overview">Overview</option>
@@ -597,6 +726,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                   setSelectedEvent('all');
                   setSelectedPeriod('all');
                   setSelectedEntity('all');
+                  setSelectedCategories([]);
                   setReportType('overview');
                 }}
                 className="btn-ghost min-h-[44px] w-full sm:w-auto"

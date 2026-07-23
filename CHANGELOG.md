@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.48.0] - 2026-07-23 - Accountant reporting revamp (frontend-only release)
+
+### Added
+- **"Who Paid for What" card** on Reports: donut chart of each entity's share of spend (with exact amounts and percentages in the legend), plus per-category bars segmented by paying entity using a fixed colorblind-safe palette. Unassigned spend always shows in gray.
+- **Clickable category filtering**: category rows act as multi-select checkboxes; selecting categories narrows the header totals, entity running-total cards, donut, matrix, transaction register, and CSV export to just those transactions. Active selections render as removable chips under the page title and are also editable from the Filters modal.
+- **Category × Company summary matrix**: cross-tab of categories (rows) by paying entities (columns) with row/column/grand totals to the penny, plus a dedicated "Export Summary CSV" (properly quoted).
+- `DetailedReport` gains a `showCategoryChart` prop so the register can render without its flat category chart when the entity-aware breakdown is shown above it.
+
+### Changed
+- `ExpenseChart` no longer renders the flat "Expenses by Category" bars (replaced by the entity-split breakdown); monthly trend now spans full width.
+- Transaction register appears directly in the overview whenever categories are selected.
+- Reports internals: `useReportsFilters` tracks `selectedCategories`; `useReportsStats` exposes `baseExpenses` (event/entity/period filters) alongside category-aware `filteredExpenses`; duplicate inline calculations replaced with the `reportUtils` helpers.
+
+### Fixed
+- Reports called all hooks after a conditional access-control return (React rules-of-hooks violation); the guard now runs after the hooks.
+- Removed dead imports/variables in the reports components; `setReportType` cast no longer uses `any`.
+
+### Notes
+- Backend unchanged; version bumped in lockstep but only the frontend was deployed. `/api/health` continues to report the last deployed backend version until the next backend release.
+
 ## [1.40.0] - 2026-07-14 - UI refresh phase 2 + mobile pass
 
 ### Changed
