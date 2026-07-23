@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { LayoutDashboard, Calendar, CheckSquare, BarChart3, Menu, Camera } from 'lucide-react';
 import { User } from '../../App';
+import { setPendingCapture } from '../../utils/pendingCapture';
 
 interface MobileNavProps {
   user: User;
@@ -29,6 +30,22 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   onOpenMenu,
 }) => {
   const canAddExpense = EXPENSE_ROLES.includes(user.role);
+  const captureInputRef = useRef<HTMLInputElement>(null);
+
+  // Open the native camera synchronously inside the tap gesture. When a photo
+  // comes back, park it in the pendingCapture slot and deep-link into the
+  // expense flow, which picks it up and starts OCR immediately.
+  const handleCameraTap = () => {
+    captureInputRef.current?.click();
+  };
+
+  const handleCaptureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-capturing the same file next time
+    if (!file) return;
+    setPendingCapture(file);
+    onQuickAdd();
+  };
   // Accountants/admins live in Reports; field staff live in the Checklist
   const fourthTab: TabDef = REPORT_ROLES.includes(user.role)
     ? { id: 'reports', label: 'Reports', icon: BarChart3 }
@@ -69,8 +86,18 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 
         {canAddExpense && (
           <div className="flex flex-1 items-center justify-center">
+            <input
+              ref={captureInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleCaptureChange}
+              aria-hidden="true"
+              tabIndex={-1}
+            />
             <button
-              onClick={onQuickAdd}
+              onClick={handleCameraTap}
               aria-label="Add expense — snap a receipt"
               className="-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-accent-600 text-white shadow-brand-lg ring-4 ring-stone-50 transition-transform active:scale-95"
             >

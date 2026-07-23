@@ -208,6 +208,30 @@
   .animate-slide-in {
     animation: slide-in 0.3s ease-out;
   }
+
+  /* Page-mount transition: every view eases in with a quiet fade + rise.
+     Compositor-friendly (transform/opacity only). */
+  @keyframes page-in {
+    from {
+      transform: translateY(8px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-page-in {
+    animation: page-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-page-in,
+    .animate-slide-in {
+      animation: none;
+    }
+  }
 }
 
 

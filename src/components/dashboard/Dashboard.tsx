@@ -20,6 +20,7 @@ import { ReceiptLedger } from './ReceiptLedger';
 import { ActionQueue } from './ActionQueue';
 import { ReimbursementsCard } from './ReimbursementsCard';
 import { UpNextCard } from './UpNextCard';
+import { MyTravelCard } from './MyTravelCard';
 
 interface DashboardProps {
   user: User;
@@ -102,7 +103,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
           <div className="flex flex-col gap-4 lg:grid lg:grid-cols-3 lg:items-start lg:gap-5">
             {/* Left column on desktop; `contents` lets mobile order via order-N */}
             <div className="contents lg:col-span-2 lg:block lg:space-y-5">
-              <div className="order-1">
+              <div className="order-2">
                 <SpendStoryCard
                   spent={board.spent}
                   budget={board.budget}
@@ -116,14 +117,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
                   showBudget={board.canManage}
                 />
               </div>
-              <div className="order-4">
+              <div className="order-5">
                 <ReceiptLedger ledger={board.ledger} onPageChange={onPageChange} />
               </div>
             </div>
 
             {/* Right column on desktop */}
             <div className="contents lg:block lg:space-y-5">
-              <div className="order-2">
+              {/* Travel first on phones: flight/hotel/car is what field staff
+                  open the app for at a show */}
+              <div className="order-1">
+                <MyTravelCard user={user} show={board.show} onPageChange={onPageChange} />
+              </div>
+              <div className="order-3">
                 <ActionQueue
                   canManage={board.canManage}
                   pendingCount={board.pendingCount}
@@ -132,7 +138,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
                   onPageChange={onPageChange}
                 />
               </div>
-              <div className="order-3">
+              <div className="order-4">
                 <ReimbursementsCard
                   total={board.reimbursementTotal}
                   shares={board.reimbursementShares}
@@ -140,7 +146,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
                 />
               </div>
               {board.upNext && (
-                <div className="order-5">
+                <div className="order-6">
                   <UpNextCard show={board.upNext} onPageChange={onPageChange} />
                 </div>
               )}

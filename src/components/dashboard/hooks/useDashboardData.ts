@@ -20,6 +20,14 @@ export function useDashboardData() {
 
     const loadData = async () => {
       if (!api.USE_SERVER) {
+        // Local/demo mode: same storage keys the rest of the app writes.
+        try {
+          setExpenses(JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]'));
+          setEvents(JSON.parse(localStorage.getItem('tradeshow_events') || '[]'));
+          setUsers(JSON.parse(localStorage.getItem('tradeshow_users') || '[]'));
+        } catch (error) {
+          console.error('[Dashboard] Failed to read local data:', error);
+        }
         setLoading(false);
         return;
       }

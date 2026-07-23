@@ -20,7 +20,6 @@ import { NotificationBanner, useNotifications } from './components/common/Notifi
 import { SyncStatusBar } from './components/common/SyncStatusBar';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { useAuth } from './hooks/useAuth';
-import { useLocalStorage } from './hooks/useLocalStorage';
 import { sessionManager } from './utils/sessionManager';
 import { syncManager } from './utils/syncManager';
 import { networkMonitor } from './utils/networkDetection';
@@ -387,14 +386,18 @@ function App() {
         
         <main className="flex-1 p-3 sm:p-4 md:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-6 bg-stone-50">
           <Suspense fallback={<div className="flex items-center justify-center py-24"><LoadingSpinner size="lg" text="Loading..." /></div>}>
-            {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
-            {currentPage === 'events' && <EventSetup user={user} />}
-            {currentPage === 'checklist' && <TradeShowChecklist user={user} />}
-            {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
-            {currentPage === 'account' && <AccountSettings user={user} />}
-            {currentPage === 'reports' && <Reports user={user} />}
-            {currentPage === 'settings' && <AdminSettings user={user} />}
-            {currentPage === 'devdashboard' && <DevDashboard user={user} />}
+            {/* key remounts the wrapper per view so every navigation replays
+                the ease-in — the app feels alive instead of snapping */}
+            <div key={currentPage} className="animate-page-in">
+              {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
+              {currentPage === 'events' && <EventSetup user={user} />}
+              {currentPage === 'checklist' && <TradeShowChecklist user={user} />}
+              {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
+              {currentPage === 'account' && <AccountSettings user={user} />}
+              {currentPage === 'reports' && <Reports user={user} />}
+              {currentPage === 'settings' && <AdminSettings user={user} />}
+              {currentPage === 'devdashboard' && <DevDashboard user={user} />}
+            </div>
           </Suspense>
         </main>
         

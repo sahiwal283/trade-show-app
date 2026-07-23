@@ -5,6 +5,7 @@ import { ReceiptUpload } from './ReceiptUpload';
 import { ApprovalCards } from './ApprovalCards';
 import { api } from '../../utils/api';
 import { getTodayLocalDateString, formatForDateInput } from '../../utils/dateUtils';
+import { takePendingCapture } from '../../utils/pendingCapture';
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
@@ -138,6 +139,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   useEffect(() => {
     const openFromHash = () => {
       if (window.location.hash === '#new-expense') {
+        // A photo captured from the bottom-nav camera button skips the
+        // upload screen's idle state and starts OCR right away.
+        const captured = takePendingCapture();
+        if (captured) setPendingReceiptFile(captured);
         setShowReceiptUpload(true);
         history.replaceState(null, '', window.location.pathname + window.location.search);
       }
@@ -651,8 +656,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         <ReceiptUpload
           user={user}
           events={events}
+          initialFile={pendingReceiptFile}
           onReceiptProcessed={handleReceiptProcessed}
-          onCancel={() => setShowReceiptUpload(false)}
+          onCancel={() => {
+            setShowReceiptUpload(false);
+            setPendingReceiptFile(null);
+          }}
           isSaving={isSaving}
         />
         <ToastContainer toasts={toasts} removeToast={removeToast} />

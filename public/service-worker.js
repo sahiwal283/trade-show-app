@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.49.0 - Stay signed in (silent token refresh) + phone bottom navigation
+// Version: 1.50.0 - Direct camera capture, My Travel on Dashboard, page transitions
 // Date: July 23, 2026
 //
 // New Features:
@@ -116,7 +116,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.49.0';
+const CACHE_NAME = 'trade-show-app-v1.50.0';
 const STATIC_CACHE = 'trade-show-app-static-v1.34.4';
 const urlsToCache = [
   '/',

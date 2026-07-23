@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.50.0] - 2026-07-23 - One-tap camera capture, My Travel on the Dashboard, app-wide motion
+
+### Added
+- **Camera opens instantly**: the bottom-nav camera button now launches the native camera in the same tap (hidden `capture="environment"` input clicked inside the gesture). The photo is parked in a `pendingCapture` hand-off slot, the app deep-links to the expense flow, and OCR starts the moment the Receipt Scanner mounts — zero intermediate screens.
+- **My Travel on the Dashboard**: a new `MyTravelCard` surfaces the signed-in user's flight, hotel, and car for the show on screen — carrier/property/provider, dates, and hero confirmation numbers with one-tap copy (reusing the checklist's `ItineraryCard`). First thing on the phone layout; "Full checklist" links through. Hidden when the user has no bookings.
+- **Page-mount transitions**: every view eases in with a quiet fade-and-rise (compositor-only, respects `prefers-reduced-motion`).
+
+### Changed
+- Dashboard mobile order is now travel → spend → actions → reimbursements → receipts → up next.
+- `ReceiptUpload` accepts an `initialFile` and processes it on mount; file validation extracted to `handleSingleFile`.
+- Dashboard works in local/demo mode (reads the same localStorage keys as the rest of the app instead of rendering empty).
+
+### Fixed
+- Removed unused `useLocalStorage` import in `App.tsx` (pre-existing lint/TS error).
+
 ## [1.49.0] - 2026-07-23 - Stay signed in + phone bottom navigation
 
 ### Fixed — constant logouts (top user complaint)

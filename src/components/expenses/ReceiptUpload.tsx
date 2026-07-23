@@ -26,9 +26,11 @@ interface ReceiptUploadProps {
   user: User;
   events: TradeShow[];
   isSaving?: boolean;
+  /** Photo already captured (bottom-nav camera) — processed on mount */
+  initialFile?: File | null;
 }
 
-export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed, onCancel, user, events, isSaving = false }) => {
+export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed, onCancel, user, events, isSaving = false, initialFile = null }) => {
   const [dragActive, setDragActive] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -151,9 +153,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
     }
   };
 
-  const handleFiles = (files: FileList) => {
-    const file = files[0];
-    if (!file) return;
+  const handleSingleFile = (file: File) => {
     if (!isAcceptableReceiptFile(file)) {
       alert('Please upload an image (JPG, PNG, HEIC, WebP) or PDF file.');
       return;
@@ -175,6 +175,19 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
       reader.readAsDataURL(file);
     }
   };
+
+  const handleFiles = (files: FileList) => {
+    const file = files[0];
+    if (!file) return;
+    handleSingleFile(file);
+  };
+
+  // A photo handed over from the bottom-nav camera skips the idle upload
+  // state entirely — OCR starts the moment this screen appears.
+  useEffect(() => {
+    if (initialFile) handleSingleFile(initialFile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only hand-off
+  }, []);
 
   // Auto-match card when OCR results are available
   useEffect(() => {
