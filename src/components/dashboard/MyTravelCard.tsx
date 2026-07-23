@@ -14,7 +14,7 @@ import type { FlightData, HotelData, CarRentalData } from '../checklist/TradeSho
 
 interface MyTravelCardProps {
   user: User;
-  show: Pick<TradeShow, 'id' | 'name'>;
+  show: TradeShow;
   onPageChange: (page: string) => void;
 }
 
@@ -69,10 +69,19 @@ export const MyTravelCard: React.FC<MyTravelCardProps> = ({ user, show, onPageCh
     };
   }, [show.id, user.id]);
 
-  // Nothing assigned to this user → no card, no clutter.
-  if (!travel || (!travel.flight && !travel.hotel && !travel.car)) return null;
+  const isParticipant = (show.participants || []).some((p) => p.id === user.id);
+  const flight = travel?.flight;
+  const hotel = travel?.hotel;
+  const car = travel?.car;
+  const hasAnyBooking = !!(flight || hotel || car);
 
-  const { flight, hotel, car } = travel;
+  // Not on the roster and nothing booked for them → no card, no clutter.
+  if (!hasAnyBooking && !isParticipant) return null;
+
+  // Roster members always see all three slots so travel has a visible home
+  // before bookings land; missing slots render as "Not booked yet".
+  const showAllSlots = isParticipant;
+  const hasGap = !flight?.booked || !hotel?.booked || !car?.booked;
 
   return (
     <section aria-label="My travel">
@@ -90,43 +99,53 @@ export const MyTravelCard: React.FC<MyTravelCardProps> = ({ user, show, onPageCh
       </div>
 
       <div className="grid grid-cols-1 gap-3">
-        {flight && (
+        {(flight || showAllSlots) && (
           <ItineraryCard
             icon={Plane}
             label="Flight"
-            booked={!!flight.booked}
-            vendor={flight.carrier}
-            confirmation={flight.confirmation_number}
-            notes={flight.notes}
+            booked={!!flight?.booked}
+            vendor={flight?.carrier}
+            confirmation={flight?.confirmation_number}
+            notes={flight?.notes}
           />
         )}
-        {hotel && (
+        {(hotel || showAllSlots) && (
           <ItineraryCard
             icon={Hotel}
             label="Hotel"
-            booked={!!hotel.booked}
-            vendor={hotel.property_name}
-            confirmation={hotel.confirmation_number}
-            dates={formatDateRange(hotel.check_in_date, hotel.check_out_date)}
-            notes={hotel.notes}
+            booked={!!hotel?.booked}
+            vendor={hotel?.property_name}
+            confirmation={hotel?.confirmation_number}
+            dates={formatDateRange(hotel?.check_in_date, hotel?.check_out_date)}
+            notes={hotel?.notes}
           />
         )}
-        {car && (
+        {(car || showAllSlots) && (
           <ItineraryCard
             icon={Car}
             label="Car"
-            booked={!!car.booked}
-            vendor={car.provider}
-            confirmation={car.confirmation_number}
-            dates={formatDateRange(car.pickup_date, car.return_date)}
-            meta={joinSummary([
-              car.rental_type === 'group' ? 'Group rental — shared vehicle' : null,
-              car.rental_type === 'individual' ? 'Reserved for you' : null,
-            ])}
-            notes={car.notes}
+            booked={!!car?.booked}
+            vendor={car?.provider}
+            confirmation={car?.confirmation_number}
+            dates={formatDateRange(car?.pickup_date, car?.return_date)}
+            meta={
+              car
+                ? joinSummary([
+                    car.rental_type === 'group' ? 'Group rental — shared vehicle' : null,
+                    car.rental_type === 'individual' ? 'Reserved for you' : null,
+                  ])
+                : null
+            }
+            notes={car?.notes}
           />
         )}
       </div>
+
+      {hasGap && (
+        <p className="mt-2 text-xs text-stone-400">
+          Details appear here as your coordinator books travel in the Checklist.
+        </p>
+      )}
     </section>
   );
 };

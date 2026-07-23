@@ -3,6 +3,22 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 
+// Self-heal after deploys: a device holding a stale index.html requests
+// hashed chunks that no longer exist on the server (deploys wipe the web
+// root), and every lazy view then fails to load — which users experience as
+// "the app is full of bugs". Vite fires vite:preloadError for exactly this;
+// one hard reload fetches the fresh shell. The sessionStorage guard stops a
+// reload loop if the network itself is down.
+window.addEventListener('vite:preloadError', (event) => {
+  const RELOAD_GUARD = 'chunk_reload_at';
+  const last = Number(sessionStorage.getItem(RELOAD_GUARD) || 0);
+  if (Date.now() - last < 30_000) return; // already tried recently — let it fail visibly
+  sessionStorage.setItem(RELOAD_GUARD, String(Date.now()));
+  event.preventDefault(); // suppress the unhandled rejection; we're handling it
+  console.warn('[Main] Stale chunk detected after deploy — reloading for fresh build');
+  window.location.reload();
+});
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

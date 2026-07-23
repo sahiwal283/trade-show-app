@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.51.0] - 2026-07-23 - Root-cause fix for stale builds / "random bugs" + visible travel
+
+### Fixed — the stale-build bug class (root cause, all four layers)
+- **Legacy service worker tombstone**: `public/service-worker.js` is not registered by any current code, but devices that registered it years ago still let it serve a cached app shell *before any page JS runs* — the app-level unregister in `main.tsx` always ran too late. The file is now a self-neutralizing tombstone: on update it deletes every cache, unregisters itself at the SW layer, and reloads its clients. This is what actually heals stuck devices.
+- **Chunk-load self-healing**: `main.tsx` listens for Vite's `vite:preloadError` (a stale shell requesting purged hashed chunks after a deploy) and hard-reloads once (30s loop guard). Views can no longer die silently with `ChunkLoadError` — the class of "the app is full of bugs right after a deploy".
+- **Live nginx (container 2120)**: hashed `/assets/` now served `Cache-Control: public, max-age=31536000, immutable` with `try_files $uri =404` (was `no-cache` — refetched every load; missing chunks now 404 loudly instead of falling back). Shell already `no-store`. Config backed up on the container; repo copy `deployment/nginx/trade-show-app.conf` updated to match with full cache stanzas.
+- Full-stack bug sweep (local Postgres + backend + frontend, 3 roles × 7 pages × phone/desktop against the real API): zero JS crashes, zero failed API calls, zero layout overflows. Confirms the "lots of bugs" reports match the stale-shell failure mode above, not in-app defects.
+- Backend seed script noted: `seed.ts` fails on fresh databases (missing `show_start_date` on events) — worked around locally, fix pending.
+
+### Changed — My Travel always has a home
+- `MyTravelCard` now renders for every roster member of the show: booked slots show vendor/dates/confirmation, unbooked slots show "Not booked yet", with a hint that details appear as the coordinator books travel in the Checklist. Previously the entire section hid when no data was entered, making the feature invisible.
+
 ## [1.50.1] - 2026-07-23 - Fresh releases on every load + visible version tag
 
 ### Fixed
