@@ -33,7 +33,7 @@ export const CollapsibleCard: React.FC<CollapsibleCardProps> = ({
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex min-h-[52px] w-full items-center justify-between gap-3 p-3 text-left sm:p-5 md:p-6"
+        className="flex min-h-[52px] w-full items-center justify-between gap-3 rounded-card p-3 text-left focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 sm:p-5 md:p-6"
       >
         <div className="flex items-center gap-3">
           {Icon && (

@@ -72,7 +72,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
         key={id}
         onClick={() => onNavigate(id)}
         aria-current={isActive ? 'page' : undefined}
-        className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 transition-colors ${
+        className={`flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 ${
           isActive ? 'text-brand-600' : 'text-stone-400 active:text-stone-600'
         }`}
       >
@@ -118,7 +118,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
 
         <button
           onClick={onOpenMenu}
-          className="flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-stone-400 transition-colors active:text-stone-600"
+          className="flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg text-stone-400 transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 active:text-stone-600"
         >
           <Menu className="h-5 w-5" strokeWidth={2} />
           <span className="text-[10px] font-medium leading-none">Menu</span>

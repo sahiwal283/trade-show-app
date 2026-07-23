@@ -26,6 +26,7 @@ import {
   calculateTradeShowBreakdown,
   buildEntityColorMap,
 } from '../../utils/reportUtils';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 interface ReportsProps {
   user: User;
@@ -80,6 +81,9 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     () => Array.from(new Set(baseExpenses.map((e) => e.category))).sort(),
     [baseExpenses]
   );
+
+  // Escape closes the filter sheet (standard dialog escape route)
+  useEscapeKey(() => setShowFilterModal(false), showFilterModal);
 
   const handleTradeShowClick = (eventId: string) => {
     setSelectedEvent(eventId);
@@ -349,7 +353,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <div
                 key={eventId}
                 onClick={() => handleTradeShowClick(eventId)}
-                onKeyPress={(e) => e.key === 'Enter' && handleTradeShowClick(eventId)}
+                onKeyDown={(e) => e.key === 'Enter' && handleTradeShowClick(eventId)}
                 role="button"
                 tabIndex={0}
                 className="group w-full sm:w-auto sm:min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
@@ -400,7 +404,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <div
                 key={entity}
                 onClick={() => handleEntityClick(entity)}
-                onKeyPress={(e) => e.key === 'Enter' && handleEntityClick(entity)}
+                onKeyDown={(e) => e.key === 'Enter' && handleEntityClick(entity)}
                 role="button"
                 tabIndex={0}
                 className="group w-full sm:w-auto sm:min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"

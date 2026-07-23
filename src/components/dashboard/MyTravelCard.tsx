@@ -95,7 +95,7 @@ function TravelRow({ icon: Icon, label, booked, vendor, detail, confirmation }: 
           type="button"
           onClick={handleCopy}
           aria-label={`Copy ${label} confirmation ${confirmation}`}
-          className={`inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold tabular-nums transition-colors lg:min-h-[36px] ${
+          className={`inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-sm font-semibold tabular-nums transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 lg:min-h-[36px] ${
             copied ? 'bg-accent-50 text-accent-700' : 'text-stone-900 hover:bg-brand-50'
           }`}
         >

@@ -74,7 +74,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
                     onClick={() => onTradeShowClick?.(eventId)}
                     role="button"
                     tabIndex={0}
-                    onKeyPress={(e) => e.key === 'Enter' && onTradeShowClick?.(eventId)}
+                    onKeyDown={(e) => e.key === 'Enter' && onTradeShowClick?.(eventId)}
                   >
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">

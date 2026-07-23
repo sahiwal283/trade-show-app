@@ -17,6 +17,7 @@ import { isPdfReceiptUrl } from '../../utils/fileValidation';
 import { CATEGORY_COLORS } from '../../constants/appConstants';
 import { useToast, ToastContainer } from '../common/Toast';
 import { StatusBadge, CategoryBadge } from '../common';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 interface DetailedReportProps {
   expenses: Expense[];
@@ -35,6 +36,12 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   const { toasts, removeToast } = useToast();
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(true);
+
+  // Escape closes the expense-details dialog
+  useEscapeKey(() => {
+    setViewingExpense(null);
+    setShowFullReceipt(true);
+  }, !!viewingExpense);
   // Literal bar classes (not derived strings) so Tailwind's scanner generates them.
   const CATEGORY_BAR_COLORS: Record<string, string> = {
     'bg-blue-50': 'bg-blue-500',

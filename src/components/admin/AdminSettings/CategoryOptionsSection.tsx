@@ -91,7 +91,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
               type="text"
               value={newCategoryOption}
               onChange={(e) => setNewCategoryOption(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && onAddCategory()}
+              onKeyDown={(e) => e.key === 'Enter' && onAddCategory()}
               className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="Enter new category name..."
             />

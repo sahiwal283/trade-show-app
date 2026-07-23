@@ -228,7 +228,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .animate-page-in,
-    .animate-slide-in {
+    .animate-slide-in,
+    .animate-ping {
       animation: none;
     }
   }

@@ -70,6 +70,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
             onClick={onToggleMobileMenu}
             className="lg:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-2 -ml-2 rounded-lg text-stone-600 hover:bg-stone-100 hover:text-stone-900 transition-colors"
             title="Open menu"
+            aria-label="Open menu"
           >
             <Menu className="w-5 h-5" />
           </button>
@@ -96,6 +97,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
               onClick={handleNotificationClick}
               className="tap-target relative p-2 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
               title="Notifications"
+              aria-label="Notifications"
             >
               <Bell className="w-5 h-5" />
               {hasUnreadNotifications && (
@@ -167,6 +169,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
             }}
             className="tap-target p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Logout"
+            aria-label="Log out"
           >
             <LogOut className="w-5 h-5" />
           </button>
