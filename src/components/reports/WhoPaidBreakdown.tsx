@@ -123,7 +123,7 @@ export const WhoPaidBreakdown: React.FC<WhoPaidBreakdownProps> = ({
         {hasSelection && (
           <button
             onClick={onClearCategories}
-            className="btn-ghost min-h-[36px] self-start px-3 py-1.5 text-xs sm:self-auto"
+            className="btn-ghost min-h-[44px] self-start px-3 py-1.5 text-xs sm:self-auto lg:min-h-[36px]"
           >
             <X className="w-3.5 h-3.5" />
             <span>

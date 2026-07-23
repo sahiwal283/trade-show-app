@@ -316,7 +316,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
           </div>
         ) : pushServerEnabled === false ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            Not configured on the server yet.
+            Notifications aren't available yet — your administrator needs to finish server setup.
           </div>
         ) : pushState === 'denied' ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">

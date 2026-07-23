@@ -54,7 +54,7 @@ export function ShowHero({ show, shows, isLive, dayCurrent, dayTotal, onSelectSh
           <select
             value={show.id}
             onChange={e => onSelectShow(e.target.value)}
-            className="cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-stone-600 shadow-elevation-1 transition-colors hover:border-stone-300 focus-visible:ring-2 focus-visible:ring-brand-500"
+            className="min-h-[44px] lg:min-h-0 cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-1.5 text-xs font-medium text-stone-600 shadow-elevation-1 transition-colors hover:border-stone-300 focus-visible:ring-2 focus-visible:ring-brand-500"
           >
             {shows.map(s => (
               <option key={s.id} value={s.id}>

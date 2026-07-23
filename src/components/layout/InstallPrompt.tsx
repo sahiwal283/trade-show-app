@@ -1,242 +1,146 @@
+/**
+ * InstallPrompt — a quiet, dismissible banner suggesting Add-to-Home-Screen.
+ *
+ * Deliberately NOT a modal: the old full-screen interstitial hijacked the
+ * first post-login moment. Rules now:
+ *   - never on desktop or when already installed (standalone)
+ *   - never on the first session (people came to do a task)
+ *   - dismissing snoozes it for 30 days
+ *   - renders as a slim banner above the bottom nav
+ */
+
 import React, { useState, useEffect } from 'react';
-import { X, Download, Smartphone } from 'lucide-react';
+import { X, Share, PlusSquare, Download } from 'lucide-react';
 
-interface InstallPromptProps {}
+const DISMISS_KEY = 'installPromptDismissed';
+const SESSION_COUNT_KEY = 'appSessionCount';
+const SNOOZE_DAYS = 30;
+const MIN_SESSIONS = 2;
 
-export const InstallPrompt: React.FC<InstallPromptProps> = () => {
-  const [showPrompt, setShowPrompt] = useState(false);
-  // beforeinstallprompt event type (browser API, not in standard TypeScript)
-  interface BeforeInstallPromptEvent extends Event {
-    preventDefault: () => void;
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+interface BeforeInstallPromptEvent extends Event {
+  preventDefault: () => void;
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+/** Count one session per browser tab lifetime. Returns the running total. */
+function bumpSessionCount(): number {
+  if (sessionStorage.getItem('sessionCounted')) {
+    return parseInt(localStorage.getItem(SESSION_COUNT_KEY) || '1', 10);
   }
-  
+  sessionStorage.setItem('sessionCounted', '1');
+  const count = parseInt(localStorage.getItem(SESSION_COUNT_KEY) || '0', 10) + 1;
+  localStorage.setItem(SESSION_COUNT_KEY, String(count));
+  return count;
+}
+
+export const InstallPrompt: React.FC = () => {
+  const [showBanner, setShowBanner] = useState(false);
+  const [showIosSteps, setShowIosSteps] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isIOS, setIsIOS] = useState(false);
-  const [isAndroid, setIsAndroid] = useState(false);
-  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
-    // Check if already installed (standalone mode)
     const standalone = window.matchMedia('(display-mode: standalone)').matches;
-    setIsStandalone(standalone);
-
-    // Check if iOS
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream;
+    const ios =
+      /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+      !(window as Window & { MSStream?: unknown }).MSStream;
+    const android = /android/i.test(navigator.userAgent);
     setIsIOS(ios);
 
-    // Check if Android
-    const android = /android/i.test(navigator.userAgent);
-    setIsAndroid(android);
+    const dismissedAt = parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
+    const daysSinceDismissed = (Date.now() - dismissedAt) / (1000 * 60 * 60 * 24);
+    const sessions = bumpSessionCount();
 
-    // Check if user has dismissed the prompt before
-    const dismissed = localStorage.getItem('installPromptDismissed');
-    const dismissedTime = dismissed ? parseInt(dismissed) : 0;
-    const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+    const eligible =
+      !standalone && (ios || android) && daysSinceDismissed > SNOOZE_DAYS && sessions >= MIN_SESSIONS;
 
-    // Show prompt if not installed, not dismissed recently, and on mobile
-    if (!standalone && (ios || android) && daysSinceDismissed > 7) {
-      // For iOS, show immediately
-      if (ios) {
-        setTimeout(() => setShowPrompt(true), 2000);
-      }
+    if (eligible && ios) {
+      setShowBanner(true);
     }
 
-    // For Android, listen for beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       const installEvent = e as BeforeInstallPromptEvent;
       installEvent.preventDefault();
       setDeferredPrompt(installEvent);
-      
-      // Only show prompt if not dismissed recently
-      if (daysSinceDismissed > 7) {
-        setTimeout(() => setShowPrompt(true), 2000);
-      }
+      if (eligible) setShowBanner(true);
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
-      // Android - use native prompt
       deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      }
-      
+      await deferredPrompt.userChoice;
       setDeferredPrompt(null);
-      setShowPrompt(false);
+      setShowBanner(false);
     } else if (isIOS) {
-      // iOS - just keep the instructions visible, don't hide
-      // User will manually dismiss after following instructions
+      setShowIosSteps((v) => !v);
     }
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('installPromptDismissed', Date.now().toString());
-    setShowPrompt(false);
+    localStorage.setItem(DISMISS_KEY, Date.now().toString());
+    setShowBanner(false);
   };
 
-  if (!showPrompt || isStandalone) {
-    return null;
-  }
+  if (!showBanner) return null;
 
   return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center justify-center p-4">
-        {/* Popup */}
-        <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full shadow-2xl transform transition-all">
-          {/* Header with gradient */}
-          <div className="bg-gradient-to-r from-blue-500 to-emerald-500 p-6 rounded-t-3xl sm:rounded-t-3xl relative">
-            <button
-              onClick={handleDismiss}
-              className="absolute top-4 right-4 p-2 text-white hover:bg-white hover:bg-opacity-20 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            
-            <div className="flex items-center space-x-4 mb-3">
-              <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-                <img src="/icons/icon-192x192.png" alt="App Icon" className="w-14 h-14 rounded-xl" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-white">Install ExpenseApp</h3>
-                <p className="text-blue-100 text-sm">Quick access from your home screen</p>
-              </div>
-            </div>
+    <div className="fixed inset-x-0 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-30 px-3 lg:hidden">
+      <div className="mx-auto max-w-md rounded-xl border border-stone-200 bg-white p-3 shadow-elevation-3">
+        <div className="flex items-center gap-3">
+          <img
+            src="/icons/icon-96x96.png"
+            alt=""
+            aria-hidden="true"
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 rounded-lg"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-stone-900">Install ExpenseApp</p>
+            <p className="truncate text-xs text-stone-500">
+              One tap from your home screen — and flight reminders need it on iPhone
+            </p>
           </div>
-
-          {/* Content */}
-          <div className="p-6">
-            {isIOS ? (
-              // iOS Instructions
-              <div className="space-y-4">
-                <p className="text-stone-700 text-center font-medium mb-4">
-                  Add ExpenseApp to your home screen for easy access!
-                </p>
-                
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-3 bg-stone-50 p-3 rounded-lg">
-                    <div className="flex-shrink-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
-                      1
-                    </div>
-                    <div>
-                      <p className="text-stone-900 font-medium">Tap the Share button</p>
-                      <p className="text-stone-600 text-sm">
-                        Look for the <span className="inline-flex items-center px-2 py-0.5 bg-stone-200 rounded mx-1">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-                          </svg>
-                        </span> icon at the bottom of Safari
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start space-x-3 bg-stone-50 p-3 rounded-lg">
-                    <div className="flex-shrink-0 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white font-bold">
-                      2
-                    </div>
-                    <div>
-                      <p className="text-stone-900 font-medium">Select "Add to Home Screen"</p>
-                      <p className="text-stone-600 text-sm">Scroll down in the menu if needed</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start space-x-3 bg-stone-50 p-3 rounded-lg">
-                    <div className="flex-shrink-0 w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
-                      3
-                    </div>
-                    <div>
-                      <p className="text-stone-900 font-medium">Tap "Add"</p>
-                      <p className="text-stone-600 text-sm">The app will appear on your home screen!</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-stone-200">
-                  <button
-                    onClick={handleDismiss}
-                    className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-emerald-600 transition-all"
-                  >
-                    Got it!
-                  </button>
-                </div>
-              </div>
-            ) : isAndroid && deferredPrompt ? (
-              // Android with native prompt
-              <div className="space-y-4">
-                <div className="flex justify-center mb-4">
-                  <Smartphone className="w-20 h-20 text-blue-500" />
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-stone-700 font-medium mb-2">
-                    Install ExpenseApp for quick access!
-                  </p>
-                  <p className="text-stone-600 text-sm mb-6">
-                    Get the full app experience with offline access and faster loading times.
-                  </p>
-                </div>
-
-                <div className="space-y-3">
-                  <button
-                    onClick={handleInstallClick}
-                    className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-emerald-600 transition-all flex items-center justify-center space-x-2"
-                  >
-                    <Download className="w-5 h-5" />
-                    <span>Install App</span>
-                  </button>
-                  
-                  <button
-                    onClick={handleDismiss}
-                    className="w-full bg-stone-100 text-stone-700 py-3 rounded-xl font-medium hover:bg-stone-200 transition-colors"
-                  >
-                    Maybe Later
-                  </button>
-                </div>
-              </div>
-            ) : (
-              // Generic mobile prompt
-              <div className="space-y-4">
-                <p className="text-stone-700 text-center font-medium">
-                  Install ExpenseApp on your device for easy access!
-                </p>
-                
-                <div className="text-center text-sm text-stone-600">
-                  Look for the "Add to Home Screen" or "Install" option in your browser menu.
-                </div>
-
-                <button
-                  onClick={handleDismiss}
-                  className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-emerald-600 transition-all mt-4"
-                >
-                  Got it!
-                </button>
-              </div>
+          <button
+            onClick={handleInstallClick}
+            className="btn-primary min-h-[40px] shrink-0 px-3 py-1.5 text-xs"
+          >
+            {isIOS ? 'How' : (
+              <>
+                <Download className="h-3.5 w-3.5" />
+                Install
+              </>
             )}
-
-            {/* Benefits */}
-            <div className="mt-6 pt-4 border-t border-stone-200">
-              <p className="text-xs text-stone-500 text-center mb-2">Benefits of installing:</p>
-              <div className="flex justify-around text-xs text-stone-600">
-                <span>⚡ Faster</span>
-                <span>📱 Easy Access</span>
-                <span>🔒 More Secure</span>
-              </div>
-            </div>
-          </div>
+          </button>
+          <button
+            onClick={handleDismiss}
+            aria-label="Dismiss install suggestion"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
+
+        {showIosSteps && (
+          <div className="mt-3 flex flex-col gap-1.5 border-t border-stone-100 pt-3 text-sm text-stone-600">
+            <span className="flex items-center gap-2">
+              1. Tap <Share className="inline h-4 w-4 text-brand-600" aria-label="Share" /> Share in
+              Safari
+            </span>
+            <span className="flex items-center gap-2">
+              2. Choose{' '}
+              <PlusSquare className="inline h-4 w-4 text-brand-600" aria-label="Add to Home Screen" />{' '}
+              “Add to Home Screen”
+            </span>
+            <span>3. Open the app from your home screen</span>
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 };
-

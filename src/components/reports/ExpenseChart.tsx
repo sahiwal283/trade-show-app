@@ -2,6 +2,7 @@ import React from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Expense, TradeShow } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
+import { CollapsibleCard } from './CollapsibleCard';
 
 interface ExpenseChartProps {
   expenses: Expense[];
@@ -112,18 +113,14 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
         )}
       </div>
 
-      {/* Monthly Trend - Visual Chart
+      {/* Monthly Trend — collapsed by default on phones
           (category breakdown now lives in WhoPaidBreakdown, split by entity) */}
-      <div className="card p-3 sm:p-5 md:p-6">
-        <div className="mb-6">
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-            Monthly Spending Trend
-          </h3>
-          {monthlyEntries.length > 1 && (
-            <p className="text-xs text-stone-500 mt-1">Visual comparison across months</p>
-          )}
-        </div>
-
+      <CollapsibleCard
+        title="Monthly Spending Trend"
+        subtitle={monthlyEntries.length > 1 ? 'Visual comparison across months' : undefined}
+        icon={BarChart3}
+        iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
+      >
         {monthlyEntries.length > 0 ? (
           <div className="space-y-6">
             {/* Visual Bar Chart — scrolls horizontally inside its own container on
@@ -252,7 +249,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
             <p className="text-stone-500">No monthly data available</p>
           </div>
         )}
-      </div>
+      </CollapsibleCard>
     </div>
   );
 };

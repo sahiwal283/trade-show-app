@@ -71,7 +71,7 @@ export const EntityCategoryMatrix: React.FC<EntityCategoryMatrixProps> = ({
         </div>
         <button
           onClick={handleExportSummary}
-          className="btn-secondary min-h-[36px] self-start px-3 py-1.5 text-xs sm:self-auto"
+          className="btn-secondary min-h-[44px] self-start px-3 py-1.5 text-xs sm:self-auto lg:min-h-[36px]"
         >
           <Download className="w-3.5 h-3.5" />
           <span>Export Summary CSV</span>

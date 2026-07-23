@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.53.0] - 2026-07-23 - Remaining design-review findings
+
+### Fixed
+- **PWA icons were never real PNGs**: every `icon-*.png` (and `apple-touch-icon.png`) was an SVG with a .png extension — broken install-prompt image and broken home-screen icons. All rasterized to true PNGs at each size from `app-icon.svg`.
+- Menu drawer layering, expense modal footer, and Account notification copy (no more raw dev-speak).
+
+### Changed
+- **Install prompt is a banner, not a takeover**: slim dismissible card above the bottom nav, never on the first session, 30-day snooze on dismiss; iOS steps expand inline. (Old version: full-screen modal hijacking the first post-login moment.)
+- **Dashboard travel is now compact**: one card with a row per booking — vendor, dates/departure, and a tappable confirmation-number copy chip. The full itinerary cards remain on the Checklist page; the duplicate stack and repeated show name are gone.
+- **Reports on phones**: entity/show tiles go full-width (no more 60%-wide cards with a dead column); Monthly Trend and Category Averages are collapsible and start collapsed on phones (open on desktop).
+- **Expense detail modal footer**: full-width stacked buttons on phones with Edit Expense first; "Download PDF" labeled "Chrome only" instead of an orphaned icon.
+- Tap targets brought to 44px on phones: matrix Export CSV, Who-Paid clear button, dashboard show picker, "Full checklist" link.
+
 ## [1.52.0] - 2026-07-23 - Flight check-in push reminders + mobile UX quick wins
 
 ### Added — travel notifications

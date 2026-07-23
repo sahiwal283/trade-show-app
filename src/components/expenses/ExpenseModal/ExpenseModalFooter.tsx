@@ -55,22 +55,24 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
   };
 
   return (
-    <div className="sticky bottom-0 flex flex-wrap justify-end gap-2 rounded-b-none border-t border-stone-200 bg-stone-50/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:gap-3 sm:rounded-b-xl sm:px-6 sm:py-4 sm:pb-4">
+    // Phones: primary action first, full-width stacked buttons (no wrapped
+    // orphans). Desktop (sm+): classic right-aligned row.
+    <div className="sticky bottom-0 flex flex-col gap-2 rounded-b-none border-t border-stone-200 bg-stone-50/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3 sm:rounded-b-xl sm:px-6 sm:py-4 sm:pb-4">
       {!isEditingExpense ? (
         <>
           <button
-            onClick={onClose}
-            className="btn-secondary px-4 py-2"
+            onClick={onEdit}
+            className="btn-primary order-1 w-full px-4 py-2 sm:order-3 sm:w-auto"
           >
-            Close
+            Edit Expense
           </button>
           {expenseId && onDownloadPDF && (
-            <div className="flex items-center gap-2">
-              <div className="relative group">
+            <div className="order-2 flex w-full items-center gap-2 sm:w-auto">
+              <div className="relative group flex-1 sm:flex-initial">
                 <button
                   onClick={handleDownload}
                   disabled={isDownloading}
-                  className="btn-secondary px-4 py-2"
+                  className="btn-secondary w-full px-4 py-2 sm:w-auto"
                   aria-label="Download expense PDF"
                 >
                   {isDownloading ? (
@@ -81,11 +83,11 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
                   ) : (
                     <>
                       <Download className="w-4 h-4" />
-                      <span>Download Expense</span>
+                      <span>Download PDF</span>
                     </>
                   )}
                 </button>
-                
+
                 {/* Browser Compatibility Tooltip */}
                 <div className="absolute right-0 bottom-full mb-2 hidden group-hover:block z-50 w-64">
                   <div className="rounded-lg bg-gray-900 p-3 text-xs text-white shadow-elevation-3">
@@ -94,7 +96,7 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
                       <div>
                         <p className="font-semibold mb-1">Browser Compatibility</p>
                         <p className="text-gray-300">
-                          {isChrome 
+                          {isChrome
                             ? 'Works with Chrome. Support for other browsers coming soon.'
                             : 'Currently only works with Chrome. Support for other browsers coming soon.'}
                         </p>
@@ -107,19 +109,19 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
                   </div>
                 </div>
               </div>
-              
-              {/* Compatibility Note (always visible, small text) */}
-              <div className="flex items-center gap-1 text-xs text-stone-500">
+
+              {/* Compatibility Note — labeled so the icon isn't an orphan */}
+              <div className="flex shrink-0 items-center gap-1 text-xs text-stone-500">
                 <Info className="w-3 h-3" />
-                <span className="hidden sm:inline">Chrome only</span>
+                <span>Chrome only</span>
               </div>
             </div>
           )}
           <button
-            onClick={onEdit}
-            className="btn-primary px-4 py-2"
+            onClick={onClose}
+            className="btn-secondary order-3 w-full px-4 py-2 sm:order-1 sm:w-auto"
           >
-            Edit Expense
+            Close
           </button>
         </>
       ) : (
@@ -127,14 +129,14 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
           <button
             onClick={onCancel}
             disabled={isSaving}
-            className="btn-secondary px-4 py-2"
+            className="btn-secondary order-2 w-full px-4 py-2 sm:order-1 sm:w-auto"
           >
             Cancel
           </button>
           <button
             onClick={onSave}
             disabled={isSaving || saveDisabled}
-            className="btn-primary px-6 py-2"
+            className="btn-primary order-1 w-full px-6 py-2 sm:order-2 sm:w-auto"
           >
             {isSaving ? (
               <>

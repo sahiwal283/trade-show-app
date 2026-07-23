@@ -15,6 +15,7 @@ import { EntityBreakdown } from './EntityBreakdown';
 import { DetailedReport } from './DetailedReport';
 import { WhoPaidBreakdown } from './WhoPaidBreakdown';
 import { EntityCategoryMatrix } from './EntityCategoryMatrix';
+import { CollapsibleCard } from './CollapsibleCard';
 import { api } from '../../utils/api';
 import { useReportsData } from './hooks/useReportsData';
 import { useReportsFilters } from './hooks/useReportsFilters';
@@ -351,7 +352,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 onKeyPress={(e) => e.key === 'Enter' && handleTradeShowClick(eventId)}
                 role="button"
                 tabIndex={0}
-                className="group min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                className="group w-full sm:w-auto sm:min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
@@ -402,7 +403,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 onKeyPress={(e) => e.key === 'Enter' && handleEntityClick(entity)}
                 role="button"
                 tabIndex={0}
-                className="group min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
+                className="group w-full sm:w-auto sm:min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                   <div className="flex-1 min-w-0">
@@ -503,23 +504,14 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         />
       )}
 
-      {/* Category Averages Across Trade Shows */}
+      {/* Category Averages Across Trade Shows — collapsed by default on phones */}
       {selectedEvent === 'all' && events.length > 0 && (
-        <div className="card p-6">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Category Averages Across Trade Shows
-              </h3>
-              <p className="text-sm text-stone-500">
-                Average spending per category based on {events.length} trade show
-                {events.length !== 1 ? 's' : ''}
-              </p>
-            </div>
-          </div>
+        <CollapsibleCard
+          title="Category Averages Across Trade Shows"
+          subtitle={`Average spending per category based on ${events.length} trade show${events.length !== 1 ? 's' : ''}`}
+          icon={TrendingUp}
+          iconClassName="bg-amber-50 text-amber-600 ring-amber-100"
+        >
 
           {(() => {
             const sortedAverages = calculateCategoryAverages(filteredExpenses, events);
@@ -591,7 +583,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               </div>
             );
           })()}
-        </div>
+        </CollapsibleCard>
       )}
 
       {/* Filter Modal */}
