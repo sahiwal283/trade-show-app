@@ -53,12 +53,20 @@ export async function runMigrations(options: { exitOnDone?: boolean } = { exitOn
     console.log('Running database migrations...');
 
     // Step 1: Run base schema (optional — an established database no longer
-    // needs it, and production packages historically omitted the file)
+    // needs it, and the runtime DB user may not own the tables, in which
+    // case even IF NOT EXISTS statements throw ownership errors)
     const schemaPath = path.join(__dirname, 'schema.sql');
     if (fs.existsSync(schemaPath)) {
-      console.log('Applying base schema.sql...');
-      const schemaSQL = fs.readFileSync(schemaPath, 'utf-8');
-      await pool.query(schemaSQL);
+      try {
+        console.log('Applying base schema.sql...');
+        const schemaSQL = fs.readFileSync(schemaPath, 'utf-8');
+        await pool.query(schemaSQL);
+      } catch (schemaError) {
+        console.warn(
+          '⚠ Base schema skipped (established database / insufficient privileges):',
+          (schemaError as Error).message
+        );
+      }
     } else {
       console.log('schema.sql not packaged — skipping base schema (existing database assumed)');
     }
@@ -142,8 +150,8 @@ export async function runMigrations(options: { exitOnDone?: boolean } = { exitOn
     if (exitOnDone) process.exit(0);
   } catch (error) {
     console.error('\n✗ Migration failed:', error);
-    // A half-migrated schema must never serve traffic — fail hard either way.
-    process.exit(1);
+    if (exitOnDone) process.exit(1); // CLI mode: hard failure
+    throw error; // startup mode: caller decides (serve with existing schema)
   }
 }
 

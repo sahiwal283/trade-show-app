@@ -181,23 +181,31 @@ app.use(errorHandler);
 // Initialize upload directories on startup
 initializeUploadDirectories();
 
-// Apply pending database migrations BEFORE serving traffic. This was
-// documented behavior but never actually wired up — production ran new code
-// against old schemas after every deploy. Migration failure exits hard: a
-// half-migrated schema must never serve requests.
-runMigrations({ exitOnDone: false })
-  .then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`Version: ${VERSION}`);
-      console.log(`Listening on 0.0.0.0:${PORT}`);
+// Apply pending database migrations BEFORE serving traffic (documented
+// behavior that was never wired up — production ran new code against old
+// schemas after every deploy). Migration failure is LOUD but non-fatal:
+// the runtime DB user may lack DDL privileges (tables owned by the DB
+// admin), and refusing to serve would turn a permissions gap into an
+// outage. A failed migration reverts to exactly the old behavior.
+const startServer = () => {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Version: ${VERSION}`);
+    console.log(`Listening on 0.0.0.0:${PORT}`);
 
-      // Flight check-in / departure push reminders (no-op if push not configured)
-      travelReminderService.start();
-    });
-  })
+    // Flight check-in / departure push reminders (no-op if push not configured)
+    travelReminderService.start();
+  });
+};
+
+runMigrations({ exitOnDone: false })
+  .then(startServer)
   .catch((error) => {
-    console.error('[Server] Failed to run migrations at startup:', error);
-    process.exit(1);
+    console.error(
+      '⚠️ [Server] Startup migrations FAILED — serving with the existing schema. ' +
+        'Run migrations as the database owner. Error:',
+      error
+    );
+    startServer();
   });
