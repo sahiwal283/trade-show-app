@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.50.1] - 2026-07-23 - Fresh releases on every load + visible version tag
+
+### Fixed
+- **Stale releases on devices**: the service worker served the app shell cache-first while the static cache name never rotated (stuck at v1.34.4), so devices kept running old builds after every deploy. Navigations/HTML are now **network-first** (cache is only the offline fallback), and both cache names rotate with `APP_CACHE_VERSION` so activation purges old caches. Hashed assets stay cache-first (immutable).
+
+### Added
+- **Version tag everywhere**: the `v{version}` header chip now shows on phones too (was `hidden md:flex`), and the sidebar/drawer user card carries a version badge — anyone can read off exactly what build they're running.
+
 ## [1.50.0] - 2026-07-23 - One-tap camera capture, My Travel on the Dashboard, app-wide motion
 
 ### Added

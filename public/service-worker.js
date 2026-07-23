@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.50.0 - Direct camera capture, My Travel on Dashboard, page transitions
+// Version: 1.50.1 - Network-first app shell (fixes stale releases) + visible version tag
 // Date: July 23, 2026
 //
 // New Features:
@@ -116,8 +116,12 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.50.0';
-const STATIC_CACHE = 'trade-show-app-static-v1.34.4';
+// Both cache names are version-tied so every release invalidates the old
+// caches on activate. STATIC_CACHE previously stayed at a fixed name, which
+// let a years-old index.html outlive deploy after deploy.
+const APP_CACHE_VERSION = '1.50.1';
+const CACHE_NAME = `trade-show-app-v${APP_CACHE_VERSION}`;
+const STATIC_CACHE = `trade-show-app-static-v${APP_CACHE_VERSION}`;
 const urlsToCache = [
   '/',
   '/index.html',
@@ -127,7 +131,7 @@ const urlsToCache = [
 
 // Install event - cache essential static files only
 self.addEventListener('install', (event) => {
-  console.log('[ServiceWorker] Installing v1.34.4...');
+  console.log(`[ServiceWorker] Installing v${APP_CACHE_VERSION}...`);
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
@@ -186,8 +190,28 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // STRATEGY 2: CACHE-FIRST for static assets
-  // HTML, JS, CSS, images can be cached
+  // STRATEGY 2: NETWORK-FIRST for navigations (HTML)
+  // The app shell must never be stale — a cached index.html kept users on
+  // old releases. Cache is only the offline fallback.
+  if (request.mode === 'navigate' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/index.html')))
+    );
+    return;
+  }
+
+  // STRATEGY 3: CACHE-FIRST for static assets
+  // Hashed JS/CSS/images are immutable — cache-first is safe for them
   event.respondWith(
     caches.match(request)
       .then((cachedResponse) => {
@@ -231,7 +255,7 @@ self.addEventListener('fetch', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[ServiceWorker] Activating v1.34.4...');
+  console.log(`[ServiceWorker] Activating v${APP_CACHE_VERSION}...`);
   const cacheWhitelist = [CACHE_NAME, STATIC_CACHE];
   
   event.waitUntil(
@@ -245,7 +269,7 @@ self.addEventListener('activate', (event) => {
         })
       );
     })    .then(() => {
-      console.log('[ServiceWorker] v1.36.0 activated and ready!');
+      console.log(`[ServiceWorker] v${APP_CACHE_VERSION} activated and ready!`);
       // Claim all clients immediately
       return self.clients.claim();
     })

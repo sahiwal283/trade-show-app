@@ -84,7 +84,8 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
             />
           </div>
 
-          <div className="hidden md:flex items-center px-2.5 py-1 rounded-full border border-stone-200 bg-stone-50">
+          {/* Visible on every size so anyone can read off the running version */}
+          <div className="flex shrink-0 items-center px-2.5 py-1 rounded-full border border-stone-200 bg-stone-50">
             <span className="text-[11px] font-medium tracking-wide text-stone-500">v{APP_VERSION}</span>
           </div>
         </div>
