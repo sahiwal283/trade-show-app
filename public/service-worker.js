@@ -1,5 +1,5 @@
 // ExpenseApp Service Worker
-// Version: 1.48.0 - Accountant reporting revamp (entity split, category filters, pivot matrix)
+// Version: 1.48.1 - Reports: event/entity click scrolls to top (donut) instead of bottom
 // Date: July 23, 2026
 //
 // New Features:
@@ -116,7 +116,7 @@
 // - Cache-first only for static assets
 // - Proper cache versioning
 
-const CACHE_NAME = 'trade-show-app-v1.48.0';
+const CACHE_NAME = 'trade-show-app-v1.48.1';
 const STATIC_CACHE = 'trade-show-app-static-v1.34.4';
 const urlsToCache = [
   '/',

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.48.1] - 2026-07-23 - Reports scroll fix
+
+### Fixed
+- Clicking a trade show or entity card on Reports scrolled to the bottom of the page (transaction register); it now scrolls to the top so the banner, entity totals, and Who Paid donut are in view first.
+
 ## [1.48.0] - 2026-07-23 - Accountant reporting revamp (frontend-only release)
 
 ### Added

@@ -83,15 +83,15 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   const handleTradeShowClick = (eventId: string) => {
     setSelectedEvent(eventId);
     setReportType('detailed');
-    // Scroll to detailed report
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    // Start at the top: banner, entity totals, and the Who Paid donut
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleEntityClick = (entity: string) => {
     setSelectedEntity(entity);
     setReportType('detailed');
-    // Scroll to detailed report
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    // Start at the top: banner, entity totals, and the Who Paid donut
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Watch for hash changes to auto-select event
