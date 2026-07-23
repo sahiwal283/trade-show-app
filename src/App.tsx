@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { LoginForm } from './components/auth/LoginForm';
 import { Sidebar } from './components/layout/Sidebar';
 import { Header } from './components/layout/Header';
+import { MobileNav } from './components/layout/MobileNav';
 
 // Views are code-split so login and initial load only ship the app shell.
 // Each view downloads on first navigation and stays cached by the browser.
@@ -343,6 +344,14 @@ function App() {
     setMobileMenuOpen(false); // Close mobile menu after navigation
   };
 
+  // Bottom-nav camera button: land on Expenses with the receipt-capture flow
+  // open (ExpenseSubmission watches for the #new-expense hash and clears it).
+  const handleQuickAddExpense = () => {
+    setCurrentPage('expenses');
+    setMobileMenuOpen(false);
+    window.location.hash = 'new-expense';
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 flex">
       {/* Sync Status Bar */}
@@ -376,7 +385,7 @@ function App() {
           onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
         />
         
-        <main className="flex-1 p-3 sm:p-4 md:p-6 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-4 md:pb-6 bg-stone-50">
+        <main className="flex-1 p-3 sm:p-4 md:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-6 bg-stone-50">
           <Suspense fallback={<div className="flex items-center justify-center py-24"><LoadingSpinner size="lg" text="Loading..." /></div>}>
             {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
             {currentPage === 'events' && <EventSetup user={user} />}
@@ -392,6 +401,15 @@ function App() {
         {/* PWA Install Prompt */}
         <InstallPrompt />
       </div>
+
+      {/* Phone bottom navigation (hidden on lg+) */}
+      <MobileNav
+        user={user}
+        currentPage={currentPage}
+        onNavigate={handlePageChange}
+        onQuickAdd={handleQuickAddExpense}
+        onOpenMenu={() => setMobileMenuOpen(true)}
+      />
 
       {/* Notification Banner */}
       <NotificationBanner 

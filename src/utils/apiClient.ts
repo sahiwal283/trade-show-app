@@ -26,6 +26,8 @@ export interface RequestConfig extends RequestInit {
   params?: Record<string, string | number | boolean>;
   timeout?: number;
   skipAuth?: boolean;
+  /** Internal: marks a request already retried after a token refresh */
+  _isRetry?: boolean;
 }
 
 // ========== Token Management ==========
@@ -54,6 +56,8 @@ class ApiClient {
   private baseURL: string;
   private defaultTimeout: number;
   private onUnauthorized: (() => void) | null = null;
+  /** Single-flight token refresh: concurrent 401s share one refresh call */
+  private refreshPromise: Promise<boolean> | null = null;
 
   constructor() {
     this.baseURL = API_CONFIG.BASE_URL;
@@ -213,6 +217,44 @@ class ApiClient {
   }
 
   /**
+   * Exchange the current (possibly just-expired) token for a fresh one.
+   * The backend accepts expired tokens within a 30-day refresh window, so a
+   * phone that was asleep past token expiry can recover without a re-login.
+   * Returns true when a new token was stored.
+   */
+  private async refreshAuthToken(): Promise<boolean> {
+    if (this.refreshPromise) return this.refreshPromise;
+
+    this.refreshPromise = (async () => {
+      const token = TokenManager.getToken();
+      if (!token) return false;
+      try {
+        const response = await fetch(this.buildURL('/auth/refresh'), {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+        if (!response.ok) return false;
+        const data = (await response.json()) as { token?: string };
+        if (!data?.token) return false;
+        TokenManager.setToken(data.token);
+        console.log('[API] Token refreshed after 401, retrying request');
+        return true;
+      } catch {
+        return false;
+      }
+    })();
+
+    try {
+      return await this.refreshPromise;
+    } finally {
+      this.refreshPromise = null;
+    }
+  }
+
+  /**
    * Main request method
    */
   async request<T = any>(
@@ -256,9 +298,18 @@ class ApiClient {
       // 403 = Permission denied (user authenticated but lacks permission) - DON'T logout
       // Skip session-expiry flow for login endpoint: 401 there means invalid credentials, not expired token
       if (error instanceof AppError && error.statusCode === 401) {
-        const isLoginPath = path.includes('/auth/login');
-        if (!isLoginPath) {
-          console.error('[API] 401 Unauthorized - Session expired, logging out');
+        const isAuthPath = path.includes('/auth/login') || path.includes('/auth/refresh');
+        if (!isAuthPath && !config.skipAuth) {
+          // First 401: silently refresh the token and retry once before
+          // giving up. This keeps phones signed in across sleep/expiry.
+          if (!config._isRetry) {
+            const refreshed = await this.refreshAuthToken();
+            if (refreshed) {
+              return this.request<T>(path, { ...config, _isRetry: true });
+            }
+          }
+
+          console.error('[API] 401 Unauthorized - refresh failed, logging out');
           TokenManager.removeToken();
 
           if (this.onUnauthorized) {
@@ -319,7 +370,8 @@ class ApiClient {
     data: Record<string, any>,
     file: File,
     fileFieldName: string = 'file',
-    method: 'POST' | 'PUT' = 'POST'
+    method: 'POST' | 'PUT' = 'POST',
+    _isRetry: boolean = false
   ): Promise<T> {
     try {
       const formData = new FormData();
@@ -352,9 +404,18 @@ class ApiClient {
       // 401 = Token expired/invalid - force logout
       // 403 = Permission denied - DON'T logout (show error instead)
       if (error instanceof AppError && error.statusCode === 401) {
-        console.error('[API] 401 Unauthorized in upload - Session expired, logging out');
+        // Silently refresh and retry once — a receipt upload should never be
+        // lost to a token that expired while the phone was asleep.
+        if (!_isRetry) {
+          const refreshed = await this.refreshAuthToken();
+          if (refreshed) {
+            return this.upload<T>(path, data, file, fileFieldName, method, true);
+          }
+        }
+
+        console.error('[API] 401 Unauthorized in upload - refresh failed, logging out');
         TokenManager.removeToken();
-        
+
         // Trigger logout callback if set
         if (this.onUnauthorized) {
           console.log('[API] Triggering unauthorized callback from upload');

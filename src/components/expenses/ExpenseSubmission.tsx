@@ -133,6 +133,20 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   }, [expenses, hasApprovalPermission]);
 
+  // Deep link from the bottom-nav camera button (#new-expense): open the
+  // receipt-capture flow immediately, then clear the hash so it can re-fire.
+  useEffect(() => {
+    const openFromHash = () => {
+      if (window.location.hash === '#new-expense') {
+        setShowReceiptUpload(true);
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+    openFromHash();
+    window.addEventListener('hashchange', openFromHash);
+    return () => window.removeEventListener('hashchange', openFromHash);
+  }, []);
+
   // Fetch audit trail when viewing expense (accountant/admin/developer only)
   const fetchAuditTrail = async (expenseId: string) => {
     if (!hasApprovalPermission) return;

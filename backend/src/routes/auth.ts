@@ -134,12 +134,12 @@ router.post('/login', async (req, res) => {
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role },
       process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
-      { expiresIn: '20m' } // 20 minutes - aligns with 15min inactivity + 5min buffer
+      { expiresIn: '12h' } // Client silently refreshes on 401 within the 30-day refresh window
     );
 
     // Create session record for tracking
     try {
-      await createSession(user.id, token, req as AuthRequest, 1200); // 20 minutes in seconds
+      await createSession(user.id, token, req as AuthRequest, 43200); // 12 hours in seconds
     } catch (sessionError) {
       console.error('[Auth] Failed to create session record:', sessionError);
       // Don't fail login if session creation fails
@@ -370,8 +370,17 @@ router.post('/refresh', async (req, res) => {
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
-        { ignoreExpiration: true } // Allow expired tokens for refresh
+        { ignoreExpiration: true } // Allow expired tokens for refresh (bounded below)
       ) as any;
+
+      // Bound the refresh window: a token can only be exchanged within 30 days
+      // of issuance. Each refresh reissues with a fresh iat, so active devices
+      // stay signed in indefinitely while idle ones require a real login.
+      const REFRESH_WINDOW_SECONDS = 30 * 24 * 60 * 60;
+      const issuedAt = typeof decoded.iat === 'number' ? decoded.iat : 0;
+      if (Math.floor(Date.now() / 1000) - issuedAt > REFRESH_WINDOW_SECONDS) {
+        return res.status(401).json({ error: 'Session too old, please log in again' });
+      }
 
       // Get fresh user data from database
       const result = await query(
@@ -389,13 +398,13 @@ router.post('/refresh', async (req, res) => {
       const newToken = jwt.sign(
         { id: user.id, username: user.username, role: user.role },
         process.env.JWT_SECRET || 'your_jwt_secret_key_here_change_in_production',
-        { expiresIn: '20m' }
+        { expiresIn: '12h' }
       );
 
       // Delete old session and create new one
       try {
         await deleteSession(token);
-        await createSession(user.id, newToken, req as AuthRequest, 1200);
+        await createSession(user.id, newToken, req as AuthRequest, 43200);
       } catch (sessionError) {
         console.error('[Auth] Failed to update session on refresh:', sessionError);
       }

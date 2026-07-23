@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.49.0] - 2026-07-23 - Stay signed in + phone bottom navigation
+
+### Fixed — constant logouts (top user complaint)
+- **Silent refresh-and-retry on 401**: `apiClient` now exchanges an expired token via `/auth/refresh` and retries the request once (single-flight — concurrent 401s share one refresh) before ever logging anyone out. Applies to JSON requests and receipt uploads alike, so a receipt snapped after the phone slept is never lost to an expired token.
+- **Access tokens extended from 20 minutes to 12 hours** (login and refresh issuance; session-table TTL aligned).
+- **Refresh window bounded to 30 days**: `/auth/refresh` previously accepted expired tokens forever; it now rejects tokens issued more than 30 days ago. Each refresh re-stamps the window, so active devices stay signed in indefinitely while abandoned ones require a real login.
+- **Inactivity force-logout extended from 15 minutes to 12 hours** — the 15-minute kick was the main reason "everyone gets logged out".
+- Bootstrap/SSO probes (`skipAuth` requests) no longer trigger the logout flow on 401.
+
+### Added — phone navigation
+- **Bottom tab bar** on phones (`MobileNav`, hidden on lg+): Home, Events, a raised camera button, Reports (accountant/admin/developer) or Checklist (field staff), and Menu (opens the existing drawer for Account/Settings/etc.). Safe-area aware; active tab highlighted.
+- **One-tap expense capture**: the camera button jumps straight into the Receipt Scanner from any page via a `#new-expense` deep link that `ExpenseSubmission` consumes and clears.
+- Main content gets bottom padding on phones so nothing hides behind the tab bar.
+
 ## [1.48.1] - 2026-07-23 - Reports scroll fix
 
 ### Fixed

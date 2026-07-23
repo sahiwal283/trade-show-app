@@ -2,7 +2,7 @@
  * Session Manager with Sliding Expiry Timer
  * 
  * Features:
- * - 15-minute inactivity timeout
+ * - 12-hour inactivity timeout
  * - Activity tracking (mouse, keyboard, form input, navigation, API calls)
  * - Modern event listeners (keydown/keyup instead of deprecated keypress)
  * - Form field activity tracking (input, change events)
@@ -13,7 +13,10 @@
 
 import { STORAGE_KEYS } from '../constants/appConstants';
 
-const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutes in milliseconds
+// 12 hours: matches the backend token TTL. Combined with silent
+// refresh-and-retry on 401 (30-day sliding window), phones stay signed in
+// unless truly abandoned. The old 15-minute kick was the top complaint.
+const INACTIVITY_TIMEOUT = 12 * 60 * 60 * 1000;
 const WARNING_TIME = 5 * 60 * 1000; // 5 minutes before logout
 const TOKEN_REFRESH_INTERVAL = 10 * 60 * 1000; // Refresh token every 10 minutes
 
@@ -42,7 +45,7 @@ export class SessionManager {
    * Initialize session manager with callbacks
    */
   public init(onWarning: () => void, onLogout: () => void): void {
-    console.log('[SessionManager] Initializing with 15-minute inactivity timeout');
+    console.log('[SessionManager] Initializing with 12-hour inactivity timeout');
     
     // Cleanup any existing timers/listeners first (safety check)
     this.cleanup();
