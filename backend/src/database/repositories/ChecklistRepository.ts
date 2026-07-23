@@ -29,6 +29,7 @@ export interface ChecklistFlight {
   confirmation_number?: string;
   notes?: string;
   booked: boolean;
+  departure_at?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -218,11 +219,12 @@ export class ChecklistRepository extends BaseRepository<EventChecklist> {
     confirmationNumber?: string;
     notes?: string;
     booked?: boolean;
+    departureAt?: string | null;
   }): Promise<ChecklistFlight> {
     const result = await this.executeQuery<ChecklistFlight>(
-      `INSERT INTO checklist_flights 
-       (checklist_id, attendee_id, attendee_name, carrier, confirmation_number, notes, booked)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO checklist_flights
+       (checklist_id, attendee_id, attendee_name, carrier, confirmation_number, notes, booked, departure_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
         data.checklistId,
@@ -231,7 +233,8 @@ export class ChecklistRepository extends BaseRepository<EventChecklist> {
         data.carrier || null,
         data.confirmationNumber || null,
         data.notes || null,
-        data.booked || false
+        data.booked || false,
+        data.departureAt || null
       ]
     );
     return result.rows[0];

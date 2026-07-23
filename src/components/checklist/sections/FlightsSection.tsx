@@ -15,6 +15,15 @@ import { CheckToggle, StatusChip, FieldLabel, InlineAction } from '../ChecklistP
 import { BookingRow } from '../BookingRow';
 import { joinSummary } from '../bookingText';
 
+/** ISO timestamp → value for a datetime-local input, in the local timezone. */
+function isoToLocalInput(iso: string | null | undefined): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 interface FlightsSectionProps {
   checklist: ChecklistData;
   user: User;
@@ -45,7 +54,8 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
       carrier: null,
       confirmation_number: null,
       notes: null,
-      booked: false
+      booked: false,
+      departure_at: null
     };
 
     setEditingFlights({
@@ -73,6 +83,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
         carrier: flightData.carrier,
         confirmationNumber: flightData.confirmation_number,
         notes: flightData.notes,
+        departureAt: flightData.departure_at || null,
         booked: true  // Always mark as booked when saving flight info
       };
 
@@ -105,6 +116,7 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
         carrier: flight.carrier,
         confirmationNumber: flight.confirmation_number,
         notes: flight.notes,
+        departureAt: flight.departure_at || null,
         booked: !flight.booked
       });
       onReload();
@@ -198,6 +210,25 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
                       placeholder="Booking reference"
                       className="input-field"
                     />
+                  </div>
+
+                  <div>
+                    <FieldLabel>Departure (date &amp; time)</FieldLabel>
+                    <input
+                      type="datetime-local"
+                      value={isoToLocalInput(currentData?.departure_at)}
+                      onChange={(e) =>
+                        handleFieldChange(
+                          participant.id,
+                          'departure_at',
+                          e.target.value ? new Date(e.target.value).toISOString() : null
+                        )
+                      }
+                      className="input-field"
+                    />
+                    <p className="mt-1 text-xs text-stone-400">
+                      Powers check-in reminders: 24h and 3h before departure
+                    </p>
                   </div>
 
                   <div className="md:col-span-2">

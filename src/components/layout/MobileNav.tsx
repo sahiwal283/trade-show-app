@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { LayoutDashboard, Calendar, CheckSquare, BarChart3, Menu, Camera } from 'lucide-react';
+import { LayoutDashboard, Receipt, Calendar, CheckSquare, BarChart3, Menu, Camera } from 'lucide-react';
 import { User } from '../../App';
 import { setPendingCapture } from '../../utils/pendingCapture';
 
@@ -30,6 +30,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
   onOpenMenu,
 }) => {
   const canAddExpense = EXPENSE_ROLES.includes(user.role);
+  const canSeeExpenses = EXPENSE_ROLES.includes(user.role);
   const captureInputRef = useRef<HTMLInputElement>(null);
 
   // Open the native camera synchronously inside the tap gesture. When a photo
@@ -46,14 +47,21 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     setPendingCapture(file);
     onQuickAdd();
   };
-  // Accountants/admins live in Reports; field staff live in the Checklist
+
+  // Expenses is the app's core destination — it gets a permanent tab
+  // (Events lives in the drawer). Accountants/admins get Reports as the
+  // fourth tab; field staff get their Checklist.
   const fourthTab: TabDef = REPORT_ROLES.includes(user.role)
     ? { id: 'reports', label: 'Reports', icon: BarChart3 }
-    : { id: 'checklist', label: 'Checklist', icon: CheckSquare };
+    : canSeeExpenses
+      ? { id: 'checklist', label: 'Checklist', icon: CheckSquare }
+      : { id: 'events', label: 'Events', icon: Calendar };
 
   const leftTabs: TabDef[] = [
     { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
-    { id: 'events', label: 'Events', icon: Calendar },
+    canSeeExpenses
+      ? { id: 'expenses', label: 'Expenses', icon: Receipt }
+      : { id: 'checklist', label: 'Checklist', icon: CheckSquare },
   ];
   const rightTabs: TabDef[] = [fourthTab];
 

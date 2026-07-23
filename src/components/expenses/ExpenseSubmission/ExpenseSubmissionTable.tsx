@@ -349,8 +349,8 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
         </table>
       </div>
 
-      {/* Pagination footer */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-stone-100 px-3 py-2.5">
+      {/* Pagination footer — hidden when everything fits on one page */}
+      <div className={`${pageCount <= 1 ? 'hidden' : 'flex'} flex-wrap items-center justify-between gap-3 border-t border-stone-100 px-3 py-2.5`}>
         <p className="text-xs text-stone-400">
           Showing <span className="font-semibold text-stone-600">{showingFrom}</span> to{' '}
           <span className="font-semibold text-stone-600">{showingTo}</span> of{' '}

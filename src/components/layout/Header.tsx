@@ -160,7 +160,11 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
           </div>
 
           <button
-            onClick={onLogout}
+            onClick={() => {
+              // The icon sits in the thumb zone next to the avatar — one
+              // accidental tap used to nuke in-progress work with no warning.
+              if (window.confirm('Log out of TradeShow?')) onLogout();
+            }}
             className="tap-target p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Logout"
           >
@@ -169,17 +173,9 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
         </div>
       </div>
 
-      {/* Mobile search bar below header */}
-      <div className="sm:hidden mt-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full min-h-[44px] rounded-lg border border-transparent bg-stone-100 pl-9 pr-3 py-2.5 text-base text-stone-900 placeholder-stone-400 transition-all duration-150 focus:outline-none focus:bg-white focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15"
-          />
-        </div>
-      </div>
+      {/* Mobile search bar removed: it was never wired to anything and cost
+          ~90px of prime screen space on every page. Each list screen has its
+          own working search. */}
     </header>
   );
 };

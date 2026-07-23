@@ -179,7 +179,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Mobile Sidebar (slide-out) */}
-      <div className={`lg:hidden fixed left-0 top-0 h-full bg-white border-r border-stone-200/80 shadow-elevation-3 transition-transform duration-300 z-30 w-64 max-w-[85vw] flex flex-col pt-safe pb-safe ${
+      <div className={`lg:hidden fixed left-0 top-0 h-full bg-white border-r border-stone-200/80 shadow-elevation-3 transition-transform duration-300 z-50 w-64 max-w-[85vw] flex flex-col pt-safe pb-safe ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex items-center justify-between p-4 border-b border-stone-100">

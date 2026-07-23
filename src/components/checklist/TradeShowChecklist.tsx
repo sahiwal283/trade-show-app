@@ -37,6 +37,8 @@ export interface FlightData {
   confirmation_number: string | null;
   notes: string | null;
   booked: boolean;
+  /** ISO timestamp — drives check-in push reminders (T-24h and T-3h) */
+  departure_at?: string | null;
 }
 
 export interface HotelData {

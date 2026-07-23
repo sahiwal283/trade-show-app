@@ -27,7 +27,7 @@ export const ReceiptImagePreview: React.FC<ReceiptImagePreviewProps> = ({
           <img
             src={uploadedImage}
             alt="Uploaded receipt"
-            className="w-full h-auto rounded-lg ring-1 ring-stone-200 shadow-elevation-2 transition-shadow duration-200 group-hover:shadow-elevation-3"
+            className="w-full h-auto max-h-64 object-contain rounded-lg ring-1 ring-stone-200 shadow-elevation-2 transition-shadow duration-200 group-hover:shadow-elevation-3 sm:max-h-96"
           />
           {!processing && (
             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-all flex items-center justify-center">

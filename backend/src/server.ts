@@ -27,6 +27,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
+import { travelReminderService } from './services/TravelReminderService';
 
 dotenv.config();
 
@@ -184,4 +185,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`Version: ${VERSION}`);
   console.log(`Listening on 0.0.0.0:${PORT}`);
+
+  // Flight check-in / departure push reminders (no-op if push not configured)
+  travelReminderService.start();
 });

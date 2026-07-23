@@ -19,6 +19,7 @@ import {
   getZohoExpenseDescriptionValidationMessage,
   ZOHO_EXPENSE_DESCRIPTION_MAX_LENGTH,
 } from '../../utils/zohoExpenseDescription';
+import { getTodayLocalDateString } from '../../utils/dateUtils';
 
 interface ReceiptUploadProps {
   onReceiptProcessed: (data: ReceiptData, file: File) => void;
@@ -243,26 +244,60 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
     }
   };
 
+  // Keep the OCR outcome in view on phones: the tall preview used to push
+  // the spinner/results/failure banner below the fold, so the screen looked
+  // frozen after picking a photo.
+  const statusRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (processing || ocrResults || ocrFailed) {
+      statusRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [processing, !!ocrResults, ocrFailed]);
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="card p-4 sm:p-5 md:p-6 lg:p-8">
         <ReceiptUploadHeader onCancel={onCancel} />
 
-        {!uploadedImage ? (
-          <ReceiptUploadDropzone
-            dragActive={dragActive}
-            fileInputRef={fileInputRef}
-            onDrag={handleDrag}
-            onDrop={handleDrop}
-            onFilesSelected={handleFiles}
-          />
-        ) : (
-          <div className="space-y-8">
-            <ReceiptImagePreview
-              uploadedImage={uploadedImage}
-              processing={processing}
-              onImageClick={() => setShowFullImage(true)}
+        {!uploadedImage && !ocrResults ? (
+          <div className="space-y-4">
+            <ReceiptUploadDropzone
+              dragActive={dragActive}
+              fileInputRef={fileInputRef}
+              onDrag={handleDrag}
+              onDrop={handleDrop}
+              onFilesSelected={handleFiles}
             />
+            {/* No receipt in hand (tips, mileage, lost receipt) — don't gate
+                manual entry behind an OCR failure */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() =>
+                  setOcrResults({
+                    merchant: '',
+                    total: undefined,
+                    date: getTodayLocalDateString(),
+                    category: 'Other',
+                    confidence: 0,
+                    ocrText: '',
+                  })
+                }
+                className="btn-ghost text-sm text-brand-600 hover:text-brand-700"
+              >
+                Or enter details manually — no receipt needed
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div ref={statusRef} className="scroll-mt-4 space-y-8">
+            {uploadedImage && (
+              <ReceiptImagePreview
+                uploadedImage={uploadedImage}
+                processing={processing}
+                onImageClick={() => setShowFullImage(true)}
+              />
+            )}
 
             {ocrResults && !processing && (
               <OcrResultsForm

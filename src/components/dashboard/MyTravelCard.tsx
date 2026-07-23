@@ -24,6 +24,16 @@ interface TravelData {
   car: CarRentalData | undefined;
 }
 
+/** "Departs Wed, Jul 29 · 8:05 AM" — shown on the flight card when set. */
+function formatDeparture(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const day = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `Departs ${day} · ${time}`;
+}
+
 export const MyTravelCard: React.FC<MyTravelCardProps> = ({ user, show, onPageChange }) => {
   const [travel, setTravel] = useState<TravelData | null>(null);
 
@@ -106,6 +116,7 @@ export const MyTravelCard: React.FC<MyTravelCardProps> = ({ user, show, onPageCh
             booked={!!flight?.booked}
             vendor={flight?.carrier}
             confirmation={flight?.confirmation_number}
+            dates={formatDeparture(flight?.departure_at)}
             notes={flight?.notes}
           />
         )}

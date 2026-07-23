@@ -286,7 +286,7 @@ router.delete('/:checklistId/booth-map', authorize('admin', 'coordinator', 'deve
 router.post('/:checklistId/flights', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { checklistId } = req.params;
-    const { attendeeId, attendeeName, carrier, confirmationNumber, notes, booked } = req.body;
+    const { attendeeId, attendeeName, carrier, confirmationNumber, notes, booked, departureAt } = req.body;
 
     const flight = await checklistRepository.createFlight({
       checklistId: parseInt(checklistId),
@@ -295,7 +295,8 @@ router.post('/:checklistId/flights', authorize('admin', 'coordinator', 'develope
       carrier,
       confirmationNumber,
       notes,
-      booked: booked || false
+      booked: booked || false,
+      departureAt: departureAt || null
     });
 
     if (flight.booked && flight.confirmation_number && flight.attendee_id) {
@@ -317,13 +318,14 @@ router.post('/:checklistId/flights', authorize('admin', 'coordinator', 'develope
 router.put('/flights/:flightId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { flightId } = req.params;
-    const { carrier, confirmationNumber, notes, booked } = req.body;
+    const { carrier, confirmationNumber, notes, booked, departureAt } = req.body;
 
     const flight = await checklistRepository.updateFlight(parseInt(flightId), {
       carrier,
       confirmation_number: confirmationNumber,
       notes,
-      booked
+      booked,
+      departure_at: departureAt || null
     });
 
     if (flight.booked && flight.confirmation_number && flight.attendee_id) {

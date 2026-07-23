@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.52.0] - 2026-07-23 - Flight check-in push reminders + mobile UX quick wins
+
+### Added — travel notifications
+- **Flight departure time** on checklist flights (`departure_at`, migration 030) with a "Departure (date & time)" field in the coordinator's flight form and "Departs Wed, Jul 29 · 8:05 AM" on the Dashboard flight card.
+- **TravelReminderService**: scans every 5 minutes and pushes "✈️ Time to check in" ~24h before departure and "🛫 Flight today" ~3h before. Send-once ledger (`travel_reminders`, claimed via INSERT ON CONFLICT before sending) makes reminders exactly-once across restarts/instances. No-ops when push is unconfigured.
+- Web Push enabled server-side (VAPID keys in backend env). Users flip it on per device in Account → Notifications (iPhone requires the app added to the Home Screen — the Account page already explains this).
+
+### Changed — mobile UX quick wins (from the design review)
+- **Expenses gets a permanent bottom tab** (it's the core destination); Events moves to the drawer. Roles without expense access keep Checklist/Events tabs.
+- **Manual expense entry no longer requires an OCR failure**: the Receipt Scanner idle screen has "Or enter details manually — no receipt needed" for tips/mileage/lost receipts.
+- **Receipt preview capped** (max-h-64 phone / 96 desktop) and the OCR status/result/failure block scrolls into view — no more frozen-looking screen with the outcome below the fold.
+- **Logout asks for confirmation** — the header icon sits in the thumb zone and one accidental tap destroyed in-progress work.
+- **Dead mobile search bar removed** (was never wired to anything; ~90px reclaimed on every screen).
+- **Pagination footer hidden** when the expense list fits on one page.
+- **Drawer layering fixed**: slide-out menu now renders above the bottom tab bar and camera button.
+
 ## [1.51.0] - 2026-07-23 - Root-cause fix for stale builds / "random bugs" + visible travel
 
 ### Fixed — the stale-build bug class (root cause, all four layers)

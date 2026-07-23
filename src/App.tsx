@@ -366,10 +366,10 @@ function App() {
         onCloseMobileMenu={() => setMobileMenuOpen(false)}
       />
       
-      {/* Mobile overlay */}
+      {/* Mobile overlay — sits above the bottom nav (z-30), below the drawer (z-50) */}
       {mobileMenuOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
