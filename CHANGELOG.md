@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.55.0] - 2026-07-24 - Role-based access: enforced end to end
+
+### Security
+- **`GET /api/expenses` is now scoped server-side**: reviewer roles (admin/accountant/developer/coordinator) see all; everyone else gets their own expenses only. Previously the org-wide list — amounts, merchants, cards — was returned to any authenticated user and filtered only in the browser.
+- `POST`/`PUT /api/expenses` now carry an authorize allowlist (temporary attendees excluded, matching every UI surface).
+
+### Fixed
+- **Temporary users could not be created at all**: migration 010 recreated `users_role_check` from a stale list, silently dropping the `temporary` role added in 002 (013 was worse). Migration 031 restores the full 7-role constraint. (Custom-role CHECK conflict documented for a future migration.)
+- Reports guard converted from denylist (only named coordinator/salesperson — temporary fell through to full access) to an allowlist matching the nav gates.
+- ExpenseSubmission gains a real access guard (was protected by nav visibility alone); DevDashboard renders only for developers.
+- Event Delete no longer 403s for developers (backend authorize now matches the UI's canManageEvents).
+- `types.ts` UserRole union unified with the canonical 7-role list (was missing developer/temporary).
+
+### Verified
+- Six-role × two-viewport live matrix (admin/coordinator/salesperson/accountant/developer/temporary): nav, tabs, camera, event-card actions, and manage buttons all match the intended matrix; zero crashes. API scoping proven per-role against the running backend.
+
 ## [1.54.1] - 2026-07-24 - Notifications panel actually works on phones
 
 ### Fixed

@@ -1,7 +1,15 @@
 // Shared Type Definitions
 // Version: 0.5.1-alpha
 
-export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'pending';
+// Keep in lockstep with the canonical union in src/App.tsx
+export type UserRole =
+  | 'admin'
+  | 'coordinator'
+  | 'salesperson'
+  | 'accountant'
+  | 'developer'
+  | 'temporary'
+  | 'pending';
 
 export interface User {
   id: string;

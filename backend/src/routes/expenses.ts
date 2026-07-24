@@ -39,13 +39,24 @@ async function auditActorDisplayName(userId: string, username: string): Promise<
 // Get all expenses
 router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
   const { event_id, user_id, status } = req.query;
-  
+
   // Build filters from query params
   const filters: any = {};
   if (event_id) filters.eventId = event_id as string;
   if (user_id) filters.userId = user_id as string;
   if (status) filters.status = status as string;
-  
+
+  // Server-side scoping: only reviewer roles may read other users' expenses.
+  // Previously the org-wide list was returned to ANY authenticated user and
+  // filtering happened client-side only — salespeople could read everyone's
+  // amounts/merchants/cards straight off the API.
+  const canSeeAllExpenses =
+    req.user &&
+    ['admin', 'accountant', 'developer', 'coordinator'].includes(req.user.role);
+  if (!canSeeAllExpenses) {
+    filters.userId = req.user!.id;
+  }
+
   // Get expenses with user/event details (optimized with JOINs - no N+1 queries!)
   const expenses = await expenseService.getExpensesWithDetails(filters);
   
@@ -352,8 +363,9 @@ router.put('/:id/receipt', upload.single('receipt'), asyncHandler(async (req: Au
   }
 }));
 
-// Create expense with optional receipt upload and OCR
-router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res: Response) => {
+// Create expense with optional receipt upload and OCR.
+// authorize mirrors the UI: temporary attendees have no expense surface.
+router.post('/', authorize('admin', 'coordinator', 'salesperson', 'accountant', 'developer'), upload.single('receipt'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const {
     event_id,
     category,
@@ -476,7 +488,7 @@ router.post('/', upload.single('receipt'), asyncHandler(async (req: AuthRequest,
 }));
 
 // Update expense
-router.put('/:id', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res: Response) => {
+router.put('/:id', authorize('admin', 'coordinator', 'salesperson', 'accountant', 'developer'), upload.single('receipt'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
   const {
     event_id,

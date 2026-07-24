@@ -397,7 +397,7 @@ function App() {
               {currentPage === 'account' && <AccountSettings user={user} />}
               {currentPage === 'reports' && <Reports user={user} />}
               {currentPage === 'settings' && <AdminSettings user={user} />}
-              {currentPage === 'devdashboard' && <DevDashboard user={user} />}
+              {currentPage === 'devdashboard' && user.role === 'developer' && <DevDashboard user={user} />}
             </div>
           </Suspense>
         </main>

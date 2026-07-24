@@ -188,7 +188,7 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
 });
 
 // Delete event
-router.delete('/:id', authorize('admin', 'coordinator'), async (req: AuthRequest, res) => {
+router.delete('/:id', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
 

@@ -639,6 +639,19 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     [filteredExpenses, hasApprovalPermission, user.id]
   );
 
+  // Access control — allowlist matching every nav surface (Sidebar,
+  // MobileNav, event cards). Defense-in-depth: nav visibility alone
+  // previously protected this page.
+  if (!['admin', 'coordinator', 'salesperson', 'accountant', 'developer'].includes(user.role)) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+          <p className="text-red-700">Access denied. Your role does not have access to expenses.</p>
+        </div>
+      </div>
+    );
+  }
+
   if (showForm) {
     return (
       <>

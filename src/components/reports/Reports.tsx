@@ -180,15 +180,16 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     [unassignedExpenses]
   );
 
-  // Access control: Only admin and accountant can access reports.
+  // Access control — ALLOWLIST, matching the nav gates exactly. The old
+  // denylist only named coordinator/salesperson, so temporary (and any
+  // future role) fell through to full report access.
   // (After the hooks so React's hook order stays stable across renders.)
-  if (user.role === 'coordinator' || user.role === 'salesperson') {
+  if (!['admin', 'accountant', 'developer'].includes(user.role)) {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
           <p className="text-red-700">
-            Access denied. {user.role === 'coordinator' ? 'Coordinators' : 'Salespeople'} do not
-            have access to reports.
+            Access denied. Your role does not have access to reports.
           </p>
         </div>
       </div>
