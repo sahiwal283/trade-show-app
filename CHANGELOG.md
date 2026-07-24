@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-07-24 - Business-grade exports
+
+### Added
+- **PDF Investment Report** (`GET /api/show-summaries/report.pdf`): branded two-page executive report — KPI cards, spend-by-company donut with legend and percentages, category bars, and a show-by-show YoY comparison table with totals and reconciliation footnote. Vector-drawn (pdfkit), works in every browser.
+- **Excel Workbook** (`GET /api/show-summaries/report.xlsx`, exceljs): three formatted sheets — Summary (KPIs + per-company totals), By Show (YoY with change %), Category x Company matrix — currency formats, styled headers, bold totals.
+- "PDF Report" and "Excel Workbook" buttons on the Trade Show Investment section (admin/accountant/developer).
+
 ## [2.0.1] - 2026-07-24 - Manual expense entry made obvious
 
 ### Changed

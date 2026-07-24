@@ -7,9 +7,31 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Download, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, Minus, FileText, FileSpreadsheet } from 'lucide-react';
 import { ShowSummaryRow } from './hooks/useShowSummaries';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
+import { API_CONFIG, STORAGE_KEYS } from '../../constants/appConstants';
+
+/** Authenticated binary download (PDF / xlsx) from the summaries API. */
+async function downloadReport(file: string, saveAs: string): Promise<void> {
+  try {
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    const res = await fetch(`${API_CONFIG.BASE_URL}/show-summaries/${file}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = saveAs;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('[ShowComparison] Export failed:', error);
+    alert('Export failed — please try again.');
+  }
+}
 
 interface ShowComparisonProps {
   rows: ShowSummaryRow[];
@@ -326,18 +348,32 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
         })}
       </div>
 
-      {/* Exact numbers + export — tucked behind a toggle to keep the page short */}
-      {scope === 'compare' && compareYears && (
-        <div className="mt-4">
+      {/* Business exports + exact numbers */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => downloadReport('report.pdf', 'trade-show-investment-report.pdf')}
+          className="btn-secondary min-h-[44px] px-3 py-1.5 text-xs lg:min-h-[32px]"
+        >
+          <FileText className="h-3.5 w-3.5" />
+          PDF Report
+        </button>
+        <button
+          onClick={() => downloadReport('report.xlsx', 'trade-show-investment.xlsx')}
+          className="btn-secondary min-h-[44px] px-3 py-1.5 text-xs lg:min-h-[32px]"
+        >
+          <FileSpreadsheet className="h-3.5 w-3.5" />
+          Excel Workbook
+        </button>
+        {scope === 'compare' && compareYears && (
           <button
             onClick={() => setShowTable((v) => !v)}
             aria-expanded={showTable}
             className="btn-ghost min-h-[44px] px-3 py-1.5 text-xs font-semibold text-stone-600 lg:min-h-[32px]"
           >
-            {showTable ? 'Hide exact numbers' : 'Show exact numbers & export'}
+            {showTable ? 'Hide exact numbers' : 'Show exact numbers'}
           </button>
-        </div>
-      )}
+        )}
+      </div>
       {scope === 'compare' && compareYears && showTable && (
         <div className="mt-2 overflow-x-auto rounded-lg border border-stone-200/80">
           <table className="w-full">

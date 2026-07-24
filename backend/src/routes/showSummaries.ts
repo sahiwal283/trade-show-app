@@ -64,11 +64,8 @@ export function normalizeCompany(raw: string | null | undefined): string {
   return c;
 }
 
-router.get(
-  '/',
-  authorize('admin', 'accountant', 'developer'),
-  asyncHandler(async (_req: AuthRequest, res: Response) => {
-    const imported = await query(
+async function assembleRows() {
+  const imported = await query(
       `SELECT show_name, show_key, year, company, category, amount::float, source
        FROM show_summaries
        ORDER BY year, show_key, company, category`
@@ -88,24 +85,56 @@ router.get(
        GROUP BY e.name, year, company, ex.category`
     );
 
-    const importedRows = imported.rows.map((r: any) => ({
-      ...r,
-      show_key: aliasKey(r.show_key),
-      company: normalizeCompany(r.company),
-    }));
+  const importedRows = imported.rows.map((r: any) => ({
+    ...r,
+    show_key: aliasKey(r.show_key),
+    company: normalizeCompany(r.company),
+  }));
 
-    const liveRows = live.rows.map((r: any) => ({
-      show_name: r.show_name,
-      show_key: showKey(r.show_name),
-      year: r.year,
-      company: normalizeCompany(r.company),
-      category: r.category,
-      amount: r.amount,
-      source: 'live' as const,
-    }));
+  const liveRows = live.rows.map((r: any) => ({
+    show_name: r.show_name,
+    show_key: showKey(r.show_name),
+    year: r.year,
+    company: normalizeCompany(r.company),
+    category: r.category,
+    amount: r.amount,
+    source: 'live' as const,
+  }));
 
+  return [...importedRows, ...liveRows];
+}
+
+router.get(
+  '/',
+  authorize('admin', 'accountant', 'developer'),
+  asyncHandler(async (_req: AuthRequest, res: Response) => {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.json([...importedRows, ...liveRows]);
+    res.json(await assembleRows());
+  })
+);
+
+// Business-grade exports: charted PDF report + formatted Excel workbook
+router.get(
+  '/report.pdf',
+  authorize('admin', 'accountant', 'developer'),
+  asyncHandler(async (_req: AuthRequest, res: Response) => {
+    const { generateInvestmentReportPDF } = await import('../services/ReportExportService');
+    const pdf = await generateInvestmentReportPDF(await assembleRows());
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename="trade-show-investment-report.pdf"');
+    res.send(pdf);
+  })
+);
+
+router.get(
+  '/report.xlsx',
+  authorize('admin', 'accountant', 'developer'),
+  asyncHandler(async (_req: AuthRequest, res: Response) => {
+    const { generateInvestmentWorkbook } = await import('../services/ReportExportService');
+    const wb = await generateInvestmentWorkbook(await assembleRows());
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="trade-show-investment.xlsx"');
+    res.send(wb);
   })
 );
 
