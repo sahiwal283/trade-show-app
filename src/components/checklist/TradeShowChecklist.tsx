@@ -267,11 +267,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
   const progress = getProgressSummary(checklist);
 
   const tabClasses = (tab: ChecklistTab) =>
-    `min-h-[44px] rounded-full px-4 py-1.5 text-sm font-semibold transition-colors lg:min-h-0 ${
-      activeTab === tab
-        ? 'bg-white text-stone-900 shadow-elevation-1'
-        : 'text-stone-500 hover:text-stone-800'
-    }`;
+    `seg-tab ${activeTab === tab ? 'seg-tab-active' : 'seg-tab-idle'}`;
 
   // For privileged users, show tabs
   return (
@@ -313,7 +309,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
       </div>
 
       {/* Tabs — segmented control */}
-      <div className="inline-flex rounded-full bg-stone-100 p-1">
+      <div className="seg-track">
         <button type="button" onClick={() => setActiveTab('admin')} className={tabClasses('admin')}>
           Admin Checklist
         </button>

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.8] - 2026-07-24 - One standard for pills and tabs
+
+### Changed
+- New shared segmented-control classes (`.seg-track`, `.seg-tab`, `.seg-tab-active`, `.seg-tab-idle`): every pill tab bar now uses the identical track, size, font, and brand-gradient active state — checklist Admin/My tabs, booking board section tabs, and the Reports year/Compare pills.
+- Selected filter chips (company filters in Reports) now fill with brand blue instead of near-black, matching the rest of the system.
+
 ## [2.1.7] - 2026-07-24 - Checklist tabs stand out
 
 ### Changed

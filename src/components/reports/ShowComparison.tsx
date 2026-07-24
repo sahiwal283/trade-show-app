@@ -189,16 +189,12 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
             What each show costs the business — imported 2025 history vs live data
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-full border border-stone-200 bg-stone-50 p-1">
+        <div className="seg-track">
           {[...years, 'compare' as const].map((s) => (
             <button
               key={String(s)}
               onClick={() => setScope(s as Scope)}
-              className={`min-h-[36px] rounded-full px-3 py-1 text-xs font-semibold transition-colors lg:min-h-0 ${
-                scope === s
-                  ? 'bg-white text-stone-900 shadow-elevation-1 ring-1 ring-stone-200'
-                  : 'text-stone-500 hover:text-stone-700'
-              }`}
+              className={`seg-tab ${scope === s ? 'seg-tab-active' : 'seg-tab-idle'}`}
             >
               {s === 'compare' ? 'Compare' : s}
             </button>
@@ -231,7 +227,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
           onClick={() => setCompany('all')}
           className={`chip min-h-[36px] px-2.5 py-1 text-xs transition-colors lg:min-h-0 ${
             company === 'all'
-              ? 'bg-stone-900 text-white ring-stone-900'
+              ? 'bg-brand-600 text-white ring-brand-600'
               : 'bg-white text-stone-600 ring-stone-200 hover:bg-stone-50'
           }`}
         >
@@ -243,7 +239,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
             onClick={() => setCompany(company === c ? 'all' : c)}
             className={`chip min-h-[36px] items-center gap-1.5 px-2.5 py-1 text-xs transition-colors lg:min-h-0 ${
               company === c
-                ? 'bg-stone-900 text-white ring-stone-900'
+                ? 'bg-brand-600 text-white ring-brand-600'
                 : 'bg-white text-stone-600 ring-stone-200 hover:bg-stone-50'
             }`}
           >
