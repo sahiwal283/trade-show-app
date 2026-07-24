@@ -42,12 +42,14 @@ export function ReceiptLedger({ ledger, onPageChange }: ReceiptLedgerProps) {
         </p>
       ) : (
         <ul className="divide-y divide-stone-100">
+          {/* Fixed columns: text | status | amount — chips and amounts form
+              straight vertical lines instead of trailing ragged text */}
           {ledger.map(expense => (
             <li
               key={expense.id}
-              className="flex items-center justify-between gap-3 py-2.5"
+              className="grid grid-cols-[minmax(0,1fr)_6rem_5.5rem] items-center gap-2 py-2.5"
             >
-              <div className="min-w-0 text-sm">
+              <div className="min-w-0 truncate text-sm">
                 <span className="font-semibold text-stone-900">{expense.merchant}</span>
                 <span className="text-stone-400">
                   {' '}
@@ -56,12 +58,12 @@ export function ReceiptLedger({ ledger, onPageChange }: ReceiptLedgerProps) {
                   {' '}· {formatLocalDate(expense.date, { month: 'short', day: 'numeric' })}
                 </span>
               </div>
-              <div className="flex shrink-0 items-center gap-2.5">
+              <div className="flex justify-start">
                 <StatusBadge status={toBadgeStatus(expense.status)} size="xs" />
-                <span className="text-sm font-bold tabular-nums text-stone-900">
-                  {formatCurrency(expense.amount)}
-                </span>
               </div>
+              <span className="text-right text-sm font-bold tabular-nums text-stone-900">
+                {formatCurrency(expense.amount)}
+              </span>
             </li>
           ))}
         </ul>

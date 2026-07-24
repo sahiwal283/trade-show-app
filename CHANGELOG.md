@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.56.2] - 2026-07-24 - Latest Receipts alignment
+
+### Fixed
+- Dashboard Latest Receipts: status chips and amounts now sit in fixed columns (straight vertical rails) instead of trailing variable-length text; long merchant/category lines truncate instead of pushing the columns around.
+
 ## [1.56.1] - 2026-07-24 - Investment view: bento tiles + data hygiene
 
 ### Changed
