@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.56.0] - 2026-07-24 - Trade Show Investment view + 2025 history import
+
+### Added
+- **show_summaries** (migrations 032/033): aggregate show totals — one row per show x year x company x category. Seeded with the accountant's 2025 workbook: 12 shows, 118 aggregate rows, $228,308.92, every show reconciled penny-for-penny against the sheet's own Total column. Totals only — no synthetic expense line items. 2026 tables in the workbook deliberately skipped (tracked live in-app).
+- **GET /api/show-summaries** (admin/accountant/developer): imported history merged with the same aggregate computed live from expenses, joined across years by a normalized show key.
+- **Trade Show Investment section** leads the Reports overview: KPI band (total invested, appearances, avg/show, top cost center), per-show company-stacked cost bars with 2025/2026/Compare scopes, YoY delta chips (increase red / decrease green), company filter, "not attended" states, exact-numbers comparison table with CSV export.
+- Company color map extended to historical companies (Boomin Brand).
+
+### Notes
+- Zoho CRM lead pull (ROI funnel) designed but pinned by request — spec in docs/superpowers/specs/2026-07-24.
 ## [1.55.0] - 2026-07-24 - Role-based access: enforced end to end
 
 ### Security

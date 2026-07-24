@@ -16,6 +16,8 @@ import { DetailedReport } from './DetailedReport';
 import { WhoPaidBreakdown } from './WhoPaidBreakdown';
 import { EntityCategoryMatrix } from './EntityCategoryMatrix';
 import { CollapsibleCard } from './CollapsibleCard';
+import { ShowComparison } from './ShowComparison';
+import { useShowSummaries } from './hooks/useShowSummaries';
 import { api } from '../../utils/api';
 import { useReportsData } from './hooks/useReportsData';
 import { useReportsFilters } from './hooks/useReportsFilters';
@@ -71,11 +73,22 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     entityOptions: activeEntityOptions,
   });
 
-  // Stable entity → color assignment shared by the donut, stacked bars, and matrix
-  const { colorMap: entityColorMap, entityOrder } = useMemo(
-    () => buildEntityColorMap(activeEntityOptions, expenses),
-    [activeEntityOptions, expenses]
-  );
+  // Aggregate show totals: imported 2025 history + live data (investment view)
+  const { rows: summaryRows } = useShowSummaries();
+
+  // Stable entity → color assignment shared by the donut, stacked bars, matrix,
+  // and the investment comparison (historical companies included)
+  const { colorMap: entityColorMap, entityOrder } = useMemo(() => {
+    const base = buildEntityColorMap(activeEntityOptions, expenses);
+    const extra = Array.from(new Set(summaryRows.map((r) => r.company))).filter(
+      (c) => !(c in base.colorMap)
+    );
+    extra.forEach((c, i) => {
+      base.colorMap[c] = ['#4a3aa7', '#e34948', '#eda100'][i % 3];
+      base.entityOrder.splice(base.entityOrder.length - 1, 0, c);
+    });
+    return base;
+  }, [activeEntityOptions, expenses, summaryRows]);
 
   const availableCategories = useMemo(
     () => Array.from(new Set(baseExpenses.map((e) => e.category))).sort(),
@@ -450,6 +463,17 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             </div>
           )}
         </div>
+      )}
+
+      {/* Trade Show Investment — imported 2025 history vs live data.
+          The lead section when browsing all shows: this page's job is to
+          prove the shows are worth the money. */}
+      {selectedEvent === 'all' && reportType === 'overview' && summaryRows.length > 0 && (
+        <ShowComparison
+          rows={summaryRows}
+          entityColorMap={entityColorMap}
+          entityOrder={entityOrder}
+        />
       )}
 
       {/* Who paid for what — entity split per category, click rows to filter */}
