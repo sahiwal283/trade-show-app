@@ -77,7 +77,7 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
   // Safety check: ensure currentIndex is within bounds
   const safeIndex = Math.max(0, Math.min(currentIndex, receipts.length - 1));
   const currentReceipt = receipts[safeIndex];
-  // @ts-ignore - Vite provides this at build time
+  // @ts-expect-error - Vite provides this at build time
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   const imageUrl = currentReceipt.receiptUrl 
     ? `${apiBaseUrl}${currentReceipt.receiptUrl.startsWith('/') ? '' : '/'}${currentReceipt.receiptUrl}`
@@ -294,7 +294,7 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
             {receipts.length > 1 && (
               <div className="flex justify-center gap-2 overflow-x-auto pb-2">
                 {receipts.map((receipt, index) => {
-                  // @ts-ignore - Vite provides this at build time
+                  // @ts-expect-error - Vite provides this at build time
                   const thumbApiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
                   const thumbUrl = receipt.receiptUrl 
                     ? `${thumbApiBaseUrl}${receipt.receiptUrl.startsWith('/') ? '' : '/'}${receipt.receiptUrl}`
@@ -306,7 +306,7 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
                       onClick={() => handleThumbnailClick(index)}
                       className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
                         index === currentIndex
-                          ? 'border-purple-600 scale-110'
+                          ? 'border-brand-600 scale-110'
                           : 'border-stone-300 opacity-60 hover:opacity-100'
                       }`}
                       title={`View receipt ${index + 1}`}

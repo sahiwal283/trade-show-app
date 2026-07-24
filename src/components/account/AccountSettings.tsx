@@ -219,7 +219,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
               <button
                 type="button"
                 onClick={loadStatus}
-                className="px-4 py-2 rounded-lg border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-50"
+                className="btn-secondary"
               >
                 Refresh status
               </button>
@@ -227,7 +227,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
                 type="button"
                 onClick={handleDisconnect}
                 disabled={disconnecting}
-                className="px-4 py-2 rounded-lg border border-red-300 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-60"
+                className="btn-danger"
               >
                 {disconnecting ? 'Disconnecting...' : 'Disconnect Telegram'}
               </button>
@@ -244,14 +244,14 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
                 type="button"
                 onClick={handleStartLink}
                 disabled={starting}
-                className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60"
+                className="btn-primary"
               >
                 {starting ? 'Generating...' : 'Connect Telegram'}
               </button>
               <button
                 type="button"
                 onClick={loadStatus}
-                className="px-4 py-2 rounded-lg border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-50"
+                className="btn-secondary"
               >
                 Refresh status
               </button>
@@ -339,7 +339,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
                 onClick={handleTogglePush}
                 disabled={pushBusy}
                 className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
-                  pushState === 'subscribed' ? 'bg-blue-600' : 'bg-stone-300'
+                  pushState === 'subscribed' ? 'bg-brand-600' : 'bg-stone-300'
                 }`}
               >
                 <span
@@ -356,7 +356,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
                   type="button"
                   onClick={handleSendTestPush}
                   disabled={pushTesting}
-                  className="px-4 py-2 rounded-lg border border-stone-300 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-60"
+                  className="btn-secondary"
                 >
                   {pushTesting ? 'Sending...' : 'Send test'}
                 </button>

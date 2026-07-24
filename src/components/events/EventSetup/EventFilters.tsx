@@ -30,48 +30,32 @@ export const EventFilters: React.FC<EventFiltersProps> = ({
 
   return (
     <div className="flex flex-col sm:flex-row gap-3">
-      <div className="card flex sm:inline-flex rounded-xl p-1">
+      <div className="seg-track flex w-full sm:w-auto">
         <button
           onClick={() => setViewMode('active')}
-          className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
-            viewMode === 'active'
-              ? 'bg-gradient-to-r from-brand-600 to-accent-500 text-white shadow-brand'
-              : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-          }`}
+          className={`seg-tab flex-1 justify-center ${viewMode === 'active' ? 'seg-tab-active' : 'seg-tab-idle'}`}
         >
           Active Events ({activeEventsCount})
         </button>
         <button
           onClick={() => setViewMode('past')}
-          className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
-            viewMode === 'past'
-              ? 'bg-gradient-to-r from-brand-600 to-accent-500 text-white shadow-brand'
-              : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-          }`}
+          className={`seg-tab flex-1 justify-center ${viewMode === 'past' ? 'seg-tab-active' : 'seg-tab-idle'}`}
         >
           Past Events ({pastEventsCount})
         </button>
       </div>
 
       {showFilterToggle && (
-        <div className="card flex sm:inline-flex rounded-xl p-1">
+        <div className="seg-track flex w-full sm:w-auto">
           <button
             onClick={() => setFilterMode('all')}
-            className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
-              filterMode === 'all'
-                ? 'bg-brand-600 text-white shadow-brand'
-                : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-            }`}
+            className={`seg-tab flex-1 justify-center ${filterMode === 'all' ? 'seg-tab-active' : 'seg-tab-idle'}`}
           >
             All Events
           </button>
           <button
             onClick={() => setFilterMode('my')}
-            className={`flex-1 sm:flex-initial rounded-lg px-3 sm:px-6 py-2.5 sm:py-2 min-h-[44px] sm:min-h-0 text-sm font-semibold transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 ${
-              filterMode === 'my'
-                ? 'bg-brand-600 text-white shadow-brand'
-                : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
-            }`}
+            className={`seg-tab flex-1 justify-center ${filterMode === 'my' ? 'seg-tab-active' : 'seg-tab-idle'}`}
           >
             My Events
           </button>

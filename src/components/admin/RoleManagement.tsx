@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { AppError } from '../../types/types';
 import { Shield, Plus, Edit2, Trash2, X, AlertTriangle, Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { api } from '../../utils/api';
 
@@ -65,7 +64,6 @@ export const RoleManagement: React.FC = () => {
       await loadRoles();
       handleCloseForm();
     } catch (error) {
-      const appError = error as AppError;
       console.error('Error saving role:', error);
       alert(error.response?.data?.error || 'Failed to save role');
     }
@@ -96,7 +94,6 @@ export const RoleManagement: React.FC = () => {
       await api.deleteRole(role.id);
       await loadRoles();
     } catch (error) {
-      const appError = error as AppError;
       console.error('Error deleting role:', error);
       alert(error.response?.data?.error || 'Failed to delete role');
     }
@@ -148,7 +145,7 @@ export const RoleManagement: React.FC = () => {
                 e.stopPropagation();
                 setShowForm(true);
               }}
-              className="flex items-center space-x-1 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="btn-primary px-3 py-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Add Role</span>
@@ -192,7 +189,7 @@ export const RoleManagement: React.FC = () => {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleEditRole(role)}
-                    className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 text-sm text-blue-600 bg-white border border-blue-200 rounded hover:bg-blue-50 transition-colors"
+                    className="btn-secondary flex-1 px-3 py-2"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                     <span>Edit</span>
@@ -200,7 +197,7 @@ export const RoleManagement: React.FC = () => {
                   {!role.is_system && (
                     <button
                       onClick={() => handleDeleteRole(role)}
-                      className="flex-1 flex items-center justify-center space-x-1.5 px-3 py-2 text-sm text-red-600 bg-white border border-red-200 rounded hover:bg-red-50 transition-colors"
+                      className="btn-danger flex-1 px-3 py-2"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Delete</span>
@@ -243,7 +240,7 @@ export const RoleManagement: React.FC = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., project_manager"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                     required
                   />
                   <p className="text-xs text-stone-500 mt-1">
@@ -262,7 +259,7 @@ export const RoleManagement: React.FC = () => {
                   value={formData.label}
                   onChange={(e) => setFormData({ ...formData, label: e.target.value })}
                   placeholder="e.g., Project Manager"
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                   required
                 />
               </div>
@@ -277,7 +274,7 @@ export const RoleManagement: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Brief description of this role's responsibilities..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                 />
               </div>
 
@@ -294,7 +291,7 @@ export const RoleManagement: React.FC = () => {
                       onClick={() => setFormData({ ...formData, color: option.value })}
                       className={`relative p-2 rounded-lg border-2 transition-all ${
                         formData.color === option.value
-                          ? 'border-blue-500 ring-2 ring-blue-200'
+                          ? 'border-brand-500 ring-2 ring-brand-200'
                           : 'border-stone-200 hover:border-stone-300'
                       }`}
                     >
@@ -302,7 +299,7 @@ export const RoleManagement: React.FC = () => {
                         {option.label.slice(0, 3)}
                       </div>
                       {formData.color === option.value && (
-                        <Check className="absolute top-0 right-0 w-3 h-3 text-blue-600" />
+                        <Check className="absolute top-0 right-0 w-3 h-3 text-brand-600" />
                       )}
                     </button>
                   ))}
@@ -325,13 +322,13 @@ export const RoleManagement: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleCloseForm}
-                  className="px-4 py-2 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-50 transition-colors"
+                  className="btn-secondary"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="btn-primary"
                 >
                   {editingRole ? 'Update Role' : 'Create Role'}
                 </button>

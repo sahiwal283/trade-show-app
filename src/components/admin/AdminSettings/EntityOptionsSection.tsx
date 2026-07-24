@@ -58,13 +58,13 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
             value={newEntityOption}
             onChange={(e) => setNewEntityOption(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onAddEntity()}
-            className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
             placeholder="Enter new entity option..."
           />
           <button
             onClick={onAddEntity}
             disabled={!newEntityOption || isSaving}
-            className="bg-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="btn-primary px-6 py-3"
           >
             <Plus className="w-5 h-5" />
             <span>Add</span>
@@ -80,14 +80,14 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
                     type="text"
                     value={editEntityValue}
                     onChange={(e) => setEditEntityValue(e.target.value)}
-                    className="min-w-0 flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="min-w-0 flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                     placeholder="Entity name"
                   />
                   <div className="flex gap-2">
                     <button
                       onClick={() => onSaveEdit(index)}
                       disabled={isSaving || !editEntityValue.trim()}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="btn-ghost p-2 text-brand-600 disabled:opacity-50"
                       title="Save"
                     >
                       <Check className="w-4 h-4" />
@@ -95,7 +95,7 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
                     <button
                       onClick={onCancelEdit}
                       disabled={isSaving}
-                      className="p-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
+                      className="btn-ghost p-2 disabled:opacity-50"
                       title="Cancel"
                     >
                       <X className="w-4 h-4" />
@@ -109,7 +109,7 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
                     <button
                       onClick={() => onStartEdit(index)}
                       disabled={isSaving}
-                      className="p-2 text-stone-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="btn-ghost p-2 disabled:opacity-50"
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4" />
@@ -117,7 +117,7 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
                     <button
                       onClick={() => onRemoveEntity(option)}
                       disabled={isSaving}
-                      className="p-2 text-stone-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />

@@ -77,7 +77,7 @@ export const ActivationModal: React.FC<ActivationModalProps> = ({
           <select
             value={selectedRole}
             onChange={(e) => onRoleChange(e.target.value as UserRole)}
-            className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
           >
             {roles.map(role => (
               <option key={role.id} value={role.name}>{role.label}</option>
@@ -91,13 +91,13 @@ export const ActivationModal: React.FC<ActivationModalProps> = ({
         <div className="flex space-x-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
+            className="btn-secondary flex-1"
           >
             Cancel
           </button>
           <button
             onClick={onActivate}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-lg hover:from-emerald-600 hover:to-blue-600 transition-all duration-200 flex items-center justify-center space-x-2"
+            className="btn-primary flex-1"
           >
             <UserCheck className="w-4 h-4" />
             <span>Activate</span>

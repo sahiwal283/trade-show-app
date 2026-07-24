@@ -16,11 +16,10 @@ import {
   FileText,
   Calendar,
   User,
-  XCircle,
   Loader
 } from 'lucide-react';
 import { syncManager } from '../../utils/syncManager';
-import { offlineDb, SyncQueueItem } from '../../utils/offlineDb';
+import { SyncQueueItem } from '../../utils/offlineDb';
 
 export const PendingActions: React.FC = () => {
   const [pendingItems, setPendingItems] = useState<SyncQueueItem[]>([]);
@@ -66,7 +65,7 @@ export const PendingActions: React.FC = () => {
     } catch (error) {
       const appError = error as AppError;
       console.error('[PendingActions] Retry failed:', error);
-      alert(`Failed to retry: ${error.message}`);
+      alert(`Failed to retry: ${appError.message}`);
     } finally {
       setSyncing(false);
     }
@@ -80,7 +79,7 @@ export const PendingActions: React.FC = () => {
     } catch (error) {
       const appError = error as AppError;
       console.error('[PendingActions] Sync failed:', error);
-      alert(`Failed to sync: ${error.message}`);
+      alert(`Failed to sync: ${appError.message}`);
     } finally {
       setSyncing(false);
     }
@@ -231,38 +230,22 @@ export const PendingActions: React.FC = () => {
 
         {/* Tabs */}
         <div className="bg-white rounded-xl shadow-sm border border-stone-200 mb-6">
-          <div className="border-b border-stone-200">
-            <div className="flex">
+          <div className="border-b border-stone-200 p-4 overflow-x-auto">
+            <div className="seg-track">
               <button
                 onClick={() => setActiveTab('pending')}
-                className={`
-                  flex-1 py-4 px-6 font-medium text-sm transition-colors
-                  ${activeTab === 'pending'
-                    ? 'border-b-2 border-blue-500 text-blue-600'
-                    : 'text-stone-500 hover:text-stone-700'
-                  }
-                `}
+                className={`seg-tab ${activeTab === 'pending' ? 'seg-tab-active' : 'seg-tab-idle'}`}
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <Clock className="w-4 h-4" />
-                  <span>Pending ({pendingItems.length})</span>
-                </div>
+                <Clock className="w-4 h-4" />
+                <span>Pending ({pendingItems.length})</span>
               </button>
 
               <button
                 onClick={() => setActiveTab('failed')}
-                className={`
-                  flex-1 py-4 px-6 font-medium text-sm transition-colors
-                  ${activeTab === 'failed'
-                    ? 'border-b-2 border-red-500 text-red-600'
-                    : 'text-stone-500 hover:text-stone-700'
-                  }
-                `}
+                className={`seg-tab ${activeTab === 'failed' ? 'seg-tab-active' : 'seg-tab-idle'}`}
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Failed ({failedItems.length})</span>
-                </div>
+                <AlertCircle className="w-4 h-4" />
+                <span>Failed ({failedItems.length})</span>
               </button>
             </div>
           </div>
@@ -272,11 +255,7 @@ export const PendingActions: React.FC = () => {
             <button
               onClick={handleSyncNow}
               disabled={syncing || pendingItems.length === 0}
-              className="
-                flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg
-                hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed
-                transition-colors flex items-center justify-center space-x-2
-              "
+              className="btn-primary flex-1"
             >
               {syncing ? (
                 <>
@@ -295,11 +274,7 @@ export const PendingActions: React.FC = () => {
               <button
                 onClick={handleRetryAll}
                 disabled={syncing}
-                className="
-                  flex-1 bg-emerald-600 text-white px-4 py-2 rounded-lg
-                  hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed
-                  transition-colors flex items-center justify-center space-x-2
-                "
+                className="btn-primary flex-1"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span>Retry All Failed</span>

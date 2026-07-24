@@ -49,14 +49,14 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({
               placeholder="Search logs..."
               value={auditSearchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10 pr-4 py-2 w-full border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="pl-10 pr-4 py-2 w-full border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500"
             />
           </div>
         </div>
         <select
           value={auditAction}
           onChange={(e) => onActionChange(e.target.value)}
-          className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500"
         >
           <option value="all">All Actions</option>
           <option value="login_success">Login Success</option>
@@ -69,7 +69,7 @@ export const AuditLogsTab: React.FC<AuditLogsTabProps> = ({
         </select>
         <button
           onClick={onApplyFilters}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2"
+          className="btn-primary"
         >
           <Filter className="w-4 h-4" />
           <span>Apply</span>

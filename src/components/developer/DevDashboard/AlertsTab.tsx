@@ -56,7 +56,7 @@ export const AlertsTab: React.FC<AlertsTabProps> = ({ alerts, alertStatus, onSta
         <select
           value={alertStatus}
           onChange={(e) => onStatusChange(e.target.value)}
-          className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500"
         >
           <option value="active">Active Alerts</option>
           <option value="acknowledged">Acknowledged</option>

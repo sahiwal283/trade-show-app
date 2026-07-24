@@ -96,7 +96,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type, duration = 5000, on
             ${colors.icon} hover:opacity-70 transition-opacity
             flex-shrink-0 p-1 rounded
             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent
-            ${type === 'error' ? 'focus:ring-red-500' : type === 'warning' ? 'focus:ring-amber-500' : type === 'success' ? 'focus:ring-emerald-500' : 'focus:ring-blue-500'}
+            ${type === 'error' ? 'focus:ring-red-500' : type === 'warning' ? 'focus:ring-amber-500' : type === 'success' ? 'focus:ring-emerald-500' : 'focus:ring-brand-500'}
           `}
           aria-label="Close notification"
           type="button"

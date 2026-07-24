@@ -60,7 +60,7 @@ export const ElectricityOrderCard: React.FC<ElectricityOrderCardProps> = ({
           onChange={(e) => setElectricityNotes(e.target.value)}
           onBlur={onNotesBlur}
           placeholder="Add notes (voltage, number of outlets, special requirements, etc.)"
-          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent text-sm resize-none"
+          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm resize-none"
           rows={2}
         />
         <div className="flex items-center gap-2">
@@ -72,7 +72,7 @@ export const ElectricityOrderCard: React.FC<ElectricityOrderCardProps> = ({
               </span>
               <button
                 onClick={onViewReceipt}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                className="btn-ghost"
                 title="View receipt"
               >
                 <Eye className="w-4 h-4" />
@@ -82,7 +82,7 @@ export const ElectricityOrderCard: React.FC<ElectricityOrderCardProps> = ({
           )}
           <button
             onClick={onUploadReceipt}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+            className="btn-ghost"
           >
             <Receipt className="w-4 h-4" />
             {receiptCount > 0 ? 'Add Another' : 'Upload Receipt'}

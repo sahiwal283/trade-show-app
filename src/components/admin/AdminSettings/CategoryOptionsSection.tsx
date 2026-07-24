@@ -92,7 +92,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
               value={newCategoryOption}
               onChange={(e) => setNewCategoryOption(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onAddCategory()}
-              className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               placeholder="Enter new category name..."
             />
           </div>
@@ -101,28 +101,28 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
               type="text"
               value={newCategoryZohoHauteId}
               onChange={(e) => setNewCategoryZohoHauteId(e.target.value)}
-              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               placeholder="Haute Zoho ID"
             />
             <input
               type="text"
               value={newCategoryZohoBoomId}
               onChange={(e) => setNewCategoryZohoBoomId(e.target.value)}
-              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               placeholder="Boomin Zoho ID"
             />
             <input
               type="text"
               value={newCategoryZohoNirvanaId}
               onChange={(e) => setNewCategoryZohoNirvanaId(e.target.value)}
-              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               placeholder="Nirvana Zoho ID"
             />
           </div>
           <button
             onClick={onAddCategory}
             disabled={!newCategoryOption || isSaving}
-            className="w-full bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            className="btn-primary w-full px-6 py-3"
           >
             <Plus className="w-5 h-5" />
             <span>Add Category</span>
@@ -138,7 +138,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     type="text"
                     value={editCategoryValue}
                     onChange={(e) => setEditCategoryValue(e.target.value)}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                     placeholder="Category name"
                   />
                   <div className="grid grid-cols-3 gap-2">
@@ -146,21 +146,21 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                       type="text"
                       value={editCategoryZohoHauteId}
                       onChange={(e) => setEditCategoryZohoHauteId(e.target.value)}
-                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       placeholder="Haute Zoho ID"
                     />
                     <input
                       type="text"
                       value={editCategoryZohoBoomId}
                       onChange={(e) => setEditCategoryZohoBoomId(e.target.value)}
-                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       placeholder="Boomin Zoho ID"
                     />
                     <input
                       type="text"
                       value={editCategoryZohoNirvanaId}
                       onChange={(e) => setEditCategoryZohoNirvanaId(e.target.value)}
-                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       placeholder="Nirvana Zoho ID"
                     />
                   </div>
@@ -168,7 +168,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     <button
                       onClick={() => onSaveEdit(index)}
                       disabled={isSaving || !editCategoryValue.trim()}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="btn-ghost p-2 text-brand-600 disabled:opacity-50"
                       title="Save"
                     >
                       <Check className="w-4 h-4" />
@@ -176,7 +176,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     <button
                       onClick={onCancelEdit}
                       disabled={isSaving}
-                      className="p-2 text-stone-600 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50"
+                      className="btn-ghost p-2 disabled:opacity-50"
                       title="Cancel"
                     >
                       <X className="w-4 h-4" />
@@ -205,7 +205,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     <button
                       onClick={() => onStartEdit(index)}
                       disabled={isSaving}
-                      className="p-2 text-stone-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="btn-ghost p-2 disabled:opacity-50"
                       title="Edit"
                     >
                       <Pencil className="w-4 h-4" />
@@ -213,7 +213,7 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
                     <button
                       onClick={() => onRemoveCategory(option)}
                       disabled={isSaving}
-                      className="p-2 text-stone-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                      className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />

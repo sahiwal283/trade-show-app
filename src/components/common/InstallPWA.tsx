@@ -102,13 +102,13 @@ export const InstallPWA: React.FC = () => {
             <div className="flex space-x-2">
               <button
                 onClick={handleInstallClick}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:from-blue-600 hover:to-emerald-600 transition-all"
+                className="btn-primary flex-1"
               >
                 Install
               </button>
               <button
                 onClick={handleDismiss}
-                className="px-4 py-2 text-stone-600 text-sm font-medium hover:bg-stone-100 rounded-lg transition-colors"
+                className="btn-ghost"
               >
                 Not now
               </button>
@@ -123,7 +123,7 @@ export const InstallPWA: React.FC = () => {
   return (
     <button
       onClick={handleInstallClick}
-      className="inline-flex items-center space-x-2 px-4 py-2 bg-white border-2 border-blue-500 text-blue-600 rounded-lg font-medium hover:bg-blue-50 transition-all duration-200 shadow-sm hover:shadow-md"
+      className="btn-secondary"
     >
       <Download className="w-4 h-4" />
       <span className="hidden sm:inline">Add to Home Screen</span>

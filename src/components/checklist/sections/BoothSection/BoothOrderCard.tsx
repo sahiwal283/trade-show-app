@@ -67,7 +67,7 @@ export const BoothOrderCard: React.FC<BoothOrderCardProps> = ({
           onChange={(e) => setBoothNotes(e.target.value)}
           onBlur={onNotesBlur}
           placeholder="Add notes (booth number, size, location, etc.)"
-          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
+          className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm resize-none"
           rows={2}
         />
         
@@ -88,7 +88,7 @@ export const BoothOrderCard: React.FC<BoothOrderCardProps> = ({
               </span>
               <button
                 onClick={onViewReceipt}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                className="btn-ghost"
                 title="View receipt"
               >
                 <Eye className="w-4 h-4" />
@@ -98,7 +98,7 @@ export const BoothOrderCard: React.FC<BoothOrderCardProps> = ({
           )}
           <button
             onClick={onUploadReceipt}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+            className="btn-ghost"
           >
             <Receipt className="w-4 h-4" />
             {receiptCount > 0 ? 'Add Another' : 'Upload Receipt'}

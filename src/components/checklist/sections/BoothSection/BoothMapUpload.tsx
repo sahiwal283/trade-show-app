@@ -20,7 +20,7 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
   boothMapUrl,
   uploadingMap,
   boothMapInputRef,
-  onMapUpload,
+  onMapUpload: _onMapUpload,
   onDeleteMap
 }) => {
   const [showBoothMapViewer, setShowBoothMapViewer] = useState(false);
@@ -68,7 +68,7 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
         <button
           onClick={() => boothMapInputRef.current?.click()}
           disabled={uploadingMap}
-          className="w-full py-2 px-3 border-2 border-dashed border-stone-300 rounded-lg hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm text-stone-600 flex items-center justify-center gap-2 disabled:opacity-50"
+          className="w-full py-2 px-3 border-2 border-dashed border-stone-300 rounded-lg hover:border-brand-400 hover:bg-brand-50 transition-colors text-sm text-stone-600 flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {uploadingMap ? (
             <>

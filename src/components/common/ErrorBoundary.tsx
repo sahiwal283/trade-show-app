@@ -93,13 +93,13 @@ export class ErrorBoundary extends Component<Props, State> {
             <div className="mt-6 flex space-x-3">
               <button
                 onClick={this.handleReset}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="btn-primary flex-1"
               >
                 Try Again
               </button>
               <button
                 onClick={() => window.location.href = '/'}
-                className="flex-1 px-4 py-2 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors"
+                className="btn-secondary flex-1"
               >
                 Go Home
               </button>

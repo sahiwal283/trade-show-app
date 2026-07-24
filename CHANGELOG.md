@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-07-24 - App-wide control standardization
+
+### Changed
+- Full-app sweep: every button now uses the design-system classes (btn-primary / btn-secondary / btn-danger / btn-ghost) and every tab or toggle strip uses the shared segmented-pill pattern. Covers Events filters, Admin Settings tabs, User Management, Dev Dashboard tabs, Model Training, checklist sections (incl. Booth shipping), receipt upload, registration, account settings, PWA/error/confirm dialogs, and offline sync panels.
+- All stray focus rings and accents (blue/purple/indigo/emerald/orange one-offs) now use brand colors. Data-carrying colors (status badges, category swatches, sync states, password strength) are intentionally unchanged.
+
 ## [2.1.8] - 2026-07-24 - One standard for pills and tabs
 
 ### Changed

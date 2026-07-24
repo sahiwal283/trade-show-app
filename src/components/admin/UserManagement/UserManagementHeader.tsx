@@ -21,7 +21,7 @@ export const UserManagementHeader: React.FC<UserManagementHeaderProps> = ({ onAd
       </div>
       <button
         onClick={onAddUser}
-        className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 flex items-center space-x-2"
+        className="btn-primary px-6 py-3"
       >
         <Plus className="w-5 h-5" />
         <span>Add User</span>

@@ -66,7 +66,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               type="text"
               value={formData.name}
               onChange={(e) => onFormDataChange({ name: e.target.value })}
-              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               required
             />
           </div>
@@ -79,7 +79,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               type="text"
               value={formData.username}
               onChange={(e) => onFormDataChange({ username: e.target.value })}
-              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               required
             />
           </div>
@@ -92,7 +92,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               type="email"
               value={formData.email}
               onChange={(e) => onFormDataChange({ email: e.target.value })}
-              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               required
             />
           </div>
@@ -105,7 +105,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
               type="password"
               value={formData.password}
               onChange={(e) => onFormDataChange({ password: e.target.value })}
-              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               required={!editingUser}
               placeholder={editingUser ? 'Enter new password to reset' : 'Create password'}
             />
@@ -121,7 +121,7 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             <select
               value={formData.role}
               onChange={(e) => onFormDataChange({ role: e.target.value as UserRole })}
-              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               required
             >
               {roles.map(role => (
@@ -134,13 +134,13 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-stone-600 border border-stone-300 rounded-lg hover:bg-stone-50"
+              className="btn-secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-2 rounded-lg hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
+              className="btn-primary px-6"
             >
               {editingUser ? 'Update' : 'Add'} User
             </button>

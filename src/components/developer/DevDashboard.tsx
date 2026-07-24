@@ -179,7 +179,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm"
+            className="px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 text-sm"
           >
             <option value="1h">Last Hour</option>
             <option value="24h">Last 24 Hours</option>
@@ -189,7 +189,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
           <button
             onClick={() => loadDashboardData()}
             disabled={refreshing}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center space-x-2 text-sm disabled:opacity-50"
+            className="btn-primary"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
             <span>Refresh</span>
@@ -221,7 +221,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
                   </p>
                   <button
                     onClick={() => loadDashboardData()}
-                    className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+                    className="btn-primary mt-3"
                   >
                     Retry
                   </button>

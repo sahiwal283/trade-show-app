@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, TrendingUp, Download, RefreshCw, AlertCircle, CheckCircle, Clock, Users, Database } from 'lucide-react';
-import { api } from '../../utils/api';
+import { Brain, TrendingUp, Download, RefreshCw, AlertCircle, CheckCircle, Users, Database } from 'lucide-react';
 
 interface TrainingStats {
   overall: {
@@ -164,14 +163,14 @@ export const ModelTrainingDashboard: React.FC = () => {
         <div className="flex space-x-3">
           <button
             onClick={() => handleExport('json')}
-            className="flex items-center px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition-colors"
+            className="btn-secondary"
           >
             <Download className="w-4 h-4 mr-2" />
             Export JSON
           </button>
           <button
             onClick={() => handleExport('csv')}
-            className="flex items-center px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg transition-colors"
+            className="btn-secondary"
           >
             <Download className="w-4 h-4 mr-2" />
             Export CSV
@@ -179,7 +178,7 @@ export const ModelTrainingDashboard: React.FC = () => {
           <button
             onClick={handleForceRefresh}
             disabled={refreshing}
-            className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            className="btn-primary"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Refreshing...' : 'Force Refresh'}
@@ -233,35 +232,23 @@ export const ModelTrainingDashboard: React.FC = () => {
       )}
 
       {/* Tabs */}
-      <div className="border-b border-stone-200">
-        <nav className="flex space-x-8">
+      <div className="overflow-x-auto">
+        <nav className="seg-track">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'overview'
-                ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
-            }`}
+            className={`seg-tab ${activeTab === 'overview' ? 'seg-tab-active' : 'seg-tab-idle'}`}
           >
             Overview
           </button>
           <button
             onClick={() => setActiveTab('patterns')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'patterns'
-                ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
-            }`}
+            className={`seg-tab ${activeTab === 'patterns' ? 'seg-tab-active' : 'seg-tab-idle'}`}
           >
             Learned Patterns ({patterns.length})
           </button>
           <button
             onClick={() => setActiveTab('accuracy')}
-            className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'accuracy'
-                ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
-            }`}
+            className={`seg-tab ${activeTab === 'accuracy' ? 'seg-tab-active' : 'seg-tab-idle'}`}
           >
             Accuracy Metrics
           </button>
@@ -338,7 +325,7 @@ export const ModelTrainingDashboard: React.FC = () => {
                 <select
                   value={selectedField}
                   onChange={(e) => setSelectedField(e.target.value)}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 >
                   <option value="all">All Fields</option>
                   <option value="merchant">Merchant</option>
@@ -354,7 +341,7 @@ export const ModelTrainingDashboard: React.FC = () => {
                   value={minFrequency}
                   onChange={(e) => setMinFrequency(parseInt(e.target.value) || 1)}
                   min="1"
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
                 />
               </div>
             </div>

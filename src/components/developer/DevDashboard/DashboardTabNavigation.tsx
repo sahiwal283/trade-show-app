@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Cpu, Brain, Activity, Users, Zap, AlertTriangle, Eye, Scan, Monitor, LucideIcon } from 'lucide-react';
+import { BarChart3, Cpu, Brain, Activity, Users, Zap, AlertTriangle, Scan, Monitor, LucideIcon } from 'lucide-react';
 
 interface Tab {
   id: string;
@@ -26,24 +26,18 @@ const tabs: Tab[] = [
 
 export const DashboardTabNavigation: React.FC<DashboardTabNavigationProps> = ({ activeTab, onTabChange }) => {
   return (
-    <div className="border-b border-stone-200 overflow-x-auto">
-      <nav className="flex space-x-4 md:space-x-8 px-4 md:px-6 min-w-max" aria-label="Tabs">
+    <div className="overflow-x-auto px-4 pt-4 md:px-6 md:pt-6">
+      <nav className="seg-track" aria-label="Tabs">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className={`py-3 md:py-4 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-stone-500 hover:text-stone-700 hover:border-stone-300'
-              }`}
+              className={`seg-tab ${activeTab === tab.id ? 'seg-tab-active' : 'seg-tab-idle'}`}
             >
-              <div className="flex items-center space-x-2">
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
-              </div>
+              <Icon className="w-4 h-4" />
+              <span>{tab.label}</span>
             </button>
           );
         })}

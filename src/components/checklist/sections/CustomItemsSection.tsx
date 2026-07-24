@@ -156,7 +156,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
               <button
                 onClick={handleApplyTemplates}
                 disabled={saving}
-                className="flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm disabled:opacity-50"
+                className="btn-primary"
                 title="Add standard tasks to this event"
               >
                 <Download className="w-4 h-4" />
@@ -166,7 +166,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
               {isAdmin && (
                 <button
                   onClick={handleOpenTemplateModal}
-                  className="flex items-center gap-1 px-3 py-1.5 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm"
+                  className="btn-secondary"
                   title="Manage standard tasks for all events"
                 >
                   <Settings className="w-4 h-4" />
@@ -176,7 +176,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
               
               <button
                 onClick={() => setShowAddForm(true)}
-                className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors text-sm"
+                className="btn-primary"
               >
                 <Plus className="w-4 h-4" />
                 Add Task
@@ -198,7 +198,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
                 value={newItem.title}
                 onChange={(e) => setNewItem({ ...newItem, title: e.target.value })}
                 placeholder="e.g., Order promotional materials"
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
                 autoFocus
               />
             </div>
@@ -211,7 +211,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
                 value={newItem.description}
                 onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                 placeholder="Additional details about this task..."
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm resize-none"
                 rows={2}
               />
             </div>
@@ -220,7 +220,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
               <button
                 onClick={handleAddItem}
                 disabled={saving || !newItem.title.trim()}
-                className="flex items-center gap-1 px-3 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors text-sm disabled:opacity-50"
+                className="btn-primary"
               >
                 <Save className="w-4 h-4" />
                 Add Task
@@ -230,7 +230,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
                   setShowAddForm(false);
                   setNewItem({ title: '', description: '' });
                 }}
-                className="px-3 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm"
+                className="btn-secondary"
               >
                 Cancel
               </button>
@@ -269,7 +269,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
                       type="text"
                       value={editData.title}
                       onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm font-medium"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm font-medium"
                     />
                   </div>
                   <div>
@@ -277,7 +277,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
                       value={editData.description}
                       onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                       placeholder="Description (optional)"
-                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm resize-none"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm resize-none"
                       rows={2}
                     />
                   </div>
@@ -285,14 +285,14 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
                     <button
                       onClick={() => handleSaveEdit(item.id!)}
                       disabled={saving || !editData.title.trim()}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors text-sm disabled:opacity-50"
+                      className="btn-primary"
                     >
                       <Save className="w-4 h-4" />
                       Save
                     </button>
                     <button
                       onClick={handleCancelEdit}
-                      className="flex items-center gap-1 px-3 py-1.5 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm"
+                      className="btn-secondary"
                     >
                       <X className="w-4 h-4" />
                       Cancel
@@ -326,7 +326,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => handleStartEdit(item)}
-                        className="p-1.5 text-stone-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
+                        className="p-1.5 text-stone-400 hover:text-brand-600 hover:bg-brand-50 rounded transition-colors"
                         title="Edit"
                       >
                         <Edit2 className="w-4 h-4" />

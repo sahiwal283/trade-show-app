@@ -33,19 +33,19 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   const variantStyles = {
     danger: {
       icon: 'text-red-600',
-      button: 'bg-red-600 hover:bg-red-700 text-white',
+      button: 'btn-danger',
       border: 'border-red-200',
       bg: 'bg-red-50'
     },
     warning: {
       icon: 'text-amber-600',
-      button: 'bg-amber-600 hover:bg-amber-700 text-white',
+      button: 'btn-danger',
       border: 'border-amber-200',
       bg: 'bg-amber-50'
     },
     info: {
       icon: 'text-blue-600',
-      button: 'bg-blue-600 hover:bg-blue-700 text-white',
+      button: 'btn-primary',
       border: 'border-blue-200',
       bg: 'bg-blue-50'
     }
@@ -88,13 +88,13 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           <div className="flex gap-3 justify-end">
             <button
               onClick={onCancel}
-              className="px-4 py-2 min-h-[44px] flex-1 sm:flex-initial lg:min-h-0 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
+              className="btn-secondary flex-1 sm:flex-initial"
             >
               {cancelText}
             </button>
             <button
               onClick={onConfirm}
-              className={`px-4 py-2 min-h-[44px] flex-1 sm:flex-initial lg:min-h-0 rounded-lg font-medium transition-colors ${styles.button}`}
+              className={`${styles.button} flex-1 sm:flex-initial`}
             >
               {confirmText}
             </button>

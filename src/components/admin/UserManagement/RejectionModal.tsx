@@ -75,13 +75,13 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
         <div className="flex space-x-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
+            className="btn-secondary flex-1"
           >
             Cancel
           </button>
           <button
             onClick={onReject}
-            className="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 flex items-center justify-center space-x-2"
+            className="btn-danger flex-1"
           >
             <UserX className="w-4 h-4" />
             <span>Reject User</span>

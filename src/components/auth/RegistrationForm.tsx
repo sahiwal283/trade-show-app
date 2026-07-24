@@ -50,11 +50,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
           setFieldErrors(prev => ({ ...prev, username: 'Username already taken' }));
         } else {
           setFieldErrors(prev => {
-            const { username, ...rest } = prev;
+            const { username: _username, ...rest } = prev;
             return rest;
           });
         }
-      } catch (err) {
+      } catch {
         // Ignore validation errors
       }
     }
@@ -66,11 +66,11 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
           setFieldErrors(prev => ({ ...prev, email: 'Email already registered' }));
         } else {
           setFieldErrors(prev => {
-            const { email, ...rest } = prev;
+            const { email: _email, ...rest } = prev;
             return rest;
           });
         }
-      } catch (err) {
+      } catch {
         // Ignore validation errors
       }
     }
@@ -152,7 +152,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
               </p>
               <button
                 onClick={onBack}
-                className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200"
+                className="btn-primary w-full"
               >
                 Return to Login
               </button>
@@ -213,7 +213,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors"
                   placeholder="Enter your full name"
                   required
                 />
@@ -231,7 +231,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border ${fieldErrors.email ? 'border-red-300' : 'border-stone-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                  className={`w-full pl-10 pr-4 py-3 border ${fieldErrors.email ? 'border-red-300' : 'border-stone-300'} rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors`}
                   placeholder="Enter your email"
                   required
                 />
@@ -252,7 +252,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
                   name="username"
                   value={formData.username}
                   onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border ${fieldErrors.username ? 'border-red-300' : 'border-stone-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors`}
+                  className={`w-full pl-10 pr-4 py-3 border ${fieldErrors.username ? 'border-red-300' : 'border-stone-300'} rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors`}
                   placeholder="Choose a username"
                   required
                 />
@@ -273,7 +273,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-12 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors"
                   placeholder="Create a strong password"
                   required
                 />
@@ -313,7 +313,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full pl-10 pr-12 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-12 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-colors"
                   placeholder="Confirm your password"
                   required
                 />
@@ -343,7 +343,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
             <button
               type="submit"
               disabled={isLoading || Object.keys(fieldErrors).length > 0}
-              className="w-full bg-gradient-to-r from-blue-500 to-emerald-500 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              className="btn-primary w-full"
             >
               {isLoading ? (
                 <>

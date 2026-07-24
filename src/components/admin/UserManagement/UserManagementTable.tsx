@@ -31,7 +31,6 @@ interface UserManagementTableProps {
 
 export const UserManagementTable: React.FC<UserManagementTableProps> = ({
   users,
-  roles,
   currentUserId,
   isPendingUser,
   getRoleColor,
@@ -100,7 +99,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                       <>
                         <button
                           onClick={() => onActivateUser(user)}
-                          className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-blue-500 text-white text-sm font-medium rounded-lg hover:from-emerald-600 hover:to-blue-600 transition-all duration-200 flex items-center space-x-2"
+                          className="btn-primary"
                           title="Activate User"
                         >
                           <UserCheck className="w-4 h-4" />
@@ -108,7 +107,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                         </button>
                         <button
                           onClick={() => onRejectUser(user)}
-                          className="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 flex items-center space-x-2"
+                          className="btn-danger"
                           title="Reject User"
                         >
                           <UserX className="w-4 h-4" />
@@ -119,14 +118,14 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                       <>
                         <button
                           onClick={() => onInviteUser(user.id)}
-                          className="p-2 text-stone-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="btn-ghost p-2"
                           title="Send Invitation"
                         >
                           <Mail className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => onEditUser(user)}
-                          className="p-2 text-stone-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="btn-ghost p-2"
                           title="Edit User"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -134,7 +133,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                         <button
                           onClick={() => onDeleteUser(user.id)}
                           disabled={user.id === currentUserId || user.username === 'admin'}
-                          className="p-2 text-stone-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                           title={user.username === 'admin' ? 'Cannot delete system admin' : user.id === currentUserId ? 'Cannot delete yourself' : 'Delete User'}
                         >
                           <Trash2 className="w-4 h-4" />

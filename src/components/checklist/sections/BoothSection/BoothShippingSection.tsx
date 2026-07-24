@@ -55,7 +55,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
         
         <button
           onClick={() => setShowAddShipmentForm(!showAddShipmentForm)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors text-sm"
+          className="btn-primary"
         >
           <Package className="w-4 h-4" />
           {showAddShipmentForm ? 'Cancel' : 'Add Shipment'}
@@ -151,7 +151,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
                     value="carrier"
                     checked={newShipmentData.shipping_method === 'carrier'}
                     onChange={(e) => handleNewShipmentFieldChange('shipping_method', e.target.value)}
-                    className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                    className="w-4 h-4 text-brand-600 focus:ring-brand-500"
                   />
                   <span className="text-sm text-stone-700">Carrier Shipping</span>
                 </label>
@@ -161,7 +161,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
                     value="manual"
                     checked={newShipmentData.shipping_method === 'manual'}
                     onChange={(e) => handleNewShipmentFieldChange('shipping_method', e.target.value)}
-                    className="w-4 h-4 text-purple-600 focus:ring-purple-500"
+                    className="w-4 h-4 text-brand-600 focus:ring-brand-500"
                   />
                   <span className="text-sm text-stone-700">Manual Delivery</span>
                 </label>
@@ -180,7 +180,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
                     value={newShipmentData.carrier_name || ''}
                     onChange={(e) => handleNewShipmentFieldChange('carrier_name', e.target.value)}
                     placeholder="e.g., FedEx, UPS, Road Runner"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
                   />
                 </div>
 
@@ -193,7 +193,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
                     value={newShipmentData.tracking_number || ''}
                     onChange={(e) => handleNewShipmentFieldChange('tracking_number', e.target.value)}
                     placeholder="Tracking/shipment number"
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
                   />
                 </div>
               </div>
@@ -209,7 +209,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
                   type="date"
                   value={newShipmentData.shipping_date || ''}
                   onChange={(e) => handleNewShipmentFieldChange('shipping_date', e.target.value)}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
                 />
               </div>
 
@@ -222,7 +222,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
                   value={newShipmentData.delivery_date || ''}
                   onChange={(e) => handleNewShipmentFieldChange('delivery_date', e.target.value)}
                   min={newShipmentData.shipping_date || ''}
-                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                  className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm"
                 />
               </div>
             </div>
@@ -236,7 +236,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
                 value={newShipmentData.notes || ''}
                 onChange={(e) => handleNewShipmentFieldChange('notes', e.target.value)}
                 placeholder="Shipment details, special instructions, contact info, etc."
-                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm resize-none"
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent text-sm resize-none"
                 rows={2}
               />
             </div>
@@ -263,7 +263,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
             <button
               onClick={onAddShipment}
               disabled={savingShipment}
-              className="w-full py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium disabled:opacity-50"
+              className="btn-primary w-full"
             >
               {savingShipment ? 'Adding...' : 'Add Shipment'}
             </button>
@@ -286,7 +286,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
               </span>
               <button
                 onClick={onViewReceipt}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                className="btn-ghost"
                 title="View receipt"
               >
                 <Eye className="w-4 h-4" />
@@ -296,7 +296,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
           )}
           <button
             onClick={onUploadReceipt}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors"
+            className="btn-ghost"
           >
             <Receipt className="w-4 h-4" />
             {receiptCount > 0 ? 'Add Another' : 'Upload Receipt'}

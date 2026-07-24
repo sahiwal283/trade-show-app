@@ -92,13 +92,13 @@ export const InactivityWarning: React.FC<InactivityWarningProps> = ({
           <div className="flex flex-col sm:flex-row gap-3">
             <button
               onClick={onStayLoggedIn}
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-500 to-emerald-500 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-emerald-600 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="btn-primary flex-1"
             >
               Stay Logged In
             </button>
             <button
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-stone-300 text-stone-700 rounded-lg font-semibold hover:bg-stone-50 transition-colors"
+              className="btn-secondary flex-1"
             >
               Dismiss
             </button>
