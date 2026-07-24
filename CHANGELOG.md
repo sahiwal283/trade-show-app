@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.5] - 2026-07-24 - Grid motif everywhere; single version pill
+
+### Changed
+- The masthead's grid texture is now a shared design motif (`.bg-grid-white`) applied to every gradient surface: dashboard hero, Reports trade-show and entity banners, and the expense-detail modal headers.
+- Removed the duplicate version badge from the sidebar user card — the header pill (visible on all screen sizes) is the single version indicator.
+
 ## [2.1.4] - 2026-07-24 - Winter Fancy Faire un-merged; Champs Austin paired
 
 ### Fixed

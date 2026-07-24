@@ -275,7 +275,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Trade Show Header Banner */}
       {selectedEvent !== 'all' && (
-        <div className="rounded-card bg-gradient-to-r from-brand-600 to-accent-600 p-3 shadow-brand-lg sm:p-4 md:p-5 lg:p-6">
+        <div className="relative overflow-hidden rounded-card bg-gradient-to-r from-brand-600 to-accent-600 p-3 shadow-brand-lg sm:p-4 md:p-5 lg:p-6">
+          <div aria-hidden="true" className="bg-grid-white pointer-events-none absolute inset-0" />
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
               <button
@@ -311,7 +312,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
       {/* Entity Header Banner */}
       {selectedEntity !== 'all' && (
-        <div className="rounded-card bg-gradient-to-r from-brand-700 to-brand-500 p-3 shadow-brand-lg sm:p-4 md:p-5 lg:p-6">
+        <div className="relative overflow-hidden rounded-card bg-gradient-to-r from-brand-700 to-brand-500 p-3 shadow-brand-lg sm:p-4 md:p-5 lg:p-6">
+          <div aria-hidden="true" className="bg-grid-white pointer-events-none absolute inset-0" />
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
             <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
               <button

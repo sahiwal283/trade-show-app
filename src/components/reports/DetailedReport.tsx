@@ -355,7 +355,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
       {viewingExpense && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 p-4 backdrop-blur-sm">
           <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-elevation-3">
-            <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-xl bg-gradient-to-r from-brand-700 via-brand-600 to-accent-600 px-6 py-4 text-white">
+            <div className="sticky top-0 z-10 flex items-center justify-between overflow-hidden rounded-t-xl bg-gradient-to-r from-brand-700 via-brand-600 to-accent-600 px-6 py-4 text-white">
               <div>
                 <h2 className="font-display text-xl font-bold tracking-tight">Expense Details</h2>
                 <p className="mt-1 text-sm text-brand-100">

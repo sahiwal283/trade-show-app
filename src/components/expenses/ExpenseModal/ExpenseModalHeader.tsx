@@ -18,7 +18,7 @@ interface ExpenseModalHeaderProps {
 export const ExpenseModalHeader: React.FC<ExpenseModalHeaderProps> = ({ eventName, onClose }) => {
   useEscapeKey(onClose);
   return (
-    <div className="sticky top-0 z-10 flex items-center justify-between rounded-t-xl bg-gradient-to-r from-brand-700 via-brand-600 to-accent-600 px-4 py-3 text-white sm:px-6 sm:py-4">
+    <div className="relative overflow-hidden sticky top-0 z-10 flex items-center justify-between rounded-t-xl bg-gradient-to-r from-brand-700 via-brand-600 to-accent-600 px-4 py-3 text-white sm:px-6 sm:py-4">
       <div className="min-w-0">
         <h2 className="font-display text-lg sm:text-xl font-bold tracking-tight">Expense Details</h2>
         <p className="truncate text-sm text-brand-100">{eventName || 'N/A'}</p>

@@ -1,5 +1,4 @@
 import React from 'react';
-import packageJson from '../../../package.json';
 import {
   LayoutDashboard,
   Calendar,
@@ -13,8 +12,6 @@ import {
   Code
 } from 'lucide-react';
 import { User, UserRole } from '../../App';
-
-const APP_VERSION = packageJson.version;
 
 interface SidebarProps {
   user: User;
@@ -132,9 +129,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <p className="text-sm font-semibold text-stone-900 truncate">{user.name}</p>
           <p className="text-xs text-stone-500 capitalize truncate">{user.role}</p>
         </div>
-        <span className="shrink-0 rounded-full border border-stone-200/80 bg-white/70 px-2 py-0.5 text-[10px] font-medium tracking-wide text-stone-500">
-          v{APP_VERSION}
-        </span>
       </div>
     </div>
   );

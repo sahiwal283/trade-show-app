@@ -38,14 +38,7 @@ export function ShowHero({ show, shows, isLive, dayCurrent, dayTotal, onSelectSh
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute -bottom-28 -left-10 h-56 w-56 rounded-full bg-accent-300/20 blur-3xl" />
-        <div
-          className="absolute inset-0 opacity-[0.07]"
-          style={{
-            backgroundImage:
-              'linear-gradient(to right, #fff 1px, transparent 1px), linear-gradient(to bottom, #fff 1px, transparent 1px)',
-            backgroundSize: '28px 28px',
-          }}
-        />
+        <div className="bg-grid-white absolute inset-0" />
       </div>
 
       <div className="relative flex flex-wrap items-end justify-between gap-3">
