@@ -501,11 +501,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
       {/* Report Content */}
       {reportType === 'overview' && (
         <>
-          <ExpenseChart
-            expenses={filteredExpenses}
-            events={events}
-            onTradeShowClick={handleTradeShowClick}
-          />
+          <ExpenseChart expenses={filteredExpenses} />
           {/* Selecting categories pulls the matching transactions right here */}
           {selectedCategories.length > 0 && (
             <DetailedReport

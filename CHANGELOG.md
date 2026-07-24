@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-07-24 - No more double counting; one per-show section
+
+### Fixed
+- **Workbook is now authoritative**: shows that were both partially tracked live in 2025 AND imported from the accountant's workbook were double-counted (NACs 2025 showed $39,450 instead of $37,011). Live rows for any show-year covered by the import are now excluded from the investment view and both exports.
+- Removed the old "Expenses by Trade Show" card — the Trade Show Investment tiles are that section now, with history included, so the same show no longer appears in two places with two different numbers.
+
 ## [2.1.1] - 2026-07-24 - Show pairing: Sweets n Snacks
 
 ### Fixed

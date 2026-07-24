@@ -1,20 +1,14 @@
 import React from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { Expense, TradeShow } from '../../App';
+import { Expense } from '../../App';
 import { formatLocalDate } from '../../utils/dateUtils';
 import { CollapsibleCard } from './CollapsibleCard';
 
 interface ExpenseChartProps {
   expenses: Expense[];
-  events: TradeShow[];
-  onTradeShowClick?: (eventId: string) => void;
 }
 
-export const ExpenseChart: React.FC<ExpenseChartProps> = ({
-  expenses,
-  events,
-  onTradeShowClick,
-}) => {
+export const ExpenseChart: React.FC<ExpenseChartProps> = ({ expenses }) => {
   // Monthly data with expense counts
   const monthlyData = expenses.reduce(
     (acc, expense) => {
@@ -31,88 +25,8 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({
 
   const monthlyEntries = Object.entries(monthlyData).sort();
 
-  const eventBreakdown = expenses.reduce(
-    (acc, expense) => {
-      const event = events.find((e) => e.id === expense.tradeShowId);
-      const eventName = event?.name || 'No Event';
-      const eventId = event?.id || 'no-event';
-      acc[eventName] = { amount: (acc[eventName]?.amount || 0) + expense.amount, eventId };
-      return acc;
-    },
-    {} as Record<string, { amount: number; eventId: string }>
-  );
-
   return (
     <div className="space-y-6">
-      {/* Event Breakdown - MOVED TO TOP */}
-      <div className="card p-3 sm:p-5 md:p-6">
-        <div className="mb-6">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-              Expenses by Trade Show
-            </h3>
-            <span className="chip bg-stone-50 px-2 py-1 text-xs text-stone-500 ring-stone-200">
-              Click to view details
-            </span>
-          </div>
-        </div>
-
-        {Object.keys(eventBreakdown).length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
-            {Object.entries(eventBreakdown)
-              .sort(([, a], [, b]) => b.amount - a.amount)
-              .map(([eventName, { amount, eventId }]) => {
-                const maxEventAmount = Math.max(
-                  ...Object.values(eventBreakdown).map((e) => e.amount)
-                );
-                const percentage = (amount / maxEventAmount) * 100;
-
-                return (
-                  <div
-                    key={eventName}
-                    className="group cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 sm:p-4"
-                    onClick={() => onTradeShowClick?.(eventId)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && onTradeShowClick?.(eventId)}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-stone-900 truncate transition-colors group-hover:text-brand-700">
-                          {eventName}
-                        </span>
-                        <span className="text-sm font-semibold tabular-nums text-stone-900">
-                          ${amount.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="w-full bg-stone-100 rounded-full h-2 ring-1 ring-inset ring-stone-200/60">
-                        <div
-                          className="h-2 rounded-full bg-gradient-to-r from-brand-500 to-accent-500 transition-all duration-500"
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-stone-500">
-                        {
-                          expenses.filter((e) => {
-                            const event = events.find((ev) => ev.id === e.tradeShowId);
-                            return (event?.name || 'No Event') === eventName;
-                          }).length
-                        }{' '}
-                        expenses
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <BarChart3 className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-            <p className="text-stone-500">No event data available</p>
-          </div>
-        )}
-      </div>
-
       {/* Monthly Trend — collapsed by default on phones
           (category breakdown now lives in WhoPaidBreakdown, split by entity) */}
       <CollapsibleCard

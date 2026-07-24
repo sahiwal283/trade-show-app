@@ -91,15 +91,23 @@ async function assembleRows() {
     company: normalizeCompany(r.company),
   }));
 
-  const liveRows = live.rows.map((r: any) => ({
-    show_name: r.show_name,
-    show_key: showKey(r.show_name),
-    year: r.year,
-    company: normalizeCompany(r.company),
-    category: r.category,
-    amount: r.amount,
-    source: 'live' as const,
-  }));
+  // The accountant's workbook is AUTHORITATIVE for any show-year it covers:
+  // some 2025 shows were also partially tracked live in the app, and adding
+  // both double-counted them (e.g. NACs 2025 = workbook $37,011 + partial
+  // live $2,439). Live rows for an imported show-year are dropped.
+  const importedPairs = new Set(importedRows.map((r: any) => `${r.show_key}:${r.year}`));
+
+  const liveRows = live.rows
+    .map((r: any) => ({
+      show_name: r.show_name,
+      show_key: showKey(r.show_name),
+      year: r.year,
+      company: normalizeCompany(r.company),
+      category: r.category,
+      amount: r.amount,
+      source: 'live' as const,
+    }))
+    .filter((r: any) => !importedPairs.has(`${r.show_key}:${r.year}`));
 
   return [...importedRows, ...liveRows];
 }
