@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.4] - 2026-07-24 - Winter Fancy Faire un-merged; Champs Austin paired
+
+### Fixed
+- Winter Fancy Faire was wrongly absorbed into Summer Fancy Food by an over-broad alias (the two are different shows) — it is its own tile again with its own totals. Champs Austin TX (2025) now pairs with Champs Austin (2026). Principle affirmed: live app events are the source of truth and always render; aliases only join the SAME show across years, never distinct shows.
+
 ## [2.1.3] - 2026-07-24 - Drill-down restored on investment tiles
 
 ### Added

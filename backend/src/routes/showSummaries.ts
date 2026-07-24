@@ -42,7 +42,8 @@ const KEY_ALIASES: Array<[RegExp, string]> = [
   [/sweets? ?(&|n|and)? ?snacks?/, 'sweet and snack'],
   [/^nacs?\b.*/, 'nacs'],
   [/asd market\s*(week)?/, 'asd market week'],
-  [/fancy food|fancy faire?/, 'fancy food'],
+  [/fancy food/, 'fancy food'],
+  [/champs austin( tx| texas)?/, 'champs austin'],
 ];
 
 export function aliasKey(key: string): string {
