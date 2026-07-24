@@ -473,6 +473,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           rows={summaryRows}
           entityColorMap={entityColorMap}
           entityOrder={entityOrder}
+          onOpenShow={handleTradeShowClick}
         />
       )}
 

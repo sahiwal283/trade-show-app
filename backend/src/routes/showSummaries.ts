@@ -39,7 +39,7 @@ const KEY_ALIASES: Array<[RegExp, string]> = [
   [/champs f(or)?t\.? lauderd?ale?(dale)?/, 'champs fort lauderdale'],
   [/^tpe\b.*|total products expo/, 'tpe'],
   [/americasmart|atlanta market|america s mart/, 'americasmart'],
-  [/sweets? ?(\&|n|and)? ?snacks?/, 'sweet and snack'],
+  [/sweets? ?(&|n|and)? ?snacks?/, 'sweet and snack'],
   [/^nacs?\b.*/, 'nacs'],
   [/asd market\s*(week)?/, 'asd market week'],
   [/fancy food|fancy faire?/, 'fancy food'],
@@ -74,7 +74,8 @@ async function assembleRows() {
     // Live shows: same aggregate computed from the expense register.
     // Rejected expenses are excluded — they are not part of the investment.
     const live = await query(
-      `SELECT e.name AS show_name,
+      `SELECT e.id AS event_id,
+              e.name AS show_name,
               EXTRACT(YEAR FROM e.show_start_date)::int AS year,
               COALESCE(NULLIF(ex.zoho_entity, ''), 'Unassigned') AS company,
               ex.category,
@@ -82,7 +83,7 @@ async function assembleRows() {
        FROM expenses ex
        JOIN events e ON e.id = ex.event_id
        WHERE ex.status != 'rejected'
-       GROUP BY e.name, year, company, ex.category`
+       GROUP BY e.id, e.name, year, company, ex.category`
     );
 
   const importedRows = imported.rows.map((r: any) => ({
@@ -106,6 +107,7 @@ async function assembleRows() {
       category: r.category,
       amount: r.amount,
       source: 'live' as const,
+      event_id: r.event_id,
     }))
     .filter((r: any) => !importedPairs.has(`${r.show_key}:${r.year}`));
 

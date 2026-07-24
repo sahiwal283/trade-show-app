@@ -14,6 +14,8 @@ export interface ShowSummaryRow {
   category: string;
   amount: number;
   source: 'imported' | 'live';
+  /** Present on live rows — enables drill-down to the expense register */
+  event_id?: string;
 }
 
 export function useShowSummaries() {

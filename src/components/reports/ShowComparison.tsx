@@ -37,6 +37,8 @@ interface ShowComparisonProps {
   rows: ShowSummaryRow[];
   entityColorMap: Record<string, string>;
   entityOrder: string[];
+  /** Open a live show's full expense breakdown (transaction register) */
+  onOpenShow?: (eventId: string) => void;
 }
 
 type Scope = number | 'compare';
@@ -60,6 +62,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
   rows,
   entityColorMap,
   entityOrder,
+  onOpenShow,
 }) => {
   const years = useMemo(
     () => Array.from(new Set(rows.map((r) => r.year))).sort(),
@@ -88,17 +91,18 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
   const shows = useMemo(() => {
     const byKey: Record<
       string,
-      { name: string; perYear: Record<number, number>; perYearCompany: Record<number, Record<string, number>> }
+      { name: string; perYear: Record<number, number>; perYearCompany: Record<number, Record<string, number>>; perYearEvent: Record<number, string> }
     > = {};
     for (const r of filtered) {
       if (!byKey[r.show_key]) {
-        byKey[r.show_key] = { name: '', perYear: {}, perYearCompany: {} };
+        byKey[r.show_key] = { name: '', perYear: {}, perYearCompany: {}, perYearEvent: {} };
       }
       const s = byKey[r.show_key];
       s.perYear[r.year] = (s.perYear[r.year] || 0) + r.amount;
       s.perYearCompany[r.year] = s.perYearCompany[r.year] || {};
       s.perYearCompany[r.year][r.company] =
         (s.perYearCompany[r.year][r.company] || 0) + r.amount;
+      if (r.event_id) s.perYearEvent[r.year] = r.event_id;
     }
     for (const key of Object.keys(byKey)) {
       byKey[key].name = displayName(filtered.filter((r) => r.show_key === key));
@@ -306,8 +310,20 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                   const total = s.perYear[y] || 0;
                   const perCompany = s.perYearCompany[y] || {};
                   const segs = companies.filter((c) => perCompany[c]);
+                  const eventId = s.perYearEvent[y];
+                  const RowTag = eventId && onOpenShow ? 'button' : 'div';
                   return (
-                    <div key={y} className="flex items-center gap-1.5">
+                    <RowTag
+                      key={y}
+                      {...(eventId && onOpenShow
+                        ? {
+                            onClick: () => onOpenShow(eventId),
+                            title: 'View expenses for this show',
+                            className:
+                              'flex w-full items-center gap-1.5 rounded px-0.5 text-left transition-colors hover:bg-brand-50/60 focus-visible:ring-2 focus-visible:ring-brand-500',
+                          }
+                        : { className: 'flex items-center gap-1.5' })}
+                    >
                       <span className="w-8 shrink-0 text-[10px] font-semibold tabular-nums text-stone-400">
                         {String(y).slice(2) ? `'${String(y).slice(2)}` : y}
                       </span>
@@ -339,7 +355,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                       ) : (
                         <span className="flex-1 text-[11px] italic text-stone-300">not attended</span>
                       )}
-                    </div>
+                    </RowTag>
                   );
                 })}
               </div>

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.3] - 2026-07-24 - Drill-down restored on investment tiles
+
+### Added
+- Investment tile year-rows are clickable wherever real receipts exist (live data carries event_id): click a year -> that show's full expense breakdown, transaction register, and receipts. Replaces the drill-down lost when the redundant per-show card was removed. Imported 2025 totals (no line items by design) stay non-clickable.
+
 ## [2.1.2] - 2026-07-24 - No more double counting; one per-show section
 
 ### Fixed
