@@ -45,6 +45,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
   );
   const [scope, setScope] = useState<Scope>('compare');
   const [company, setCompany] = useState<string>('all');
+  const [showTable, setShowTable] = useState(false);
 
   const companies = useMemo(
     () =>
@@ -230,8 +231,9 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
         ))}
       </div>
 
-      {/* Per-show bars */}
-      <div className="space-y-3">
+      {/* Per-show tiles — bento grid, sized so a dozen shows fit in a few
+          rows instead of a wall of full-width cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {sortedKeys.map((key) => {
           const s = shows[key];
           const yearsToShow = scope === 'compare' ? years : [scope as number];
@@ -239,14 +241,20 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
           const a = s.perYear[prevY] || 0;
           const b = s.perYear[currY] || 0;
           const delta = a > 0 && b > 0 ? ((b - a) / a) * 100 : null;
+          const headline = scope === 'compare' ? Math.max(a, b) : s.perYear[scope as number] || 0;
 
           return (
-            <div key={key} className="rounded-lg border border-stone-200/80 p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="min-w-0 truncate text-sm font-semibold text-stone-900">{s.name}</p>
-                {scope === 'compare' && delta !== null && (
+            <div
+              key={key}
+              className="rounded-xl border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-shadow hover:shadow-elevation-2"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 truncate text-sm font-semibold text-stone-900" title={s.name}>
+                  {s.name}
+                </p>
+                {scope === 'compare' && delta !== null ? (
                   <span
-                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
+                    className={`inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold tabular-nums ${
                       delta > 2
                         ? 'bg-red-50 text-red-700'
                         : delta < -2
@@ -262,46 +270,52 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                       <Minus className="h-3 w-3" />
                     )}
                     {delta > 0 ? '+' : ''}
-                    {delta.toFixed(0)}% YoY
+                    {delta.toFixed(0)}%
+                  </span>
+                ) : (
+                  <span className="shrink-0 font-display text-sm font-bold tabular-nums text-stone-900">
+                    {headline ? fmt(headline) : ''}
                   </span>
                 )}
               </div>
 
-              <div className="space-y-1.5">
+              <div className="mt-2 space-y-1">
                 {yearsToShow.map((y) => {
                   const total = s.perYear[y] || 0;
                   const perCompany = s.perYearCompany[y] || {};
                   const segs = companies.filter((c) => perCompany[c]);
                   return (
-                    <div key={y} className="flex items-center gap-2">
-                      <span className="w-9 shrink-0 text-[11px] font-semibold tabular-nums text-stone-400">
-                        {y}
+                    <div key={y} className="flex items-center gap-1.5">
+                      <span className="w-8 shrink-0 text-[10px] font-semibold tabular-nums text-stone-400">
+                        {String(y).slice(2) ? `'${String(y).slice(2)}` : y}
                       </span>
                       {total > 0 ? (
                         <>
-                          <div
-                            className="flex h-4 overflow-hidden rounded-sm"
-                            style={{ width: `${Math.max((total / maxAmount) * 100, 2)}%`, minWidth: '1.25rem' }}
-                          >
-                            {segs.map((c, i) => (
-                              <div
-                                key={c}
-                                className="h-full"
-                                title={`${c}: ${fmt2(perCompany[c])}`}
-                                style={{
-                                  width: `${(perCompany[c] / total) * 100}%`,
-                                  backgroundColor: entityColorMap[c] || '#898781',
-                                  marginLeft: i > 0 ? '2px' : undefined,
-                                }}
-                              />
-                            ))}
+                          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100">
+                            <div
+                              className="flex h-full overflow-hidden rounded-full"
+                              style={{ width: `${Math.max((total / maxAmount) * 100, 3)}%` }}
+                            >
+                              {segs.map((c, i) => (
+                                <div
+                                  key={c}
+                                  className="h-full"
+                                  title={`${c}: ${fmt2(perCompany[c])}`}
+                                  style={{
+                                    width: `${(perCompany[c] / total) * 100}%`,
+                                    backgroundColor: entityColorMap[c] || '#898781',
+                                    marginLeft: i > 0 ? '1px' : undefined,
+                                  }}
+                                />
+                              ))}
+                            </div>
                           </div>
-                          <span className="shrink-0 text-xs font-semibold tabular-nums text-stone-900">
+                          <span className="w-14 shrink-0 text-right text-[11px] font-semibold tabular-nums text-stone-700">
                             {fmt(total)}
                           </span>
                         </>
                       ) : (
-                        <span className="text-xs italic text-stone-400">not attended</span>
+                        <span className="flex-1 text-[11px] italic text-stone-300">not attended</span>
                       )}
                     </div>
                   );
@@ -312,9 +326,20 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
         })}
       </div>
 
-      {/* Exact numbers + export */}
+      {/* Exact numbers + export — tucked behind a toggle to keep the page short */}
       {scope === 'compare' && compareYears && (
-        <div className="mt-5 overflow-x-auto rounded-lg border border-stone-200/80">
+        <div className="mt-4">
+          <button
+            onClick={() => setShowTable((v) => !v)}
+            aria-expanded={showTable}
+            className="btn-ghost min-h-[44px] px-3 py-1.5 text-xs font-semibold text-stone-600 lg:min-h-[32px]"
+          >
+            {showTable ? 'Hide exact numbers' : 'Show exact numbers & export'}
+          </button>
+        </div>
+      )}
+      {scope === 'compare' && compareYears && showTable && (
+        <div className="mt-2 overflow-x-auto rounded-lg border border-stone-200/80">
           <table className="w-full">
             <thead className="bg-stone-50/80">
               <tr>

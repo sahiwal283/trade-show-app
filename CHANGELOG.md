@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.56.1] - 2026-07-24 - Investment view: bento tiles + data hygiene
+
+### Changed
+- Per-show comparison redesigned as a responsive bento tile grid (3-up desktop / 2-up tablet / 1-up phone) with mini company-stacked year bars on a shared scale — a dozen shows fit on one screen instead of a wall of full-width cards. Exact-numbers table + CSV export tucked behind a "Show exact numbers" toggle.
+
+### Fixed
+- Company name hygiene at the API: literal "undefined"/blank entities fold into Unassigned; Boomin Brand/Brands, Haute Brand/s, Summit/Summitt unify — no more duplicate company chips.
+- Show-key aliases so the same show pairs across years despite spelling drift: Champs Winter/Spring LV = Champs Spring LV, TPE SHOW LV = TPE - Total Products Expo, Champs Fort Lauderale (workbook typo) = Champs Ft. Lauderdale, Americasmart/Atlanta Market, Sweet & Snack variants, NACs, ASD, Fancy Food.
 ## [1.56.0] - 2026-07-24 - Trade Show Investment view + 2025 history import
 
 ### Added
