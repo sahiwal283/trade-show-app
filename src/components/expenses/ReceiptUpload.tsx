@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, PenLine } from 'lucide-react';
 import { api } from '../../utils/api';
 import { ReceiptData } from '../../types/types';
 import { TradeShow, User } from '../../App';
@@ -268,26 +268,32 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               onDrop={handleDrop}
               onFilesSelected={handleFiles}
             />
-            {/* No receipt in hand (tips, mileage, lost receipt) — don't gate
-                manual entry behind an OCR failure */}
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() =>
-                  setOcrResults({
-                    merchant: '',
-                    total: undefined,
-                    date: getTodayLocalDateString(),
-                    category: 'Other',
-                    confidence: 0,
-                    ocrText: '',
-                  })
-                }
-                className="btn-ghost text-sm text-brand-600 hover:text-brand-700"
-              >
-                Or enter details manually — no receipt needed
-              </button>
+            {/* No receipt in hand (tips, mileage, lost receipt) — a proper
+                button, not a buried text link, so phones can't miss it */}
+            <div className="flex items-center gap-3" aria-hidden="true">
+              <span className="h-px flex-1 bg-stone-200" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                or
+              </span>
+              <span className="h-px flex-1 bg-stone-200" />
             </div>
+            <button
+              type="button"
+              onClick={() =>
+                setOcrResults({
+                  merchant: '',
+                  total: undefined,
+                  date: getTodayLocalDateString(),
+                  category: 'Other',
+                  confidence: 0,
+                  ocrText: '',
+                })
+              }
+              className="btn-secondary w-full py-3 text-brand-700 border-brand-200 hover:border-brand-300 hover:bg-brand-50"
+            >
+              <PenLine className="h-4 w-4" />
+              Enter expense manually — no receipt needed
+            </button>
           </div>
         ) : (
           <div ref={statusRef} className="scroll-mt-4 space-y-8">

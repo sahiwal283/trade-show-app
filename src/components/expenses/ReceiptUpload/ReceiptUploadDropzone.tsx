@@ -61,7 +61,7 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 max-w-2xl mx-auto">
+        <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 max-w-2xl mx-auto">
           <div className="flex items-center gap-3 text-left">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
               <Camera className="w-5 h-5" />

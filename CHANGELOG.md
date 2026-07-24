@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-07-24 - Manual expense entry made obvious
+
+### Changed
+- Receipt Scanner idle screen: manual entry is now a full-width bordered button under an "or" divider (was a quiet text link), and the OCR feature bullets hide on phones so both paths fit above the fold.
+
 ## [2.0.0] - 2026-07-24 - ExpenseApp 2.0
 
 ### Changed
