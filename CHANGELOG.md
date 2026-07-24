@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.7] - 2026-07-24 - Checklist tabs stand out
+
+### Changed
+- Checklist section tabs (Booth/Flights/Hotels/Cars/Tasks) no longer blend into the page: the track is now a white bordered pill with elevation, and the active tab wears the brand gradient with white text.
+
 ## [2.1.6] - 2026-07-24 - Identity shown once per surface
 
 ### Changed

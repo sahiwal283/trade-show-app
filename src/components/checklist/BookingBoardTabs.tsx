@@ -28,7 +28,7 @@ export const BookingBoardTabs: React.FC<BookingBoardTabsProps> = ({ tabs, active
     <div
       role="tablist"
       aria-label="Booking sections"
-      className="inline-flex min-w-max gap-1 rounded-full bg-stone-100 p-1"
+      className="inline-flex min-w-max gap-1 rounded-full border border-stone-200/80 bg-white p-1 shadow-elevation-1"
     >
       {tabs.map(tab => {
         const isActive = tab.key === active;
@@ -44,15 +44,17 @@ export const BookingBoardTabs: React.FC<BookingBoardTabsProps> = ({ tabs, active
             onClick={() => onChange(tab.key)}
             className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors sm:px-4 lg:min-h-0 ${
               isActive
-                ? 'bg-white text-stone-900 shadow-elevation-1'
-                : 'text-stone-500 hover:text-stone-800'
+                ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-brand'
+                : 'text-stone-500 hover:bg-stone-50 hover:text-stone-800'
             }`}
           >
             {tab.label}
             {tab.total > 0 && (
               <span
                 className={`text-xs font-semibold tabular-nums ${
-                  isDone ? 'text-accent-600' : 'text-stone-400'
+                  isActive
+                    ? isDone ? 'text-accent-200' : 'text-white/75'
+                    : isDone ? 'text-accent-600' : 'text-stone-400'
                 }`}
               >
                 {tab.completed}/{tab.total}
