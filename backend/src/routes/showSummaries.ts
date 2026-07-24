@@ -39,7 +39,7 @@ const KEY_ALIASES: Array<[RegExp, string]> = [
   [/champs f(or)?t\.? lauderd?ale?(dale)?/, 'champs fort lauderdale'],
   [/^tpe\b.*|total products expo/, 'tpe'],
   [/americasmart|atlanta market|america s mart/, 'americasmart'],
-  [/sweet\s*&?\s*snack/, 'sweet and snack'],
+  [/sweets? ?(\&|n|and)? ?snacks?/, 'sweet and snack'],
   [/^nacs?\b.*/, 'nacs'],
   [/asd market\s*(week)?/, 'asd market week'],
   [/fancy food|fancy faire?/, 'fancy food'],

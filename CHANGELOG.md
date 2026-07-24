@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-07-24 - Show pairing: Sweets n Snacks
+
+### Fixed
+- "Sweets n Snacks Expo" (2026 live) now pairs with "Sweet & Snack show-Indiana" (2025 imported) — the alias matcher accepts the sweets/n/snacks spelling variants, so the tile shows a proper YoY comparison instead of two separate shows.
+
 ## [2.1.0] - 2026-07-24 - Business-grade exports
 
 ### Added
