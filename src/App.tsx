@@ -377,11 +377,12 @@ function App() {
       {/* min-w-0 keeps wide tables scrolling inside their own overflow wrapper
           instead of stretching the page (flex children default to min-width:auto) */}
       <div className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${sidebarCollapsed ? "ml-0 lg:ml-16" : "ml-0 lg:ml-64"}`}>
-        <Header 
-          user={user} 
+        <Header
+          user={user}
           onLogout={handleLogout}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
           onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onNavigate={handlePageChange}
         />
         
         <main className="flex-1 p-3 sm:p-4 md:p-6 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-6 bg-stone-50">

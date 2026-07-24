@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.54.1] - 2026-07-24 - Notifications panel actually works on phones
+
+### Fixed
+- The bell's notification popover hung off the left edge of phone screens (bell-anchored `right-0` dropdown wider than the space left of the bell) — on phones it is now a full-width sheet under the header; desktop keeps the anchored dropdown.
+- Notification rows looked tappable but did nothing — tapping now closes the panel and lands on Expenses pre-filtered to pending approvals (`#status=pending` deep link).
+- The panel had no way out except re-tapping the bell — added tap-outside backdrop and Escape-to-close.
+
 ## [1.54.0] - 2026-07-23 - Event workspace hub, self-migrating deploys, haptics
 
 ### Fixed — production migrations never ran (root cause of the broken reminder scheduler)

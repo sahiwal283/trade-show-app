@@ -3,6 +3,7 @@ import { Bell, Search, LogOut, Menu } from 'lucide-react';
 import { User, Expense } from '../../App';
 import { api } from '../../utils/api';
 import packageJson from '../../../package.json';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 
 const APP_VERSION = packageJson.version;
 
@@ -11,9 +12,11 @@ interface HeaderProps {
   onLogout: () => void;
   onToggleSidebar: () => void;
   onToggleMobileMenu: () => void;
+  /** Navigate to a page (notification rows deep-link into Expenses) */
+  onNavigate?: (page: string) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onToggleMobileMenu }) => {
+export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onToggleMobileMenu, onNavigate }) => {
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [hasViewedNotifications, setHasViewedNotifications] = React.useState(false);
   
@@ -50,6 +53,9 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
       }
     })();
   }, [user.role, previousNotificationCount]);
+
+  // Escape closes the notifications panel
+  useEscapeKey(() => setShowNotifications(false), showNotifications);
 
   const hasUnreadNotifications = notifications.length > 0 && !hasViewedNotifications;
   
@@ -109,35 +115,55 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar,
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-2 w-80 max-w-[90vw] bg-white rounded-card shadow-elevation-3 ring-1 ring-stone-900/5 z-50 overflow-hidden">
-                <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
-                  <h3 className="font-display font-semibold tracking-tight text-stone-900">Notifications</h3>
-                  {notifications.length > 0 && (
-                    <span className="chip px-2 py-0.5 text-[11px] bg-amber-50 text-amber-800 ring-amber-200/70">
-                      <span className="chip-dot bg-amber-500" />
-                      {notifications.length} pending
-                    </span>
-                  )}
-                </div>
-                <div className="max-h-96 overflow-y-auto">
-                  {notifications.length > 0 ? (
-                    notifications.map((expense: Expense, index: number) => (
-                      <div key={index} className="px-4 py-3 hover:bg-stone-50 border-b border-stone-50 cursor-pointer transition-colors">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm text-stone-900 font-medium truncate">{expense.merchant}</p>
-                          <p className="text-sm font-semibold text-stone-900 shrink-0">${expense.amount}</p>
-                        </div>
-                        <p className="text-xs text-stone-500 mt-0.5">Pending expense approval</p>
+              <>
+                {/* Tap-outside backdrop (closes the panel) */}
+                <div
+                  className="fixed inset-0 z-40"
+                  aria-hidden="true"
+                  onClick={() => setShowNotifications(false)}
+                />
+                {/* Phone: full-width sheet under the header (the old bell-
+                    anchored popover hung off the left edge of the screen).
+                    sm+: classic anchored dropdown. */}
+                <div className="fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-50 overflow-hidden rounded-card bg-white shadow-elevation-3 ring-1 ring-stone-900/5 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
+                  <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
+                    <h3 className="font-display font-semibold tracking-tight text-stone-900">Notifications</h3>
+                    {notifications.length > 0 && (
+                      <span className="chip px-2 py-0.5 text-[11px] bg-amber-50 text-amber-800 ring-amber-200/70">
+                        <span className="chip-dot bg-amber-500" />
+                        {notifications.length} pending
+                      </span>
+                    )}
+                  </div>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.length > 0 ? (
+                      notifications.map((expense: Expense, index: number) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            setShowNotifications(false);
+                            // Land on Expenses pre-filtered to pending approvals
+                            window.location.hash = 'status=pending';
+                            onNavigate?.('expenses');
+                          }}
+                          className="block w-full px-4 py-3 text-left transition-colors hover:bg-stone-50 focus-visible:bg-stone-50 border-b border-stone-50"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm text-stone-900 font-medium truncate">{expense.merchant}</p>
+                            <p className="text-sm font-semibold tabular-nums text-stone-900 shrink-0">${expense.amount}</p>
+                          </div>
+                          <p className="text-xs text-stone-500 mt-0.5">Pending expense approval · tap to review</p>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="px-4 py-10 text-center">
+                        <p className="text-sm font-medium text-stone-600">You're all caught up!</p>
+                        <p className="text-xs text-stone-400 mt-1">No new notifications</p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="px-4 py-10 text-center">
-                      <p className="text-sm font-medium text-stone-600">You're all caught up!</p>
-                      <p className="text-xs text-stone-400 mt-1">No new notifications</p>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
           </div>
 

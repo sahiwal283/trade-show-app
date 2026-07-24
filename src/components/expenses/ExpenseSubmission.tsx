@@ -149,6 +149,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         // Deep link from an event card: land pre-filtered to that show
         setEventFilter(window.location.hash.replace('#event=', ''));
         history.replaceState(null, '', window.location.pathname + window.location.search);
+      } else if (window.location.hash === '#status=pending') {
+        // Deep link from a notification: land on pending approvals
+        setStatusFilter('pending');
+        history.replaceState(null, '', window.location.pathname + window.location.search);
       }
     };
     openFromHash();
