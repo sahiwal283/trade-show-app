@@ -77,6 +77,7 @@ if [ "$DEPLOY_BACKEND" = true ]; then
             cd $SANDBOX_BACKEND_PATH || exit 1
             echo \"Current directory: \$(pwd)\"
             tar -xzf /tmp/backend-deploy.tar.gz
+            npm install --omit=dev --no-audit --no-fund 2>&1 | tail -1
             systemctl restart trade-show-app-backend
             sleep 3
             systemctl is-active trade-show-app-backend
