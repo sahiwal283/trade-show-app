@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-24 - ExpenseApp 2.0
+
+### Changed
+- **Dashboard masthead**: the hero show now sits on a brand-gradient canvas with soft glows and a faint grid — LIVE shows get a pulsing eyebrow and a day-progress rail, upcoming shows a countdown; the show switcher rides the masthead in glass style. Show names wrap on phones instead of truncating.
+- **Orchestrated load-in**: dashboard sections cascade in with a 60ms stagger (compositor-only, reduced-motion aware).
+- Version 2.0.0 marks the cumulative 1.48→1.56 series: stay-signed-in auth, bottom navigation + one-tap camera capture, My Travel, push flight reminders, root-caused caching/stale-build fixes, role-based access enforcement, the accountant's investment reporting with imported 2025 history, and the full accessibility/UX polish passes.
+
 ## [1.56.2] - 2026-07-24 - Latest Receipts alignment
 
 ### Fixed

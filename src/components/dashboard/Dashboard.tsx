@@ -100,7 +100,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
             onSelectShow={setSelectedShowId}
           />
 
-          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-3 lg:items-start lg:gap-5">
+          <div className="stagger-children flex flex-col gap-4 lg:grid lg:grid-cols-3 lg:items-start lg:gap-5">
             {/* Left column on desktop; `contents` lets mobile order via order-N */}
             <div className="contents lg:col-span-2 lg:block lg:space-y-5">
               <div className="order-2">

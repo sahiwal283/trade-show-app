@@ -226,10 +226,23 @@
     animation: page-in 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  /* 2.0 orchestrated load-in: dashboard sections cascade with a small
+     per-item delay. Compositor-only; disabled under reduced motion. */
+  .stagger-children > * > * {
+    animation: page-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .stagger-children > * > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > * > *:nth-child(2) { animation-delay: 60ms; }
+  .stagger-children > * > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger-children > * > *:nth-child(4) { animation-delay: 180ms; }
+  .stagger-children > * > *:nth-child(5) { animation-delay: 240ms; }
+  .stagger-children > * > *:nth-child(6) { animation-delay: 300ms; }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-page-in,
     .animate-slide-in,
-    .animate-ping {
+    .animate-ping,
+    .stagger-children > * > * {
       animation: none;
     }
   }
