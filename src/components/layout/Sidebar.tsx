@@ -165,11 +165,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {renderNav(collapsed)}
         </div>
 
-        {!collapsed && (
-          <div className="p-3 border-t border-stone-100">
-            {userChip}
-          </div>
-        )}
+
       </div>
 
       {/* Mobile Sidebar (slide-out) */}
