@@ -6,10 +6,19 @@ import { AppError } from '../../types/types';
 import { isAcceptableReceiptFile } from '../../utils/fileValidation';
 import { getZohoExpenseDescriptionValidationMessage } from '../../utils/zohoExpenseDescription';
 
+export interface ParsedReservation {
+  confirmationNumber: string | null;
+  propertyName: string | null;
+  carrier: string | null;
+  checkInDate: string | null;
+  checkOutDate: string | null;
+}
+
 export interface ExtractedReceipt {
   merchant: string;
   amount: number;
   date: string;
+  reservation: ParsedReservation | null;
 }
 
 interface ChecklistReceiptUploadProps {
@@ -41,6 +50,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [_ocrData, setOcrData] = useState<any>(null); // Reserved for future use (e.g., OCR correction tracking)
+  const [reservation, setReservation] = useState<ParsedReservation | null>(null);
   const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string; entity?: string | null}>>([]);
   const [formData, setFormData] = useState({
     merchant: '',
@@ -89,7 +99,9 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
       console.log('[ChecklistReceiptUpload] OCR response:', ocrResponse);
 
       setOcrData(ocrResponse);
-      
+      const parsedReservation: ParsedReservation | null = ocrResponse.reservation || null;
+      setReservation(parsedReservation);
+
       // Pre-fill form with OCR data - response structure is result.fields
       const fields = ocrResponse.fields || {};
       const ocrCardLastFour = fields.cardLastFour?.value;
@@ -97,9 +109,19 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
         ? cardOptions.find(card => card.lastFour === ocrCardLastFour)
         : null;
 
+      // Confirmation documents often OCR a timestamp or heading as "merchant";
+      // prefer the parsed property/carrier name when we have one.
+      const looksLikeJunkMerchant = (v: string) =>
+        !v || /\d{1,2}[:/]\d{2}/.test(v) || /^(confirmation|reservation|receipt|invoice)$/i.test(v.trim());
+      const reservationName = parsedReservation?.propertyName || parsedReservation?.carrier || '';
+      const ocrMerchant = fields.merchant?.value || '';
+      const bestMerchant = reservationName && looksLikeJunkMerchant(ocrMerchant)
+        ? reservationName
+        : ocrMerchant;
+
       setFormData(prev => ({
         ...prev,
-        merchant: fields.merchant?.value || prev.merchant,
+        merchant: bestMerchant || prev.merchant,
         amount: fields.amount?.value?.toString() || prev.amount,
         date: fields.date?.value || prev.date,
         cardUsed: matchedCard ? `${matchedCard.name} (...${matchedCard.lastFour})` : prev.cardUsed,
@@ -180,6 +202,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
         merchant: formData.merchant,
         amount: parseFloat(formData.amount),
         date: formData.date,
+        reservation,
       });
       onClose();
     } catch (error) {

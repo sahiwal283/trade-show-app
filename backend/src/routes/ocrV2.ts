@@ -118,9 +118,15 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     res.setHeader('X-OCR-Provider', ocrProvider);
     console.log(`[OCR v2] OCR Provider used: ${ocrProvider}`);
     
+    // Reservation layer: checklist uploads are usually confirmation documents,
+    // so surface booking fields (confirmation #, property/carrier, stay dates).
+    const { parseReservation } = await import('../services/ocr/ReservationParser');
+    const reservation = parseReservation(result.ocr?.text || '');
+
     // Return external service response with receipt URL
     res.json({
       ...result,
+      reservation,
       receiptUrl: `/uploads/${req.file.filename}` // Include receipt URL for frontend
     });
     

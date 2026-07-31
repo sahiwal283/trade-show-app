@@ -341,10 +341,10 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
             if (existing) {
               try {
                 await api.checklist.updateCarRental(rentalId, {
-                  provider: edits?.provider || existing.provider || extracted.merchant || null,
-                  confirmationNumber: edits?.confirmation_number || existing.confirmation_number || null,
-                  pickupDate: edits?.pickup_date || existing.pickup_date || extracted.date || null,
-                  returnDate: edits?.return_date || existing.return_date || null,
+                  provider: edits?.provider || existing.provider || extracted.reservation?.propertyName || extracted.merchant || null,
+                  confirmationNumber: edits?.confirmation_number || existing.confirmation_number || extracted.reservation?.confirmationNumber || null,
+                  pickupDate: edits?.pickup_date || existing.pickup_date || extracted.reservation?.checkInDate || extracted.date || null,
+                  returnDate: edits?.return_date || existing.return_date || extracted.reservation?.checkOutDate || null,
                   notes: edits?.notes || existing.notes || null,
                   booked: true,
                   rentalType: edits?.rental_type || existing.rental_type || 'group',

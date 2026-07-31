@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-07-31 - Reservation-aware OCR
+
+### Added
+- New ReservationParser on the OCR pipeline: confirmation documents (hotel folios, airline itineraries, rental agreements) now yield confirmation number, property/carrier name, and check-in/check-out dates from the raw OCR text (unit-tested).
+- Those parsed fields prefill the reservation automatically when the expense is created — hotel rows get property, confirmation, and both dates; flights get carrier and confirmation; cars get provider, confirmation, pickup and return.
+
+### Fixed
+- Junk merchant values (timestamps, "Confirmation" headings) are replaced with the parsed property/carrier name in the upload form.
+
 ## [2.3.0] - 2026-07-31 - Checklist workflow: no more lost reservations
 
 ### Fixed

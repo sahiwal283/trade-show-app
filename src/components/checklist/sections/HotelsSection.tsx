@@ -270,10 +270,10 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
           const payload = {
             attendeeId,
             attendeeName: showReceiptUpload.attendeeName,
-            propertyName: edits?.property_name || existing?.property_name || extracted.merchant || null,
-            confirmationNumber: edits?.confirmation_number || existing?.confirmation_number || null,
-            checkInDate: edits?.check_in_date || existing?.check_in_date || extracted.date || null,
-            checkOutDate: edits?.check_out_date || existing?.check_out_date || null,
+            propertyName: edits?.property_name || existing?.property_name || extracted.reservation?.propertyName || extracted.merchant || null,
+            confirmationNumber: edits?.confirmation_number || existing?.confirmation_number || extracted.reservation?.confirmationNumber || null,
+            checkInDate: edits?.check_in_date || existing?.check_in_date || extracted.reservation?.checkInDate || extracted.date || null,
+            checkOutDate: edits?.check_out_date || existing?.check_out_date || extracted.reservation?.checkOutDate || null,
             notes: edits?.notes || existing?.notes || null,
             booked: true,
           };
