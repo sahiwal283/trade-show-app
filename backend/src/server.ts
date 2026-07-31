@@ -11,6 +11,7 @@ import eventRoutes from './routes/events';
 import expenseRoutes from './routes/expenses';
 import settingsRoutes from './routes/settings';
 import showSummariesRoutes from './routes/showSummaries';
+import crmLeadsRoutes from './routes/crmLeads';
 import devDashboardRoutes from './routes/devDashboard';
 import quickActionsRoutes from './routes/quickActions';
 import syncRoutes from './routes/sync';
@@ -29,6 +30,7 @@ import { authenticateToken } from './middleware/auth';
 import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
 import { travelReminderService } from './services/TravelReminderService';
+import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { runMigrations } from './database/migrate';
 
 dotenv.config();
@@ -86,6 +88,7 @@ app.use('/api/events', authenticateToken, sessionTracker, eventRoutes);
 app.use('/api/expenses', authenticateToken, sessionTracker, expenseRoutes);
 app.use('/api/settings', authenticateToken, sessionTracker, settingsRoutes);
 app.use('/api/show-summaries', sessionTracker, showSummariesRoutes);
+app.use('/api/crm-leads', authenticateToken, sessionTracker, crmLeadsRoutes);
 app.use('/api/dev-dashboard', authenticateToken, sessionTracker, devDashboardRoutes);
 app.use('/api/quick-actions', authenticateToken, sessionTracker, quickActionsRoutes);
 app.use('/api/sync', authenticateToken, sessionTracker, syncRoutes);
@@ -198,6 +201,9 @@ const startServer = () => {
 
     // Flight check-in / departure push reminders (no-op if push not configured)
     travelReminderService.start();
+
+    // Zoho CRM lead sync — daily; idles until ZOHO_CRM_REFRESH_TOKEN is set
+    zohoCrmLeadsService.startScheduler();
   });
 };
 

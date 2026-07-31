@@ -18,6 +18,7 @@ import { EntityCategoryMatrix } from './EntityCategoryMatrix';
 import { CollapsibleCard } from './CollapsibleCard';
 import { ShowComparison } from './ShowComparison';
 import { useShowSummaries } from './hooks/useShowSummaries';
+import { useCrmLeads } from './hooks/useCrmLeads';
 import { api } from '../../utils/api';
 import { useReportsData } from './hooks/useReportsData';
 import { useReportsFilters } from './hooks/useReportsFilters';
@@ -75,6 +76,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
 
   // Aggregate show totals: imported 2025 history + live data (investment view)
   const { rows: summaryRows } = useShowSummaries();
+  const { rows: crmLeadRows } = useCrmLeads();
 
   // Stable entity → color assignment shared by the donut, stacked bars, matrix,
   // and the investment comparison (historical companies included)
@@ -475,6 +477,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           rows={summaryRows}
           entityColorMap={entityColorMap}
           entityOrder={entityOrder}
+          leads={crmLeadRows}
           onOpenShow={handleTradeShowClick}
         />
       )}

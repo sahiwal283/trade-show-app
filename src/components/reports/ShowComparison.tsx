@@ -9,6 +9,7 @@
 import React, { useMemo, useState } from 'react';
 import { Download, TrendingUp, TrendingDown, Minus, FileText, FileSpreadsheet } from 'lucide-react';
 import { ShowSummaryRow } from './hooks/useShowSummaries';
+import { CrmLeadRow } from './hooks/useCrmLeads';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { API_CONFIG, STORAGE_KEYS } from '../../constants/appConstants';
 
@@ -37,6 +38,8 @@ interface ShowComparisonProps {
   rows: ShowSummaryRow[];
   entityColorMap: Record<string, string>;
   entityOrder: string[];
+  /** CRM leads per (show_key, year) — empty while the CRM is not connected */
+  leads?: CrmLeadRow[];
   /** Open a live show's full expense breakdown (transaction register) */
   onOpenShow?: (eventId: string) => void;
 }
@@ -62,6 +65,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
   rows,
   entityColorMap,
   entityOrder,
+  leads = [],
   onOpenShow,
 }) => {
   const years = useMemo(
@@ -112,6 +116,26 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
 
   const compareYears: [number, number] | null =
     years.length >= 2 ? [years[years.length - 2], years[years.length - 1]] : null;
+
+  /** CRM leads keyed exactly like the tiles: aliasKey'd show_key + year. */
+  const leadMap = useMemo(() => {
+    const map = new Map<string, CrmLeadRow>();
+    for (const l of leads) map.set(`${l.show_key}:${l.year}`, l);
+    return map;
+  }, [leads]);
+
+  // Leads captured within the current scope, restricted to shows on the board
+  const leadKpi = useMemo(() => {
+    let captured = 0;
+    let converted = 0;
+    for (const l of leads) {
+      if (!shows[l.show_key]) continue;
+      if (scope !== 'compare' && l.year !== scope) continue;
+      captured += l.leads;
+      converted += l.converted;
+    }
+    return { captured, converted };
+  }, [leads, shows, scope]);
 
   // KPI band values for the current scope
   const kpi = useMemo(() => {
@@ -202,14 +226,28 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
         </div>
       </div>
 
-      {/* KPI band */}
-      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* KPI band — a 5th "Leads captured" tile appears only when CRM leads exist */}
+      <div
+        className={`mb-5 grid grid-cols-2 gap-3 ${leadKpi.captured > 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+      >
         {[
           { label: scope === 'compare' ? 'Total invested (all years)' : `Invested in ${scope}`, value: fmt(kpi.total) },
           { label: 'Show appearances', value: String(kpi.showCount) },
           { label: 'Average per show', value: fmt(kpi.avg) },
           { label: `Top cost: ${kpi.topCategory.split(' - ')[0].split(' / ')[0]}`, value: fmt(kpi.topAmount) },
-        ].map(({ label, value }) => (
+          ...(leadKpi.captured > 0
+            ? [
+                {
+                  label: 'Leads captured',
+                  value: leadKpi.captured.toLocaleString(),
+                  context:
+                    leadKpi.converted > 0
+                      ? `${leadKpi.converted.toLocaleString()} converted`
+                      : undefined,
+                },
+              ]
+            : []),
+        ].map(({ label, value, context }: { label: string; value: string; context?: string }) => (
           <div key={label} className="rounded-lg border border-stone-200/80 bg-stone-50/60 p-3">
             <p className="truncate text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
               {label}
@@ -217,6 +255,11 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
             <p className="mt-1 font-display text-xl font-bold tracking-tight tabular-nums text-stone-900 sm:text-2xl">
               {value}
             </p>
+            {context && (
+              <p className="mt-0.5 truncate text-[11px] font-medium tabular-nums text-stone-500">
+                {context}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -307,10 +350,11 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                   const perCompany = s.perYearCompany[y] || {};
                   const segs = companies.filter((c) => perCompany[c]);
                   const eventId = s.perYearEvent[y];
+                  const leadInfo = leadMap.get(`${key}:${y}`);
                   const RowTag = eventId && onOpenShow ? 'button' : 'div';
                   return (
+                    <React.Fragment key={y}>
                     <RowTag
-                      key={y}
                       {...(eventId && onOpenShow
                         ? {
                             onClick: () => onOpenShow(eventId),
@@ -352,6 +396,18 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                         <span className="flex-1 text-[11px] italic text-stone-300">not attended</span>
                       )}
                     </RowTag>
+                    {/* Quiet CRM lead line — only renders when leads exist for this show-year */}
+                    {leadInfo && leadInfo.leads > 0 && (
+                      <div className="flex items-center pl-[38px]">
+                        <span className="chip bg-stone-50/80 px-1.5 py-px text-[10px] font-medium tabular-nums text-stone-500 ring-stone-200/80">
+                          {leadInfo.leads.toLocaleString()} lead{leadInfo.leads === 1 ? '' : 's'}
+                          {leadInfo.converted > 0 &&
+                            ` · ${leadInfo.converted.toLocaleString()} converted`}
+                          {total > 0 && ` · ${fmt(total / leadInfo.leads)}/lead`}
+                        </span>
+                      </div>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </div>

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-07-31 - CRM leads pipeline + Trade Show field on Zoho pushes
+
+### Added
+- Zoho CRM leads pipeline (dormant until ZOHO_CRM_REFRESH_TOKEN is set): crm_leads table (migration 034), paginated Tradeshows-module sync (daily + manual POST /api/crm-leads/sync), tags mapped through the same show aliasing as Reports; ShowComparison tiles gain "N leads · M converted · $/lead" lines and a "Leads captured" KPI once data exists.
+- Zoho Books pushes now fill the custom "Trade Show" field (ZOHO_EXPENSE_TRADESHOW_FIELD, default cf_trade_show) with the event name; entities without the field get one automatic retry without it so pushes never break.
+
 ## [2.5.1] - 2026-07-31 - Expensify-style expense rows
 
 ### Changed

@@ -12,6 +12,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import axios from 'axios';
 
+// Mock the DB module so loadSettings() needs no real Postgres connection.
+vi.mock('../../src/config/database', () => ({
+  query: vi.fn().mockResolvedValue({ rows: [] }),
+}));
+
 // We test the behavior indirectly by observing what payload the HTTP client sends.
 // The module is imported after env vars are set so the module-level constants pick them up.
 
@@ -46,8 +51,6 @@ describe('ZohoIntegrationClient – organization_id for multi-org brands', () =>
       '../../src/services/zohoIntegrationClient'
     );
 
-    // Mock the DB call that loadSettings() makes so no real Postgres connection is needed.
-    vi.spyOn(require('../../src/config/database'), 'query').mockResolvedValue({ rows: [] });
 
     await zohoIntegrationClient.createExpense('nirvana kulture', {
       expenseId: 'exp-1',
@@ -72,7 +75,6 @@ describe('ZohoIntegrationClient – organization_id for multi-org brands', () =>
       '../../src/services/zohoIntegrationClient'
     );
 
-    vi.spyOn(require('../../src/config/database'), 'query').mockResolvedValue({ rows: [] });
 
     await zohoIntegrationClient.createExpense('nirvana kulture', {
       expenseId: 'exp-2',
@@ -95,7 +97,6 @@ describe('ZohoIntegrationClient – organization_id for multi-org brands', () =>
       '../../src/services/zohoIntegrationClient'
     );
 
-    vi.spyOn(require('../../src/config/database'), 'query').mockResolvedValue({ rows: [] });
 
     await zohoIntegrationClient.createExpense('haute brands', {
       expenseId: 'exp-3',

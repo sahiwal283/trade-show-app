@@ -435,17 +435,54 @@ class ZohoIntegrationClient {
         console.log(`[ZohoClient] Using service fallback IDs - App expense: ${expenseAccountId || 'none'}, App payment: ${paidThroughAccountId || 'none'}`);
       }
 
-      // Create expense via shared service
-      const response = await this.httpClient.post<ZohoServiceResponse>(
-        '/zoho/expenses/create_books',
-        requestPayload,
-        {
-          headers: {
-            ...this.getHeaders(brand),
-            'Content-Type': 'application/json',
-          },
+      // Populate the Zoho Books "Trade Show" custom field from the linked event name.
+      // Zoho auto-generates the api_name from the field label ("Trade Show" → cf_trade_show);
+      // it is configurable per deployment because each Books org may use a different api_name.
+      // Read at call time so dotenv load order does not matter.
+      const tradeShowFieldApiName = process.env.ZOHO_EXPENSE_TRADESHOW_FIELD || 'cf_trade_show';
+      if (expenseData.eventName) {
+        const existingCustomFields = Array.isArray(requestPayload.custom_fields)
+          ? requestPayload.custom_fields
+          : [];
+        requestPayload.custom_fields = [
+          ...existingCustomFields,
+          { api_name: tradeShowFieldApiName, value: expenseData.eventName },
+        ];
+        console.log(`[ZohoClient] Including custom field ${tradeShowFieldApiName} = "${expenseData.eventName}"`);
+      }
+
+      // Create expense via shared service.
+      // If Zoho rejects the request because of the custom field (entities whose Books org
+      // does not have the "Trade Show" field yet), retry ONCE without custom_fields —
+      // a missing custom field must never block an expense push.
+      const postExpense = (payload: Record<string, any>) =>
+        this.httpClient.post<ZohoServiceResponse>(
+          '/zoho/expenses/create_books',
+          payload,
+          {
+            headers: {
+              ...this.getHeaders(brand),
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+      let response;
+      try {
+        response = await postExpense(requestPayload);
+      } catch (initialError) {
+        if (requestPayload.custom_fields && this.isCustomFieldError(initialError, tradeShowFieldApiName)) {
+          console.warn(
+            `[ZohoClient] WARN: Zoho rejected custom field "${tradeShowFieldApiName}" for entity ` +
+            `"${entityName}" (brand "${brand}") — the Books org likely does not have the ` +
+            `"Trade Show" custom field configured. Retrying once without custom_fields.`
+          );
+          const { custom_fields: _omittedCustomFields, ...payloadWithoutCustomFields } = requestPayload;
+          response = await postExpense(payloadWithoutCustomFields);
+        } else {
+          throw initialError;
         }
-      );
+      }
 
       const zohoExpenseId = response.data?.data?.expense?.expense_id;
       
@@ -492,6 +529,25 @@ class ZohoIntegrationClient {
         error: errorMessage,
       };
     }
+  }
+
+  /**
+   * Detect Zoho rejections caused by the expense custom field (e.g. Books orgs
+   * where the "Trade Show" field has not been created yet). Callers use this to
+   * retry once without custom_fields so the field never blocks an expense push.
+   */
+  private isCustomFieldError(error: unknown, customFieldApiName: string): boolean {
+    const axiosError = error as AxiosError<ZohoServiceError>;
+    const message = (
+      axiosError.response?.data?.detail?.error?.message ||
+      axiosError.message ||
+      ''
+    ).toLowerCase();
+    return (
+      message.includes('custom field') ||
+      message.includes('custom_field') ||
+      message.includes(customFieldApiName.toLowerCase())
+    );
   }
 
   /**
