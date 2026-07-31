@@ -11,6 +11,7 @@ import { ChevronRight, Paperclip } from 'lucide-react';
 import { Expense, TradeShow, User } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 import { StatusBadge } from '../../common/StatusBadge';
+import { CategoryBadge } from '../../common/CategoryBadge';
 
 interface ExpenseCardListProps {
   expenses: Expense[];
@@ -43,13 +44,16 @@ export function ExpenseCardList({
           expense.reimbursementRequired &&
           expense.reimbursementStatus !== 'paid' &&
           expense.reimbursementStatus !== 'rejected';
+        const metaLine = [eventName, hasApprovalPermission ? userName : null]
+          .filter(Boolean)
+          .join(' · ');
 
         return (
           <li key={expense.id}>
             <button
               type="button"
               onClick={() => onViewExpense(expense)}
-              className="flex w-full items-start gap-3 px-4 py-3 text-left transition-colors active:bg-stone-50"
+              className="flex min-h-[44px] w-full items-start gap-3 px-4 py-3 text-left transition-colors active:bg-stone-50"
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
@@ -58,14 +62,14 @@ export function ExpenseCardList({
                     <Paperclip aria-label="Has receipt" className="h-3 w-3 shrink-0 text-stone-300" />
                   )}
                 </div>
-                <p className="mt-0.5 truncate text-xs text-stone-400">
-                  {expense.category}
-                  {hasApprovalPermission ? ` · ${userName}` : ''}
-                  {' · '}
-                  {formatLocalDate(expense.date, { month: 'short', day: 'numeric' })}
-                </p>
-                {eventName && (
-                  <p className="truncate text-xs text-stone-400">{eventName}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <CategoryBadge category={expense.category} size="xs" />
+                  <span className="text-xs tabular-nums text-stone-400">
+                    {formatLocalDate(expense.date, { month: 'short', day: 'numeric' })}
+                  </span>
+                </div>
+                {metaLine && (
+                  <p className="mt-1 truncate text-xs text-stone-400">{metaLine}</p>
                 )}
                 {(needsEntity || needsReimbursement) && (
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -83,7 +87,7 @@ export function ExpenseCardList({
                 )}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
-                <p className="text-sm font-bold tabular-nums text-stone-900">
+                <p className="text-base font-bold tabular-nums text-stone-900">
                   ${expense.amount.toFixed(2)}
                 </p>
                 <StatusBadge status={toBadgeStatus(expense.status)} size="xs" />

@@ -30,6 +30,19 @@ function formatShowDates(event: TradeShow): string {
   return end && end !== start ? `${fmt(start)} – ${fmt(end)}` : fmt(start);
 }
 
+function splitByTime(events: TradeShow[]) {
+  const now = new Date();
+  const startOf = (e: TradeShow) => new Date(e.showStartDate || e.startDate);
+  const endOf = (e: TradeShow) => new Date(e.showEndDate || e.endDate || e.startDate);
+  const upcoming = events
+    .filter(e => endOf(e) >= now)
+    .sort((a, b) => startOf(a).getTime() - startOf(b).getTime());
+  const past = events
+    .filter(e => endOf(e) < now)
+    .sort((a, b) => endOf(b).getTime() - endOf(a).getTime());
+  return { upcoming, past };
+}
+
 export const ChecklistMasthead: React.FC<ChecklistMastheadProps> = ({
   events,
   selectedEvent,
@@ -71,11 +84,28 @@ export const ChecklistMasthead: React.FC<ChecklistMastheadProps> = ({
                 className="w-full min-h-[44px] cursor-pointer rounded-full border border-white/25 bg-white/15 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/25 focus-visible:ring-2 focus-visible:ring-white/70 sm:w-auto lg:min-h-0 [color-scheme:dark]"
               >
                 {events.length === 0 && <option value="">No events available</option>}
-                {events.map(event => (
-                  <option key={event.id} value={event.id} className="text-stone-900">
-                    {event.name} — {new Date(event.startDate).toLocaleDateString()}
-                  </option>
-                ))}
+                {(() => {
+                  const { upcoming, past } = splitByTime(events);
+                  const opt = (event: TradeShow) => (
+                    <option key={event.id} value={event.id} className="text-stone-900">
+                      {event.name} — {new Date(event.startDate).toLocaleDateString()}
+                    </option>
+                  );
+                  return (
+                    <>
+                      {upcoming.length > 0 && (
+                        <optgroup label="Upcoming" className="text-stone-900">
+                          {upcoming.map(opt)}
+                        </optgroup>
+                      )}
+                      {past.length > 0 && (
+                        <optgroup label="Past shows" className="text-stone-900">
+                          {past.map(opt)}
+                        </optgroup>
+                      )}
+                    </>
+                  );
+                })()}
               </select>
             </label>
           )}

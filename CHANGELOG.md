@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-07-31 - Digestible expenses; smarter show switcher
+
+### Changed
+- Expense Management decluttered: the four stat cards are now one summary band (Total Spent as the headline; Pending Approval and Reimbursements are clickable and apply the matching filter; zero stats hide themselves). The table went from 10+ columns to 6 by stacking person/show, merchant/category, and amount/card; the "Not Required" reimbursement column is gone — a small chip appears only when reimbursement is actually due. Mobile cards follow the same hierarchy with 44px targets and no overflow at 320px.
+- Checklist show switcher is grouped into "Upcoming" (soonest first) and "Past shows" (most recent first), and the default selection is now the live show, else the next upcoming one — never the most recently created.
+
 ## [2.4.0] - 2026-07-31 - Checklist revamp: the show is the headline
 
 ### Changed

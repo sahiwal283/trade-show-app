@@ -701,8 +701,14 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         onAddExpense={() => setShowReceiptUpload(true)}
       />
 
-      {/* Approval Workflow Cards (Only visible to admin/accountant/developer) */}
-      {hasApprovalPermission && <ApprovalCards expenses={expenses} />}
+      {/* Summary band (Only visible to admin/accountant/developer) */}
+      {hasApprovalPermission && (
+        <ApprovalCards
+          expenses={expenses}
+          onFilterPending={() => setStatusFilter('pending')}
+          onFilterReimbursements={() => setReimbursementFilter('required')}
+        />
+      )}
 
       {/* Expenses Table */}
       {finalFilteredExpenses.length === 0 ? (

@@ -128,6 +128,28 @@ function getProgressSummary(checklist: ChecklistData | null): {
   return { completed, total, pct: total > 0 ? Math.round((completed / total) * 100) : 0 };
 }
 
+/**
+ * Default show for the checklist: a live show wins, otherwise the next
+ * upcoming one, otherwise the most recently ended past show. Never "whatever
+ * was created last" — that is how bookings land on the wrong show.
+ */
+function pickDefaultEvent(events: TradeShow[]): TradeShow {
+  const now = new Date();
+  const startOf = (e: TradeShow) => new Date(e.showStartDate || e.startDate);
+  const endOf = (e: TradeShow) => new Date(e.showEndDate || e.endDate || e.startDate);
+
+  const live = events.find(e => startOf(e) <= now && endOf(e) >= now);
+  if (live) return live;
+
+  const upcoming = events
+    .filter(e => startOf(e) > now)
+    .sort((a, b) => startOf(a).getTime() - startOf(b).getTime());
+  if (upcoming.length > 0) return upcoming[0];
+
+  const past = [...events].sort((a, b) => endOf(b).getTime() - endOf(a).getTime());
+  return past[0];
+}
+
 export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) => {
   const isPrivilegedUser = user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer';
   const [activeTab, setActiveTab] = useState<ChecklistTab>(isPrivilegedUser ? 'admin' : 'user');
@@ -176,8 +198,9 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
           setSelectedEventId(linkedId);
           history.replaceState(null, '', window.location.pathname + window.location.search);
         } else if (eventsArray.length > 0 && !selectedEventId) {
-          console.log('[Checklist] Auto-selecting first event:', eventsArray[0].id);
-          setSelectedEventId(eventsArray[0].id);
+          const defaultEvent = pickDefaultEvent(eventsArray);
+          console.log('[Checklist] Auto-selecting default event:', defaultEvent.id, defaultEvent.name);
+          setSelectedEventId(defaultEvent.id);
         }
       }
     } catch (error) {

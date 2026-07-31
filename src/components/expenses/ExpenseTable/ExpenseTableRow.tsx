@@ -100,26 +100,27 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
         {formatLocalDate(expense.date)}
       </td>
 
-      {/* User (Approval Users Only) */}
-      {hasApprovalPermission && (
-        <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-stone-700">{userName}</td>
-      )}
-
-      {/* Event */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-stone-900">
-        {event ? event.name : <span className="text-stone-400">No Event</span>}
-      </td>
-
-      {/* Category */}
+      {/* Person / Show: submitter with event beneath (approvers) or event alone */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
-        <CategoryBadge category={expense.category} size="sm" />
+        {hasApprovalPermission ? (
+          <div>
+            <div className="text-xs sm:text-sm font-medium text-stone-900">{userName}</div>
+            <div className="text-xs text-stone-500">
+              {event ? event.name : <span className="text-stone-400">No Event</span>}
+            </div>
+          </div>
+        ) : (
+          <div className="text-xs sm:text-sm text-stone-900">
+            {event ? event.name : <span className="text-stone-400">No Event</span>}
+          </div>
+        )}
       </td>
 
-      {/* Merchant */}
+      {/* Expense: merchant with category chip beneath */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
         <div>
           <div className="flex items-center gap-2">
-            <div className="text-xs sm:text-sm font-medium text-stone-900">{expense.merchant}</div>
+            <div className="text-xs sm:text-sm font-semibold text-stone-900">{expense.merchant}</div>
             {expense.duplicateCheck && expense.duplicateCheck.length > 0 && (
               <div className="relative group/dup">
                 <div className="flex items-center text-amber-500 cursor-help">
@@ -150,42 +151,41 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
               </div>
             )}
           </div>
-          {expense.location && <div className="text-xs text-stone-500">{expense.location}</div>}
+          <div className="mt-1 flex items-center gap-1.5">
+            <CategoryBadge category={expense.category} size="xs" />
+            {expense.location && (
+              <span className="max-w-[160px] truncate text-xs text-stone-400">{expense.location}</span>
+            )}
+          </div>
         </div>
       </td>
 
-      {/* Amount */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-right text-xs sm:text-sm font-semibold text-stone-900 tabular-nums whitespace-nowrap">
-        ${expense.amount.toFixed(2)}
+      {/* Amount with card used beneath */}
+      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-right whitespace-nowrap">
+        <div className="text-xs sm:text-sm font-semibold text-stone-900 tabular-nums">
+          ${expense.amount.toFixed(2)}
+        </div>
+        {expense.cardUsed && <div className="text-xs text-stone-500">{expense.cardUsed}</div>}
       </td>
 
-      {/* Card Used */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-stone-600">{expense.cardUsed}</td>
-
-      {/* Status */}
-      <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
-        <StatusBadge
-          status={expense.status as React.ComponentProps<typeof StatusBadge>['status']}
-          size="sm"
-        />
-      </td>
-
-      {/* Reimbursement */}
+      {/* Status with reimbursement (only when required) beneath */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
         <div className="space-y-1">
-          {expense.reimbursementRequired ? (
-            <span
-              className={`chip px-2 py-1 text-xs ${getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')}`}
-            >
+          <StatusBadge
+            status={expense.status as React.ComponentProps<typeof StatusBadge>['status']}
+            size="sm"
+          />
+          {expense.reimbursementRequired && (
+            <div>
               <span
-                className={`chip-dot ${reimbursementDotColors[expense.reimbursementStatus || 'pending review'] || 'bg-amber-500'}`}
-              />
-              {formatReimbursementStatus(expense.reimbursementStatus)}
-            </span>
-          ) : (
-            <span className="chip px-2 py-1 text-xs bg-stone-50 text-stone-500 ring-stone-200">
-              Not Required
-            </span>
+                className={`chip px-1.5 py-0.5 text-[10px] ${getReimbursementStatusColor(expense.reimbursementStatus || 'pending review')}`}
+              >
+                <span
+                  className={`chip-dot ${reimbursementDotColors[expense.reimbursementStatus || 'pending review'] || 'bg-amber-500'}`}
+                />
+                Reimb. {formatReimbursementStatus(expense.reimbursementStatus)}
+              </span>
+            </div>
           )}
           {hasApprovalPermission && expense.reimbursementRequired && (
             <>
@@ -240,7 +240,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
         )}
       </td>
 
-      {/* Entity (Approval Users Only) */}
+      {/* Entity + Zoho push (Approval Users Only) — stacked in one column */}
       {hasApprovalPermission && (
         <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
           <select
@@ -265,16 +265,9 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
               </option>
             ))}
           </select>
-        </td>
-      )}
-
-      {/* Zoho Push (Approval Users Only) */}
-      {hasApprovalPermission && (
-        <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
-          <div className="flex justify-center">
-            {!expense.zohoEntity ? (
-              <span className="text-xs text-stone-400 italic">No entity</span>
-            ) : expense.zohoExpenseId || pushedExpenses.has(expense.id) ? (
+          {expense.zohoEntity && (
+          <div className="mt-1 flex">
+            {expense.zohoExpenseId || pushedExpenses.has(expense.id) ? (
               <span className="chip px-2 py-1 text-xs bg-accent-50 text-accent-800 ring-accent-200/70">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Pushed
@@ -298,6 +291,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
               </button>
             )}
           </div>
+          )}
         </td>
       )}
 

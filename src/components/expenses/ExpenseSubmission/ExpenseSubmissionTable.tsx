@@ -298,22 +298,17 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
                 </th>
               )}
               <SortableTh label="Date" primaryKey="date-newest" secondaryKey="date-oldest" sortBy={sortBy} setSortBy={setSortBy} />
-              {hasApprovalPermission && (
-                <SortableTh label="User" primaryKey="user-az" secondaryKey="user-za" sortBy={sortBy} setSortBy={setSortBy} />
+              {hasApprovalPermission ? (
+                <SortableTh label="Person / Show" primaryKey="user-az" secondaryKey="user-za" sortBy={sortBy} setSortBy={setSortBy} />
+              ) : (
+                <th className={`${thBase} text-left`}>Show</th>
               )}
-              <th className={`${thBase} text-left`}>Event</th>
-              <SortableTh label="Category" primaryKey="category-az" secondaryKey="category-za" sortBy={sortBy} setSortBy={setSortBy} />
-              <SortableTh label="Merchant" primaryKey="merchant-az" secondaryKey="merchant-za" sortBy={sortBy} setSortBy={setSortBy} />
+              <SortableTh label="Expense" primaryKey="merchant-az" secondaryKey="merchant-za" sortBy={sortBy} setSortBy={setSortBy} />
               <SortableTh label="Amount" primaryKey="amount-highest" secondaryKey="amount-lowest" sortBy={sortBy} setSortBy={setSortBy} align="right" />
-              <th className={`${thBase} text-left`}>Card Used</th>
               <th className={`${thBase} text-left`}>Status</th>
-              <th className={`${thBase} text-left`}>Reimbursement</th>
               <th className={`${thBase} text-left`}>Receipt</th>
               {hasApprovalPermission && (
-                <>
-                  <th className={`${thBase} text-left`}>Entity</th>
-                  <th className={`${thBase} text-center`}>Zoho</th>
-                </>
+                <th className={`${thBase} text-left`}>Entity / Zoho</th>
               )}
               <th className={`${thBase} text-right`}>Actions</th>
             </tr>
