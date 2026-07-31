@@ -334,7 +334,30 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
           event={event}
           section="car_rental"
           onClose={() => setShowReceiptUpload(null)}
-          onExpenseCreated={() => {
+          onExpenseCreated={async (extracted) => {
+            const rentalId = showReceiptUpload;
+            const existing = checklist.carRentals.find(r => r.id === rentalId);
+            const edits = editingRentals[rentalId];
+            if (existing) {
+              try {
+                await api.checklist.updateCarRental(rentalId, {
+                  provider: edits?.provider || existing.provider || extracted.merchant || null,
+                  confirmationNumber: edits?.confirmation_number || existing.confirmation_number || null,
+                  pickupDate: edits?.pickup_date || existing.pickup_date || extracted.date || null,
+                  returnDate: edits?.return_date || existing.return_date || null,
+                  notes: edits?.notes || existing.notes || null,
+                  booked: true,
+                  rentalType: edits?.rental_type || existing.rental_type || 'group',
+                  assignedToId: edits?.assigned_to_id || existing.assigned_to_id || null,
+                  assignedToName: edits?.assigned_to_name || existing.assigned_to_name || null,
+                });
+                const newEditing = { ...editingRentals };
+                delete newEditing[rentalId];
+                setEditingRentals(newEditing);
+              } catch (error) {
+                console.error('[CarRentalsSection] Error saving rental with receipt:', error);
+              }
+            }
             setShowReceiptUpload(null);
             onReload();
           }}

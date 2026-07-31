@@ -261,7 +261,35 @@ export const HotelsSection: React.FC<HotelsSectionProps> = ({ checklist, user, e
         section="hotel"
         attendeeName={showReceiptUpload.attendeeName}
         onClose={() => setShowReceiptUpload(null)}
-        onExpenseCreated={() => {
+        onExpenseCreated={async (extracted) => {
+          // Persist the reservation alongside the expense: user-typed fields
+          // win, OCR fills the blanks (merchant -> property, date -> check-in).
+          const attendeeId = showReceiptUpload.attendeeId;
+          const existing = getHotelForAttendee(attendeeId);
+          const edits = editingHotels[attendeeId];
+          const payload = {
+            attendeeId,
+            attendeeName: showReceiptUpload.attendeeName,
+            propertyName: edits?.property_name || existing?.property_name || extracted.merchant || null,
+            confirmationNumber: edits?.confirmation_number || existing?.confirmation_number || null,
+            checkInDate: edits?.check_in_date || existing?.check_in_date || extracted.date || null,
+            checkOutDate: edits?.check_out_date || existing?.check_out_date || null,
+            notes: edits?.notes || existing?.notes || null,
+            booked: true,
+          };
+          try {
+            if (existing?.id) {
+              await api.checklist.updateHotel(existing.id, payload);
+            } else {
+              await api.checklist.createHotel(checklist.id, payload);
+            }
+            const newEditing = { ...editingHotels };
+            delete newEditing[attendeeId];
+            setEditingHotels(newEditing);
+          } catch (error) {
+            console.error('[HotelsSection] Error saving reservation with receipt:', error);
+            alert('Receipt saved, but updating the reservation failed. Please save the reservation manually.');
+          }
           setShowReceiptUpload(null);
           onReload();
         }}

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-07-31 - Checklist workflow: no more lost reservations
+
+### Fixed
+- Uploading a receipt from a hotel/flight/car row no longer wipes unsaved reservation details: background checklist refreshes keep the board mounted (edits, expanded row, and active tab survive), and creating the expense now also saves the reservation.
+
+### Added
+- OCR now fills the reservation automatically: the receipt's merchant becomes the property/carrier/rental company and its date the check-in/pickup date wherever you left a field blank. Your typed values always win.
+- "Add person" button on the checklist board: add people to a show right there (search, multi-select) without a round-trip through Events. New backend endpoint POST /events/:id/participants adds to the roster without touching other event fields.
+- Booking push notifications now say which show they're for (title carries the show name) and deep-link to that event; body leads with carrier/property.
+
 ## [2.2.0] - 2026-07-24 - App-wide control standardization
 
 ### Changed

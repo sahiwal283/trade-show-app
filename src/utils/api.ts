@@ -39,6 +39,8 @@ export const api = {
   createEvent: (payload: Record<string, any>) => apiClient.post('/events', payload),
   updateEvent: (id: string, payload: Record<string, any>) => apiClient.put(`/events/${id}`, payload),
   deleteEvent: (id: string) => apiClient.delete(`/events/${id}`),
+  addEventParticipants: (id: string, userIds: string[]) =>
+    apiClient.post(`/events/${id}/participants`, { user_ids: userIds }),
 
   // Expenses
   getExpenses: (params?: Record<string, string | number | boolean>) => 
@@ -209,7 +211,7 @@ export const api = {
           } catch {
             throw new Error('Downloaded file is not a valid PDF. Please check server logs.');
           }
-        } catch (textError) {
+        } catch {
           throw new Error('Downloaded file is not a valid PDF. Please check server logs.');
         }
       }

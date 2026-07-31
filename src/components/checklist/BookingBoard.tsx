@@ -8,6 +8,7 @@
  */
 
 import React, { useState } from 'react';
+import { UserPlus } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { ChecklistData } from './TradeShowChecklist';
 import { BoothSection } from './sections/BoothSection';
@@ -18,6 +19,7 @@ import { CustomItemsSection } from './sections/CustomItemsSection';
 import { ChecklistProgressCard } from './ChecklistProgressCard';
 import { BookingBoardTabs, BoardTab, BoardTabKey } from './BookingBoardTabs';
 import { boardPanelId, boardTabId } from './bookingText';
+import { AddParticipantModal } from './AddParticipantModal';
 
 interface BookingBoardProps {
   checklist: ChecklistData;
@@ -26,6 +28,7 @@ interface BookingBoardProps {
   saving: boolean;
   onUpdate: (updates: Partial<ChecklistData>) => Promise<void>;
   onReload: () => void;
+  onRosterChanged?: () => void;
   progress: { completed: number; total: number; pct: number };
 }
 
@@ -36,9 +39,13 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
   saving,
   onUpdate,
   onReload,
+  onRosterChanged,
   progress,
 }) => {
   const [boardTab, setBoardTab] = useState<BoardTabKey>('booth');
+  const [showAddPerson, setShowAddPerson] = useState(false);
+  const canManageRoster =
+    user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer';
 
   // Tab definitions carry the done/total counts the board wears.
   const tabs: BoardTab[] = [
@@ -113,7 +120,19 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
         pct={progress.pct}
       />
 
-      <BookingBoardTabs tabs={tabs} active={boardTab} onChange={setBoardTab} />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <BookingBoardTabs tabs={tabs} active={boardTab} onChange={setBoardTab} />
+        {canManageRoster && (
+          <button
+            type="button"
+            onClick={() => setShowAddPerson(true)}
+            className="btn-secondary"
+          >
+            <UserPlus aria-hidden="true" className="h-4 w-4" />
+            Add person
+          </button>
+        )}
+      </div>
 
       <div
         role="tabpanel"
@@ -123,6 +142,14 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
       >
         {panels[boardTab]}
       </div>
+
+      {showAddPerson && (
+        <AddParticipantModal
+          event={event}
+          onClose={() => setShowAddPerson(false)}
+          onAdded={() => (onRosterChanged ? onRosterChanged() : onReload())}
+        />
+      )}
     </>
   );
 };

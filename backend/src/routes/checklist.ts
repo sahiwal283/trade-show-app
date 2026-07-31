@@ -10,6 +10,7 @@ import { checklistRepository } from '../database/repositories';
 import { pushService, PushPayload } from '../services/PushService';
 import multer from 'multer';
 import fs from 'fs';
+import { query } from '../config/database';
 
 const router = express.Router();
 
@@ -27,6 +28,42 @@ const notifyBooking = (userId: string | null | undefined, payload: PushPayload):
 /**
  * Format a date value for notification bodies (dates come back from pg as Date or string).
  */
+interface ShowRef { id: string; name: string }
+
+/** Resolve the show for a checklist id — used to give notifications context. */
+const getShowByChecklist = async (checklistId: number): Promise<ShowRef | null> => {
+  try {
+    const r = await query(
+      `SELECT e.id, e.name FROM events e JOIN event_checklists c ON c.event_id = e.id WHERE c.id = $1`,
+      [checklistId]
+    );
+    return r.rows[0] || null;
+  } catch (error) {
+    console.error('[Checklist] Failed to resolve show for notification:', error);
+    return null;
+  }
+};
+
+/** Resolve the show from a booking row id (update routes only know the row). */
+const getShowByBookingRow = async (
+  table: 'checklist_flights' | 'checklist_hotels' | 'checklist_car_rentals',
+  rowId: number
+): Promise<ShowRef | null> => {
+  try {
+    const r = await query(
+      `SELECT e.id, e.name FROM events e
+       JOIN event_checklists c ON c.event_id = e.id
+       JOIN ${table} t ON t.checklist_id = c.id
+       WHERE t.id = $1`,
+      [rowId]
+    );
+    return r.rows[0] || null;
+  } catch (error) {
+    console.error('[Checklist] Failed to resolve show for notification:', error);
+    return null;
+  }
+};
+
 const formatNotificationDate = (value?: string | Date | null): string | null => {
   if (!value) return null;
   const date = value instanceof Date ? value : new Date(value);
@@ -300,10 +337,11 @@ router.post('/:checklistId/flights', authorize('admin', 'coordinator', 'develope
     });
 
     if (flight.booked && flight.confirmation_number && flight.attendee_id) {
+      const show = await getShowByChecklist(parseInt(checklistId));
       notifyBooking(flight.attendee_id, {
-        title: 'Flight booked ✈️',
-        body: `Confirmation ${flight.confirmation_number}${flight.carrier ? ` · ${flight.carrier}` : ''}`,
-        url: '/'
+        title: `Flight booked ✈️${show ? ` — ${show.name}` : ''}`,
+        body: `${flight.carrier ? `${flight.carrier} · ` : ''}Confirmation ${flight.confirmation_number}`,
+        url: show ? `/#event=${show.id}` : '/'
       });
     }
 
@@ -329,10 +367,11 @@ router.put('/flights/:flightId', authorize('admin', 'coordinator', 'developer'),
     });
 
     if (flight.booked && flight.confirmation_number && flight.attendee_id) {
+      const show = await getShowByBookingRow('checklist_flights', parseInt(flightId));
       notifyBooking(flight.attendee_id, {
-        title: 'Flight booked ✈️',
-        body: `Confirmation ${flight.confirmation_number}${flight.carrier ? ` · ${flight.carrier}` : ''}`,
-        url: '/'
+        title: `Flight booked ✈️${show ? ` — ${show.name}` : ''}`,
+        body: `${flight.carrier ? `${flight.carrier} · ` : ''}Confirmation ${flight.confirmation_number}`,
+        url: show ? `/#event=${show.id}` : '/'
       });
     }
 
@@ -375,10 +414,11 @@ router.post('/:checklistId/hotels', authorize('admin', 'coordinator', 'developer
 
     if (hotel.booked && hotel.confirmation_number && hotel.attendee_id) {
       const checkIn = formatNotificationDate(hotel.check_in_date);
+      const show = await getShowByChecklist(parseInt(checklistId));
       notifyBooking(hotel.attendee_id, {
-        title: 'Hotel booked 🏨',
-        body: `Confirmation ${hotel.confirmation_number}${hotel.property_name ? ` · ${hotel.property_name}` : ''}${checkIn ? ` · Check-in ${checkIn}` : ''}`,
-        url: '/'
+        title: `Hotel booked 🏨${show ? ` — ${show.name}` : ''}`,
+        body: `${hotel.property_name ? `${hotel.property_name} · ` : ''}Confirmation ${hotel.confirmation_number}${checkIn ? ` · Check-in ${checkIn}` : ''}`,
+        url: show ? `/#event=${show.id}` : '/'
       });
     }
 
@@ -406,10 +446,11 @@ router.put('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer'), a
 
     if (hotel.booked && hotel.confirmation_number && hotel.attendee_id) {
       const checkIn = formatNotificationDate(hotel.check_in_date);
+      const show = await getShowByBookingRow('checklist_hotels', parseInt(hotelId));
       notifyBooking(hotel.attendee_id, {
-        title: 'Hotel booked 🏨',
-        body: `Confirmation ${hotel.confirmation_number}${hotel.property_name ? ` · ${hotel.property_name}` : ''}${checkIn ? ` · Check-in ${checkIn}` : ''}`,
-        url: '/'
+        title: `Hotel booked 🏨${show ? ` — ${show.name}` : ''}`,
+        body: `${hotel.property_name ? `${hotel.property_name} · ` : ''}Confirmation ${hotel.confirmation_number}${checkIn ? ` · Check-in ${checkIn}` : ''}`,
+        url: show ? `/#event=${show.id}` : '/'
       });
     }
 
@@ -452,10 +493,11 @@ router.post('/:checklistId/car-rentals', authorize('admin', 'coordinator', 'deve
     });
 
     if (rental.booked && rental.confirmation_number && rental.assigned_to_id) {
+      const show = await getShowByChecklist(parseInt(checklistId));
       notifyBooking(rental.assigned_to_id, {
-        title: 'Car rental booked 🚗',
-        body: `Confirmation ${rental.confirmation_number}${rental.provider ? ` · ${rental.provider}` : ''}`,
-        url: '/'
+        title: `Car rental booked 🚗${show ? ` — ${show.name}` : ''}`,
+        body: `${rental.provider ? `${rental.provider} · ` : ''}Confirmation ${rental.confirmation_number}`,
+        url: show ? `/#event=${show.id}` : '/'
       });
     }
 
@@ -485,10 +527,11 @@ router.put('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'develope
     });
 
     if (rental.booked && rental.confirmation_number && rental.assigned_to_id) {
+      const show = await getShowByBookingRow('checklist_car_rentals', parseInt(rentalId));
       notifyBooking(rental.assigned_to_id, {
-        title: 'Car rental booked 🚗',
-        body: `Confirmation ${rental.confirmation_number}${rental.provider ? ` · ${rental.provider}` : ''}`,
-        url: '/'
+        title: `Car rental booked 🚗${show ? ` — ${show.name}` : ''}`,
+        body: `${rental.provider ? `${rental.provider} · ` : ''}Confirmation ${rental.confirmation_number}`,
+        url: show ? `/#event=${show.id}` : '/'
       });
     }
 

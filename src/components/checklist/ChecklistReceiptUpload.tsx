@@ -6,13 +6,19 @@ import { AppError } from '../../types/types';
 import { isAcceptableReceiptFile } from '../../utils/fileValidation';
 import { getZohoExpenseDescriptionValidationMessage } from '../../utils/zohoExpenseDescription';
 
+export interface ExtractedReceipt {
+  merchant: string;
+  amount: number;
+  date: string;
+}
+
 interface ChecklistReceiptUploadProps {
   user: User;
   event: TradeShow;
   section: 'booth' | 'electricity' | 'flight' | 'hotel' | 'car_rental' | 'booth_shipping';
   attendeeName?: string; // For flights and hotels
   onClose: () => void;
-  onExpenseCreated: () => void;
+  onExpenseCreated: (extracted: ExtractedReceipt) => void;
 }
 
 const SECTION_CATEGORIES = {
@@ -170,7 +176,11 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
       // Show success notification
       alert('✅ Receipt saved successfully!');
       
-      onExpenseCreated();
+      onExpenseCreated({
+        merchant: formData.merchant,
+        amount: parseFloat(formData.amount),
+        date: formData.date,
+      });
       onClose();
     } catch (error) {
       const appError = error as AppError & { response?: { data?: { error?: string } } };

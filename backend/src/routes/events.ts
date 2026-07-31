@@ -187,6 +187,37 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
   }
 });
 
+// Add participants to an event without touching any other event field.
+// Used by the checklist's inline "Add person" flow.
+router.post('/:id/participants', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
+  try {
+    const { id } = req.params;
+    const userIds = Array.isArray(req.body.user_ids)
+      ? req.body.user_ids.filter((u: unknown): u is string => typeof u === 'string' && u.length > 0)
+      : [];
+    if (userIds.length === 0) {
+      return res.status(400).json({ error: 'user_ids (non-empty array) is required' });
+    }
+
+    const previousIds = new Set(await getCurrentParticipantIds(id));
+    const addedIds = await processParticipants(id, undefined, userIds, undefined, { notify: false });
+    const newlyAddedIds = addedIds.filter((uid) => !previousIds.has(uid));
+
+    if (newlyAddedIds.length > 0) {
+      notifyParticipantsAdded(id, newlyAddedIds);
+    }
+
+    res.json({ added: newlyAddedIds });
+  } catch (error: any) {
+    console.error('[Events] Failed to add participants:', error);
+    if (error.code === '23503') {
+      res.status(400).json({ error: 'Invalid participant ID provided' });
+    } else {
+      res.status(500).json({ error: 'Failed to add participants. Please try again.' });
+    }
+  }
+});
+
 // Delete event
 router.delete('/:id', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
   try {

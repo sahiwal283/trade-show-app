@@ -185,8 +185,10 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
     }
   };
 
-  const loadChecklist = async (eventId: string) => {
-    setLoading(true);
+  // background=true refreshes data without unmounting the board — this is what
+  // preserves unsaved row edits, the expanded row, and the active tab.
+  const loadChecklist = async (eventId: string, opts: { background?: boolean } = {}) => {
+    if (!opts.background) setLoading(true);
     try {
       if (api.USE_SERVER) {
         console.log('[Checklist] Loading checklist for event:', eventId);
@@ -367,7 +369,11 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
               event={selectedEvent}
               saving={saving}
               onUpdate={updateChecklist}
-              onReload={() => loadChecklist(selectedEventId!)}
+              onReload={() => loadChecklist(selectedEventId!, { background: true })}
+              onRosterChanged={() => {
+                loadEvents();
+                loadChecklist(selectedEventId!, { background: true });
+              }}
               progress={progress}
             />
           )}

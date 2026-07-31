@@ -265,7 +265,34 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
         section="flight"
         attendeeName={showReceiptUpload.attendeeName}
         onClose={() => setShowReceiptUpload(null)}
-        onExpenseCreated={() => {
+        onExpenseCreated={async (extracted) => {
+          // Persist the booking alongside the expense: user-typed fields win,
+          // OCR fills the blanks (merchant -> carrier).
+          const attendeeId = showReceiptUpload.attendeeId;
+          const existing = getFlightForAttendee(attendeeId);
+          const edits = editingFlights[attendeeId];
+          const payload = {
+            attendeeId,
+            attendeeName: showReceiptUpload.attendeeName,
+            carrier: edits?.carrier || existing?.carrier || extracted.merchant || null,
+            confirmationNumber: edits?.confirmation_number || existing?.confirmation_number || null,
+            notes: edits?.notes || existing?.notes || null,
+            departureAt: edits?.departure_at || existing?.departure_at || null,
+            booked: true,
+          };
+          try {
+            if (existing?.id) {
+              await api.checklist.updateFlight(existing.id, payload);
+            } else {
+              await api.checklist.createFlight(checklist.id, payload);
+            }
+            const newEditing = { ...editingFlights };
+            delete newEditing[attendeeId];
+            setEditingFlights(newEditing);
+          } catch (error) {
+            console.error('[FlightsSection] Error saving booking with receipt:', error);
+            alert('Receipt saved, but updating the booking failed. Please save the booking manually.');
+          }
           setShowReceiptUpload(null);
           onReload();
         }}
