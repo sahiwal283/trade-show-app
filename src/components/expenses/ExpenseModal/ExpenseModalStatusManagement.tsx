@@ -11,10 +11,9 @@
  */
 
 import React from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Loader2, Upload } from 'lucide-react';
 import { Expense } from '../../../App';
 import { getStatusColor, getReimbursementStatusColor, formatReimbursementStatus } from '../../../constants/appConstants';
-import { buildReimbursementConfirmation, buildMarkAsPaidConfirmation } from '../../../utils/expenseUtils';
 
 interface AuditEntry {
   action: string;
@@ -30,6 +29,12 @@ interface ExpenseModalStatusManagementProps {
   onStatusChange?: (newStatus: ExpenseStatus) => Promise<void>;
   onReimbursementStatusChange: (newStatus: 'pending review' | 'approved' | 'rejected' | 'paid') => Promise<void>;
   onEntityChange: (newEntity: string) => Promise<void>;
+  /** Pushes this expense to Zoho Books (approval users; entity assigned, not yet pushed). */
+  onPushToZoho?: () => Promise<void> | void;
+  /** True while this expense's push is in flight. */
+  isPushing?: boolean;
+  /** True when pushed this session but the expense record is not yet refreshed. */
+  isPushed?: boolean;
 }
 
 // System control recipe for compact status selects (matches .input-field anatomy)
@@ -69,8 +74,12 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
   onStatusChange,
   onReimbursementStatusChange,
   onEntityChange,
+  onPushToZoho,
+  isPushing = false,
+  isPushed = false,
 }) => {
   const editCount = getEditCount(auditTrail);
+  const hasBeenPushed = !!expense.zohoExpenseId || isPushed;
 
   return (
     <div className="flex flex-wrap gap-6">
@@ -213,21 +222,44 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
       {hasApprovalPermission && expense.zohoEntity && (
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Zoho Status</p>
-          {expense.zohoExpenseId ? (
+          {hasBeenPushed ? (
             <div className="flex items-center space-x-2">
               <span className="chip px-3 py-1 text-sm bg-accent-50 text-accent-800 ring-accent-200/70">
                 <span className="chip-dot bg-accent-500" />
                 Pushed
               </span>
-              <span className="text-xs text-stone-500">ID: {expense.zohoExpenseId}</span>
+              {expense.zohoExpenseId && (
+                <span className="text-xs text-stone-500">ID: {expense.zohoExpenseId}</span>
+              )}
               <EditWarning count={editCount} message="after push - Zoho data may be stale" />
             </div>
           ) : (
-            <div className="flex items-center space-x-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="chip px-3 py-1 text-sm bg-amber-50 text-amber-800 ring-amber-200/70">
                 <span className="chip-dot bg-amber-500" />
                 Not Pushed
               </span>
+              {onPushToZoho && (
+                <button
+                  type="button"
+                  onClick={() => onPushToZoho()}
+                  disabled={isPushing}
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-200/70 transition-colors duration-150 hover:bg-brand-100 hover:text-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-60 lg:min-h-0"
+                  title={`Push to ${expense.zohoEntity} Zoho Books`}
+                >
+                  {isPushing ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Pushing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Push to Zoho</span>
+                    </>
+                  )}
+                </button>
+              )}
               <EditWarning count={editCount} message="before push" />
             </div>
           )}

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.1] - 2026-07-31 - Expensify-style expense rows
+
+### Changed
+- Expense rows are now pure data (Expensify model): the per-row entity dropdown, Push, View, trash, and inline reimbursement buttons are gone. Click any row (keyboard accessible) to open the detail modal, where entity assignment, Zoho push (new button), approve/reject, reimbursement handling, and delete (permission-gated) all live.
+- Status tabs above the table — All / Needs review (with pending count) / Approved / Rejected — replace the status dropdown; the accountant lands, taps Needs review, and works the queue.
+- Zoho state shows as a quiet "Pushed" check or a small "Needs entity" chip under the status, only when relevant.
+
 ## [2.5.0] - 2026-07-31 - Digestible expenses; smarter show switcher
 
 ### Changed

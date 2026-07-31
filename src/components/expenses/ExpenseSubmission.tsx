@@ -388,6 +388,12 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         localStorage.setItem('tradeshow_expenses', JSON.stringify(updatedExpenses));
       }
       setPendingReceiptFile(null);
+      // If the deleted expense is open in the detail modal, close it
+      if (viewingExpense?.id === expenseId) {
+        setViewingExpense(null);
+        setIsEditingExpense(false);
+        setEditFormData(null);
+      }
       await reloadData();
     } catch (error) {
       console.error('[ExpenseSubmission] Error deleting expense:', error);
@@ -852,6 +858,15 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                 onEntityChange={async (newEntity) => {
                   await handleAssignEntity(viewingExpense, newEntity);
                 }}
+                onPushToZoho={
+                  hasApprovalPermission
+                    ? async () => {
+                        await handlePushToZoho(viewingExpense);
+                      }
+                    : undefined
+                }
+                isPushing={pushingExpenseId === viewingExpense.id}
+                isPushed={pushedExpenses.has(viewingExpense.id)}
               />
 
               {/* ✅ REFACTORED: Replaced 27 lines with ExpenseModalReceipt */}
@@ -881,6 +896,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               onEdit={() => startInlineEdit(viewingExpense)}
               onCancel={cancelInlineEdit}
               onSave={saveInlineEdit}
+              onDelete={
+                viewingExpense.userId === user.id || hasApprovalPermission
+                  ? () => handleDeleteExpense(viewingExpense.id)
+                  : undefined
+              }
               onDownloadPDF={async (expenseId: string) => {
                 try {
                   await api.downloadExpensePDF(expenseId);

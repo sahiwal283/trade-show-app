@@ -2,8 +2,9 @@
  * ExpenseToolbar Component
  *
  * Filter toolbar above the expenses table: free-text search, the primary
- * dropdowns (month, event, category, status), and a "More filters" toggle
- * revealing the long-tail controls (card, reimbursement).
+ * dropdowns (month, event, category), and a "More filters" toggle revealing
+ * the long-tail controls (card, reimbursement). Status filtering lives in
+ * the seg-track tabs above this toolbar.
  */
 
 import React from 'react';
@@ -31,8 +32,6 @@ interface ExpenseToolbarProps {
   setEventFilter: (value: string) => void;
   categoryFilter: string;
   setCategoryFilter: (value: string) => void;
-  statusFilter: string;
-  setStatusFilter: (value: string) => void;
   cardFilter: string;
   setCardFilter: (value: string) => void;
   reimbursementFilter: string;
@@ -73,8 +72,6 @@ export const ExpenseToolbar: React.FC<ExpenseToolbarProps> = ({
   setEventFilter,
   categoryFilter,
   setCategoryFilter,
-  statusFilter,
-  setStatusFilter,
   cardFilter,
   setCardFilter,
   reimbursementFilter,
@@ -132,19 +129,6 @@ export const ExpenseToolbar: React.FC<ExpenseToolbarProps> = ({
             <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
-        <select
-          value={statusFilter}
-          onChange={e => setStatusFilter(e.target.value)}
-          className={`${control} hidden md:block`}
-          aria-label="Filter by status"
-        >
-          <option value="all">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="needs further review">Needs Review</option>
-        </select>
-
         <button
           type="button"
           onClick={() => setShowMoreFilters(!showMoreFilters)}
@@ -206,18 +190,6 @@ export const ExpenseToolbar: React.FC<ExpenseToolbarProps> = ({
             {uniqueCategories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
-          </select>
-          <select
-            value={statusFilter}
-            onChange={e => setStatusFilter(e.target.value)}
-            className={`${control} md:hidden`}
-            aria-label="Filter by status"
-          >
-            <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="needs further review">Needs Review</option>
           </select>
           <select
             value={cardFilter}

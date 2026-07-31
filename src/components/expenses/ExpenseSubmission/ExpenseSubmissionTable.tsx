@@ -201,8 +201,52 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
   const showingFrom = (safePage - 1) * pageSize + 1;
   const showingTo = Math.min(safePage * pageSize, filteredExpenses.length);
 
+  // Pending count for the "Needs review" tab — scoped to what this user can
+  // actually see, independent of the other active filters.
+  const pendingCount = useMemo(
+    () =>
+      expenses.filter(
+        e => e.status === 'pending' && (hasApprovalPermission || e.userId === props.currentUserId)
+      ).length,
+    [expenses, hasApprovalPermission, props.currentUserId]
+  );
+
+  const statusTabs = [
+    { value: 'all', label: 'All' },
+    { value: 'pending', label: 'Needs review' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Rejected' },
+  ];
+
   return (
     <div className="card overflow-hidden">
+      {/* Status tabs — the primary way to slice the ledger */}
+      <div className="overflow-x-auto border-b border-stone-100 px-3 pt-3 pb-3">
+        <nav className="seg-track" aria-label="Filter by status">
+          {statusTabs.map(tab => {
+            const isActive = props.statusFilter === tab.value;
+            return (
+              <button
+                key={tab.value}
+                type="button"
+                onClick={() => props.setStatusFilter(tab.value)}
+                aria-current={isActive ? 'page' : undefined}
+                className={`seg-tab ${isActive ? 'seg-tab-active' : 'seg-tab-idle'}`}
+              >
+                {tab.label}
+                {tab.value === 'pending' && pendingCount > 0 && (
+                  <span
+                    className={`text-xs tabular-nums ${isActive ? 'text-white/80' : 'text-stone-400'}`}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
       <ExpenseToolbar
         expenses={expenses}
         events={events}
@@ -218,8 +262,6 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
         setEventFilter={props.setEventFilter}
         categoryFilter={props.categoryFilter}
         setCategoryFilter={props.setCategoryFilter}
-        statusFilter={props.statusFilter}
-        setStatusFilter={props.setStatusFilter}
         cardFilter={props.cardFilter}
         setCardFilter={props.setCardFilter}
         reimbursementFilter={props.reimbursementFilter}
@@ -307,10 +349,6 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
               <SortableTh label="Amount" primaryKey="amount-highest" secondaryKey="amount-lowest" sortBy={sortBy} setSortBy={setSortBy} align="right" />
               <th className={`${thBase} text-left`}>Status</th>
               <th className={`${thBase} text-left`}>Receipt</th>
-              {hasApprovalPermission && (
-                <th className={`${thBase} text-left`}>Entity / Zoho</th>
-              )}
-              <th className={`${thBase} text-right`}>Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
@@ -325,16 +363,8 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
                   event={event}
                   userName={userName}
                   hasApprovalPermission={hasApprovalPermission}
-                  entityOptions={entityOptions}
-                  pushingExpenseId={props.pushingExpenseId}
                   pushedExpenses={props.pushedExpenses}
-                  onReimbursementApproval={props.onReimbursementApproval}
-                  onMarkAsPaid={props.onMarkAsPaid}
-                  onAssignEntity={props.onAssignEntity}
-                  onPushToZoho={props.onPushToZoho}
                   onViewExpense={props.onViewExpense}
-                  onDeleteExpense={props.onDeleteExpense}
-                  currentUserId={props.currentUserId}
                   isSelected={selectedIds.has(expense.id)}
                   onToggleSelect={hasApprovalPermission ? toggleSelect : undefined}
                 />

@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { CheckCircle, Loader2, Download, Info } from 'lucide-react';
+import { CheckCircle, Loader2, Download, Info, Trash2 } from 'lucide-react';
 
 interface ExpenseModalFooterProps {
   isEditingExpense: boolean;
@@ -17,6 +17,8 @@ interface ExpenseModalFooterProps {
   onCancel: () => void;
   onSave: () => void;
   onDownloadPDF?: (expenseId: string) => Promise<void>;
+  /** Deletes this expense (own expenses or approval users); confirmation lives in the handler. */
+  onDelete?: () => void;
   /** When set while editing, Save is disabled (e.g. Zoho description over limit) */
   saveDisabled?: boolean;
 }
@@ -30,6 +32,7 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
   onCancel,
   onSave,
   onDownloadPDF,
+  onDelete,
   saveDisabled = false,
 }) => {
   const [isDownloading, setIsDownloading] = useState(false);
@@ -60,6 +63,15 @@ export const ExpenseModalFooter: React.FC<ExpenseModalFooterProps> = ({
     <div className="sticky bottom-0 flex flex-col gap-2 rounded-b-none border-t border-stone-200 bg-stone-50/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-3 sm:rounded-b-xl sm:px-6 sm:py-4 sm:pb-4">
       {!isEditingExpense ? (
         <>
+          {onDelete && (
+            <button
+              onClick={onDelete}
+              className="btn-danger order-4 w-full px-4 py-2 sm:order-first sm:mr-auto sm:w-auto"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete</span>
+            </button>
+          )}
           <button
             onClick={onEdit}
             className="btn-primary order-1 w-full px-4 py-2 sm:order-3 sm:w-auto"
