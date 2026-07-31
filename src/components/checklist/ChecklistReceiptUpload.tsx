@@ -70,6 +70,20 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
     receiptUrl: '' // Store receipt URL from OCR
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragActive, setDragActive] = useState(false);
+
+  // Shared validation for the picker and drag-and-drop.
+  const acceptFile = (file: File) => {
+    if (!isAcceptableReceiptFile(file)) {
+      alert('Please upload an image (JPG, PNG, HEIC, WebP) or PDF file.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB');
+      return;
+    }
+    handleFileSelect(file);
+  };
 
   // Load card options
   React.useEffect(() => {
@@ -241,7 +255,28 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
         <div className="p-6 space-y-4">
           {/* File Upload */}
           {!selectedFile ? (
-            <div className="border-2 border-dashed border-stone-300 rounded-lg p-8 text-center">
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragActive(true);
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setDragActive(false);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragActive(false);
+                const file = e.dataTransfer.files?.[0];
+                if (file) acceptFile(file);
+              }}
+              onClick={() => fileInputRef.current?.click()}
+              className={`cursor-pointer rounded-lg border-2 border-dashed p-8 text-center transition-colors ${
+                dragActive
+                  ? 'border-brand-500 bg-brand-50'
+                  : 'border-stone-300 hover:border-brand-400 hover:bg-stone-50'
+              }`}
+            >
               <Upload className="w-12 h-12 text-stone-400 mx-auto mb-3" />
               <p className="text-stone-600 mb-2">Drop receipt here or click to upload (images or PDF, max 10MB)</p>
               <input
@@ -250,21 +285,15 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
                 accept="image/*,.heic,.heif,application/pdf,.pdf"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (!isAcceptableReceiptFile(file)) {
-                    alert('Please upload an image (JPG, PNG, HEIC, WebP) or PDF file.');
-                    return;
-                  }
-                  if (file.size > 10 * 1024 * 1024) {
-                    alert('File size must be less than 10MB');
-                    return;
-                  }
-                  handleFileSelect(file);
+                  if (file) acceptFile(file);
                 }}
                 className="hidden"
               />
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
                 className="btn-primary"
               >
                 Choose File

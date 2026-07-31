@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.2] - 2026-07-31 - Checklist dropzone actually accepts drops
+
+### Fixed
+- The checklist Upload Receipt dialog now really supports drag-and-drop (it only claimed to before): dropping a file validates and starts OCR just like the picker, the zone highlights while dragging, and clicking anywhere in it opens the file browser.
+
 ## [2.3.1] - 2026-07-31 - Reservation-aware OCR
 
 ### Added
