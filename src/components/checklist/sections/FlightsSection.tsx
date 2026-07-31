@@ -13,7 +13,7 @@ import { api } from '../../../utils/api';
 import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
 import { CheckToggle, StatusChip, FieldLabel, InlineAction } from '../ChecklistPrimitives';
 import { BookingRow } from '../BookingRow';
-import { joinSummary } from '../bookingText';
+import { joinSummary, isJunkBookingName } from '../bookingText';
 
 /** ISO timestamp → value for a datetime-local input, in the local timezone. */
 function isoToLocalInput(iso: string | null | undefined): string {
@@ -274,7 +274,11 @@ export const FlightsSection: React.FC<FlightsSectionProps> = ({ checklist, user,
           const payload = {
             attendeeId,
             attendeeName: showReceiptUpload.attendeeName,
-            carrier: edits?.carrier || existing?.carrier || extracted.reservation?.carrier || extracted.merchant || null,
+            carrier:
+              [edits?.carrier, existing?.carrier].find(v => !isJunkBookingName(v)) ||
+              extracted.reservation?.carrier ||
+              [extracted.merchant, edits?.carrier, existing?.carrier].find(v => !!v) ||
+              null,
             confirmationNumber: edits?.confirmation_number || existing?.confirmation_number || extracted.reservation?.confirmationNumber || null,
             notes: edits?.notes || existing?.notes || null,
             departureAt: edits?.departure_at || existing?.departure_at || null,

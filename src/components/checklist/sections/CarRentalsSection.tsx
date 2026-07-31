@@ -14,7 +14,7 @@ import { getZohoExpenseDescriptionValidationMessage } from '../../../utils/zohoE
 import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
 import { CheckToggle, StatusChip, InlineAction } from '../ChecklistPrimitives';
 import { BookingRow } from '../BookingRow';
-import { joinSummary, formatDateRange } from '../bookingText';
+import { joinSummary, formatDateRange, isJunkBookingName } from '../bookingText';
 import { CarRentalFields, CarRentalAddForm } from './CarRentalForm';
 
 interface CarRentalsSectionProps {
@@ -341,7 +341,11 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
             if (existing) {
               try {
                 await api.checklist.updateCarRental(rentalId, {
-                  provider: edits?.provider || existing.provider || extracted.reservation?.propertyName || extracted.merchant || null,
+                  provider:
+                    [edits?.provider, existing.provider].find(v => !isJunkBookingName(v)) ||
+                    extracted.reservation?.propertyName ||
+                    [extracted.merchant, edits?.provider, existing.provider].find(v => !!v) ||
+                    null,
                   confirmationNumber: edits?.confirmation_number || existing.confirmation_number || extracted.reservation?.confirmationNumber || null,
                   pickupDate: edits?.pickup_date || existing.pickup_date || extracted.reservation?.checkInDate || extracted.date || null,
                   returnDate: edits?.return_date || existing.return_date || extracted.reservation?.checkOutDate || null,

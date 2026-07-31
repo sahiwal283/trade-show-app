@@ -13,6 +13,7 @@ import { api } from '../../utils/api';
 import { AlertCircle } from 'lucide-react';
 import { BookingBoard } from './BookingBoard';
 import { UserChecklist } from './UserChecklist';
+import { ChecklistMasthead } from './ChecklistMasthead';
 
 export interface ChecklistData {
   id: number;
@@ -274,41 +275,14 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
   // For privileged users, show tabs
   return (
     <div className="mx-auto max-w-6xl space-y-4 md:space-y-5">
-      {/* Masthead */}
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
-            Logistics
-          </p>
-          <h1 className="font-display text-2xl font-bold tracking-tight text-stone-900 md:text-3xl">
-            Checklist
-          </h1>
-          <p className="mt-1 text-sm text-stone-500">
-            Manage logistics and preparations for trade shows
-          </p>
-        </div>
-
-        {activeTab === 'admin' && (
-          <label className="inline-flex min-h-[44px] w-full items-center sm:w-auto lg:min-h-0">
-            <span className="sr-only">Select event</span>
-            <select
-              value={selectedEventId || ''}
-              onChange={(e) => setSelectedEventId(e.target.value)}
-              className="w-full max-w-full cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-600 shadow-elevation-1 transition-colors hover:border-stone-300 focus-visible:ring-2 focus-visible:ring-brand-500 sm:w-auto sm:text-xs"
-            >
-              {events.length === 0 ? (
-                <option value="">No events available</option>
-              ) : (
-                events.map(event => (
-                  <option key={event.id} value={event.id}>
-                    {event.name} - {new Date(event.startDate).toLocaleDateString()}
-                  </option>
-                ))
-              )}
-            </select>
-          </label>
-        )}
-      </div>
+      {/* Masthead — the show is the headline; switcher + readiness ride it */}
+      <ChecklistMasthead
+        events={events}
+        selectedEvent={selectedEvent || null}
+        onSelectEvent={(id) => setSelectedEventId(id)}
+        showSelector={activeTab === 'admin'}
+        progress={activeTab === 'admin' && checklist && !loading ? progress : null}
+      />
 
       {/* Tabs — segmented control */}
       <div className="seg-track">
@@ -374,7 +348,6 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
                 loadEvents();
                 loadChecklist(selectedEventId!, { background: true });
               }}
-              progress={progress}
             />
           )}
         </>

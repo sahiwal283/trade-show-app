@@ -59,12 +59,35 @@ function findLabeledDate(text: string, labels: RegExp): string | null {
   const lines = text.split(/\r?\n/);
   for (let i = 0; i < lines.length; i++) {
     if (!labels.test(lines[i])) continue;
-    // Date may sit on the same line or the next one (tabular layouts).
+    // Date may sit on the same line or up to two lines below (column layouts
+    // where "Check-In / Check-Out" headers sit above the values).
     const candidate = parseLooseDate(lines[i].replace(labels, ' '));
     if (candidate) return candidate;
-    if (i + 1 < lines.length) {
-      const next = parseLooseDate(lines[i + 1]);
-      if (next) return next;
+    for (let j = 1; j <= 2 && i + j < lines.length; j++) {
+      const below = parseLooseDate(lines[i + j]);
+      if (below) return below;
+    }
+  }
+  return null;
+}
+
+/** Find an explicit date range ("06/24/2026 - 06/27/2026", "Jun 24 – 27, 2026"). */
+function findDateRange(text: string): [string, string] | null {
+  const lines = text.split(/\r?\n/);
+  for (const line of lines) {
+    // Same month shorthand: "Jun 24 – 27, 2026"
+    const shorthand = line.match(/([A-Za-z]{3,9})\.?\s+(\d{1,2})\s*(?:[-–—]|to)\s*(\d{1,2}),?\s+(\d{4})/i);
+    if (shorthand) {
+      const a = parseLooseDate(`${shorthand[1]} ${shorthand[2]}, ${shorthand[4]}`);
+      const b = parseLooseDate(`${shorthand[1]} ${shorthand[3]}, ${shorthand[4]}`);
+      if (a && b) return [a, b];
+    }
+    // Two full dates separated by a dash or "to"
+    const parts = line.split(/\s+(?:[-–—]|to|through)\s+/i);
+    if (parts.length >= 2) {
+      const a = parseLooseDate(parts[0]);
+      const b = parseLooseDate(parts[1]);
+      if (a && b && a !== b) return [a, b];
     }
   }
   return null;
@@ -129,6 +152,16 @@ export function parseReservation(rawText: string | null | undefined): ParsedRese
 
   result.checkInDate = findLabeledDate(text, /check[\s-]?in|arrival|arrive/i);
   result.checkOutDate = findLabeledDate(text, /check[\s-]?out|departure(?!\s+gate)|depart(?!ure gate)/i);
+
+  // Fallback: many confirmations show the stay as a plain date range with no
+  // check-in/check-out labels at all.
+  if (!result.checkInDate || !result.checkOutDate) {
+    const range = findDateRange(text);
+    if (range) {
+      result.checkInDate = result.checkInDate || range[0];
+      result.checkOutDate = result.checkOutDate || range[1];
+    }
+  }
 
   return result;
 }

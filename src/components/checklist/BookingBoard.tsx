@@ -16,7 +16,6 @@ import { FlightsSection } from './sections/FlightsSection';
 import { HotelsSection } from './sections/HotelsSection';
 import { CarRentalsSection } from './sections/CarRentalsSection';
 import { CustomItemsSection } from './sections/CustomItemsSection';
-import { ChecklistProgressCard } from './ChecklistProgressCard';
 import { BookingBoardTabs, BoardTab, BoardTabKey } from './BookingBoardTabs';
 import { boardPanelId, boardTabId } from './bookingText';
 import { AddParticipantModal } from './AddParticipantModal';
@@ -29,7 +28,6 @@ interface BookingBoardProps {
   onUpdate: (updates: Partial<ChecklistData>) => Promise<void>;
   onReload: () => void;
   onRosterChanged?: () => void;
-  progress: { completed: number; total: number; pct: number };
 }
 
 export const BookingBoard: React.FC<BookingBoardProps> = ({
@@ -40,7 +38,6 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
   onUpdate,
   onReload,
   onRosterChanged,
-  progress,
 }) => {
   const [boardTab, setBoardTab] = useState<BoardTabKey>('booth');
   const [showAddPerson, setShowAddPerson] = useState(false);
@@ -114,12 +111,6 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
 
   return (
     <>
-      <ChecklistProgressCard
-        completed={progress.completed}
-        total={progress.total}
-        pct={progress.pct}
-      />
-
       <div className="flex flex-wrap items-center justify-between gap-2">
         <BookingBoardTabs tabs={tabs} active={boardTab} onChange={setBoardTab} />
         {canManageRoster && (

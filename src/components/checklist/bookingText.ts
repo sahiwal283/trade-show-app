@@ -54,3 +54,16 @@ export function formatDateRange(start?: string | null, end?: string | null): str
   const only = from || to;
   return only ? only.toLocaleDateString('en-US', SHORT_DATE) : null;
 }
+
+/**
+ * True when a stored "name" field is OCR junk (timestamps, generic headings)
+ * rather than a real property/carrier/company name. Junk values never win a
+ * merge — a freshly parsed name may overwrite them.
+ */
+export function isJunkBookingName(value: string | null | undefined): boolean {
+  if (!value || !value.trim()) return true;
+  const v = value.trim();
+  if (/\d{1,2}[:/]\d{2}/.test(v)) return true; // timestamps & short dates
+  if (/^(confirmation|reservation|receipt|invoice|itinerary|booking)$/i.test(v)) return true;
+  return false;
+}

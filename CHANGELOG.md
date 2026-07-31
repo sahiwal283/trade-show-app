@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-07-31 - Checklist revamp: the show is the headline
+
+### Changed
+- Checklist page revamped: a gradient masthead (same design language as the dashboard) puts the selected show's name front and center with its dates and venue, the show switcher rides the masthead in glass style, and show readiness (percent + progress rail) is built into the masthead instead of a separate card. Picking the wrong show is now much harder.
+
+### Fixed
+- Reservation autofill no longer preserves junk: stored property/carrier names that look like timestamps or generic headings lose the merge to freshly parsed names.
+- Reservation date extraction handles more layouts: column headers with dates below, plain unlabeled ranges ("June 24 – 27, 2026"), and "06/24/2026 to 06/27/2026".
+
 ## [2.3.2] - 2026-07-31 - Checklist dropzone actually accepts drops
 
 ### Fixed

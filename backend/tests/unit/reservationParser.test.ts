@@ -60,3 +60,23 @@ describe('parseReservation', () => {
     expect(r.checkInDate).toBeNull();
   });
 });
+
+describe('parseReservation — layout variants', () => {
+  it('finds column-layout dates two lines below the header', () => {
+    const text = ['Check-In          Check-Out', 'Room 1', '06/24/2026', '06/27/2026'].join('\n');
+    const r = parseReservation(text);
+    expect(r.checkInDate).toBe('2026-06-24');
+  });
+
+  it('falls back to a plain date range with no labels', () => {
+    const r = parseReservation('Sahara Las Vegas\nJune 24 – 27, 2026\nTotal $454.12');
+    expect(r.checkInDate).toBe('2026-06-24');
+    expect(r.checkOutDate).toBe('2026-06-27');
+  });
+
+  it('handles full-date ranges separated by "to"', () => {
+    const r = parseReservation('Stay: 06/24/2026 to 06/27/2026');
+    expect(r.checkInDate).toBe('2026-06-24');
+    expect(r.checkOutDate).toBe('2026-06-27');
+  });
+});
