@@ -10,6 +10,7 @@ import React, { useMemo, useState } from 'react';
 import { Download, TrendingUp, TrendingDown, Minus, FileText, FileSpreadsheet } from 'lucide-react';
 import { ShowSummaryRow } from './hooks/useShowSummaries';
 import { CrmLeadRow, leadGroupName } from './hooks/useCrmLeads';
+import { cleanShowName } from './roiData';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { API_CONFIG, STORAGE_KEYS } from '../../constants/appConstants';
 
@@ -53,10 +54,7 @@ const fmt2 = (n: number) =>
 /** Human display name for a show key: latest year's name minus year tokens. */
 function displayName(rowsForKey: ShowSummaryRow[]): string {
   const latest = rowsForKey.reduce((a, b) => (b.year > a.year ? b : a));
-  return latest.show_name
-    .replace(/[-\s]*20\d\d([-\s]*20\d\d)?/g, '')
-    .replace(/[-\s]+$/, '')
-    .trim();
+  return cleanShowName(latest.show_name);
 }
 
 const csvField = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
@@ -68,21 +66,18 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
   leads = [],
   onOpenShow,
 }) => {
-  const years = useMemo(
-    () => Array.from(new Set(rows.map((r) => r.year))).sort(),
-    [rows]
-  );
+  const years = useMemo(() => Array.from(new Set(rows.map((r) => r.year))).sort(), [rows]);
   const [scope, setScope] = useState<Scope>('compare');
   const [company, setCompany] = useState<string>('all');
   const [showTable, setShowTable] = useState(false);
 
   const companies = useMemo(
     () =>
-      entityOrder.filter((c) => rows.some((r) => r.company === c)).concat(
-        Array.from(new Set(rows.map((r) => r.company))).filter(
-          (c) => !entityOrder.includes(c)
-        )
-      ),
+      entityOrder
+        .filter((c) => rows.some((r) => r.company === c))
+        .concat(
+          Array.from(new Set(rows.map((r) => r.company))).filter((c) => !entityOrder.includes(c))
+        ),
     [rows, entityOrder]
   );
 
@@ -95,7 +90,12 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
   const shows = useMemo(() => {
     const byKey: Record<
       string,
-      { name: string; perYear: Record<number, number>; perYearCompany: Record<number, Record<string, number>>; perYearEvent: Record<number, string> }
+      {
+        name: string;
+        perYear: Record<number, number>;
+        perYearCompany: Record<number, Record<string, number>>;
+        perYearEvent: Record<number, string>;
+      }
     > = {};
     for (const r of filtered) {
       if (!byKey[r.show_key]) {
@@ -104,8 +104,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
       const s = byKey[r.show_key];
       s.perYear[r.year] = (s.perYear[r.year] || 0) + r.amount;
       s.perYearCompany[r.year] = s.perYearCompany[r.year] || {};
-      s.perYearCompany[r.year][r.company] =
-        (s.perYearCompany[r.year][r.company] || 0) + r.amount;
+      s.perYearCompany[r.year][r.company] = (s.perYearCompany[r.year][r.company] || 0) + r.amount;
       if (r.event_id) s.perYearEvent[r.year] = r.event_id;
     }
     for (const key of Object.keys(byKey)) {
@@ -157,8 +156,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
 
   // KPI band values for the current scope
   const kpi = useMemo(() => {
-    const scopeRows =
-      scope === 'compare' ? filtered : filtered.filter((r) => r.year === scope);
+    const scopeRows = scope === 'compare' ? filtered : filtered.filter((r) => r.year === scope);
     const total = scopeRows.reduce((s, r) => s + r.amount, 0);
     const showCount = new Set(scopeRows.map((r) => `${r.show_key}:${r.year}`)).size;
     const byCategory: Record<string, number> = {};
@@ -220,17 +218,9 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
   if (rows.length === 0) return null;
 
   return (
-    <div className="card p-3 sm:p-5 md:p-6">
-      {/* Header + scope controls */}
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-            Trade Show Investment
-          </h3>
-          <p className="mt-0.5 text-xs text-stone-500">
-            What each show costs the business — imported 2025 history vs live data
-          </p>
-        </div>
+    <div>
+      {/* Scope controls — the title now lives on the CollapsibleCard header */}
+      <div className="mb-4 flex justify-end">
         <div className="seg-track">
           {[...years, 'compare' as const].map((s) => (
             <button
@@ -250,10 +240,16 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
         className={`mb-5 grid grid-cols-2 gap-3 ${leadKpi.captured > 0 ? 'lg:grid-cols-3 xl:grid-cols-6' : 'lg:grid-cols-4'}`}
       >
         {[
-          { label: scope === 'compare' ? 'Total invested (all years)' : `Invested in ${scope}`, value: fmt(kpi.total) },
+          {
+            label: scope === 'compare' ? 'Total invested (all years)' : `Invested in ${scope}`,
+            value: fmt(kpi.total),
+          },
           { label: 'Show appearances', value: String(kpi.showCount) },
           { label: 'Average per show', value: fmt(kpi.avg) },
-          { label: `Top cost: ${kpi.topCategory.split(' - ')[0].split(' / ')[0]}`, value: fmt(kpi.topAmount) },
+          {
+            label: `Top cost: ${kpi.topCategory.split(' - ')[0].split(' / ')[0]}`,
+            value: fmt(kpi.topAmount),
+          },
           ...(leadKpi.captured > 0
             ? [
                 {
@@ -374,60 +370,62 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                   const RowTag = eventId && onOpenShow ? 'button' : 'div';
                   return (
                     <React.Fragment key={y}>
-                    <RowTag
-                      {...(eventId && onOpenShow
-                        ? {
-                            onClick: () => onOpenShow(eventId),
-                            title: 'View expenses for this show',
-                            className:
-                              'flex w-full items-center gap-1.5 rounded px-0.5 text-left transition-colors hover:bg-brand-50/60 focus-visible:ring-2 focus-visible:ring-brand-500',
-                          }
-                        : { className: 'flex items-center gap-1.5' })}
-                    >
-                      <span className="w-8 shrink-0 text-[10px] font-semibold tabular-nums text-stone-400">
-                        {String(y).slice(2) ? `'${String(y).slice(2)}` : y}
-                      </span>
-                      {total > 0 ? (
-                        <>
-                          <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100">
-                            <div
-                              className="flex h-full overflow-hidden rounded-full"
-                              style={{ width: `${Math.max((total / maxAmount) * 100, 3)}%` }}
-                            >
-                              {segs.map((c, i) => (
-                                <div
-                                  key={c}
-                                  className="h-full"
-                                  title={`${c}: ${fmt2(perCompany[c])}`}
-                                  style={{
-                                    width: `${(perCompany[c] / total) * 100}%`,
-                                    backgroundColor: entityColorMap[c] || '#898781',
-                                    marginLeft: i > 0 ? '1px' : undefined,
-                                  }}
-                                />
-                              ))}
-                            </div>
-                          </div>
-                          <span className="w-14 shrink-0 text-right text-[11px] font-semibold tabular-nums text-stone-700">
-                            {fmt(total)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="flex-1 text-[11px] italic text-stone-300">not attended</span>
-                      )}
-                    </RowTag>
-                    {/* Quiet CRM lead line — only renders when leads exist for this show-year */}
-                    {leadInfo && leadInfo.leads > 0 && (
-                      <div className="flex items-center pl-[38px]">
-                        <span className="chip bg-stone-50/80 px-1.5 py-px text-[10px] font-medium tabular-nums text-stone-500 ring-stone-200/80">
-                          {leadInfo.leads.toLocaleString()} lead{leadInfo.leads === 1 ? '' : 's'}
-                          {leadInfo.converted > 0 &&
-                            ` · ${leadInfo.converted.toLocaleString()} converted`}
-                          {(leadInfo.revenue || 0) > 0 && ` · ${fmt(leadInfo.revenue)} revenue`}
-                          {total > 0 && ` · ${fmt(total / leadInfo.leads)}/lead`}
+                      <RowTag
+                        {...(eventId && onOpenShow
+                          ? {
+                              onClick: () => onOpenShow(eventId),
+                              title: 'View expenses for this show',
+                              className:
+                                'flex w-full items-center gap-1.5 rounded px-0.5 text-left transition-colors hover:bg-brand-50/60 focus-visible:ring-2 focus-visible:ring-brand-500',
+                            }
+                          : { className: 'flex items-center gap-1.5' })}
+                      >
+                        <span className="w-8 shrink-0 text-[10px] font-semibold tabular-nums text-stone-400">
+                          {String(y).slice(2) ? `'${String(y).slice(2)}` : y}
                         </span>
-                      </div>
-                    )}
+                        {total > 0 ? (
+                          <>
+                            <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-stone-100">
+                              <div
+                                className="flex h-full overflow-hidden rounded-full"
+                                style={{ width: `${Math.max((total / maxAmount) * 100, 3)}%` }}
+                              >
+                                {segs.map((c, i) => (
+                                  <div
+                                    key={c}
+                                    className="h-full"
+                                    title={`${c}: ${fmt2(perCompany[c])}`}
+                                    style={{
+                                      width: `${(perCompany[c] / total) * 100}%`,
+                                      backgroundColor: entityColorMap[c] || '#898781',
+                                      marginLeft: i > 0 ? '1px' : undefined,
+                                    }}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <span className="w-14 shrink-0 text-right text-[11px] font-semibold tabular-nums text-stone-700">
+                              {fmt(total)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="flex-1 text-[11px] italic text-stone-300">
+                            not attended
+                          </span>
+                        )}
+                      </RowTag>
+                      {/* Quiet CRM lead line — only renders when leads exist for this show-year */}
+                      {leadInfo && leadInfo.leads > 0 && (
+                        <div className="flex items-center pl-[38px]">
+                          <span className="chip bg-stone-50/80 px-1.5 py-px text-[10px] font-medium tabular-nums text-stone-500 ring-stone-200/80">
+                            {leadInfo.leads.toLocaleString()} lead{leadInfo.leads === 1 ? '' : 's'}
+                            {leadInfo.converted > 0 &&
+                              ` · ${leadInfo.converted.toLocaleString()} converted`}
+                            {(leadInfo.revenue || 0) > 0 && ` · ${fmt(leadInfo.revenue)} revenue`}
+                            {total > 0 && ` · ${fmt(total / leadInfo.leads)}/lead`}
+                          </span>
+                        </div>
+                      )}
                     </React.Fragment>
                   );
                 })}
@@ -505,12 +503,23 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
           <table className="w-full">
             <thead className="bg-stone-50/80">
               <tr>
-                <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Show</th>
+                <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  Show
+                </th>
                 {compareYears.map((y) => (
-                  <th key={y} className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">{y}</th>
+                  <th
+                    key={y}
+                    className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400"
+                  >
+                    {y}
+                  </th>
                 ))}
-                <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Δ $</th>
-                <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Δ %</th>
+                <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  Δ $
+                </th>
+                <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  Δ %
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
@@ -521,10 +530,18 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                 const pct = a > 0 && b > 0 ? (d / a) * 100 : null;
                 return (
                   <tr key={k} className="transition-colors hover:bg-brand-50/40">
-                    <td className="px-3 py-2 text-sm font-medium text-stone-900">{shows[k].name}</td>
-                    <td className="px-3 py-2 text-right text-sm tabular-nums text-stone-700">{a ? fmt2(a) : '—'}</td>
-                    <td className="px-3 py-2 text-right text-sm tabular-nums text-stone-700">{b ? fmt2(b) : '—'}</td>
-                    <td className={`px-3 py-2 text-right text-sm font-semibold tabular-nums ${d > 0 && a > 0 && b > 0 ? 'text-red-700' : d < 0 ? 'text-emerald-700' : 'text-stone-500'}`}>
+                    <td className="px-3 py-2 text-sm font-medium text-stone-900">
+                      {shows[k].name}
+                    </td>
+                    <td className="px-3 py-2 text-right text-sm tabular-nums text-stone-700">
+                      {a ? fmt2(a) : '—'}
+                    </td>
+                    <td className="px-3 py-2 text-right text-sm tabular-nums text-stone-700">
+                      {b ? fmt2(b) : '—'}
+                    </td>
+                    <td
+                      className={`px-3 py-2 text-right text-sm font-semibold tabular-nums ${d > 0 && a > 0 && b > 0 ? 'text-red-700' : d < 0 ? 'text-emerald-700' : 'text-stone-500'}`}
+                    >
                       {a > 0 && b > 0 ? fmt2(d) : '—'}
                     </td>
                     <td className="px-3 py-2 text-right text-sm tabular-nums text-stone-500">
@@ -536,7 +553,10 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
             </tbody>
           </table>
           <div className="flex justify-end border-t border-stone-200 bg-stone-50/60 px-3 py-2">
-            <button onClick={handleExport} className="btn-secondary min-h-[44px] px-3 py-1.5 text-xs lg:min-h-[36px]">
+            <button
+              onClick={handleExport}
+              className="btn-secondary min-h-[44px] px-3 py-1.5 text-xs lg:min-h-[36px]"
+            >
               <Download className="h-3.5 w-3.5" />
               Export Comparison CSV
             </button>

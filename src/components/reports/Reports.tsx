@@ -9,6 +9,8 @@ import {
   X,
   ArrowLeft,
   Users,
+  BarChart3,
+  ScatterChart,
 } from 'lucide-react';
 import { User, Expense } from '../../App';
 import { ExpenseChart } from './ExpenseChart';
@@ -21,6 +23,11 @@ import { ShowComparison } from './ShowComparison';
 import { useShowSummaries } from './hooks/useShowSummaries';
 import { useCrmLeads, useCrmLeadOwners } from './hooks/useCrmLeads';
 import { LeadPerformance } from './LeadPerformance';
+import { RoiVerdictBand } from './RoiVerdictBand';
+import { ShowLeagueTable } from './ShowLeagueTable';
+import { RoiQuadrant } from './RoiQuadrant';
+import { buildRoiModel } from './roiData';
+import { buildInsights } from './insightNarrative';
 import { api } from '../../utils/api';
 import { useReportsData } from './hooks/useReportsData';
 import { useReportsFilters } from './hooks/useReportsFilters';
@@ -80,6 +87,20 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   const { rows: summaryRows } = useShowSummaries();
   const { rows: crmLeadRows } = useCrmLeads();
   const { rows: crmOwnerRows } = useCrmLeadOwners();
+
+  // Joined ROI decision model: cost × CRM leads per (show_key, year).
+  // Feeds the verdict band, league table, quadrant, and narrative.
+  const roiModel = useMemo(
+    () => buildRoiModel(summaryRows, crmLeadRows),
+    [summaryRows, crmLeadRows]
+  );
+  const insights = useMemo(() => buildInsights(roiModel), [roiModel]);
+
+  // The executive ROI views describe the whole portfolio, so they only lead
+  // the page on the unfiltered overview (any entity/event filter hides them
+  // in favor of the existing filtered layouts).
+  const showRoiOverview =
+    selectedEvent === 'all' && selectedEntity === 'all' && reportType === 'overview';
 
   // Stable entity → color assignment shared by the donut, stacked bars, matrix,
   // and the investment comparison (historical companies included)
@@ -206,9 +227,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
-          <p className="text-red-700">
-            Access denied. Your role does not have access to reports.
-          </p>
+          <p className="text-red-700">Access denied. Your role does not have access to reports.</p>
         </div>
       </div>
     );
@@ -276,6 +295,55 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             Clear all
           </button>
         </div>
+      )}
+
+      {/* Executive ROI overview — the decision layer: verdict hero, league
+          table with "What this means", then the cost-vs-revenue quadrant */}
+      {showRoiOverview && summaryRows.length > 0 && (
+        <>
+          <RoiVerdictBand model={roiModel} topInsight={insights[0] ?? null} />
+
+          <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
+            <div className={`min-w-0 ${insights.length > 0 ? 'xl:col-span-2' : 'xl:col-span-3'}`}>
+              <ShowLeagueTable
+                ranked={roiModel.ranked}
+                needsData={roiModel.needsData}
+                hasLeadData={roiModel.hasLeadData}
+                onOpenShow={handleTradeShowClick}
+              />
+            </div>
+            {insights.length > 0 && (
+              <aside aria-label="What this means" className="card p-4 sm:p-5">
+                <h3 className="micro-label">What this means</h3>
+                <ul className="mt-3 space-y-3">
+                  {insights.map((sentence) => (
+                    <li
+                      key={sentence}
+                      className="flex gap-2.5 text-sm leading-relaxed text-stone-600"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400"
+                      />
+                      <span>{sentence}</span>
+                    </li>
+                  ))}
+                </ul>
+              </aside>
+            )}
+          </div>
+
+          {roiModel.ranked.length > 0 && (
+            <CollapsibleCard
+              title="Cost vs revenue"
+              subtitle="Each bubble is a show-year — above the dashed line makes money"
+              icon={ScatterChart}
+              iconClassName="bg-accent-50 text-accent-700 ring-accent-100"
+            >
+              <RoiQuadrant rows={roiModel.ranked} />
+            </CollapsibleCard>
+          )}
+        </>
       )}
 
       {/* Trade Show Header Banner */}
@@ -405,6 +473,39 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         </div>
       )}
 
+      {/* Trade Show Investment — cost detail per show (imported 2025 history
+          vs live data) with year comparison and the PDF/Excel/CSV exports.
+          Collapsible now that the ROI league table leads the page. */}
+      {selectedEvent === 'all' && reportType === 'overview' && summaryRows.length > 0 && (
+        <CollapsibleCard
+          title="Trade Show Investment"
+          subtitle="What each show costs the business, with PDF / Excel exports"
+          icon={BarChart3}
+          iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
+        >
+          <ShowComparison
+            rows={summaryRows}
+            entityColorMap={entityColorMap}
+            entityOrder={entityOrder}
+            leads={crmLeadRows}
+            onOpenShow={handleTradeShowClick}
+          />
+        </CollapsibleCard>
+      )}
+
+      {/* Lead performance — what the shows produced (CRM leads). Hidden
+          entirely while the CRM is not connected / has no leads. */}
+      {selectedEvent === 'all' && reportType === 'overview' && crmLeadRows.length > 0 && (
+        <CollapsibleCard
+          title="Lead Performance"
+          subtitle="Leads captured at each show, rep leaderboard, and email engagement"
+          icon={Users}
+          iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
+        >
+          <LeadPerformance leadRows={crmLeadRows} ownerRows={crmOwnerRows} costRows={summaryRows} />
+        </CollapsibleCard>
+      )}
+
       {/* Entity Totals Dashboard - Show when not filtering by entity */}
       {entityTotals.length > 0 && selectedEntity === 'all' && (
         <div className="card p-3 sm:p-4">
@@ -472,36 +573,6 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         </div>
       )}
 
-      {/* Trade Show Investment — imported 2025 history vs live data.
-          The lead section when browsing all shows: this page's job is to
-          prove the shows are worth the money. */}
-      {selectedEvent === 'all' && reportType === 'overview' && summaryRows.length > 0 && (
-        <ShowComparison
-          rows={summaryRows}
-          entityColorMap={entityColorMap}
-          entityOrder={entityOrder}
-          leads={crmLeadRows}
-          onOpenShow={handleTradeShowClick}
-        />
-      )}
-
-      {/* Lead performance — what the shows produced (CRM leads). Hidden
-          entirely while the CRM is not connected / has no leads. */}
-      {selectedEvent === 'all' && reportType === 'overview' && crmLeadRows.length > 0 && (
-        <CollapsibleCard
-          title="Lead Performance"
-          subtitle="Leads captured at each show, rep leaderboard, and email engagement"
-          icon={Users}
-          iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
-        >
-          <LeadPerformance
-            leadRows={crmLeadRows}
-            ownerRows={crmOwnerRows}
-            costRows={summaryRows}
-          />
-        </CollapsibleCard>
-      )}
-
       {/* Who paid for what — entity split per category, click rows to filter */}
       {reportType !== 'entity' && (
         <>
@@ -563,7 +634,6 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           icon={TrendingUp}
           iconClassName="bg-amber-50 text-amber-600 ring-amber-100"
         >
-
           {(() => {
             const sortedAverages = calculateCategoryAverages(filteredExpenses, events);
 

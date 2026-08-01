@@ -14,6 +14,7 @@
 import React, { useMemo, useState } from 'react';
 import { CrmLeadRow, CrmOwnerRow, leadGroupName } from './hooks/useCrmLeads';
 import { ShowSummaryRow } from './hooks/useShowSummaries';
+import { cleanShowName } from './roiData';
 
 interface LeadPerformanceProps {
   leadRows: CrmLeadRow[];
@@ -33,11 +34,7 @@ const fmtMoney = (n: number) => '$' + n.toLocaleString(undefined, { maximumFract
 const fmtPct = (n: number) => `${Math.round(n * 100)}%`;
 
 /** Show name minus year tokens (same cleaning as the cost tiles). */
-const stripYears = (name: string) =>
-  name
-    .replace(/[-\s]*20\d\d([-\s]*20\d\d)?/g, '')
-    .replace(/[-\s]+$/, '')
-    .trim();
+const stripYears = cleanShowName;
 
 interface ShowBarDatum {
   key: string;
@@ -54,10 +51,7 @@ export const LeadPerformance: React.FC<LeadPerformanceProps> = ({
   ownerRows,
   costRows,
 }) => {
-  const years = useMemo(
-    () => Array.from(new Set(leadRows.map((l) => l.year))).sort(),
-    [leadRows]
-  );
+  const years = useMemo(() => Array.from(new Set(leadRows.map((l) => l.year))).sort(), [leadRows]);
   const [yearScope, setYearScope] = useState<YearScope>('all');
   const [showAllShows, setShowAllShows] = useState(false);
 
@@ -95,8 +89,13 @@ export const LeadPerformance: React.FC<LeadPerformanceProps> = ({
     >();
     for (const l of scopedLeads) {
       if (l.show_key === 'unknown' || l.leads === 0) continue;
-      const entry =
-        byKey.get(l.show_key) || { leads: 0, converted: 0, revenue: 0, cost: 0, sample: l };
+      const entry = byKey.get(l.show_key) || {
+        leads: 0,
+        converted: 0,
+        revenue: 0,
+        cost: 0,
+        sample: l,
+      };
       byKey.set(l.show_key, {
         leads: entry.leads + l.leads,
         converted: entry.converted + l.converted,

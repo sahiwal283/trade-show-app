@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.8.0] - 2026-08-01 - Executive ROI dashboard
+
+### Added
+- Reports opens with a decision layer: RoiVerdictBand hero (portfolio ROI multiple + invested/revenue/leads/conversion/cost-per-lead), ranked ShowLeagueTable with Double down / Hold / Reassess / Needs data verdict chips and click-through drill-down, cost-vs-revenue quadrant scatter with break-even line, and computed plain-English insights ("What this means").
+- Shared ROI model (roiData.ts) joins show costs with CRM leads/revenue by show-year; verdicts and narrative are computed, never hand-written.
+
+### Changed
+- Overview reordered: verdict band and league table lead; investment tiles, Lead Performance, and entity sections follow (heavy visuals collapsed on phones). All exports, filters, and deep links unchanged.
+
 ## [2.7.1] - 2026-08-01 - Account lives under Settings
 
 ### Changed
