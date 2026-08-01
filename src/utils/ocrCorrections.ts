@@ -5,8 +5,6 @@
  * the backend for continuous learning and model improvement.
  */
 
-import { api } from './api';
-
 export interface OCRCorrection {
   expenseId?: string;
   originalOCRText: string;

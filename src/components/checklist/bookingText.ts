@@ -24,6 +24,8 @@ export function joinSummary(parts: Array<string | null | undefined>): string | n
 /* ===== Dates ===== */
 
 /** Parse a YYYY-MM-DD(-ish) string as a local date; avoids UTC day-shift. */
+// Near-miss of utils/dateUtils parseLocalDate kept on purpose: this variant is
+// null-tolerant and returns null (not an Invalid Date) for unparseable input.
 function parseDateOnly(value: string | null | undefined): Date | null {
   if (!value) return null;
   const [year, month, day] = value.split('T')[0].split('-').map(Number);
@@ -32,12 +34,6 @@ function parseDateOnly(value: string | null | undefined): Date | null {
 }
 
 const SHORT_DATE: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
-
-/** "Mar 3", or null when the value is missing/unparseable. */
-export function formatShortDate(value?: string | null): string | null {
-  const date = parseDateOnly(value);
-  return date ? date.toLocaleDateString('en-US', SHORT_DATE) : null;
-}
 
 /** "Mar 3–7", "Mar 30–Apr 2", a single date, or null when both ends are blank. */
 export function formatDateRange(start?: string | null, end?: string | null): string | null {

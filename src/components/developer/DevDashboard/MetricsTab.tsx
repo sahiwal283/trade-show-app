@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, HardDrive, Clock, TrendingUp, Database } from 'lucide-react';
+import { Cpu, HardDrive, Clock, Database } from 'lucide-react';
 
 interface MetricsData {
   system?: {

@@ -29,6 +29,9 @@ interface StatusBadgeProps {
   className?: string;
 }
 
+// Color strings deliberately mirror STATUS_COLORS / REIMBURSEMENT_COLORS in
+// constants/appConstants (kept separate: this map adds dot/icon/label and the
+// extra 'paid'/'reimbursed' states the plain chip helpers don't cover).
 const statusConfig = {
   pending: {
     color: 'bg-amber-50 text-amber-800 ring-amber-200/70',
@@ -67,6 +70,14 @@ const statusConfig = {
     label: 'Needs Review'
   }
 };
+
+/** Map an API expense status ("needs further review") to the badge's underscore key. */
+export function toBadgeStatus(
+  status: 'pending' | 'approved' | 'rejected' | 'needs further review'
+): 'pending' | 'approved' | 'rejected' | 'needs_further_review' {
+  if (status === 'needs further review') return 'needs_further_review';
+  return status;
+}
 
 const sizeClasses = {
   xs: 'px-1.5 py-0.5 text-[10px]',

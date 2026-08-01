@@ -8,6 +8,7 @@
 
 import { useRef, useState } from 'react';
 import { SpendPoint } from './hooks/useShowDashboard';
+import { money } from './format';
 
 interface SpendByDayChartProps {
   points: SpendPoint[];
@@ -119,7 +120,7 @@ export function SpendByDayChart({ points, height = 72 }: SpendByDayChartProps) {
         >
           <div className="text-[10px] uppercase tracking-wider text-stone-400">{active.label}</div>
           <div className="text-xs font-semibold">
-            ${active.total.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            {money(active.total)}
           </div>
         </div>
       )}

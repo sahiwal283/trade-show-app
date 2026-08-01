@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Calendar, Clock, CheckCircle2, X } from 'lucide-react';
+import { Users, Clock, CheckCircle2, X } from 'lucide-react';
 
 interface Session {
   id: string;

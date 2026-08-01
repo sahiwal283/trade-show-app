@@ -20,6 +20,7 @@ import { useToast, ToastContainer } from '../common/Toast';
 import { StatusBadge, CategoryBadge } from '../common';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { useDetailedLeads } from './hooks/useDetailedLeads';
+import { fmtMoneyExact as formatUsd } from './roiData';
 
 /** Trailing "City, ST 89109[, USA]" — capture the city and state. */
 const CITY_STATE_TAIL =
@@ -30,14 +31,6 @@ function shortLocation(location: string): string {
   const match = location.match(CITY_STATE_TAIL);
   if (match) return `${match[1].trim()}, ${match[2].toUpperCase()}`;
   return location;
-}
-
-/** "$1,234.56" with the currency glyph inside the same text run. */
-function formatUsd(amount: number): string {
-  return `$${amount.toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
 }
 
 interface DetailedReportProps {
@@ -142,11 +135,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-stone-900">{category}</span>
                         <span className="text-sm font-semibold tabular-nums text-stone-900">
-                          $
-                          {amount.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {formatUsd(amount)}
                         </span>
                       </div>
                       <div className="w-full bg-stone-100 rounded-full h-2 ring-1 ring-inset ring-stone-200/60">
@@ -213,12 +202,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                   Cost Per Lead
                 </dt>
                 <dd className="mt-1 font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
-                  {leadStats.costPerLead !== null
-                    ? `$${leadStats.costPerLead.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}`
-                    : '—'}
+                  {leadStats.costPerLead !== null ? formatUsd(leadStats.costPerLead) : '—'}
                 </dd>
               </div>
             </dl>

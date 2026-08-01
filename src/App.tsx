@@ -309,7 +309,13 @@ function App() {
     
     // Reset to dashboard to avoid redirect loops on next login
     setCurrentPage('dashboard');
-    
+
+    // Clear any stale deep-link hash (#new-expense, #event=..., etc.) so it
+    // can't re-fire for the next user who logs in on this device
+    if (window.location.hash) {
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    }
+
     // Call original logout
     logout();
   };
@@ -379,7 +385,6 @@ function App() {
         <Header
           user={user}
           onLogout={handleLogout}
-          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
           onToggleMobileMenu={() => setMobileMenuOpen(!mobileMenuOpen)}
           onNavigate={handlePageChange}
         />

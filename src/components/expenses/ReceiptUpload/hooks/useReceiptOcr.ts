@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { TokenManager } from '../../../../utils/api';
+import { apiClient } from '../../../../utils/apiClient';
 import { ReceiptData } from '../../../../types/types';
 import { getTodayLocalDateString } from '../../../../utils/dateUtils';
 
@@ -53,38 +53,11 @@ export function useReceiptOcr(): UseReceiptOcrReturn {
     setOcrErrorMessage(null);
 
     try {
-      const formData = new FormData();
-      formData.append('receipt', file);
-      
-      const token = TokenManager.getToken();
-      if (!token) {
-        throw new Error('Authentication required. Please log in again.');
-      }
-
-      const response = await fetch('/api/ocr/v2/process', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('OCR v2 failed:', errorText);
-        // Surface the backend's reason (it distinguishes timeouts, service
-        // misconfiguration, PDFs, etc.) instead of a one-size-fits-all error.
-        let serverMessage: string | null = null;
-        try {
-          const parsed = JSON.parse(errorText) as { error?: string; message?: string };
-          serverMessage = parsed.error || parsed.message || null;
-        } catch {
-          serverMessage = null;
-        }
-        throw new Error(serverMessage || 'OCR processing failed');
-      }
-
-      const result = await response.json();
+      // Goes through apiClient.upload so an expired token is silently
+      // refreshed and retried, and terminal 401s trigger the app-wide
+      // unauthorized callback. On failure it throws an AppError carrying the
+      // backend's reason (timeouts, service misconfiguration, PDFs, etc.).
+      const result = await apiClient.upload('/ocr/v2/process', {}, file, 'receipt');
       
       console.log('[OCR v2] Response:', result);
       

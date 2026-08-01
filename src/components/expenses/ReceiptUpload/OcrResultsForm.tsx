@@ -37,7 +37,6 @@ interface OcrResultsFormProps {
   setSelectedEvent: (value: string) => void;
   selectedCard: string;
   setSelectedCard: (value: string) => void;
-  selectedEntity: string;
   setSelectedEntity: (value: string) => void;
   description: string;
   setDescription: (value: string) => void;
@@ -45,7 +44,6 @@ interface OcrResultsFormProps {
   categories: string[];
   userEvents: TradeShow[];
   allEvents?: TradeShow[];
-  fieldWarnings: FieldWarning[];
   getFieldWarnings: (fieldName: string) => FieldWarning[];
   user?: User;
   onEventCreated?: (event: TradeShow) => void;
@@ -58,7 +56,6 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
   setSelectedEvent,
   selectedCard,
   setSelectedCard,
-  selectedEntity,
   setSelectedEntity,
   description,
   setDescription,
@@ -66,7 +63,6 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
   categories,
   userEvents,
   allEvents,
-  fieldWarnings,
   getFieldWarnings,
   user,
   onEventCreated

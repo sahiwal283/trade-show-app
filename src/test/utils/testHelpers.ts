@@ -6,7 +6,7 @@
  */
 
 import { User, TradeShow } from '../../App';
-import { ChecklistData, FlightData, HotelData, CarRentalData, BoothShippingData, CustomItemData } from '../../components/checklist/TradeShowChecklist';
+import { ChecklistData, FlightData, HotelData, CarRentalData } from '../../components/checklist/TradeShowChecklist';
 
 /**
  * Create a mock user for testing

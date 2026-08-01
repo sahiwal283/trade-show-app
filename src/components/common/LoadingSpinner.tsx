@@ -38,38 +38,3 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   );
 };
 
-/**
- * Full page loading overlay
- */
-export const LoadingOverlay: React.FC<{ text?: string }> = ({ text = 'Loading...' }) => {
-  return (
-    <div className="fixed inset-0 bg-white bg-opacity-90 flex items-center justify-center z-50">
-      <LoadingSpinner size="xl" text={text} />
-    </div>
-  );
-};
-
-/**
- * Inline loading state for tables and lists
- */
-export const LoadingTable: React.FC = () => {
-  return (
-    <div className="flex items-center justify-center py-12">
-      <LoadingSpinner size="lg" text="Loading data..." />
-    </div>
-  );
-};
-
-/**
- * Card loading skeleton
- */
-export const LoadingSkeleton: React.FC<{ lines?: number }> = ({ lines = 3 }) => {
-  return (
-    <div className="animate-pulse space-y-4">
-      {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className="h-4 bg-stone-200 rounded w-full" />
-      ))}
-    </div>
-  );
-};
-

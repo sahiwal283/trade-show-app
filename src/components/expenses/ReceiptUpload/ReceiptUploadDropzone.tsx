@@ -4,7 +4,7 @@
  * Drag-and-drop file upload area.
  */
 
-import React, { useRef } from 'react';
+import React from 'react';
 import { Upload, Camera, FileText, Scan } from 'lucide-react';
 
 interface ReceiptUploadDropzoneProps {

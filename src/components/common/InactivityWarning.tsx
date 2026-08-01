@@ -84,7 +84,7 @@ export const InactivityWarning: React.FC<InactivityWarningProps> = ({
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-blue-800">
-              <strong>Security Feature:</strong> For your protection, we automatically log you out after 15 minutes of inactivity.
+              <strong>Security Feature:</strong> For your protection, we automatically log you out after 12 hours of inactivity.
             </p>
           </div>
 

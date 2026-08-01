@@ -1,11 +1,11 @@
 /**
  * Checklist UI primitives — the Editorial Finance vocabulary shared by every
  * checklist section: the done-toggle, the booked/pending status chip, quiet
- * field labels, and the receipt chip + view/upload action cluster.
+ * field labels, and inline actions.
  */
 
 import React from 'react';
-import { CheckCircle2, Circle, Eye, Receipt } from 'lucide-react';
+import { CheckCircle2, Circle } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 /* ===== Done toggle ===== */
@@ -87,31 +87,4 @@ export const InlineAction: React.FC<InlineActionProps> = ({ icon: Icon, label, o
     <Icon aria-hidden="true" className="w-4 h-4" />
     {label}
   </button>
-);
-
-/* ===== Receipt count + view + upload cluster ===== */
-
-interface ReceiptActionsProps {
-  receiptCount: number;
-  onView: () => void;
-  onUpload: () => void;
-}
-
-export const ReceiptActions: React.FC<ReceiptActionsProps> = ({ receiptCount, onView, onUpload }) => (
-  <div className="flex flex-wrap items-center gap-x-1 gap-y-1">
-    {receiptCount > 0 && (
-      <>
-        <span className="chip bg-accent-50 px-2 py-1 text-xs text-accent-800 ring-accent-200/70">
-          <Receipt aria-hidden="true" className="w-3 h-3" />
-          {receiptCount} Receipt{receiptCount !== 1 ? 's' : ''}
-        </span>
-        <InlineAction icon={Eye} label="View" onClick={onView} title="View receipt" />
-      </>
-    )}
-    <InlineAction
-      icon={Receipt}
-      label={receiptCount > 0 ? 'Add Another' : 'Upload Receipt'}
-      onClick={onUpload}
-    />
-  </div>
 );

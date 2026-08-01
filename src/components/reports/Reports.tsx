@@ -9,7 +9,6 @@ import {
   ArrowLeft,
   Users,
   BarChart3,
-  ScatterChart,
   PieChart,
   Table2,
 } from 'lucide-react';
@@ -26,8 +25,10 @@ import { useCrmLeads, useCrmLeadOwners } from './hooks/useCrmLeads';
 import { LeadPerformance } from './LeadPerformance';
 import { RoiVerdictBand } from './RoiVerdictBand';
 import { ShowLeagueTable } from './ShowLeagueTable';
-import { RoiQuadrant } from './RoiQuadrant';
-import { buildRoiModel } from './roiData';
+import { NetReturnBars } from './NetReturnBars';
+import { SpendMixDonut } from './SpendMixDonut';
+import { RevenueShareDonut } from './RevenueShareDonut';
+import { buildRoiModel, fmtMoneyFull, fmtMoneyExact } from './roiData';
 import { buildInsights } from './insightNarrative';
 import { api } from '../../utils/api';
 import { useReportsData } from './hooks/useReportsData';
@@ -288,11 +289,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               {entity}
             </p>
             <p className="mt-1 font-display text-xl font-bold tracking-tight tabular-nums text-stone-900 sm:text-2xl md:text-3xl">
-              $
-              {amount.toLocaleString(undefined, {
-                minimumFractionDigits: 0,
-                maximumFractionDigits: 0,
-              })}
+              {fmtMoneyFull(amount)}
             </p>
           </div>
         ))}
@@ -369,11 +366,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                       Average per Trade Show
                     </p>
                     <p className="font-display text-2xl font-bold tracking-tight tabular-nums text-amber-600">
-                      $
-                      {average.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {fmtMoneyExact(average)}
                     </p>
                   </div>
 
@@ -381,11 +374,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                     <div className="flex items-center justify-between text-xs text-stone-600">
                       <span>Total Spent:</span>
                       <span className="font-semibold">
-                        $
-                        {total.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
+                        {fmtMoneyExact(total)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-xs text-stone-600 mt-1">
@@ -462,14 +451,19 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         <div className="space-y-4">
           {roiModel.ranked.length > 0 && (
             <CollapsibleCard
-              title="Cost vs revenue"
-              subtitle="Each bubble is a show-year — above the dashed line makes money"
-              icon={ScatterChart}
+              title="Net return by show"
+              subtitle="Bars right of the line returned more than they cost; bars left, less"
+              icon={BarChart3}
               iconClassName="bg-accent-50 text-accent-700 ring-accent-100"
             >
-              <RoiQuadrant rows={roiModel.ranked} />
+              <NetReturnBars shows={roiModel.ranked} />
             </CollapsibleCard>
           )}
+
+          <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2 md:gap-5">
+            <SpendMixDonut rows={summaryRows} />
+            <RevenueShareDonut shows={roiModel.ranked} />
+          </div>
 
           <CollapsibleCard
             title="Trade Show Investment"
@@ -691,11 +685,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                       {name}
                     </p>
                     <p className="font-display text-2xl font-bold tracking-tight tabular-nums text-stone-900">
-                      $
-                      {amount.toLocaleString(undefined, {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}
+                      {fmtMoneyFull(amount)}
                     </p>
                   </div>
                   <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">

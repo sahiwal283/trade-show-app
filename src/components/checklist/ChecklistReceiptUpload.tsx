@@ -4,6 +4,7 @@ import { api } from '../../utils/api';
 import { User, TradeShow } from '../../App';
 import { AppError } from '../../types/types';
 import { isAcceptableReceiptFile } from '../../utils/fileValidation';
+import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { getZohoExpenseDescriptionValidationMessage } from '../../utils/zohoExpenseDescription';
 
 export interface ParsedReservation {
@@ -55,7 +56,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
   const [formData, setFormData] = useState({
     merchant: '',
     amount: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayLocalDateString(),
     description: attendeeName 
       ? `${attendeeName} - ${section}` 
       : section === 'electricity' 

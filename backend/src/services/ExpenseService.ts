@@ -268,29 +268,6 @@ class ExpenseService {
   }
 
   /**
-   * Bulk approve expenses
-   */
-  async bulkApprove(expenseIds: string[], userRole: string): Promise<{ success: number; failed: string[] }> {
-    if (userRole !== 'admin' && userRole !== 'accountant' && userRole !== 'developer') {
-      throw new AuthorizationError('Only admins and accountants can approve expenses');
-    }
-
-    let success = 0;
-    const failed: string[] = [];
-
-    for (const id of expenseIds) {
-      try {
-        await expenseRepository.updateStatus(id, 'approved');
-        success++;
-      } catch (error) {
-        failed.push(id);
-      }
-    }
-
-    return { success, failed };
-  }
-
-  /**
    * Get expenses pending Zoho sync
    */
   async getPendingZohoSync(): Promise<Expense[]> {

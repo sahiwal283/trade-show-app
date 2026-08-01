@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Save, X, Building2, Upload, Camera, AlertCircle, Loader2, Plus, Clock } from 'lucide-react';
+import { ArrowLeft, Save, X, Upload, Camera, AlertCircle, Loader2, Plus, Clock } from 'lucide-react';
 import { Expense, TradeShow, User } from '../../App';
 import { api } from '../../utils/api';
 import { formatForDateInput, getTodayLocalDateString } from '../../utils/dateUtils';
@@ -35,7 +35,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
   }, [events, user]);
   
   const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
-  const [entityOptions, setEntityOptions] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([
     'Booth / Marketing / Tools',
     'Travel - Flight',
@@ -189,13 +188,11 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
           } else {
             setCardOptions(cards);
           }
-          setEntityOptions(settings.entityOptions || []);
           // Handle both old format (string[]) and new format (CategoryOption[])
           const cats = settings.categoryOptions || categories;
           setCategories(cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name));
         } catch {
           setCardOptions([]);
-          setEntityOptions([]);
         }
       } else {
         const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
@@ -212,7 +209,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
         } else {
           setCardOptions(cards);
         }
-        setEntityOptions(settings.entityOptions || ['Entity A - Main Operations','Entity B - Sales Division','Entity C - Marketing Department','Entity D - International Operations']);
         // Handle both old format (string[]) and new format (CategoryOption[])
         const cats = settings.categoryOptions || categories;
         setCategories(cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name));

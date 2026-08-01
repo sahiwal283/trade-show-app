@@ -10,6 +10,7 @@ import { Plus, Trash2, Save, Receipt } from 'lucide-react';
 import { ChecklistData, CarRentalData } from '../TradeShowChecklist';
 import { User, TradeShow } from '../../../App';
 import { api } from '../../../utils/api';
+import { getTodayLocalDateString } from '../../../utils/dateUtils';
 import { getZohoExpenseDescriptionValidationMessage } from '../../../utils/zohoExpenseDescription';
 import { ChecklistReceiptUpload } from '../ChecklistReceiptUpload';
 import { CheckToggle, StatusChip, InlineAction } from '../ChecklistPrimitives';
@@ -144,7 +145,7 @@ export const CarRentalsSection: React.FC<CarRentalsSectionProps> = ({ checklist,
             category: 'Rental - Car / U-haul',
             merchant: newRental.provider || 'Car Rental',
             amount: 0, // Will be updated from receipt
-            date: newRental.pickup_date || new Date().toISOString().split('T')[0],
+            date: newRental.pickup_date || getTodayLocalDateString(),
             description: carDescription,
             card_used: '',
             reimbursement_required: false,

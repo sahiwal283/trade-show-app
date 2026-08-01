@@ -393,28 +393,10 @@ export const api = {
     getChecklist: (eventId: string) => apiClient.get(`/checklist/${eventId}`),
     updateChecklist: (checklistId: number, payload: Record<string, any>) => 
       apiClient.put(`/checklist/${checklistId}`, payload),
-    uploadBoothMap: async (checklistId: number, file: File) => {
-      const formData = new FormData();
-      formData.append('boothMap', file);
-      
-      // Use fetch directly because apiClient.post() sets Content-Type: application/json
-      const token = TokenManager.getToken();
-      const response = await fetch(`${apiClient.getBaseURL()}/checklist/${checklistId}/booth-map`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-          // Don't set Content-Type - let browser set it with boundary for FormData
-        },
-        body: formData
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to upload booth map');
-      }
-      
-      return await response.json();
-    },
+    uploadBoothMap: (checklistId: number, file: File) =>
+      // apiClient.upload handles multipart form data, silent token
+      // refresh-with-retry on 401, and the app-wide unauthorized callback.
+      apiClient.upload(`/checklist/${checklistId}/booth-map`, {}, file, 'boothMap'),
     deleteBoothMap: (checklistId: number) => 
       apiClient.delete(`/checklist/${checklistId}/booth-map`),
     

@@ -6,8 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { AppError } from '../../types/types';
-import { Wifi, WifiOff, Cloud, CloudOff, RefreshCw, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { Wifi, CloudOff, RefreshCw, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { networkMonitor, NetworkState } from '../../utils/networkDetection';
 import { syncManager, SyncStatus } from '../../utils/syncManager';
 
@@ -94,7 +93,6 @@ export const SyncStatusBar: React.FC<SyncStatusBarProps> = ({
         setIsSyncing(true);
         await syncManager.syncNow();
       } catch (error) {
-        const appError = error as AppError;
         console.error('[SyncStatusBar] Manual sync failed:', error);
       } finally {
         setIsSyncing(false);

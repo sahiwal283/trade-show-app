@@ -10,6 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
+import { parseLocalDate } from '../../utils/dateUtils';
 import { AlertCircle } from 'lucide-react';
 import { BookingBoard } from './BookingBoard';
 import { UserChecklist } from './UserChecklist';
@@ -135,8 +136,8 @@ function getProgressSummary(checklist: ChecklistData | null): {
  */
 function pickDefaultEvent(events: TradeShow[]): TradeShow {
   const now = new Date();
-  const startOf = (e: TradeShow) => new Date(e.showStartDate || e.startDate);
-  const endOf = (e: TradeShow) => new Date(e.showEndDate || e.endDate || e.startDate);
+  const startOf = (e: TradeShow) => parseLocalDate(e.showStartDate || e.startDate);
+  const endOf = (e: TradeShow) => parseLocalDate(e.showEndDate || e.endDate || e.startDate);
 
   const live = events.find(e => startOf(e) <= now && endOf(e) >= now);
   if (live) return live;

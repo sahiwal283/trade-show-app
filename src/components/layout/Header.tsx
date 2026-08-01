@@ -10,13 +10,12 @@ const APP_VERSION = packageJson.version;
 interface HeaderProps {
   user: User;
   onLogout: () => void;
-  onToggleSidebar: () => void;
   onToggleMobileMenu: () => void;
   /** Navigate to a page (notification rows deep-link into Expenses) */
   onNavigate?: (page: string) => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleSidebar, onToggleMobileMenu, onNavigate }) => {
+export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMenu, onNavigate }) => {
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [hasViewedNotifications, setHasViewedNotifications] = React.useState(false);
   

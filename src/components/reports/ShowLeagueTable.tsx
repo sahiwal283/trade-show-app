@@ -1,21 +1,26 @@
 /**
- * ShowLeagueTable — THE decision table. Every show-year with both cost and
- * lead data, ranked by ROI multiple, each row closing with a verdict chip
- * (Double down / Hold / Reassess / Needs data). Desktop renders a dense
- * table that scrolls inside the card; phones get a stacked card list so the
- * page never scrolls horizontally.
+ * ShowLeagueTable — THE decision table. One row per SHOW across every
+ * attended year, ranked by recency-weighted ROI, each row closing with a
+ * trend arrow and a time-aware verdict chip. Rows expand to the per-year
+ * breakdown (invested, leads, conv %, revenue, ROI) so the roll-up is
+ * always auditable. Desktop renders a dense table that scrolls inside the
+ * card; phones get stacked cards so the page never scrolls horizontally.
  *
  * When no CRM leads are matched anywhere, the same surface ranks shows by
  * cost with "Needs data" verdicts — the page still works.
  */
 
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import {
-  RoiShowRow,
+  RoiShowGroup,
+  ShowYearStat,
+  Trend,
   Verdict,
   ROI_DOUBLE_DOWN,
   ROI_REASSESS,
+  MIN_LEADS_FOR_REASSESS,
+  MATURITY_WINDOW_MONTHS,
   fmtMoneyCompact,
   fmtMoneyFull,
   fmtMult,
@@ -23,8 +28,8 @@ import {
 } from './roiData';
 
 interface ShowLeagueTableProps {
-  ranked: RoiShowRow[];
-  needsData: RoiShowRow[];
+  ranked: RoiShowGroup[];
+  needsData: RoiShowGroup[];
   hasLeadData: boolean;
   /** Open the expense register for a live show-year */
   onOpenShow?: (eventId: string) => void;
@@ -36,10 +41,25 @@ const VERDICT_META: Record<Verdict, { label: string; chip: string; dot: string }
     chip: 'bg-emerald-50 text-emerald-700 ring-emerald-200/80',
     dot: 'bg-emerald-500',
   },
+  rising: {
+    label: 'Rising',
+    chip: 'bg-brand-50 text-brand-700 ring-brand-200/80',
+    dot: 'bg-brand-500',
+  },
   hold: {
     label: 'Hold',
     chip: 'bg-stone-100 text-stone-600 ring-stone-200/80',
     dot: 'bg-stone-400',
+  },
+  declining: {
+    label: 'Declining',
+    chip: 'bg-rose-50 text-rose-700 ring-rose-200/80',
+    dot: 'bg-rose-500',
+  },
+  maturing: {
+    label: 'Maturing',
+    chip: 'bg-violet-50 text-violet-700 ring-violet-200/80',
+    dot: 'bg-violet-500',
   },
   reassess: {
     label: 'Reassess',
@@ -56,8 +76,38 @@ const VERDICT_META: Record<Verdict, { label: string; chip: string; dot: string }
 const VerdictChip: React.FC<{ verdict: Verdict }> = ({ verdict }) => {
   const meta = VERDICT_META[verdict];
   return (
-    <span className={`chip px-2 py-0.5 text-[11px] font-semibold ${meta.chip}`}>
+    <span className={`chip whitespace-nowrap px-2 py-0.5 text-[11px] font-semibold ${meta.chip}`}>
       <span aria-hidden="true" className={`chip-dot ${meta.dot}`} />
+      {meta.label}
+    </span>
+  );
+};
+
+/** Direction always carried by arrow + word, never color alone. */
+const TREND_META: Record<Trend, { label: string; icon: typeof TrendingUp | null; title: string }> =
+  {
+    improving: { label: 'Improving', icon: TrendingUp, title: 'Recent 2-year ROI beats earlier years' },
+    flat: { label: 'Flat', icon: Minus, title: 'Recent 2-year ROI matches earlier years' },
+    declining: { label: 'Declining', icon: TrendingDown, title: 'Recent 2-year ROI trails earlier years' },
+    insufficient: { label: '—', icon: null, title: 'Needs 2+ attended years with lead data' },
+  };
+
+const TrendTag: React.FC<{ trend: Trend }> = ({ trend }) => {
+  const meta = TREND_META[trend];
+  const Icon = meta.icon;
+  if (!Icon) {
+    return (
+      <span className="text-[11px] text-stone-300" title={meta.title}>
+        {meta.label}
+      </span>
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center gap-1 whitespace-nowrap text-[11px] font-medium text-stone-500"
+      title={meta.title}
+    >
+      <Icon aria-hidden="true" className="h-3.5 w-3.5" />
       {meta.label}
     </span>
   );
@@ -73,6 +123,37 @@ const roiTone = (roi: number | null): string => {
 
 const HEAD_CELL = 'px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400';
 const NUM_CELL = 'px-3 py-2.5 text-right text-sm tabular-nums text-stone-700';
+const YEAR_NUM = 'px-3 py-1.5 text-right text-[13px] tabular-nums text-stone-600';
+
+/** One expanded per-year line, shared shape for the desktop sub-table. */
+const YearCells: React.FC<{ y: ShowYearStat; onOpenShow?: (eventId: string) => void }> = ({
+  y,
+  onOpenShow,
+}) => (
+  <>
+    <td className="px-3 py-1.5 text-left">
+      {y.eventId && onOpenShow ? (
+        <button
+          type="button"
+          onClick={() => onOpenShow(y.eventId as string)}
+          title="View the expense register for this show-year"
+          className="rounded text-[13px] font-semibold tabular-nums text-stone-700 underline-offset-2 hover:text-brand-700 hover:underline focus-visible:ring-2 focus-visible:ring-brand-500"
+        >
+          {y.year}
+        </button>
+      ) : (
+        <span className="text-[13px] font-semibold tabular-nums text-stone-700">{y.year}</span>
+      )}
+    </td>
+    <td className={YEAR_NUM}>{fmtMoneyFull(y.invested)}</td>
+    <td className={YEAR_NUM}>{y.hasLeads ? y.leads.toLocaleString() : '—'}</td>
+    <td className={YEAR_NUM}>{y.convRate !== null ? fmtPct(y.convRate) : '—'}</td>
+    <td className={YEAR_NUM}>{y.hasLeads ? fmtMoneyFull(y.revenue) : '—'}</td>
+    <td className={`${YEAR_NUM} font-semibold`}>
+      {y.roi !== null ? fmtMult(y.roi) : <span title="No CRM leads matched">no lead match</span>}
+    </td>
+  </>
+);
 
 export const ShowLeagueTable: React.FC<ShowLeagueTableProps> = ({
   ranked,
@@ -81,6 +162,8 @@ export const ShowLeagueTable: React.FC<ShowLeagueTableProps> = ({
   onOpenShow,
 }) => {
   const [showUnmatched, setShowUnmatched] = useState(false);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const toggle = (key: string) => setExpanded((e) => ({ ...e, [key]: !e[key] }));
 
   // Without any matched leads, the cost-only shows ARE the ranking
   const rows = hasLeadData ? ranked : needsData;
@@ -93,17 +176,17 @@ export const ShowLeagueTable: React.FC<ShowLeagueTableProps> = ({
         <h3 className="micro-label">Show league table</h3>
         <p className="mt-0.5 text-xs text-stone-500">
           {hasLeadData
-            ? 'Every show-year with matched costs and CRM leads, ranked by return'
+            ? 'One row per show, ranked by recent-weighted ROI — expand a row for the year-by-year record'
             : 'Ranked by cost — CRM leads not yet matched to these shows'}
         </p>
       </div>
 
       {/* Desktop: dense ranked table, scrolls inside the card */}
       <div className="hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[780px]">
+        <table className="w-full min-w-[560px]">
           <thead>
             <tr className="border-b border-stone-200">
-              <th scope="col" className={`${HEAD_CELL} w-10 text-right`}>
+              <th scope="col" className={`${HEAD_CELL} w-8 text-right`}>
                 #
               </th>
               <th scope="col" className={`${HEAD_CELL} text-left`}>
@@ -113,83 +196,127 @@ export const ShowLeagueTable: React.FC<ShowLeagueTableProps> = ({
                 Invested
               </th>
               <th scope="col" className={`${HEAD_CELL} text-right`}>
-                Leads
-              </th>
-              <th scope="col" className={`${HEAD_CELL} text-right`}>
-                Conv %
-              </th>
-              <th scope="col" className={`${HEAD_CELL} text-right`}>
                 Revenue
               </th>
               <th scope="col" className={`${HEAD_CELL} text-right`}>
-                ROI
-              </th>
-              <th scope="col" className={`${HEAD_CELL} text-right`}>
-                $ / lead
+                <span className="block">ROI</span>
+                <span className="block">(recent-weighted)</span>
               </th>
               <th scope="col" className={`${HEAD_CELL} text-left`}>
                 Verdict
               </th>
+              <th scope="col" className={`${HEAD_CELL} w-9`}>
+                <span className="sr-only">Expand</span>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
-            {rows.map((r, i) => {
-              const eventId = r.eventId;
-              const open = eventId && onOpenShow ? () => onOpenShow(eventId) : undefined;
+            {rows.map((g, i) => {
+              const isOpen = Boolean(expanded[g.showKey]);
+              const open = g.eventId && onOpenShow ? () => onOpenShow(g.eventId as string) : undefined;
               return (
-                <tr
-                  key={r.key}
-                  {...(open ? { onClick: open } : {})}
-                  className={`transition-colors ${open ? 'cursor-pointer hover:bg-brand-50/50' : ''}`}
-                >
-                  <td
-                    className={`px-3 py-2.5 text-right font-display text-sm tabular-nums ${
-                      i < 3 ? 'font-bold text-stone-900' : 'font-medium text-stone-400'
-                    }`}
+                <React.Fragment key={g.showKey}>
+                  <tr
+                    onClick={() => toggle(g.showKey)}
+                    className="cursor-pointer transition-colors hover:bg-brand-50/50"
                   >
-                    {i + 1}
-                  </td>
-                  <td className="max-w-[220px] px-3 py-2.5">
-                    {open ? (
+                    <td
+                      className={`px-3 py-2.5 text-right font-display text-sm tabular-nums ${
+                        i < 3 ? 'font-bold text-stone-900' : 'font-medium text-stone-400'
+                      }`}
+                    >
+                      {i + 1}
+                    </td>
+                    <td className="max-w-[240px] px-3 py-2.5">
+                      {open ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            open();
+                          }}
+                          title="View the expense register for this show"
+                          className="block max-w-full truncate rounded text-left text-sm font-semibold text-stone-900 underline-offset-2 hover:text-brand-700 hover:underline focus-visible:ring-2 focus-visible:ring-brand-500"
+                        >
+                          {g.name}
+                        </button>
+                      ) : (
+                        <span
+                          className="block truncate text-sm font-semibold text-stone-900"
+                          title={g.name}
+                        >
+                          {g.name}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-2 text-[11px] font-medium tabular-nums text-stone-400">
+                        <span>
+                          {g.yearsLabel}
+                          {g.years.length > 1 && ` · ${g.years.length} years`}
+                        </span>
+                        <TrendTag trend={g.trend} />
+                      </span>
+                    </td>
+                    <td className={NUM_CELL}>{fmtMoneyFull(g.invested)}</td>
+                    <td className={NUM_CELL}>{g.hasLeads ? fmtMoneyFull(g.revenue) : '—'}</td>
+                    <td
+                      className={`px-3 py-2.5 text-right font-display text-sm font-bold tabular-nums ${roiTone(g.weightedRoi)}`}
+                    >
+                      {g.weightedRoi !== null ? fmtMult(g.weightedRoi) : '—'}
+                    </td>
+                    <td className="px-3 py-2.5">
+                      <VerdictChip verdict={g.verdict} />
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
                       <button
                         type="button"
+                        data-testid="league-expand"
                         onClick={(e) => {
                           e.stopPropagation();
-                          open();
+                          toggle(g.showKey);
                         }}
-                        title="View the expense register for this show"
-                        className="block max-w-full truncate rounded text-left text-sm font-semibold text-stone-900 underline-offset-2 hover:text-brand-700 hover:underline focus-visible:ring-2 focus-visible:ring-brand-500"
+                        aria-expanded={isOpen}
+                        aria-label={`${isOpen ? 'Hide' : 'Show'} year-by-year record for ${g.name}`}
+                        className="rounded p-1 text-stone-400 transition-colors hover:bg-stone-100 hover:text-stone-600 focus-visible:ring-2 focus-visible:ring-brand-500"
                       >
-                        {r.name}
+                        <ChevronDown
+                          aria-hidden="true"
+                          className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                        />
                       </button>
-                    ) : (
-                      <span
-                        className="block truncate text-sm font-semibold text-stone-900"
-                        title={r.name}
-                      >
-                        {r.name}
-                      </span>
-                    )}
-                    <span className="text-[11px] font-medium tabular-nums text-stone-400">
-                      {r.year}
-                    </span>
-                  </td>
-                  <td className={NUM_CELL}>{fmtMoneyFull(r.invested)}</td>
-                  <td className={NUM_CELL}>{r.hasLeads ? r.leads.toLocaleString() : '—'}</td>
-                  <td className={NUM_CELL}>{r.convRate !== null ? fmtPct(r.convRate) : '—'}</td>
-                  <td className={NUM_CELL}>{r.hasLeads ? fmtMoneyFull(r.revenue) : '—'}</td>
-                  <td
-                    className={`px-3 py-2.5 text-right font-display text-sm font-bold tabular-nums ${roiTone(r.roi)}`}
-                  >
-                    {r.roi !== null ? fmtMult(r.roi) : '—'}
-                  </td>
-                  <td className={NUM_CELL}>
-                    {r.costPerLead !== null ? fmtMoneyFull(r.costPerLead) : '—'}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <VerdictChip verdict={r.verdict} />
-                  </td>
-                </tr>
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr className="bg-stone-50/60">
+                      <td />
+                      <td colSpan={6} className="px-0 py-1.5">
+                        <table className="w-full">
+                          <thead>
+                            <tr>
+                              {['Year', 'Invested', 'Leads', 'Conv %', 'Revenue', 'ROI'].map(
+                                (h, hi) => (
+                                  <th
+                                    key={h}
+                                    scope="col"
+                                    className={`px-3 pb-1 pt-0.5 text-[9px] font-semibold uppercase tracking-[0.15em] text-stone-400 ${hi === 0 ? 'text-left' : 'text-right'}`}
+                                  >
+                                    {h}
+                                  </th>
+                                )
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-stone-100">
+                            {[...g.years].reverse().map((y) => (
+                              <tr key={y.year}>
+                                <YearCells y={y} onOpenShow={onOpenShow} />
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -198,82 +325,117 @@ export const ShowLeagueTable: React.FC<ShowLeagueTableProps> = ({
 
       {/* Phones: stacked rank cards — no horizontal scroll at 320px */}
       <ol className="space-y-2 md:hidden">
-        {rows.map((r, i) => {
-          const eventId = r.eventId;
-          const open = eventId && onOpenShow ? () => onOpenShow(eventId) : undefined;
-          const body = (
-            <>
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex min-w-0 items-baseline gap-2">
-                  <span
-                    className={`font-display text-sm tabular-nums ${
-                      i < 3 ? 'font-bold text-stone-900' : 'font-medium text-stone-400'
-                    }`}
-                  >
-                    {i + 1}
-                  </span>
-                  <span className="min-w-0 truncate text-sm font-semibold text-stone-900">
-                    {r.name}
-                  </span>
-                  <span className="shrink-0 text-[11px] font-medium tabular-nums text-stone-400">
-                    {r.year}
-                  </span>
-                </div>
-                <VerdictChip verdict={r.verdict} />
-              </div>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {[
-                  { label: 'Invested', value: fmtMoneyCompact(r.invested) },
-                  { label: 'Revenue', value: r.hasLeads ? fmtMoneyCompact(r.revenue) : '—' },
-                  {
-                    label: 'ROI',
-                    value: r.roi !== null ? fmtMult(r.roi) : '—',
-                    tone: roiTone(r.roi),
-                  },
-                ].map(({ label, value, tone }) => (
-                  <div key={label}>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                      {label}
-                    </p>
-                    <p
-                      className={`font-display text-base font-bold tracking-tight tabular-nums ${tone || 'text-stone-900'}`}
-                    >
-                      {value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-              {r.hasLeads && (
-                <p className="mt-1.5 text-[11px] tabular-nums text-stone-500">
-                  {r.leads.toLocaleString()} lead{r.leads === 1 ? '' : 's'}
-                  {r.convRate !== null && ` · ${fmtPct(r.convRate)} converted`}
-                  {r.costPerLead !== null && ` · ${fmtMoneyFull(r.costPerLead)}/lead`}
-                </p>
-              )}
-            </>
-          );
+        {rows.map((g, i) => {
+          const isOpen = Boolean(expanded[g.showKey]);
           return (
-            <li key={r.key}>
-              {open ? (
-                <button
-                  type="button"
-                  onClick={open}
-                  title="View the expense register for this show"
-                  className="w-full rounded-lg border border-stone-200/80 bg-white p-3 text-left shadow-elevation-1 transition-all duration-200 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-                >
-                  {body}
-                </button>
-              ) : (
-                <div className="rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1">
-                  {body}
+            <li key={g.showKey} className="rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1">
+              <button
+                type="button"
+                data-testid="league-expand"
+                onClick={() => toggle(g.showKey)}
+                aria-expanded={isOpen}
+                className="w-full rounded text-left focus-visible:ring-2 focus-visible:ring-brand-500"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex min-w-0 items-baseline gap-2">
+                    <span
+                      className={`font-display text-sm tabular-nums ${
+                        i < 3 ? 'font-bold text-stone-900' : 'font-medium text-stone-400'
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <span className="min-w-0 truncate text-sm font-semibold text-stone-900">
+                      {g.name}
+                    </span>
+                    <span className="shrink-0 text-[11px] font-medium tabular-nums text-stone-400">
+                      {g.yearsLabel}
+                    </span>
+                  </div>
+                  <VerdictChip verdict={g.verdict} />
                 </div>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {[
+                    { label: 'Invested', value: fmtMoneyCompact(g.invested) },
+                    { label: 'Revenue', value: g.hasLeads ? fmtMoneyCompact(g.revenue) : '—' },
+                    {
+                      label: 'ROI (wt)',
+                      value: g.weightedRoi !== null ? fmtMult(g.weightedRoi) : '—',
+                      tone: roiTone(g.weightedRoi),
+                    },
+                  ].map(({ label, value, tone }) => (
+                    <div key={label}>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                        {label}
+                      </p>
+                      <p
+                        className={`font-display text-base font-bold tracking-tight tabular-nums ${tone || 'text-stone-900'}`}
+                      >
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                  {g.hasLeads && (
+                    <span className="text-[11px] tabular-nums text-stone-500">
+                      {g.leads.toLocaleString()} lead{g.leads === 1 ? '' : 's'}
+                      {g.convRate !== null && ` · ${fmtPct(g.convRate)} converted`}
+                    </span>
+                  )}
+                  <TrendTag trend={g.trend} />
+                  <span className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-stone-400">
+                    {isOpen ? 'Hide years' : 'Years'}
+                    <ChevronDown
+                      aria-hidden="true"
+                      className={`h-3.5 w-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+                    />
+                  </span>
+                </div>
+              </button>
+              {isOpen && (
+                <ul className="mt-2 divide-y divide-stone-100 border-t border-stone-100">
+                  {[...g.years].reverse().map((y) => (
+                    <li key={y.year} className="flex items-center justify-between gap-2 py-1.5">
+                      <div className="min-w-0">
+                        {y.eventId && onOpenShow ? (
+                          <button
+                            type="button"
+                            onClick={() => onOpenShow(y.eventId as string)}
+                            className="rounded text-[13px] font-semibold tabular-nums text-stone-700 underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-brand-500"
+                          >
+                            {y.year}
+                          </button>
+                        ) : (
+                          <span className="text-[13px] font-semibold tabular-nums text-stone-700">
+                            {y.year}
+                          </span>
+                        )}
+                        <p className="text-[11px] tabular-nums text-stone-500">
+                          {y.hasLeads
+                            ? `${y.leads} lead${y.leads === 1 ? '' : 's'}${y.convRate !== null ? ` · ${fmtPct(y.convRate)} conv` : ''}`
+                            : 'no lead match'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[13px] font-semibold tabular-nums text-stone-900">
+                          {y.hasLeads ? fmtMoneyFull(y.revenue) : '—'}
+                          <span className="font-normal text-stone-400"> / {fmtMoneyFull(y.invested)}</span>
+                        </p>
+                        <p className="text-[11px] font-semibold tabular-nums text-stone-500">
+                          {y.roi !== null ? `${fmtMult(y.roi)} ROI` : ''}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               )}
             </li>
           );
         })}
       </ol>
 
-      {/* Quiet expandable: cost-only show-years waiting on CRM matching */}
+      {/* Quiet expandable: cost-only shows waiting on CRM matching */}
       {unmatched.length > 0 && (
         <div className="mt-4 border-t border-stone-100 pt-3">
           <button
@@ -286,23 +448,23 @@ export const ShowLeagueTable: React.FC<ShowLeagueTableProps> = ({
               aria-hidden="true"
               className={`h-3.5 w-3.5 transition-transform duration-200 ${showUnmatched ? 'rotate-180' : ''}`}
             />
-            No lead data yet ({unmatched.length} show-year{unmatched.length === 1 ? '' : 's'})
+            No lead data yet ({unmatched.length} show{unmatched.length === 1 ? '' : 's'})
           </button>
           {showUnmatched && (
             <ul className="mt-2 divide-y divide-stone-100">
-              {unmatched.map((r) => (
-                <li key={r.key} className="flex items-center justify-between gap-3 py-2">
+              {unmatched.map((g) => (
+                <li key={g.showKey} className="flex items-center justify-between gap-3 py-2">
                   <div className="flex min-w-0 items-baseline gap-2">
                     <span className="min-w-0 truncate text-sm font-medium text-stone-700">
-                      {r.name}
+                      {g.name}
                     </span>
                     <span className="shrink-0 text-[11px] font-medium tabular-nums text-stone-400">
-                      {r.year}
+                      {g.yearsLabel}
                     </span>
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="text-sm font-semibold tabular-nums text-stone-700">
-                      {fmtMoneyFull(r.invested)}
+                      {fmtMoneyFull(g.invested)}
                     </span>
                     <VerdictChip verdict="needs-data" />
                   </div>
@@ -314,9 +476,15 @@ export const ShowLeagueTable: React.FC<ShowLeagueTableProps> = ({
       )}
 
       <p className="mt-3 text-[11px] leading-relaxed text-stone-400">
-        ROI = invoice revenue from converted leads ÷ total show cost across all companies. Verdicts:
-        Double down at ≥{ROI_DOUBLE_DOWN}× ROI or ≥30% conversion; Reassess below {ROI_REASSESS}×
-        with 10+ leads.
+        ROI (recent-weighted) = attributed revenue ÷ show cost over years with matched CRM leads,
+        with each year's dollars discounted by half per year of age — so last year counts twice as
+        much as the year before, and a windfall from years ago can't carry a show today. Double
+        down: ≥{ROI_DOUBLE_DOWN}× recent-weighted, unless the last two years slipped below{' '}
+        {ROI_DOUBLE_DOWN}×. Declining: earned ≥1×
+        lifetime but under {ROI_REASSESS}× across the last two years. Reassess: under{' '}
+        {ROI_REASSESS}× with {MIN_LEADS_FOR_REASSESS}+ leads. Shows from the last ~
+        {MATURITY_WINDOW_MONTHS} months read Maturing while their leads are still becoming
+        invoices.
       </p>
     </div>
   );

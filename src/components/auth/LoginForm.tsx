@@ -77,7 +77,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const productionUsers: { username: string; password: string; role: string; }[] = [];
 
   const displayUsers = isSandbox ? sandboxUsers : productionUsers;
-  const passwordHint = isSandbox ? 'sandbox123' : 'Use your assigned credentials';
 
   // Show registration form if requested
   if (showRegistration) {

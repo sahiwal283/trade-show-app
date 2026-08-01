@@ -10,7 +10,7 @@
 import { ChevronRight, Paperclip } from 'lucide-react';
 import { Expense, TradeShow, User } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
-import { StatusBadge } from '../../common/StatusBadge';
+import { StatusBadge, toBadgeStatus } from '../../common/StatusBadge';
 import { CategoryBadge } from '../../common/CategoryBadge';
 
 interface ExpenseCardListProps {
@@ -19,11 +19,6 @@ interface ExpenseCardListProps {
   users: User[];
   hasApprovalPermission: boolean;
   onViewExpense: (expense: Expense) => void;
-}
-
-function toBadgeStatus(status: Expense['status']): 'pending' | 'approved' | 'rejected' | 'needs_further_review' {
-  if (status === 'needs further review') return 'needs_further_review';
-  return status;
 }
 
 export function ExpenseCardList({

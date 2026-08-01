@@ -194,7 +194,7 @@ class ApiClient {
     let data: unknown;
     try {
       data = isJSON ? await response.json() : await response.text();
-    } catch (error) {
+    } catch {
       data = null;
     }
 
@@ -264,7 +264,7 @@ class ApiClient {
     // Notify session manager of API activity (resets inactivity timer)
     try {
       sessionManager.notifyApiCall();
-    } catch (error) {
+    } catch {
       // Silently fail - don't break API calls if session manager isn't initialized
       console.debug('[API] Session manager notification skipped');
     }

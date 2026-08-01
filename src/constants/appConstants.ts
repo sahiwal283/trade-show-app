@@ -4,10 +4,6 @@
  * @version 1.34.4
  */
 
-// ========== APPLICATION INFO ==========
-export const APP_VERSION = '1.34.4';
-export const APP_NAME = 'Trade Show Expense Management App';
-
 // ========== DEMO CREDENTIALS (Development Only) ==========
 export const DEMO_CREDENTIALS: Record<string, string> = {
   admin: 'admin',
@@ -25,38 +21,6 @@ export const USER_ROLES = {
 } as const;
 
 export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
-
-// ========== USER ROLE LABELS ==========
-export const ROLE_LABELS: Record<string, string> = {
-  admin: 'Administrator',
-  coordinator: 'Show Coordinator',
-  salesperson: 'Sales Person',
-  accountant: 'Accountant',
-  developer: 'Developer'
-};
-
-// ========== USER ROLE COLORS ==========
-export const ROLE_COLORS: Record<string, string> = {
-  admin: 'bg-purple-100 text-purple-800',
-  coordinator: 'bg-blue-100 text-blue-800',
-  salesperson: 'bg-emerald-100 text-emerald-800',
-  accountant: 'bg-orange-100 text-orange-800',
-  developer: 'bg-indigo-100 text-indigo-800'
-};
-
-// ========== EXPENSE CATEGORIES ==========
-export const EXPENSE_CATEGORIES = [
-  'Flights',
-  'Hotels',
-  'Meals',
-  'Supplies',
-  'Transportation',
-  'Marketing Materials',
-  'Shipping',
-  'Other',
-] as const;
-
-export type ExpenseCategory = typeof EXPENSE_CATEGORIES[number];
 
 // ========== EXPENSE STATUS ==========
 export const EXPENSE_STATUS = {
@@ -78,36 +42,6 @@ export const REIMBURSEMENT_STATUS = {
 
 export type ReimbursementStatus = typeof REIMBURSEMENT_STATUS[keyof typeof REIMBURSEMENT_STATUS];
 
-// ========== EVENT STATUS ==========
-export const EVENT_STATUS = {
-  UPCOMING: 'upcoming',
-  ACTIVE: 'active',
-  COMPLETED: 'completed',
-} as const;
-
-export type EventStatus = typeof EVENT_STATUS[keyof typeof EVENT_STATUS];
-
-// ========== CARD OPTIONS ==========
-export const DEFAULT_CARD_OPTIONS = [
-  'Haute Haute Intl GBP Amex',
-  'Haute Haute Intl USD Amex',
-  'Haute Haute USD Debit',
-  'Haute Haute Inc GBP Amex',
-  'Haute Haute Inc USD Amex',
-  'Haute Haute Inc USD Debit',
-  'Haute Haute LLC GBP Amex',
-  'Haute Haute LLC USD Amex',
-  'Haute Haute LLC USD Debit',
-  'Cash',
-] as const;
-
-// ========== ENTITY OPTIONS ==========
-export const DEFAULT_ENTITY_OPTIONS = [
-  'Haute Inc',
-  'Haute LLC',
-  'Haute Intl',
-] as const;
-
 // ========== PLATFORM / BASE PATH ==========
 export const APP_BASE_PATH = (import.meta.env.VITE_APP_BASE_PATH as string) || '';
 
@@ -124,15 +58,6 @@ export const FILE_UPLOAD = {
   MAX_SIZE: 10 * 1024 * 1024, // 10MB (increased for HEIC files from iPhone)
   ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/heif', 'image/webp', 'application/pdf'],
   ALLOWED_EXTENSIONS: ['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp', '.pdf'],
-} as const;
-
-// ========== UI CONSTANTS ==========
-export const UI_CONSTANTS = {
-  ITEMS_PER_PAGE: 10,
-  DEBOUNCE_DELAY: 300,
-  TOAST_DURATION: 3000,
-  SIDEBAR_WIDTH: 256, // 64 * 4 (tailwind units)
-  SIDEBAR_COLLAPSED_WIDTH: 64, // 16 * 4
 } as const;
 
 // ========== COLOR SCHEMES ==========
@@ -213,13 +138,6 @@ export const REIMBURSEMENT_COLORS = {
   },
 } as const;
 
-// ========== DATE FORMATS ==========
-export const DATE_FORMATS = {
-  DISPLAY: 'MMM DD, YYYY',
-  INPUT: 'YYYY-MM-DD',
-  TIMESTAMP: 'YYYY-MM-DD HH:mm:ss',
-} as const;
-
 // ========== LOCAL STORAGE KEYS ==========
 export const STORAGE_KEYS = {
   // Authentication
@@ -247,29 +165,6 @@ export const ERROR_MESSAGES = {
   VALIDATION_ERROR: 'Please check your input and try again.',
   FILE_TOO_LARGE: `File size must be less than ${FILE_UPLOAD.MAX_SIZE / 1024 / 1024}MB.`,
   INVALID_FILE_TYPE: 'Invalid file type. Please upload an image or PDF.',
-} as const;
-
-// ========== SUCCESS MESSAGES ==========
-export const SUCCESS_MESSAGES = {
-  EXPENSE_CREATED: 'Expense created successfully!',
-  EXPENSE_UPDATED: 'Expense updated successfully!',
-  EXPENSE_DELETED: 'Expense deleted successfully!',
-  EXPENSE_APPROVED: 'Expense approved successfully!',
-  EXPENSE_REJECTED: 'Expense rejected successfully!',
-  ENTITY_ASSIGNED: 'Entity assigned successfully!',
-  EVENT_CREATED: 'Event created successfully!',
-  EVENT_UPDATED: 'Event updated successfully!',
-  USER_CREATED: 'User created successfully!',
-  USER_UPDATED: 'User updated successfully!',
-  SETTINGS_UPDATED: 'Settings updated successfully!',
-} as const;
-
-// ========== REGEX PATTERNS ==========
-export const REGEX_PATTERNS = {
-  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  PHONE: /^\+?[\d\s\-()]+$/,
-  USERNAME: /^[a-zA-Z0-9_]{3,20}$/,
-  AMOUNT: /^\d+(\.\d{1,2})?$/,
 } as const;
 
 // ========== PERMISSION MATRIX ==========
@@ -377,53 +272,3 @@ export const formatCurrency = (amount: number, currency: string = 'USD'): string
     currency,
   }).format(amount);
 };
-
-/**
- * Format date
- */
-export const formatDate = (date: string | Date, format: keyof typeof DATE_FORMATS = 'DISPLAY'): string => {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  
-  switch (format) {
-    case 'DISPLAY':
-      return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-    case 'INPUT':
-      // Use local date components instead of UTC to avoid timezone shifts
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    case 'TIMESTAMP':
-      return d.toISOString().replace('T', ' ').split('.')[0];
-    default:
-      return d.toLocaleDateString();
-  }
-};
-
-/**
- * Validate file upload
- * Checks both MIME type and file extension for better compatibility
- * (some phones report empty or non-standard MIME types)
- */
-export const validateFile = (file: File): { valid: boolean; error?: string } => {
-  if (file.size > FILE_UPLOAD.MAX_SIZE) {
-    return { valid: false, error: ERROR_MESSAGES.FILE_TOO_LARGE };
-  }
-  
-  // Check MIME type first
-  const mimeTypeValid = FILE_UPLOAD.ALLOWED_TYPES.includes(file.type) || 
-                        file.type.startsWith('image/'); // Accept any image/* type
-  
-  // Also check file extension as fallback (some phones have empty/wrong MIME types)
-  const fileName = file.name.toLowerCase();
-  const extensionValid = FILE_UPLOAD.ALLOWED_EXTENSIONS.some(ext => fileName.endsWith(ext));
-  
-  // Accept if either MIME type OR extension is valid
-  if (!mimeTypeValid && !extensionValid) {
-    console.warn(`[File Validation] Rejected: ${file.name} (type: ${file.type || 'empty'})`);
-    return { valid: false, error: ERROR_MESSAGES.INVALID_FILE_TYPE };
-  }
-  
-  return { valid: true };
-};
-

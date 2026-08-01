@@ -10,6 +10,7 @@
 
 import React from 'react';
 import { TradeShow } from '../../App';
+import { parseLocalDate } from '../../utils/dateUtils';
 
 interface ChecklistMastheadProps {
   events: TradeShow[];
@@ -26,14 +27,14 @@ function formatShowDates(event: TradeShow): string {
   const end = event.showEndDate || event.endDate;
   if (!start) return '';
   const fmt = (d: string) =>
-    new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    parseLocalDate(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   return end && end !== start ? `${fmt(start)} – ${fmt(end)}` : fmt(start);
 }
 
 function splitByTime(events: TradeShow[]) {
   const now = new Date();
-  const startOf = (e: TradeShow) => new Date(e.showStartDate || e.startDate);
-  const endOf = (e: TradeShow) => new Date(e.showEndDate || e.endDate || e.startDate);
+  const startOf = (e: TradeShow) => parseLocalDate(e.showStartDate || e.startDate);
+  const endOf = (e: TradeShow) => parseLocalDate(e.showEndDate || e.endDate || e.startDate);
   const upcoming = events
     .filter(e => endOf(e) >= now)
     .sort((a, b) => startOf(a).getTime() - startOf(b).getTime());

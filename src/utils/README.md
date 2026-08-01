@@ -40,13 +40,10 @@ const date = parseLocalDate("2026-02-07");
 #### Date Calculations
 
 - `getDaysUntil(dateString)` - Days from today to target date
-- `getDaysUntilLabel(days)` - Human-readable label ("Today", "Tomorrow", "In 5 days")
 
 #### Date Checks
 
 - `isToday(dateString)` - Check if date is today
-- `isPast(dateString)` - Check if date is in the past
-- `isFuture(dateString)` - Check if date is in the future
 
 #### Formatting
 
@@ -78,17 +75,6 @@ import { getDaysUntil } from '@/utils/dateUtils';
 const diffDays = getDaysUntil(event.startDate);
 ```
 
-#### Filtering Events
-
-```typescript
-// ❌ Before
-const upcoming = events.filter(e => new Date(e.endDate) >= new Date());
-
-// ✅ After
-import { isPast } from '@/utils/dateUtils';
-const upcoming = events.filter(e => !isPast(e.endDate));
-```
-
 #### Populating Date Inputs
 
 ```typescript
@@ -107,7 +93,7 @@ When working with dates in components:
 - [ ] Replace `new Date(dateString)` with `parseLocalDate(dateString)`
 - [ ] Replace `.toLocaleDateString()` with `formatLocalDate(dateString)`
 - [ ] Replace manual days-until calculations with `getDaysUntil(dateString)`
-- [ ] Replace manual date filtering with `isToday()`, `isPast()`, `isFuture()`
+- [ ] Replace manual date filtering with `isToday()` / `getDaysUntil()`
 - [ ] Use `formatForDateInput()` for HTML date inputs
 - [ ] Use `formatDateRange()` for displaying date ranges
 

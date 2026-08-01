@@ -7,8 +7,7 @@
 
 import {
   RoiModel,
-  RoiShowRow,
-  CONV_DOUBLE_DOWN,
+  RoiShowGroup,
   MIN_LEADS_FOR_REASSESS,
   fmtMoneyCompact,
   fmtMult,
@@ -17,28 +16,62 @@ import {
 const MAX_INSIGHTS = 4;
 /** Below this, unattributed revenue is noise not worth a callout. */
 const MIN_UNATTRIBUTED_REVENUE = 1000;
+/** A follow-up callout needs a conversion rate below this to be news. */
+const LOW_CONV_RATE = 0.3;
 
-const showLabel = (r: RoiShowRow) => `${r.name} ${r.year}`;
+const showLabel = (g: RoiShowGroup) => g.name;
 
 function bestRoiSentence(model: RoiModel): string | null {
   const best = model.ranked[0];
-  if (!best || best.roi === null || best.roi <= 0 || best.revenue <= 0) return null;
+  if (!best || best.weightedRoi === null || best.weightedRoi <= 0 || best.revenue <= 0) {
+    return null;
+  }
   return (
     `${showLabel(best)} converted ${best.converted} of ${best.leads} ` +
-    `lead${best.leads === 1 ? '' : 's'} into ${fmtMoneyCompact(best.revenue)} — ` +
-    `highest ROI in the portfolio (${fmtMult(best.roi)}).`
+    `lead${best.leads === 1 ? '' : 's'} into ${fmtMoneyCompact(best.revenue)} across ` +
+    `${best.yearsLabel} — strongest recent-weighted ROI in the portfolio ` +
+    `(${fmtMult(best.weightedRoi)}).`
   );
 }
 
-function followUpSentence(model: RoiModel, exclude: RoiShowRow | undefined): string | null {
-  // Reassess-flagged shows get their own sentence — don't double-feature them
+/** The user's complaint case, named: earned before, returning nothing now. */
+function decliningSentence(model: RoiModel): string | null {
+  const flagged = model.ranked.filter((g) => g.verdict === 'declining');
+  if (flagged.length === 0) return null;
+  const g = flagged.reduce((a, b) => (b.revenue > a.revenue ? b : a));
+  const lastEarning = [...g.years].reverse().find((y) => y.revenue > 0);
+  const recent = g.recentRoi !== null ? fmtMult(g.recentRoi) : '0×';
+  const since = lastEarning
+    ? `earned ${fmtMoneyCompact(g.revenue)} through '${String(lastEarning.year).slice(2)} but only ${recent} over the last two years`
+    : `has returned ${recent} over the last two years`;
+  const more = flagged.length > 1 ? ` (+${flagged.length - 1} more declining)` : '';
+  return `${showLabel(g)} ${since} — past results are carrying the average, not current ones${more}.`;
+}
+
+/** Recent shows whose leads haven't had time to become invoices yet. */
+function maturingSentence(model: RoiModel): string | null {
+  const flagged = model.ranked.filter((g) => g.verdict === 'maturing');
+  if (flagged.length === 0) return null;
+  const g = flagged.reduce((a, b) => (b.leads > a.leads ? b : a));
+  const latest = [...g.years].reverse().find((y) => y.hasLeads);
+  if (!latest) return null;
+  return (
+    `${showLabel(g)} is maturing: ${latest.leads} lead${latest.leads === 1 ? '' : 's'} from ` +
+    `${latest.year} are still working through the pipeline — too early to judge.`
+  );
+}
+
+function followUpSentence(model: RoiModel, exclude: RoiShowGroup | undefined): string | null {
+  // Flagged shows get their own sentence — don't double-feature them
   const candidates = model.ranked.filter(
-    (r) =>
-      r !== exclude &&
-      r.verdict !== 'reassess' &&
-      r.leads >= MIN_LEADS_FOR_REASSESS &&
-      r.convRate !== null &&
-      r.convRate < CONV_DOUBLE_DOWN
+    (g) =>
+      g !== exclude &&
+      g.verdict !== 'reassess' &&
+      g.verdict !== 'declining' &&
+      g.verdict !== 'maturing' &&
+      g.leads >= MIN_LEADS_FOR_REASSESS &&
+      g.convRate !== null &&
+      g.convRate < LOW_CONV_RATE
   );
   if (candidates.length === 0) return null;
   const pick = candidates.reduce((a, b) => (b.leads - b.converted > a.leads - a.converted ? b : a));
@@ -50,13 +83,13 @@ function followUpSentence(model: RoiModel, exclude: RoiShowRow | undefined): str
 }
 
 function reassessSentence(model: RoiModel): string | null {
-  const flagged = model.ranked.filter((r) => r.verdict === 'reassess');
+  const flagged = model.ranked.filter((g) => g.verdict === 'reassess');
   if (flagged.length === 0) return null;
   if (flagged.length === 1) {
-    const r = flagged[0];
+    const g = flagged[0];
     return (
-      `${showLabel(r)} returned ${fmtMult(r.roi ?? 0)} on ${fmtMoneyCompact(r.invested)} ` +
-      `invested — a candidate to renegotiate or cut.`
+      `${showLabel(g)} returned ${fmtMult(g.weightedRoi ?? 0)} on ` +
+      `${fmtMoneyCompact(g.investedMatched)} invested — a candidate to renegotiate or cut.`
     );
   }
   const names = flagged.slice(0, 2).map(showLabel).join(' and ');
@@ -83,7 +116,7 @@ function portfolioSentence(model: RoiModel): string | null {
 }
 
 function costOnlyInsights(model: RoiModel): string[] {
-  if (model.rows.length === 0) return [];
+  if (model.shows.length === 0) return [];
   const out = [
     'No CRM lead data is matched to these shows yet — the ranking below reflects cost only.',
   ];
@@ -106,6 +139,8 @@ export function buildInsights(model: RoiModel): string[] {
   const best = model.ranked[0];
   const sentences = [
     bestRoiSentence(model),
+    decliningSentence(model),
+    maturingSentence(model),
     followUpSentence(model, best),
     reassessSentence(model),
     unattributedSentence(model),

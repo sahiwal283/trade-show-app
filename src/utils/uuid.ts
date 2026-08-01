@@ -24,10 +24,3 @@ export function generateUUID(): string {
   });
 }
 
-/**
- * Generate a short unique ID (for UI purposes, not cryptographically secure)
- */
-export function generateShortId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2);
-}
-

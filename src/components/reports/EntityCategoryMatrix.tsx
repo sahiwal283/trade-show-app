@@ -12,6 +12,7 @@ interface EntityCategoryMatrixProps {
   embedded?: boolean;
 }
 
+// Intentionally NOT roiData fmtMoneyExact: matrix cells omit the "$" glyph (implied by the table).
 const formatCell = (amount: number): string =>
   amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

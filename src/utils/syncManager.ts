@@ -7,7 +7,10 @@
 
 import { offlineDb, SyncQueueItem } from './offlineDb';
 import { networkMonitor } from './networkDetection';
-import * as api from './api';
+// Named import: the API methods live on the exported `api` object. The old
+// `import * as api` namespace import made every `api.createExpense(...)` call
+// undefined at runtime, so queued items could never replay.
+import { api } from './api';
 import { generateUUID } from './uuid';
 
 // ========== TYPE DEFINITIONS ==========
@@ -267,9 +270,10 @@ export class SyncManager {
    */
   private async syncExpense(item: SyncQueueItem): Promise<string> {
     switch (item.action) {
-      case 'CREATE':
+      case 'CREATE': {
         const created = await api.createExpense(item.data, item.data.receipt);
         return created.id;
+      }
 
       case 'UPDATE':
         await api.updateExpense(item.remoteId || item.data.id, item.data, item.data.receipt);
@@ -281,7 +285,7 @@ export class SyncManager {
 
       case 'APPROVE':
         // This would be handled by accountant/admin approval endpoint
-        await api.updateExpenseStatus(item.data.id, item.data.status, item.data.comments);
+        await api.updateExpenseStatus(item.data.id, { status: item.data.status });
         return item.data.id;
 
       default:
@@ -294,9 +298,10 @@ export class SyncManager {
    */
   private async syncEvent(item: SyncQueueItem): Promise<string> {
     switch (item.action) {
-      case 'CREATE':
+      case 'CREATE': {
         const created = await api.createEvent(item.data);
         return created.id;
+      }
 
       case 'UPDATE':
         await api.updateEvent(item.remoteId || item.data.id, item.data);
@@ -312,10 +317,11 @@ export class SyncManager {
    */
   private async syncUser(item: SyncQueueItem): Promise<string> {
     switch (item.action) {
-      case 'CREATE':
+      case 'CREATE': {
         // User registration
         const created = await api.register(item.data);
         return created.id;
+      }
 
       case 'UPDATE':
         // Update user profile
@@ -430,7 +436,7 @@ export class SyncManager {
       try {
         const user = JSON.parse(userStr);
         return user.id;
-      } catch (e) {
+      } catch {
         return 'unknown';
       }
     }

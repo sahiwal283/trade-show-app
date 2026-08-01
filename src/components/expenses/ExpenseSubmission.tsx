@@ -26,6 +26,7 @@ import {
 import { getZohoExpenseDescriptionValidationMessage } from '../../utils/zohoExpenseDescription';
 import { AppError } from '../../utils/errorHandler';
 import { apiClient } from '../../utils/apiClient';
+import { syncManager } from '../../utils/syncManager';
 
 // ✅ REFACTORED: Imported extracted components
 import {
@@ -178,11 +179,16 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
     }
   };
 
-  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File, ocrDataOverride?: OcrV2Data) => {
+  /**
+   * Saves an expense (create or update). Returns true on success so callers
+   * (e.g. the receipt-capture flow) can decide whether to close their UI —
+   * a failed save must NOT discard the captured photo/OCR data.
+   */
+  const handleSaveExpense = async (expenseData: Omit<Expense, 'id'>, file?: File, ocrDataOverride?: OcrV2Data): Promise<boolean> => {
     // Prevent duplicate submissions
     if (isSaving) {
       console.log('[ExpenseSubmission] Already saving, ignoring duplicate submission');
-      return;
+      return false;
     }
 
     setIsSaving(true);
@@ -244,13 +250,44 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       console.log('[ExpenseSubmission] Closing form');
       setShowForm(false);
       setEditingExpense(null);
+      return true;
     } catch (error) {
       console.error('[ExpenseSubmission] Error saving expense:', error);
+
+      // Offline handling for NEW expenses: queue for later sync when there is
+      // no receipt file (File objects can't be safely JSON-queued in IndexedDB
+      // alongside the existing schema/replay path).
+      const isNetworkError =
+        (error instanceof AppError && error.code === 'NETWORK_ERROR') ||
+        (error instanceof TypeError);
+      if (isNetworkError && !editingExpense) {
+        const hasReceiptFile = !!(file || pendingReceiptFile);
+        if (!hasReceiptFile) {
+          try {
+            await syncManager.queueAction('CREATE', 'expense', {
+              ...expenseToApiPayload(expenseData),
+              zoho_entity: expenseData.zohoEntity || undefined,
+            });
+            addToast('📴 Saved offline — will sync when you\'re back online', 'info');
+            setShowForm(false);
+            setEditingExpense(null);
+            return true;
+          } catch (queueError) {
+            console.error('[ExpenseSubmission] Failed to queue expense offline:', queueError);
+            // Fall through to the normal error toast below
+          }
+        } else {
+          addToast('📴 You\'re offline — keep this screen open and retry when connected', 'warning');
+          return false;
+        }
+      }
+
       const msg =
         error instanceof AppError
           ? error.message
           : 'Failed to save expense. Please try again.';
       addToast(`❌ ${msg}`, 'error');
+      return false;
     } finally {
       setIsSaving(false);
     }
@@ -290,33 +327,20 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
     setIsSaving(true);
     try {
-      // Convert camelCase to snake_case for backend
-      const response = await fetch(`/api/expenses/${viewingExpense.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: JSON.stringify({
-          event_id: editFormData.tradeShowId,
-          amount: editFormData.amount,
-          category: editFormData.category,
-          merchant: editFormData.merchant,
-          date: editFormData.date,
-          description: editFormData.description,
-          card_used: editFormData.cardUsed,
-          location: editFormData.location,
-          reimbursement_required: editFormData.reimbursementRequired,
-          userId: user.id
-        })
+      // Convert camelCase to snake_case for backend. Goes through apiClient so
+      // an expired token is silently refreshed and retried instead of failing.
+      const updatedExpense = await apiClient.put<Expense>(`/expenses/${viewingExpense.id}`, {
+        event_id: editFormData.tradeShowId,
+        amount: editFormData.amount,
+        category: editFormData.category,
+        merchant: editFormData.merchant,
+        date: editFormData.date,
+        description: editFormData.description,
+        card_used: editFormData.cardUsed,
+        location: editFormData.location,
+        reimbursement_required: editFormData.reimbursementRequired,
+        userId: user.id
       });
-
-      if (!response.ok) {
-        const errBody = await response.json().catch(() => ({} as { error?: string }));
-        throw new Error(errBody.error || 'Failed to update expense');
-      }
-
-      const updatedExpense = (await response.json()) as Expense;
       
       // Update the viewing expense
       setViewingExpense(updatedExpense);
@@ -431,10 +455,14 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
       zohoEntity: receiptData.zohoEntity || undefined  // Auto-populated from card selection
     };
 
-        // Save and wait for completion before closing - pass OCR data directly
-        await handleSaveExpense(expenseData, file, ocrDataForCorrections || undefined);
+    // Save and wait for completion before closing - pass OCR data directly.
+    // Only close the capture UI on success: on failure the screen stays open
+    // so the captured photo and OCR data survive (the error toast explains).
+    const saved = await handleSaveExpense(expenseData, file, ocrDataForCorrections || undefined);
     setIsSaving(false);
-    setShowReceiptUpload(false);
+    if (saved) {
+      setShowReceiptUpload(false);
+    }
   };
 
   // === REIMBURSEMENT HANDLERS (Only used when hasApprovalPermission is true) ===
@@ -897,7 +925,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               onCancel={cancelInlineEdit}
               onSave={saveInlineEdit}
               onDelete={
-                viewingExpense.userId === user.id || hasApprovalPermission
+                // Mirrors backend ExpenseService.deleteExpense: owners can only
+                // delete non-approved expenses; admin/accountant/developer
+                // (hasApprovalPermission) can delete any.
+                hasApprovalPermission ||
+                (viewingExpense.userId === user.id && viewingExpense.status !== 'approved')
                   ? () => handleDeleteExpense(viewingExpense.id)
                   : undefined
               }

@@ -4,7 +4,7 @@
  * Extracted complex expense-related logic for reusability and maintainability
  */
 
-import { Expense, User, TradeShow } from '../App';
+import { Expense } from '../App';
 import { formatLocalDate } from './dateUtils';
 
 /**

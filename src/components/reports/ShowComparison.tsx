@@ -10,7 +10,7 @@ import React, { useMemo, useState } from 'react';
 import { Download, TrendingUp, TrendingDown, Minus, FileText, FileSpreadsheet } from 'lucide-react';
 import { ShowSummaryRow } from './hooks/useShowSummaries';
 import { CrmLeadRow, leadGroupName } from './hooks/useCrmLeads';
-import { cleanShowName } from './roiData';
+import { cleanShowName, fmtMoneyFull as fmt, fmtMoneyExact as fmt2 } from './roiData';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { API_CONFIG, STORAGE_KEYS } from '../../constants/appConstants';
 
@@ -46,10 +46,6 @@ interface ShowComparisonProps {
 }
 
 type Scope = number | 'compare';
-
-const fmt = (n: number) => '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-const fmt2 = (n: number) =>
-  '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** Human display name for a show key: latest year's name minus year tokens. */
 function displayName(rowsForKey: ShowSummaryRow[]): string {

@@ -11,6 +11,7 @@
 import React from 'react';
 import { TrendingDown, TrendingUp } from 'lucide-react';
 import { Expense } from '../../App';
+import { formatCurrency as money } from '../../constants/appConstants';
 
 interface ApprovalCardsProps {
   expenses: Expense[];
@@ -89,9 +90,6 @@ export const ApprovalCards: React.FC<ApprovalCardsProps> = ({
   );
   const reimbursementTotal = pendingReimbursements.reduce((sum, e) => sum + (e.amount || 0), 0);
   const unassignedEntities = expenses.filter(e => !e.zohoEntity);
-
-  const money = (n: number) =>
-    `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const hasSecondaryStats =
     pendingExpenses.length > 0 || pendingReimbursements.length > 0 || unassignedEntities.length > 0;

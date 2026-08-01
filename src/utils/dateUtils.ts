@@ -72,26 +72,6 @@ export function isToday(dateString: string): boolean {
 }
 
 /**
- * Check if a date has passed (is before today)
- * 
- * @param dateString - Date in YYYY-MM-DD format
- * @returns true if the date is in the past
- */
-export function isPast(dateString: string): boolean {
-  return getDaysUntil(dateString) < 0;
-}
-
-/**
- * Check if a date is in the future (is after today)
- * 
- * @param dateString - Date in YYYY-MM-DD format
- * @returns true if the date is in the future
- */
-export function isFuture(dateString: string): boolean {
-  return getDaysUntil(dateString) > 0;
-}
-
-/**
  * Format a date string for HTML date input (YYYY-MM-DD)
  * Handles both ISO strings and already-formatted dates
  * 
@@ -128,27 +108,6 @@ export function formatForDateInput(dateString: string): string {
  */
 export function formatDateRange(startDateString: string, endDateString: string, separator: string = ' - '): string {
   return `${formatLocalDate(startDateString)}${separator}${formatLocalDate(endDateString)}`;
-}
-
-/**
- * Get a human-readable label for days until a date
- * 
- * @param days - Number of days (from getDaysUntil)
- * @returns Human-readable label
- * 
- * @example
- * getDaysUntilLabel(0) // "Today"
- * getDaysUntilLabel(1) // "Tomorrow"
- * getDaysUntilLabel(-1) // "Yesterday"
- * getDaysUntilLabel(5) // "In 5 days"
- * getDaysUntilLabel(-5) // "5 days ago"
- */
-export function getDaysUntilLabel(days: number): string {
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Tomorrow';
-  if (days === -1) return 'Yesterday';
-  if (days > 0) return `In ${days} days`;
-  return `${Math.abs(days)} days ago`;
 }
 
 /**

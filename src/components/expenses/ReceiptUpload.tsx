@@ -87,7 +87,6 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
     ocrFailed,
     setOcrFailed,
     ocrErrorMessage,
-    fieldWarnings,
     processReceipt: processReceiptHook,
     getFieldWarnings
   } = useReceiptOcr();
@@ -313,7 +312,6 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                 setSelectedEvent={setSelectedEvent}
                 selectedCard={selectedCard}
                 setSelectedCard={setSelectedCard}
-                selectedEntity={selectedEntity}
                 setSelectedEntity={setSelectedEntity}
                 description={description}
                 setDescription={setDescription}
@@ -321,7 +319,6 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
                 categories={categories}
                 userEvents={userEvents}
                 allEvents={events}
-                fieldWarnings={fieldWarnings}
                 getFieldWarnings={getFieldWarnings}
                 user={user}
                 onEventCreated={(newEvent) => {

@@ -14,7 +14,7 @@
 import React, { useMemo, useState } from 'react';
 import { CrmLeadRow, CrmOwnerRow, leadGroupName } from './hooks/useCrmLeads';
 import { ShowSummaryRow } from './hooks/useShowSummaries';
-import { cleanShowName } from './roiData';
+import { cleanShowName, fmtMoneyFull as fmtMoney, fmtPct } from './roiData';
 
 interface LeadPerformanceProps {
   leadRows: CrmLeadRow[];
@@ -30,8 +30,6 @@ const TOP_OWNERS = 8;
 /** Below this many leads an open-rate % is noise, not signal. */
 const MIN_LEADS_FOR_RATE = 5;
 
-const fmtMoney = (n: number) => '$' + n.toLocaleString(undefined, { maximumFractionDigits: 0 });
-const fmtPct = (n: number) => `${Math.round(n * 100)}%`;
 
 /** Show name minus year tokens (same cleaning as the cost tiles). */
 const stripYears = cleanShowName;

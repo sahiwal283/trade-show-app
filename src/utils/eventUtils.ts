@@ -6,6 +6,7 @@
  */
 
 import { TradeShow, User } from '../App';
+import { parseLocalDate } from './dateUtils';
 
 /**
  * Filters out events that are more than 1 month + 1 day past their end date.
@@ -24,9 +25,8 @@ export function filterActiveEvents(events: TradeShow[]): TradeShow[] {
   today.setHours(0, 0, 0, 0); // Start of today
   
   return events.filter(event => {
-    // Parse the event end date
-    const endDate = new Date(event.endDate);
-    endDate.setHours(0, 0, 0, 0); // Start of end date
+    // Parse the event end date as a local date (avoids the UTC off-by-one)
+    const endDate = parseLocalDate(event.endDate);
     
     // Calculate cutoff date: end date + 1 month + 1 day
     const cutoffDate = new Date(endDate);
@@ -35,35 +35,6 @@ export function filterActiveEvents(events: TradeShow[]): TradeShow[] {
     
     // Keep event if today is before the cutoff date
     return today < cutoffDate;
-  });
-}
-
-/**
- * Checks if an event should still be visible in dropdowns
- * 
- * @param event - Event to check
- * @returns true if event should be visible, false otherwise
- */
-export function isEventActive(event: TradeShow): boolean {
-  return filterActiveEvents([event]).length > 0;
-}
-
-/**
- * Gets a human-readable status for when an event will be removed from dropdowns
- * 
- * @param event - Event to check
- * @returns String describing when the event will be hidden
- */
-export function getEventDropdownRemovalDate(event: TradeShow): string {
-  const endDate = new Date(event.endDate);
-  const removalDate = new Date(endDate);
-  removalDate.setMonth(removalDate.getMonth() + 1);
-  removalDate.setDate(removalDate.getDate() + 1);
-  
-  return removalDate.toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
   });
 }
 

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.10.0] - 2026-08-01 - Real analytics: time-aware verdicts, honest charts, offline fixes
+
+### Changed
+- ROI model is now time-aware and per-show: recency-weighted ROI (1-year half-life), trend detection (improving/flat/declining), Maturing window for young shows, and verdicts that catch "made money years ago, nothing since" as Declining. League table shows one row per show with expandable year-by-year records and a methodology footnote.
+- Scatter quadrant replaced with data-honest charts: diverging net-return bars per show, plus Spend Mix (invested by category) and Revenue Share (by show) donuts.
+
+### Fixed
+- Offline expense submission now actually queues and auto-syncs (replay path had two fatal bugs); receipt captures keep the screen open on failure instead of discarding the photo.
+- OCR/inline-edit/booth-map uploads now go through token refresh; UTC date off-by-ones fixed; Delete hidden on approved expenses for non-privileged users; stale deep-link hash cleared on logout; inactivity copy corrected.
+
+### Removed
+- Dead code sweep: unused components, stale type mirrors, duplicate formatters consolidated; repo lint errors 214 -> 43.
+
 ## [2.9.0] - 2026-08-01 - Reports split into ROI + Analytics; backend hardening
 
 ### Changed

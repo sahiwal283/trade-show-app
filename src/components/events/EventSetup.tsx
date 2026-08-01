@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { parseLocalDate } from '../../utils/dateUtils';
-import { useEventData, useEventForm, useChecklistSummary, ChecklistSummary as ChecklistSummaryType } from './EventSetup/hooks';
+import { useEventData, useEventForm, useChecklistSummary } from './EventSetup/hooks';
 import { EventFilters } from './EventSetup/EventFilters';
 import { EventFormModal } from './EventSetup/EventFormModal';
 import { EventList } from './EventSetup/EventList';
@@ -27,7 +27,7 @@ export const EventSetup: React.FC<EventSetupProps> = ({ user, onPageChange }) =>
   };
 
   // Custom hooks for data fetching and form management
-  const { events, allUsers, loading, loadError, reload } = useEventData();
+  const { events, allUsers, loadError, reload } = useEventData();
   const {
     formData,
     setFormData,

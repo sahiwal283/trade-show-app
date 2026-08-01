@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { PieChart, Check, X } from 'lucide-react';
 import { Expense } from '../../App';
 import { UNASSIGNED_ENTITY } from '../../utils/reportUtils';
+import { fmtMoneyFull as formatAmount } from './roiData';
 
 interface WhoPaidBreakdownProps {
   /** Expenses under the event/entity/period filters — drives the category list */
@@ -16,9 +17,6 @@ interface WhoPaidBreakdownProps {
   /** Render body only (no card shell / header) — for use inside CollapsibleCard */
   embedded?: boolean;
 }
-
-const formatAmount = (amount: number): string =>
-  '$' + amount.toLocaleString(undefined, { maximumFractionDigits: 0 });
 
 const polarPoint = (cx: number, cy: number, r: number, angleDeg: number) => {
   const rad = ((angleDeg - 90) * Math.PI) / 180;

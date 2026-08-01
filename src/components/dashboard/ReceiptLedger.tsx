@@ -6,18 +6,13 @@
  */
 
 import { Expense } from '../../App';
-import { StatusBadge } from '../common/StatusBadge';
+import { StatusBadge, toBadgeStatus } from '../common/StatusBadge';
 import { formatCurrency } from '../../constants/appConstants';
 import { formatLocalDate } from '../../utils/dateUtils';
 
 interface ReceiptLedgerProps {
   ledger: Expense[];
   onPageChange: (page: string) => void;
-}
-
-function toBadgeStatus(status: Expense['status']): 'pending' | 'approved' | 'rejected' | 'needs_further_review' {
-  if (status === 'needs further review') return 'needs_further_review';
-  return status;
 }
 
 export function ReceiptLedger({ ledger, onPageChange }: ReceiptLedgerProps) {
