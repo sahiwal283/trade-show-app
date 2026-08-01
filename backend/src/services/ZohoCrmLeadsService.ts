@@ -6,7 +6,7 @@
  * can pair lead counts with show costs by (show_key, year).
  *
  * Connection model: a CRM-scoped refresh token (ZOHO_CRM_REFRESH_TOKEN,
- * reusing ZOHO_CLIENT_ID / ZOHO_CLIENT_SECRET) mints short-lived access
+ * with ZOHO_CRM_CLIENT_ID/SECRET, falling back to ZOHO_CLIENT_ID/SECRET) mints short-lived access
  * tokens on demand, cached until just before expiry. While the refresh token
  * env var is absent, EVERYTHING here no-ops with a clear "CRM not connected"
  * state — the scheduler idles and routes report connected: false.
@@ -205,8 +205,8 @@ class ZohoCrmLeadsService {
   isConnected(): boolean {
     return Boolean(
       process.env.ZOHO_CRM_REFRESH_TOKEN &&
-        process.env.ZOHO_CLIENT_ID &&
-        process.env.ZOHO_CLIENT_SECRET
+        (process.env.ZOHO_CRM_CLIENT_ID || process.env.ZOHO_CLIENT_ID) &&
+        (process.env.ZOHO_CRM_CLIENT_SECRET || process.env.ZOHO_CLIENT_SECRET)
     );
   }
 
@@ -218,8 +218,8 @@ class ZohoCrmLeadsService {
 
     const params = new URLSearchParams({
       refresh_token: process.env.ZOHO_CRM_REFRESH_TOKEN || '',
-      client_id: process.env.ZOHO_CLIENT_ID || '',
-      client_secret: process.env.ZOHO_CLIENT_SECRET || '',
+      client_id: process.env.ZOHO_CRM_CLIENT_ID || process.env.ZOHO_CLIENT_ID || '',
+      client_secret: process.env.ZOHO_CRM_CLIENT_SECRET || process.env.ZOHO_CLIENT_SECRET || '',
       grant_type: 'refresh_token',
     });
 
