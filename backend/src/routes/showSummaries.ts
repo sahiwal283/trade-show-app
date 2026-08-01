@@ -34,7 +34,9 @@ export function showKey(title: string): string {
  * fold known variants onto one canonical key so YoY pairing works.
  */
 const KEY_ALIASES: Array<[RegExp, string]> = [
-  [/champs (winter ?\/? ?)?spring (lv|las vegas)|champs (lv|las vegas) spring/, 'champs spring lv'],
+  // "Champs Winter 2025" (CRM tag) is the workbook's "Champs Winter/Spring LV";
+  // ^champs winter$ is anchored so "winter faire" (distinct show) is untouched.
+  [/champs (winter ?\/? ?)?spring (lv|las vegas)|champs (lv|las vegas) spring|^champs winter$/, 'champs spring lv'],
   [/champs (las vegas|lv) summer|champs summer (lv|las vegas)/, 'champs summer lv'],
   [/champs f(or)?t\.? lauderd?ale?(dale)?/, 'champs fort lauderdale'],
   [/^tpe\b.*|total products expo/, 'tpe'],

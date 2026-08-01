@@ -61,6 +61,17 @@ function displayName(rowsForKey: ShowSummaryRow[]): string {
 
 const csvField = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
 
+/** Display name for a leads-only group: its raw CRM tag minus year noise,
+ *  falling back to a title-cased show_key. */
+function leadGroupName(l: CrmLeadRow): string {
+  const tag = (l.sample_tag || '')
+    .replace(/[-\s]*20\d\d([-\s]*20\d\d)?/g, '')
+    .replace(/[-\s]+$/, '')
+    .trim();
+  if (tag) return tag;
+  return l.show_key.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export const ShowComparison: React.FC<ShowComparisonProps> = ({
   rows,
   entityColorMap,
@@ -136,6 +147,24 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
     }
     return { captured, converted };
   }, [leads, shows, scope]);
+
+  // Lead groups with NO cost tile anywhere (matched against ALL cost rows,
+  // not the company-filtered set, so the strip doesn't churn when filtering
+  // by company — leads are not company-scoped).
+  const allCostKeys = useMemo(() => new Set(rows.map((r) => r.show_key)), [rows]);
+  const leadsOnly = useMemo(
+    () =>
+      leads
+        .filter(
+          (l) =>
+            l.leads > 0 &&
+            l.show_key !== 'unknown' &&
+            !allCostKeys.has(l.show_key) &&
+            (scope === 'compare' || l.year === scope)
+        )
+        .sort((a, b) => a.year - b.year || b.leads - a.leads),
+    [leads, allCostKeys, scope]
+  );
 
   // KPI band values for the current scope
   const kpi = useMemo(() => {
@@ -415,6 +444,43 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
           );
         })}
       </div>
+
+      {/* Leads only — tagged CRM lead groups with no matching cost tile.
+          Quieter than the cost tiles on purpose; hidden when none exist. */}
+      {leadsOnly.length > 0 && (
+        <div className="mt-4">
+          <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+            Leads only
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
+            {leadsOnly.map((l) => (
+              <div
+                key={`${l.show_key}:${l.year}`}
+                className="rounded-xl border border-stone-200/60 bg-stone-50/60 px-3 py-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p
+                    className="min-w-0 truncate text-xs font-semibold text-stone-600"
+                    title={l.sample_tag || l.show_key}
+                  >
+                    {leadGroupName(l)}
+                  </p>
+                  {scope === 'compare' && (
+                    <span className="shrink-0 text-[10px] font-semibold tabular-nums text-stone-400">
+                      {`'${String(l.year).slice(2)}`}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-[11px] tabular-nums text-stone-500">
+                  {l.leads.toLocaleString()} lead{l.leads === 1 ? '' : 's'} captured
+                  {l.converted > 0 && ` · ${l.converted.toLocaleString()} converted`}
+                  <span className="text-stone-400"> · no expense data</span>
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Business exports + exact numbers */}
       <div className="mt-4 flex flex-wrap items-center gap-2">

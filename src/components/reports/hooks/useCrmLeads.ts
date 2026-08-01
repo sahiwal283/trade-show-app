@@ -14,6 +14,8 @@ export interface CrmLeadRow {
   leads: number;
   converted: number;
   opened: number;
+  /** Most common raw CRM tag in the group — display name for leads-only shows */
+  sample_tag: string | null;
 }
 
 export function useCrmLeads() {

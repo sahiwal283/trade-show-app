@@ -53,6 +53,16 @@ describe('tag → show_key mapping', () => {
     ).toBe('champs summer lv');
   });
 
+  it('folds Champs Winter onto the workbook Champs Winter/Spring LV key', () => {
+    expect(mapLeadRecord({ ...baseRecord, Tag: [{ name: 'Champs Winter 2025' }] }).showKey).toBe(
+      'champs spring lv'
+    );
+    // anchored alias must NOT swallow the distinct Winter Faire show
+    expect(mapLeadRecord({ ...baseRecord, Tag: [{ name: 'Winter Faire 2025' }] }).showKey).toBe(
+      'winter faire'
+    );
+  });
+
   it('uses the first tag when several are present', () => {
     const lead = mapLeadRecord({
       ...baseRecord,

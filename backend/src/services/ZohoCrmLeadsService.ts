@@ -307,15 +307,27 @@ class ZohoCrmLeadsService {
     };
   }
 
-  /** Per-show lead counts, keyed the same way as the show_summaries tiles. */
+  /**
+   * Per-show lead counts, keyed the same way as the show_summaries tiles.
+   * sample_tag = most common raw CRM tag in the group, for display when a
+   * lead group has no matching cost tile.
+   */
   async byShow(): Promise<
-    Array<{ show_key: string; year: number; leads: number; converted: number; opened: number }>
+    Array<{
+      show_key: string;
+      year: number;
+      leads: number;
+      converted: number;
+      opened: number;
+      sample_tag: string | null;
+    }>
   > {
     const result = await query(
       `SELECT show_key, year,
               COUNT(*)::int AS leads,
               COUNT(*) FILTER (WHERE converted)::int AS converted,
-              COUNT(*) FILTER (WHERE email_opened)::int AS opened
+              COUNT(*) FILTER (WHERE email_opened)::int AS opened,
+              MODE() WITHIN GROUP (ORDER BY show_tag) AS sample_tag
        FROM crm_leads
        WHERE show_key IS NOT NULL AND show_key <> '' AND year IS NOT NULL
        GROUP BY show_key, year

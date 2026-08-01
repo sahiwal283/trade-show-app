@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-08-01 - Every tagged lead group visible
+
+### Changed
+- "Champs Winter" CRM tags now fold into the Champs Winter/Spring LV show (guarded so Winter Faire stays distinct).
+- Reports: tagged lead groups with no expense tile render as quiet "leads only" cards (leads count, converted when present, year badge in compare scope) instead of disappearing; "Unknown Show" stays hidden.
+
 ## [2.6.0] - 2026-07-31 - CRM leads pipeline + Trade Show field on Zoho pushes
 
 ### Added
