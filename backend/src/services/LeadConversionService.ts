@@ -96,6 +96,11 @@ const COMPANY_SUFFIXES = new Set(['llc', 'inc', 'co', 'corp', 'dba', 'ltd']);
  * corporate suffix tokens (llc/inc/co/corp/dba/ltd) removed. If stripping
  * suffixes would erase the whole name ("CO LLC"), keep the unstripped tokens
  * rather than returning an over-broad empty key.
+ *
+ * NOT the same as utils/showNormalization.normalizeCompany, which
+ * canonicalizes OUR OWN entity names for display ("boomin…" → "Boomin
+ * Brands"). This one builds matching keys for EXTERNAL Books customer
+ * companies. Intentionally separate — do not consolidate.
  */
 export function normalizeCompany(name: string | null | undefined): string | null {
   if (typeof name !== 'string') return null;
@@ -218,6 +223,28 @@ function extractPage(body: unknown, listKeys: string[]): { records: RawRecord[];
   return { records: [], hasMore: false };
 }
 
+/**
+ * Batched write for the reconcile match phase — one UPDATE ... FROM unnest
+ * for every matched lead instead of one UPDATE per lead (was N+1 for ~1k
+ * leads nightly). The converted_source guard re-checks manual ownership at
+ * write time in case a row was hand-flagged between the SELECT and here.
+ */
+export const APPLY_MATCHES_SQL = `
+  UPDATE crm_leads AS l
+  SET converted = true,
+      converted_customer_id = m.customer_id,
+      converted_customer_name = m.customer_name,
+      revenue = m.revenue,
+      converted_matched_by = m.matched_by,
+      converted_source = 'auto',
+      converted_at = now()
+  FROM unnest(
+         $1::int[], $2::text[], $3::text[], $4::numeric[], $5::text[]
+       ) AS m(id, customer_id, customer_name, revenue, matched_by)
+  WHERE l.id = m.id
+    AND l.converted_source IS DISTINCT FROM 'manual'
+`;
+
 export interface ReconcileSummary {
   enabled: boolean;
   brand: string;
@@ -338,25 +365,32 @@ class LeadConversionService {
       );
 
       const matchedIds: number[] = [];
+      const matchedCustomerIds: string[] = [];
+      const matchedCustomerNames: string[] = [];
+      const matchedRevenues: number[] = [];
+      const matchedBys: string[] = [];
       let matchedRevenue = 0;
       for (const row of leads.rows as Array<{ id: number; email: string | null; company: string | null }>) {
         const match = matchLead({ email: row.email, company: row.company }, index);
         if (!match) continue;
         const revenue = revenueByCustomer.get(match.contact.customerId) || 0;
-        await query(
-          `UPDATE crm_leads
-           SET converted = true,
-               converted_customer_id = $2,
-               converted_customer_name = $3,
-               revenue = $4,
-               converted_matched_by = $5,
-               converted_source = 'auto',
-               converted_at = now()
-           WHERE id = $1`,
-          [row.id, match.contact.customerId, match.contact.customerName, revenue, match.matchedBy]
-        );
         matchedIds.push(row.id);
+        matchedCustomerIds.push(match.contact.customerId);
+        matchedCustomerNames.push(match.contact.customerName);
+        matchedRevenues.push(revenue);
+        matchedBys.push(match.matchedBy);
         matchedRevenue += revenue;
+      }
+
+      // Single batched write for all matches (previously one UPDATE per lead).
+      if (matchedIds.length > 0) {
+        await query(APPLY_MATCHES_SQL, [
+          matchedIds,
+          matchedCustomerIds,
+          matchedCustomerNames,
+          matchedRevenues,
+          matchedBys,
+        ]);
       }
 
       // Auto rows that no longer match go back to unconverted/0 — keeps the

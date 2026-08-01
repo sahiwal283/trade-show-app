@@ -7,6 +7,13 @@
 
 import { Router } from 'express';
 import { query } from '../config/database';
+import {
+  claimIdempotencyKey,
+  finalizeIdempotencyKey,
+  releaseIdempotencyKey,
+  lookupIdempotencyKey,
+  IDEMPOTENCY_PENDING,
+} from '../utils/idempotency';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import multer from 'multer';
 import path from 'path';
@@ -35,34 +42,10 @@ const upload = multer({
 });
 
 // ========== IDEMPOTENCY HELPERS ==========
-
-/**
- * Check if idempotency key was already processed
- */
-async function checkIdempotencyKey(key: string): Promise<string | null> {
-  const result = await query(
-    'SELECT entity_id FROM idempotency_keys WHERE key = $1 AND expires_at > NOW()',
-    [key]
-  );
-  
-  return result.rows.length > 0 ? result.rows[0].entity_id : null;
-}
-
-/**
- * Store idempotency key
- */
-async function storeIdempotencyKey(
-  key: string,
-  entityType: string,
-  entityId: string
-): Promise<void> {
-  await query(
-    `INSERT INTO idempotency_keys (key, entity_type, entity_id)
-     VALUES ($1, $2, $3)
-     ON CONFLICT (key) DO NOTHING`,
-    [key, entityType, entityId]
-  );
-}
+// Claim-first protocol (see utils/idempotency.ts): the key row is inserted
+// atomically BEFORE the expense is created, so two concurrent submissions
+// with the same key can never both create an expense. The old flow here
+// (SELECT key, create expense, INSERT key ON CONFLICT DO NOTHING) raced.
 
 // ========== BATCH EXPENSE OPERATIONS ==========
 
@@ -90,20 +73,33 @@ router.post('/expenses/batch', authenticateToken, async (req: AuthRequest, res) 
     };
 
     for (const item of items) {
+      let claimedKey = false;
       try {
         const { action, data, idempotencyKey, localId } = item;
 
-        // Check idempotency
+        // Atomically claim the idempotency key BEFORE creating anything.
         if (idempotencyKey) {
-          const existingId = await checkIdempotencyKey(idempotencyKey);
-          if (existingId) {
-            console.log(`[Sync] Skipping duplicate ${action} (idempotency key: ${idempotencyKey})`);
-            results.success.push({
-              localId,
-              remoteId: existingId,
-              action,
-              status: 'duplicate'
-            });
+          claimedKey = await claimIdempotencyKey(idempotencyKey, 'expense');
+          if (!claimedKey) {
+            const existingId = await lookupIdempotencyKey(idempotencyKey);
+            if (existingId && existingId !== IDEMPOTENCY_PENDING) {
+              console.log(`[Sync] Skipping duplicate ${action} (idempotency key: ${idempotencyKey})`);
+              results.success.push({
+                localId,
+                remoteId: existingId,
+                action,
+                status: 'duplicate'
+              });
+            } else {
+              // Another request holds the claim and is still creating —
+              // previously this window produced a duplicate expense.
+              console.log(`[Sync] Duplicate ${action} in flight (idempotency key: ${idempotencyKey})`);
+              results.failed.push({
+                localId,
+                action,
+                error: 'Duplicate submission is still being processed — retry shortly'
+              });
+            }
             continue;
           }
         }
@@ -136,9 +132,9 @@ router.post('/expenses/batch', authenticateToken, async (req: AuthRequest, res) 
 
           remoteId = result.rows[0].id;
 
-          // Store idempotency key
+          // Record the created entity on the claimed key
           if (idempotencyKey) {
-            await storeIdempotencyKey(idempotencyKey, 'expense', remoteId);
+            await finalizeIdempotencyKey(idempotencyKey, remoteId);
           }
 
           results.success.push({
@@ -181,9 +177,9 @@ router.post('/expenses/batch', authenticateToken, async (req: AuthRequest, res) 
 
           remoteId = result.rows[0].id;
 
-          // Store idempotency key
+          // Record the created entity on the claimed key
           if (idempotencyKey) {
-            await storeIdempotencyKey(idempotencyKey, 'expense', remoteId);
+            await finalizeIdempotencyKey(idempotencyKey, remoteId);
           }
 
           results.success.push({
@@ -199,6 +195,13 @@ router.post('/expenses/batch', authenticateToken, async (req: AuthRequest, res) 
 
       } catch (error: any) {
         console.error(`[Sync] Item failed:`, error);
+        // Roll the key claim back so a client retry with the same key works
+        // (matches the old behavior of not storing keys for failed items).
+        if (claimedKey && item.idempotencyKey) {
+          await releaseIdempotencyKey(item.idempotencyKey).catch((releaseError) =>
+            console.error(`[Sync] Failed to release idempotency key ${item.idempotencyKey}:`, releaseError)
+          );
+        }
         results.failed.push({
           localId: item.localId,
           action: item.action,

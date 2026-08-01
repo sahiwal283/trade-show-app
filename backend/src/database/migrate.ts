@@ -1,6 +1,17 @@
+import { PoolClient } from 'pg';
 import { pool } from '../config/database';
 import fs from 'fs';
 import path from 'path';
+
+/**
+ * Session-level advisory lock key serializing migration runs. Two processes
+ * running migrations concurrently (server startup overlapping with a manual
+ * `npm run migrate`, or two instances restarting together) previously both
+ * saw the same "pending" list and both applied it — non-DDL migrations like
+ * seed inserts (033) could double-apply. Postgres releases the lock
+ * automatically if the holding session dies.
+ */
+const MIGRATION_ADVISORY_LOCK_KEY = 725_101_033;
 
 /**
  * Check if schema_migrations table exists (for backward compatibility)
@@ -49,8 +60,16 @@ async function recordMigration(version: string): Promise<void> {
 
 export async function runMigrations(options: { exitOnDone?: boolean } = { exitOnDone: true }) {
   const { exitOnDone = true } = options;
+  let lockClient: PoolClient | null = null;
+  let failure: unknown = null;
   try {
     console.log('Running database migrations...');
+
+    // Serialize concurrent migration runs across processes (advisory lock is
+    // session-scoped, so it must be held on a dedicated client for the whole
+    // pass — pool.query would use a different session per statement).
+    lockClient = await pool.connect();
+    await lockClient.query('SELECT pg_advisory_lock($1)', [MIGRATION_ADVISORY_LOCK_KEY]);
 
     // Step 1: Run base schema (optional — an established database no longer
     // needs it, and the runtime DB user may not own the tables, in which
@@ -147,12 +166,28 @@ export async function runMigrations(options: { exitOnDone?: boolean } = { exitOn
     }
     
     console.log('\n✓ All migrations completed successfully!');
-    if (exitOnDone) process.exit(0);
   } catch (error) {
     console.error('\n✗ Migration failed:', error);
-    if (exitOnDone) process.exit(1); // CLI mode: hard failure
-    throw error; // startup mode: caller decides (serve with existing schema)
+    failure = error;
+  } finally {
+    // Release the advisory lock BEFORE any process.exit (finally blocks do
+    // not run after process.exit). Session close releases it anyway; the
+    // explicit unlock just keeps the pool client clean for reuse.
+    if (lockClient) {
+      try {
+        await lockClient.query('SELECT pg_advisory_unlock($1)', [MIGRATION_ADVISORY_LOCK_KEY]);
+      } catch (unlockError) {
+        console.warn('⚠ Failed to release migration advisory lock (released on disconnect):', unlockError);
+      }
+      lockClient.release();
+    }
   }
+
+  if (failure) {
+    if (exitOnDone) process.exit(1); // CLI mode: hard failure
+    throw failure; // startup mode: caller decides (serve with existing schema)
+  }
+  if (exitOnDone) process.exit(0);
 }
 
 // CLI entrypoint (npm run migrate / node dist/database/migrate.js).

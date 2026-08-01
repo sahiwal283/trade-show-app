@@ -14,6 +14,7 @@ import { expenseService } from '../services/ExpenseService';
 import { DuplicateDetectionService } from '../services/DuplicateDetectionService';
 import { ExpenseAuditService } from '../services/ExpenseAuditService';
 import { asyncHandler, ValidationError } from '../utils/errors';
+import { InFlightGuard } from '../utils/inFlightGuard';
 import { normalizeExpense } from '../utils/expenseHelpers';
 import {
   buildZohoExpenseDescription,
@@ -844,8 +845,23 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
 }));
 
 // ========== ZOHO INTEGRATION ENDPOINTS ==========
+
+// In-process guard against double-click / two-tab concurrent pushes of the
+// same expense. The DB-level guard is claimZohoPush's WHERE zoho_expense_id
+// IS NULL; this additionally prevents the duplicate EXTERNAL Zoho call from
+// ever leaving this process while a push is in flight.
+const zohoPushGuard = new InFlightGuard();
+
 // Manual push to Zoho Books (accountant/admin only)
 router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
+  const { id } = req.params;
+
+  if (!zohoPushGuard.tryAcquire(id)) {
+    return res.status(409).json({
+      error: 'A push to Zoho Books is already in progress for this expense'
+    });
+  }
+
   try {
     console.log(`[Zoho:Push] User attempting push:`, {
       userId: req.user?.id,
@@ -853,8 +869,6 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
       role: req.user?.role,
       allowedRoles: ['admin', 'accountant', 'developer']
     });
-    
-    const { id } = req.params;
 
     // Get expense with full details
     const expense = await expenseRepository.findById(id);
@@ -939,9 +953,25 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
       const mode = zohoResult.mock ? 'MOCK' : 'REAL';
       console.log(`[Zoho:ManualPush:${mode}] Expense ${expense.id} submitted successfully. Zoho ID: ${zohoResult.zohoExpenseId}`);
       
-      // Store Zoho expense ID in database
+      // Store Zoho expense ID in database — atomic claim: only succeeds when
+      // zoho_expense_id is still NULL, so a concurrent push from another
+      // instance/process can never be silently overwritten.
       if (zohoResult.zohoExpenseId) {
-        await expenseRepository.updateZohoInfo(expense.id, zohoResult.zohoExpenseId);
+        const claimed = await expenseRepository.claimZohoPush(expense.id, zohoResult.zohoExpenseId);
+        if (!claimed) {
+          const current = await expenseRepository.findById(id);
+          console.error(
+            `[Zoho:ManualPush] DOUBLE PUSH DETECTED for expense ${id}: another request already ` +
+            `recorded zoho_expense_id=${current?.zoho_expense_id}, but this request also pushed ` +
+            `(new Zoho id ${zohoResult.zohoExpenseId}). Check "${expense.zoho_entity}" Zoho Books ` +
+            `for a duplicate expense and delete it manually.`
+          );
+          return res.status(409).json({
+            error: 'Expense was already pushed to Zoho Books by a concurrent request',
+            zoho_expense_id: current?.zoho_expense_id ?? null,
+            duplicate_zoho_expense_id: zohoResult.zohoExpenseId
+          });
+        }
       }
 
       // Auto-approve: If expense was pending or needs further review, set to approved
@@ -1000,6 +1030,8 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
   } catch (error) {
     console.error('[Zoho:ManualPush] Error pushing expense to Zoho:', error);
     res.status(500).json({ error: 'Internal server error while pushing to Zoho Books' });
+  } finally {
+    zohoPushGuard.release(id);
   }
 }));
 

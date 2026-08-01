@@ -71,6 +71,87 @@ const formatNotificationDate = (value?: string | Date | null): string | null => 
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
+// ==========================================
+// CHECKLIST TEMPLATES
+// ==========================================
+// NOTE: these routes MUST be registered before GET /:eventId below —
+// otherwise GET /templates is captured by the /:eventId parameter route
+// (eventId='templates') and 500s on the UUID cast. That shadowing bug is
+// why this block lives above the parameterized routes.
+
+// Get all templates
+router.get('/templates', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const templates = await checklistRepository.getActiveTemplates();
+    res.json(templates);
+  } catch (error) {
+    console.error('[Checklist] Error fetching templates:', error);
+    res.status(500).json({ error: 'Failed to fetch templates' });
+  }
+});
+
+// Create template
+router.post('/templates', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { title, description, position } = req.body;
+    
+    if (!title) {
+      return res.status(400).json({ error: 'Title is required' });
+    }
+    
+    const template = await checklistRepository.createTemplate({
+      title,
+      description,
+      position
+    });
+    
+    res.json(template);
+  } catch (error) {
+    console.error('[Checklist] Error creating template:', error);
+    res.status(500).json({ error: 'Failed to create template' });
+  }
+});
+
+// Update template
+router.put('/templates/:id', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, description, position, is_active } = req.body;
+    
+    const template = await checklistRepository.updateTemplate(parseInt(id), {
+      title,
+      description,
+      position,
+      is_active
+    });
+    
+    res.json(template);
+  } catch (error: any) {
+    if (error.message === 'Template not found') {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    console.error('[Checklist] Error updating template:', error);
+    res.status(500).json({ error: 'Failed to update template' });
+  }
+});
+
+// Delete template (soft delete)
+router.delete('/templates/:id', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const deleted = await checklistRepository.softDeleteTemplate(parseInt(id));
+    
+    if (!deleted) {
+      return res.status(404).json({ error: 'Template not found' });
+    }
+    
+    res.json({ message: 'Template deleted successfully' });
+  } catch (error) {
+    console.error('[Checklist] Error deleting template:', error);
+    res.status(500).json({ error: 'Failed to delete template' });
+  }
+});
+
 // Get checklist for an event (all authenticated users can view)
 router.get('/:eventId', authorize('admin', 'coordinator', 'developer', 'accountant', 'salesperson'), async (req: AuthRequest, res: Response) => {
   try {
@@ -673,83 +754,6 @@ router.delete('/custom-items/:id', authorize('admin', 'coordinator', 'developer'
   } catch (error) {
     console.error('[Checklist] Error deleting custom item:', error);
     res.status(500).json({ error: 'Failed to delete custom item' });
-  }
-});
-
-// ==========================================
-// CHECKLIST TEMPLATES
-// ==========================================
-
-// Get all templates
-router.get('/templates', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
-  try {
-    const templates = await checklistRepository.getActiveTemplates();
-    res.json(templates);
-  } catch (error) {
-    console.error('[Checklist] Error fetching templates:', error);
-    res.status(500).json({ error: 'Failed to fetch templates' });
-  }
-});
-
-// Create template
-router.post('/templates', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
-  try {
-    const { title, description, position } = req.body;
-    
-    if (!title) {
-      return res.status(400).json({ error: 'Title is required' });
-    }
-    
-    const template = await checklistRepository.createTemplate({
-      title,
-      description,
-      position
-    });
-    
-    res.json(template);
-  } catch (error) {
-    console.error('[Checklist] Error creating template:', error);
-    res.status(500).json({ error: 'Failed to create template' });
-  }
-});
-
-// Update template
-router.put('/templates/:id', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { title, description, position, is_active } = req.body;
-    
-    const template = await checklistRepository.updateTemplate(parseInt(id), {
-      title,
-      description,
-      position,
-      is_active
-    });
-    
-    res.json(template);
-  } catch (error: any) {
-    if (error.message === 'Template not found') {
-      return res.status(404).json({ error: 'Template not found' });
-    }
-    console.error('[Checklist] Error updating template:', error);
-    res.status(500).json({ error: 'Failed to update template' });
-  }
-});
-
-// Delete template (soft delete)
-router.delete('/templates/:id', authorize('admin', 'developer'), async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const deleted = await checklistRepository.softDeleteTemplate(parseInt(id));
-    
-    if (!deleted) {
-      return res.status(404).json({ error: 'Template not found' });
-    }
-    
-    res.json({ message: 'Template deleted successfully' });
-  } catch (error) {
-    console.error('[Checklist] Error deleting template:', error);
-    res.status(500).json({ error: 'Failed to delete template' });
   }
 });
 

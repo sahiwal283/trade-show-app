@@ -18,7 +18,7 @@
 
 import axios from 'axios';
 import { query } from '../config/database';
-import { showKey, aliasKey } from '../routes/showSummaries';
+import { showKey, aliasKey } from '../utils/showNormalization';
 
 const ZOHO_ACCOUNTS_TOKEN_URL = 'https://accounts.zoho.com/oauth/v2/token';
 const ZOHO_API_DOMAIN = 'https://www.zohoapis.com';

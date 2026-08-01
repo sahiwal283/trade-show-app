@@ -13,6 +13,8 @@ interface WhoPaidBreakdownProps {
   selectedCategories: string[];
   onToggleCategory: (category: string) => void;
   onClearCategories: () => void;
+  /** Render body only (no card shell / header) — for use inside CollapsibleCard */
+  embedded?: boolean;
 }
 
 const formatAmount = (amount: number): string =>
@@ -53,6 +55,7 @@ export const WhoPaidBreakdown: React.FC<WhoPaidBreakdownProps> = ({
   selectedCategories,
   onToggleCategory,
   onClearCategories,
+  embedded = false,
 }) => {
   // Donut: entity share of the currently selected transactions
   const entityShare = useMemo(() => {
@@ -102,37 +105,43 @@ export const WhoPaidBreakdown: React.FC<WhoPaidBreakdownProps> = ({
 
   if (categoryRows.length === 0) {
     return (
-      <div className="card p-8 text-center">
+      <div className={embedded ? 'py-8 text-center' : 'card p-8 text-center'}>
         <PieChart className="w-12 h-12 text-stone-300 mx-auto mb-3" />
         <p className="text-stone-500 text-sm">No expense data for the selected filters</p>
       </div>
     );
   }
 
+  const clearButton = hasSelection ? (
+    <button
+      onClick={onClearCategories}
+      className="btn-ghost min-h-[44px] self-start px-3 py-1.5 text-xs sm:self-auto lg:min-h-[36px]"
+    >
+      <X className="w-3.5 h-3.5" />
+      <span>
+        Clear {selectedCategories.length} categor
+        {selectedCategories.length === 1 ? 'y' : 'ies'}
+      </span>
+    </button>
+  ) : null;
+
   return (
-    <div className="card p-3 sm:p-5 md:p-6">
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-            Who Paid for What
-          </h3>
-          <p className="mt-1 text-xs text-stone-500">
-            Each bar is split by paying company • Click categories to filter transactions
-          </p>
+    <div className={embedded ? undefined : 'card p-3 sm:p-5 md:p-6'}>
+      {embedded ? (
+        clearButton && <div className="mb-4 flex justify-end">{clearButton}</div>
+      ) : (
+        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+              Who Paid for What
+            </h3>
+            <p className="mt-1 text-xs text-stone-500">
+              Each bar is split by paying company • Click categories to filter transactions
+            </p>
+          </div>
+          {clearButton}
         </div>
-        {hasSelection && (
-          <button
-            onClick={onClearCategories}
-            className="btn-ghost min-h-[44px] self-start px-3 py-1.5 text-xs sm:self-auto lg:min-h-[36px]"
-          >
-            <X className="w-3.5 h-3.5" />
-            <span>
-              Clear {selectedCategories.length} categor
-              {selectedCategories.length === 1 ? 'y' : 'ies'}
-            </span>
-          </button>
-        )}
-      </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr]">
         {/* Entity share donut — reflects the current category selection */}

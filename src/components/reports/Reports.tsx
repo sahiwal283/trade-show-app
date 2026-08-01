@@ -1,9 +1,8 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Download,
   Filter,
   Calendar,
-  DollarSign,
   TrendingUp,
   Building2,
   X,
@@ -11,6 +10,8 @@ import {
   Users,
   BarChart3,
   ScatterChart,
+  PieChart,
+  Table2,
 } from 'lucide-react';
 import { User, Expense } from '../../App';
 import { ExpenseChart } from './ExpenseChart';
@@ -43,6 +44,8 @@ import { useEscapeKey } from '../../hooks/useEscapeKey';
 interface ReportsProps {
   user: User;
 }
+
+type ReportsTab = 'roi' | 'analytics';
 
 export const Reports: React.FC<ReportsProps> = ({ user }) => {
   // Check URL hash for initial event selection (e.g., #event=123)
@@ -83,6 +86,17 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     entityOptions: activeEntityOptions,
   });
 
+  // The overview splits into two pages: "ROI" (decision layer) and
+  // "Analytics" (lead performance + the books). Shareable via #analytics.
+  const [activeTab, setActiveTab] = useState<ReportsTab>(() =>
+    typeof window !== 'undefined' && window.location.hash === '#analytics' ? 'analytics' : 'roi'
+  );
+  const selectTab = (tab: ReportsTab) => {
+    setActiveTab(tab);
+    const base = window.location.pathname + window.location.search;
+    window.history.replaceState(null, '', tab === 'analytics' ? `${base}#analytics` : base);
+  };
+
   // Aggregate show totals: imported 2025 history + live data (investment view)
   const { rows: summaryRows } = useShowSummaries();
   const { rows: crmLeadRows } = useCrmLeads();
@@ -95,12 +109,17 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     [summaryRows, crmLeadRows]
   );
   const insights = useMemo(() => buildInsights(roiModel), [roiModel]);
+  // The verdict band already narrates insights[0]; the aside continues from
+  // there so no sentence appears twice on the page.
+  const asideInsights = insights.slice(1);
 
-  // The executive ROI views describe the whole portfolio, so they only lead
-  // the page on the unfiltered overview (any entity/event filter hides them
-  // in favor of the existing filtered layouts).
-  const showRoiOverview =
-    selectedEvent === 'all' && selectedEntity === 'all' && reportType === 'overview';
+  // Any drill-down (event, entity, or a non-overview report type) takes over
+  // the page exactly as before — the ROI/Analytics tabs are an overview split.
+  const isDrilldown =
+    selectedEvent !== 'all' || selectedEntity !== 'all' || reportType !== 'overview';
+  const hasRoiData = summaryRows.length > 0;
+  const showTabs = !isDrilldown && hasRoiData;
+  const effectiveTab: ReportsTab = showTabs ? activeTab : 'analytics';
 
   // Stable entity → color assignment shared by the donut, stacked bars, matrix,
   // and the investment comparison (historical companies included)
@@ -138,7 +157,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Watch for hash changes to auto-select event
+  // Watch for hash changes: #event=… deep links and the #analytics tab
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash;
@@ -146,6 +165,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         const eventId = hash.replace('#event=', '');
         setSelectedEvent(eventId);
         setReportType('detailed');
+      } else if (hash === '#analytics') {
+        setActiveTab('analytics');
       }
     };
 
@@ -233,106 +254,212 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
-            Trade show expenses
-          </p>
-          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">
-            Reports & Analytics
-          </h1>
-          <p className="mt-1 text-sm text-stone-500">
-            Analyze expenses and generate comprehensive reports
-            <span className="ml-3 text-sm text-stone-500">
-              • {filteredExpenses.length} expenses found
-              <span className="ml-3 font-semibold text-stone-700">
-                • Total: ${reportStats.totalAmount.toLocaleString()}
-              </span>
-            </span>
-          </p>
+  /* ===== Shared blocks (used by the Analytics tab and drill-down views) ===== */
+
+  // Entity Running Totals — a grid that fills the row (no dead right half)
+  const entityTotalsBlock = entityTotals.length > 0 && selectedEntity === 'all' && (
+    <div className="card p-3 sm:p-4">
+      <div className="flex items-center space-x-2 mb-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+          <Building2 className="w-4 h-4" />
         </div>
-        <div className="flex w-full items-center gap-3 sm:w-auto">
-          <button
-            onClick={() => setShowFilterModal(true)}
-            className="btn-secondary min-h-[44px] flex-1 sm:flex-initial"
-          >
-            <Filter className="w-4 h-4" />
-            <span>Filters</span>
-          </button>
-          <button
-            onClick={handleExportCSV}
-            className="btn-primary min-h-[44px] flex-1 px-4 sm:flex-initial sm:px-5 md:px-6"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export CSV</span>
-          </button>
+        <div>
+          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+            Entity Running Totals
+          </h3>
+          <p className="text-xs text-stone-500">For selected filters • Click to view details</p>
         </div>
       </div>
 
-      {/* Active category filters — every number on the page respects these */}
-      {selectedCategories.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.15em] text-stone-400">
-            Showing only:
-          </span>
-          {selectedCategories.map((category) => (
-            <button
-              key={category}
-              onClick={() => toggleCategory(category)}
-              className="chip inline-flex items-center gap-1.5 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 ring-brand-200/70 transition-colors hover:bg-brand-100"
-              title={`Remove ${category} filter`}
-            >
-              {category}
-              <X className="h-3 w-3" />
-            </button>
-          ))}
-          <button
-            onClick={() => setSelectedCategories([])}
-            className="text-xs font-medium text-stone-500 underline-offset-2 hover:text-stone-700 hover:underline"
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        {entityTotals.map(({ entity, amount }) => (
+          <div
+            key={entity}
+            onClick={() => handleEntityClick(entity)}
+            onKeyDown={(e) => e.key === 'Enter' && handleEntityClick(entity)}
+            role="button"
+            tabIndex={0}
+            className="group w-full cursor-pointer rounded-lg border border-stone-200/80 bg-white p-4 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
           >
-            Clear all
-          </button>
+            <p
+              className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 truncate"
+              title={entity}
+            >
+              {entity}
+            </p>
+            <p className="mt-1 font-display text-xl font-bold tracking-tight tabular-nums text-stone-900 sm:text-2xl md:text-3xl">
+              $
+              {amount.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              })}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {unassignedExpenses.length > 0 && (
+        <div className="mt-3 rounded-lg border-l-4 border-amber-400 bg-amber-50 p-2.5 ring-1 ring-inset ring-amber-200/60">
+          <div className="flex items-center gap-2">
+            <span className="chip-dot bg-amber-500" />
+            <p className="text-xs text-amber-800">
+              <span className="font-semibold">{unassignedExpenses.length} expenses</span> in current
+              view have no entity assigned (
+              <span className="font-semibold tabular-nums">${unassignedTotal.toLocaleString()}</span>
+              )
+            </p>
+          </div>
         </div>
       )}
+    </div>
+  );
 
-      {/* Executive ROI overview — the decision layer: verdict hero, league
-          table with "What this means", then the cost-vs-revenue quadrant */}
-      {showRoiOverview && summaryRows.length > 0 && (
-        <>
-          <RoiVerdictBand model={roiModel} topInsight={insights[0] ?? null} />
+  // Selecting categories pulls the matching transactions in below Who Paid
+  const categoryTransactions = selectedCategories.length > 0 && (
+    <DetailedReport
+      expenses={filteredExpenses}
+      events={events}
+      showCategoryChart={false}
+      onReimbursementApproval={
+        user.role === 'accountant' ? handleReimbursementApproval : undefined
+      }
+    />
+  );
 
-          <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
-            <div className={`min-w-0 ${insights.length > 0 ? 'xl:col-span-2' : 'xl:col-span-3'}`}>
-              <ShowLeagueTable
-                ranked={roiModel.ranked}
-                needsData={roiModel.needsData}
-                hasLeadData={roiModel.hasLeadData}
-                onOpenShow={handleTradeShowClick}
-              />
+  const categoryAveragesCard = selectedEvent === 'all' && events.length > 0 && (
+    <CollapsibleCard
+      title="Category Averages Across Trade Shows"
+      subtitle={`Average spending per category based on ${events.length} trade show${events.length !== 1 ? 's' : ''}`}
+      icon={TrendingUp}
+      iconClassName="bg-amber-50 text-amber-600 ring-amber-100"
+    >
+      {(() => {
+        const sortedAverages = calculateCategoryAverages(filteredExpenses, events);
+
+        if (sortedAverages.length === 0) {
+          return (
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="w-8 h-8 text-stone-400" />
+              </div>
+              <p className="text-stone-500 text-sm">
+                No category data available for the selected filters
+              </p>
             </div>
-            {insights.length > 0 && (
-              <aside aria-label="What this means" className="card p-4 sm:p-5">
-                <h3 className="micro-label">What this means</h3>
-                <ul className="mt-3 space-y-3">
-                  {insights.map((sentence) => (
-                    <li
-                      key={sentence}
-                      className="flex gap-2.5 text-sm leading-relaxed text-stone-600"
-                    >
-                      <span
-                        aria-hidden="true"
-                        className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400"
-                      />
-                      <span>{sentence}</span>
-                    </li>
-                  ))}
-                </ul>
-              </aside>
-            )}
-          </div>
+          );
+        }
 
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {sortedAverages.map(({ category, total, count, average }) => (
+              <div
+                key={category}
+                className="rounded-lg border border-stone-200/80 bg-white p-4 shadow-elevation-1 transition-shadow duration-200 hover:shadow-elevation-2"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <h4 className="text-sm font-semibold text-stone-900 flex-1 pr-2">{category}</h4>
+                  <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100">
+                    <TrendingUp className="w-4 h-4" />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-0.5">
+                      Average per Trade Show
+                    </p>
+                    <p className="font-display text-2xl font-bold tracking-tight tabular-nums text-amber-600">
+                      $
+                      {average.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </p>
+                  </div>
+
+                  <div className="pt-2 border-t border-stone-200">
+                    <div className="flex items-center justify-between text-xs text-stone-600">
+                      <span>Total Spent:</span>
+                      <span className="font-semibold">
+                        $
+                        {total.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-stone-600 mt-1">
+                      <span>Trade Shows:</span>
+                      <span className="font-semibold">
+                        {count} of {events.length}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+    </CollapsibleCard>
+  );
+
+  /* ===== Tab content ===== */
+
+  // ROI — the decision view: verdict, ranking, then the supporting evidence
+  const roiTabContent = hasRoiData && (
+    <div>
+      <RoiVerdictBand model={roiModel} topInsight={insights[0] ?? null} />
+
+      <section aria-labelledby="zone-decide-title" className="mt-8 md:mt-10">
+        <div className="mb-3">
+          <p className="micro-label">Decide</p>
+          <h2
+            id="zone-decide-title"
+            className="mt-0.5 font-display text-lg font-bold tracking-tight text-stone-900"
+          >
+            Which shows earn their spot
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 items-start gap-4 md:gap-5 xl:grid-cols-3">
+          <div className={`min-w-0 ${asideInsights.length > 0 ? 'xl:col-span-2' : 'xl:col-span-3'}`}>
+            <ShowLeagueTable
+              ranked={roiModel.ranked}
+              needsData={roiModel.needsData}
+              hasLeadData={roiModel.hasLeadData}
+              onOpenShow={handleTradeShowClick}
+            />
+          </div>
+          {asideInsights.length > 0 && (
+            <aside aria-label="What this means" className="card p-4 sm:p-5 xl:sticky xl:top-4">
+              <h3 className="micro-label">What this means</h3>
+              <ul className="mt-3 space-y-3">
+                {asideInsights.map((sentence) => (
+                  <li key={sentence} className="flex gap-2.5 text-sm leading-relaxed text-stone-600">
+                    <span
+                      aria-hidden="true"
+                      className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-brand-400"
+                    />
+                    <span>{sentence}</span>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          )}
+        </div>
+      </section>
+
+      <section aria-labelledby="zone-explore-title" className="mt-8 md:mt-10">
+        <div className="mb-3">
+          <p className="micro-label">Explore</p>
+          <h2
+            id="zone-explore-title"
+            className="mt-0.5 font-display text-lg font-bold tracking-tight text-stone-900"
+          >
+            Behind the ranking
+          </h2>
+        </div>
+        <div className="space-y-4">
           {roiModel.ranked.length > 0 && (
             <CollapsibleCard
               title="Cost vs revenue"
@@ -343,9 +470,117 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
               <RoiQuadrant rows={roiModel.ranked} />
             </CollapsibleCard>
           )}
-        </>
+
+          <CollapsibleCard
+            title="Trade Show Investment"
+            subtitle="What each show costs the business, with PDF / Excel exports"
+            icon={BarChart3}
+            iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
+          >
+            <ShowComparison
+              rows={summaryRows}
+              entityColorMap={entityColorMap}
+              entityOrder={entityOrder}
+              leads={crmLeadRows}
+              onOpenShow={handleTradeShowClick}
+            />
+          </CollapsibleCard>
+        </div>
+      </section>
+    </div>
+  );
+
+  // Analytics — lead performance, then the quieter accounting views
+  const analyticsTabContent = (
+    <div>
+      {crmLeadRows.length > 0 && (
+        <section aria-labelledby="zone-pipeline-title">
+          <div className="mb-3">
+            <p className="micro-label">Pipeline</p>
+            <h2
+              id="zone-pipeline-title"
+              className="mt-0.5 font-display text-lg font-bold tracking-tight text-stone-900"
+            >
+              What the shows produced
+            </h2>
+          </div>
+          <CollapsibleCard
+            title="Lead Performance"
+            subtitle="Leads captured at each show, rep leaderboard, and email engagement"
+            icon={Users}
+            iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
+          >
+            <LeadPerformance
+              leadRows={crmLeadRows}
+              ownerRows={crmOwnerRows}
+              costRows={summaryRows}
+            />
+          </CollapsibleCard>
+        </section>
       )}
 
+      <section
+        aria-labelledby="zone-books-title"
+        className={crmLeadRows.length > 0 ? 'mt-8 md:mt-10' : undefined}
+      >
+        <div className="mb-3">
+          <p className="micro-label">Books</p>
+          <h2
+            id="zone-books-title"
+            className="mt-0.5 font-display text-lg font-bold tracking-tight text-stone-900"
+          >
+            Where the money went
+          </h2>
+        </div>
+        <div className="space-y-4">
+          {entityTotalsBlock}
+
+          <CollapsibleCard
+            title="Who Paid for What"
+            subtitle="Each bar is split by paying company • Click categories to filter transactions"
+            icon={PieChart}
+            iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
+          >
+            <WhoPaidBreakdown
+              embedded
+              baseExpenses={baseExpenses}
+              filteredExpenses={filteredExpenses}
+              entityColorMap={entityColorMap}
+              entityOrder={entityOrder}
+              selectedCategories={selectedCategories}
+              onToggleCategory={toggleCategory}
+              onClearCategories={() => setSelectedCategories([])}
+            />
+          </CollapsibleCard>
+
+          {categoryTransactions}
+
+          <CollapsibleCard
+            title="Category × Company Summary"
+            subtitle="Exact amounts per paying company • For selected filters"
+            icon={Table2}
+            iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
+          >
+            <EntityCategoryMatrix
+              embedded
+              expenses={filteredExpenses}
+              entityColorMap={entityColorMap}
+              entityOrder={entityOrder}
+            />
+          </CollapsibleCard>
+
+          <ExpenseChart expenses={filteredExpenses} />
+
+          {categoryAveragesCard}
+        </div>
+      </section>
+    </div>
+  );
+
+  /* ===== Drill-down (event / entity / detailed / by-entity) — unchanged flow ===== */
+
+  const drilldownContent = (
+    <>
       {/* Trade Show Header Banner */}
       {selectedEvent !== 'all' && (
         <div className="relative overflow-hidden rounded-card bg-gradient-to-r from-brand-600 to-accent-600 p-3 shadow-brand-lg sm:p-4 md:p-5 lg:p-6">
@@ -437,7 +672,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {tradeShowBreakdown.map(({ eventId, name, amount }) => (
               <div
                 key={eventId}
@@ -445,9 +680,9 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                 onKeyDown={(e) => e.key === 'Enter' && handleTradeShowClick(eventId)}
                 role="button"
                 tabIndex={0}
-                className="group w-full sm:w-auto sm:min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                className="group w-full cursor-pointer rounded-lg border border-stone-200/80 bg-white p-4 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
               >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <p
                       className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1 truncate"
@@ -455,7 +690,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                     >
                       {name}
                     </p>
-                    <p className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
+                    <p className="font-display text-2xl font-bold tracking-tight tabular-nums text-stone-900">
                       $
                       {amount.toLocaleString(undefined, {
                         minimumFractionDigits: 0,
@@ -463,7 +698,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
                       })}
                     </p>
                   </div>
-                  <div className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
                     <Calendar className="w-3.5 h-3.5" />
                   </div>
                 </div>
@@ -473,105 +708,8 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
         </div>
       )}
 
-      {/* Trade Show Investment — cost detail per show (imported 2025 history
-          vs live data) with year comparison and the PDF/Excel/CSV exports.
-          Collapsible now that the ROI league table leads the page. */}
-      {selectedEvent === 'all' && reportType === 'overview' && summaryRows.length > 0 && (
-        <CollapsibleCard
-          title="Trade Show Investment"
-          subtitle="What each show costs the business, with PDF / Excel exports"
-          icon={BarChart3}
-          iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
-        >
-          <ShowComparison
-            rows={summaryRows}
-            entityColorMap={entityColorMap}
-            entityOrder={entityOrder}
-            leads={crmLeadRows}
-            onOpenShow={handleTradeShowClick}
-          />
-        </CollapsibleCard>
-      )}
-
-      {/* Lead performance — what the shows produced (CRM leads). Hidden
-          entirely while the CRM is not connected / has no leads. */}
-      {selectedEvent === 'all' && reportType === 'overview' && crmLeadRows.length > 0 && (
-        <CollapsibleCard
-          title="Lead Performance"
-          subtitle="Leads captured at each show, rep leaderboard, and email engagement"
-          icon={Users}
-          iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
-        >
-          <LeadPerformance leadRows={crmLeadRows} ownerRows={crmOwnerRows} costRows={summaryRows} />
-        </CollapsibleCard>
-      )}
-
-      {/* Entity Totals Dashboard - Show when not filtering by entity */}
-      {entityTotals.length > 0 && selectedEntity === 'all' && (
-        <div className="card p-3 sm:p-4">
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-50 text-purple-600 ring-1 ring-inset ring-purple-100">
-              <Building2 className="w-4 h-4" />
-            </div>
-            <div>
-              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                Entity Running Totals
-              </h3>
-              <p className="text-xs text-stone-500">For selected filters • Click to view details</p>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            {entityTotals.map(({ entity, amount }) => (
-              <div
-                key={entity}
-                onClick={() => handleEntityClick(entity)}
-                onKeyDown={(e) => e.key === 'Enter' && handleEntityClick(entity)}
-                role="button"
-                tabIndex={0}
-                className="group w-full sm:w-auto sm:min-w-[200px] max-w-full flex-shrink-0 cursor-pointer rounded-lg border border-stone-200/80 bg-white p-3 shadow-elevation-1 transition-all duration-200 hover:-translate-y-0.5 hover:border-purple-300 hover:shadow-elevation-2 focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2"
-              >
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-1 truncate"
-                      title={entity}
-                    >
-                      {entity}
-                    </p>
-                    <p className="font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
-                      $
-                      {amount.toLocaleString(undefined, {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}
-                    </p>
-                  </div>
-                  <div className="ml-2 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 ring-1 ring-inset ring-purple-100">
-                    <DollarSign className="w-3.5 h-3.5" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {unassignedExpenses.length > 0 && (
-            <div className="mt-3 rounded-lg border-l-4 border-amber-400 bg-amber-50 p-2.5 ring-1 ring-inset ring-amber-200/60">
-              <div className="flex items-center gap-2">
-                <span className="chip-dot bg-amber-500" />
-                <p className="text-xs text-amber-800">
-                  <span className="font-semibold">{unassignedExpenses.length} expenses</span> in
-                  current view have no entity assigned (
-                  <span className="font-semibold tabular-nums">
-                    ${unassignedTotal.toLocaleString()}
-                  </span>
-                  )
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Entity totals (event drill-down keeps the click-through tiles) */}
+      {entityTotalsBlock}
 
       {/* Who paid for what — entity split per category, click rows to filter */}
       {reportType !== 'entity' && (
@@ -599,17 +737,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
       {reportType === 'overview' && (
         <>
           <ExpenseChart expenses={filteredExpenses} />
-          {/* Selecting categories pulls the matching transactions right here */}
-          {selectedCategories.length > 0 && (
-            <DetailedReport
-              expenses={filteredExpenses}
-              events={events}
-              showCategoryChart={false}
-              onReimbursementApproval={
-                user.role === 'accountant' ? handleReimbursementApproval : undefined
-              }
-            />
-          )}
+          {categoryTransactions}
         </>
       )}
 
@@ -627,84 +755,100 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
       )}
 
       {/* Category Averages Across Trade Shows — collapsed by default on phones */}
-      {selectedEvent === 'all' && events.length > 0 && (
-        <CollapsibleCard
-          title="Category Averages Across Trade Shows"
-          subtitle={`Average spending per category based on ${events.length} trade show${events.length !== 1 ? 's' : ''}`}
-          icon={TrendingUp}
-          iconClassName="bg-amber-50 text-amber-600 ring-amber-100"
-        >
-          {(() => {
-            const sortedAverages = calculateCategoryAverages(filteredExpenses, events);
+      {categoryAveragesCard}
+    </>
+  );
 
-            if (sortedAverages.length === 0) {
-              return (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <TrendingUp className="w-8 h-8 text-stone-400" />
-                  </div>
-                  <p className="text-stone-500 text-sm">
-                    No category data available for the selected filters
-                  </p>
-                </div>
-              );
-            }
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">
+            Trade show expenses
+          </p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">
+            Reports & Analytics
+          </h1>
+          <p className="mt-1 text-sm text-stone-500">
+            Analyze expenses and generate comprehensive reports
+            <span className="ml-3 text-sm text-stone-500">
+              • {filteredExpenses.length} expenses found
+              <span className="ml-3 font-semibold text-stone-700">
+                • Total: ${reportStats.totalAmount.toLocaleString()}
+              </span>
+            </span>
+          </p>
+        </div>
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <button
+            onClick={() => setShowFilterModal(true)}
+            className="btn-secondary min-h-[44px] flex-1 sm:flex-initial"
+          >
+            <Filter className="w-4 h-4" />
+            <span>Filters</span>
+          </button>
+          <button
+            onClick={handleExportCSV}
+            className="btn-primary min-h-[44px] flex-1 px-4 sm:flex-initial sm:px-5 md:px-6"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </button>
+        </div>
+      </div>
 
-            return (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedAverages.map(({ category, total, count, average }) => (
-                  <div
-                    key={category}
-                    className="rounded-lg border border-stone-200/80 bg-white p-4 shadow-elevation-1 transition-shadow duration-200 hover:shadow-elevation-2"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <h4 className="text-sm font-semibold text-stone-900 flex-1 pr-2">
-                        {category}
-                      </h4>
-                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600 ring-1 ring-inset ring-amber-100">
-                        <TrendingUp className="w-4 h-4" />
-                      </div>
-                    </div>
+      {/* Active category filters — every number on the page respects these */}
+      {selectedCategories.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-[0.15em] text-stone-400">
+            Showing only:
+          </span>
+          {selectedCategories.map((category) => (
+            <button
+              key={category}
+              onClick={() => toggleCategory(category)}
+              className="chip inline-flex items-center gap-1.5 bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700 ring-brand-200/70 transition-colors hover:bg-brand-100"
+              title={`Remove ${category} filter`}
+            >
+              {category}
+              <X className="h-3 w-3" />
+            </button>
+          ))}
+          <button
+            onClick={() => setSelectedCategories([])}
+            className="text-xs font-medium text-stone-500 underline-offset-2 hover:text-stone-700 hover:underline"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
 
-                    <div className="space-y-2">
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-0.5">
-                          Average per Trade Show
-                        </p>
-                        <p className="font-display text-2xl font-bold tracking-tight tabular-nums text-amber-600">
-                          $
-                          {average.toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
-                        </p>
-                      </div>
+      {isDrilldown ? (
+        drilldownContent
+      ) : (
+        <>
+          {/* ROI / Analytics split — the overview in two focused pages */}
+          {showTabs && (
+            <div className="seg-track">
+              <button
+                type="button"
+                onClick={() => selectTab('roi')}
+                className={`seg-tab ${effectiveTab === 'roi' ? 'seg-tab-active' : 'seg-tab-idle'}`}
+              >
+                ROI
+              </button>
+              <button
+                type="button"
+                onClick={() => selectTab('analytics')}
+                className={`seg-tab ${effectiveTab === 'analytics' ? 'seg-tab-active' : 'seg-tab-idle'}`}
+              >
+                Analytics
+              </button>
+            </div>
+          )}
 
-                      <div className="pt-2 border-t border-stone-200">
-                        <div className="flex items-center justify-between text-xs text-stone-600">
-                          <span>Total Spent:</span>
-                          <span className="font-semibold">
-                            $
-                            {total.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}
-                          </span>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-stone-600 mt-1">
-                          <span>Trade Shows:</span>
-                          <span className="font-semibold">
-                            {count} of {events.length}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-        </CollapsibleCard>
+          {effectiveTab === 'roi' ? roiTabContent : analyticsTabContent}
+        </>
       )}
 
       {/* Filter Modal */}

@@ -12,60 +12,15 @@ import { Router, Response } from 'express';
 import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/errors';
+import { showKey, aliasKey, normalizeCompany } from '../utils/showNormalization';
+
+// Normalization helpers moved to utils/showNormalization.ts (shared with the
+// CRM lead sync without services importing from a route module). Re-exported
+// here for backward compatibility with existing importers.
+export { showKey, aliasKey, normalizeCompany } from '../utils/showNormalization';
 
 const router = Router();
 router.use(authenticateToken);
-
-/** Mirror of the import script's show_key normalization (keep in sync). */
-export function showKey(title: string): string {
-  return aliasKey(
-    title
-      .toLowerCase()
-      .replace(/20\d\d/g, '')
-      .replace(/[^a-z ]/g, ' ')
-      .replace(/\b(show|account|accou|the)\b/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-  );
-}
-
-/**
- * Same show, different spellings across the workbook and live events —
- * fold known variants onto one canonical key so YoY pairing works.
- */
-const KEY_ALIASES: Array<[RegExp, string]> = [
-  // "Champs Winter 2025" (CRM tag) is the workbook's "Champs Winter/Spring LV";
-  // ^champs winter$ is anchored so "winter faire" (distinct show) is untouched.
-  [/champs (winter ?\/? ?)?spring (lv|las vegas)|champs (lv|las vegas) spring|^champs winter$/, 'champs spring lv'],
-  [/champs (las vegas|lv) summer|champs summer (lv|las vegas)/, 'champs summer lv'],
-  [/champs f(or)?t\.? lauderd?ale?(dale)?/, 'champs fort lauderdale'],
-  [/^tpe\b.*|total products expo/, 'tpe'],
-  [/americasmart|atlanta market|america s mart/, 'americasmart'],
-  [/sweets? ?(&|n|and)? ?snacks?/, 'sweet and snack'],
-  [/^nacs?\b.*/, 'nacs'],
-  [/asd market\s*(week)?/, 'asd market week'],
-  [/fancy food/, 'fancy food'],
-  [/champs (tradeshow:? )?austin( tx| texas)?/, 'champs austin'],
-];
-
-export function aliasKey(key: string): string {
-  for (const [pattern, canonical] of KEY_ALIASES) {
-    if (pattern.test(key)) return canonical;
-  }
-  return key;
-}
-
-/** Company name hygiene: singular/plural variants, undefined, blanks. */
-export function normalizeCompany(raw: string | null | undefined): string {
-  const c = (raw || '').trim();
-  const k = c.toLowerCase();
-  if (!k || k === 'undefined' || k === 'null' || k === 'n/a') return 'Unassigned';
-  if (k.startsWith('boomin')) return 'Boomin Brands';
-  if (k.startsWith('haute')) return 'Haute Brands';
-  if (k.startsWith('summit')) return 'Summitt Labs';
-  if (k.startsWith('nirvana')) return 'Nirvana Kulture';
-  return c;
-}
 
 async function assembleRows() {
   const imported = await query(

@@ -19,6 +19,7 @@ import {
   sumRevenueByCustomer,
   mapContactRecord,
   mapInvoiceRecord,
+  APPLY_MATCHES_SQL,
   BooksContact,
   BooksInvoice,
 } from '../../src/services/LeadConversionService';
@@ -184,5 +185,27 @@ describe('proxy record mapping', () => {
       mapInvoiceRecord({ customer_id: 'c-9', status: 'paid', total: 1234.56 })
     ).toEqual({ customerId: 'c-9', status: 'paid', total: 1234.56 });
     expect(mapInvoiceRecord({})).toEqual({ customerId: '', status: '', total: 0 });
+  });
+});
+
+describe('APPLY_MATCHES_SQL (batched reconcile write phase)', () => {
+  it('writes all matches in one UPDATE ... FROM unnest over parallel arrays', () => {
+    // one statement replaces the old per-lead UPDATE loop (N+1)
+    expect(APPLY_MATCHES_SQL).toMatch(/UPDATE crm_leads AS l/);
+    expect(APPLY_MATCHES_SQL).toMatch(/FROM unnest\(/);
+    expect(APPLY_MATCHES_SQL).toMatch(
+      /\$1::int\[\], \$2::text\[\], \$3::text\[\], \$4::numeric\[\], \$5::text\[\]/
+    );
+    expect(APPLY_MATCHES_SQL).toMatch(/WHERE l\.id = m\.id/);
+  });
+
+  it('sets the full auto-conversion state', () => {
+    expect(APPLY_MATCHES_SQL).toMatch(/converted = true/);
+    expect(APPLY_MATCHES_SQL).toMatch(/converted_source = 'auto'/);
+    expect(APPLY_MATCHES_SQL).toMatch(/converted_at = now\(\)/);
+  });
+
+  it('re-checks manual ownership at write time (manual rows never rewritten)', () => {
+    expect(APPLY_MATCHES_SQL).toMatch(/l\.converted_source IS DISTINCT FROM 'manual'/);
   });
 });

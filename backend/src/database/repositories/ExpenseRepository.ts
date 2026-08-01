@@ -137,6 +137,23 @@ export class ExpenseRepository extends BaseRepository<Expense> {
   }
 
   /**
+   * Atomically record a Zoho push: writes zoho_expense_id only when the
+   * expense has not been pushed yet (WHERE zoho_expense_id IS NULL guard).
+   * Returns false when another request already claimed the push — callers
+   * must treat that as "someone else pushed first" and NOT overwrite.
+   */
+  async claimZohoPush(id: string, zohoExpenseId: string): Promise<boolean> {
+    const result = await this.executeQuery(
+      `UPDATE ${this.tableName}
+       SET zoho_expense_id = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND zoho_expense_id IS NULL
+       RETURNING id`,
+      [id, zohoExpenseId]
+    );
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
    * Find expenses needing Zoho sync
    */
   async findPendingZohoSync(): Promise<Expense[]> {

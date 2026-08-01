@@ -301,8 +301,12 @@ router.get('/accuracy', asyncHandler(async (req: AuthRequest, res) => {
   }
   
   const { field, days } = req.query;
-  const daysBack = parseInt(days as string || '30');
-  
+
+  // Validate days: NaN/negative/huge values previously reached the SQL as-is
+  // (interpolated into the INTERVAL literal) and 500'd. Clamp to 1..365.
+  const parsedDays = parseInt((days as string) || '30', 10);
+  const daysBack = Number.isFinite(parsedDays) ? Math.min(Math.max(parsedDays, 1), 365) : 30;
+
   // Calculate accuracy based on corrections vs total OCR attempts
   // Map field names to database columns
   const fieldMapping: { [key: string]: string } = {
@@ -312,29 +316,39 @@ router.get('/accuracy', asyncHandler(async (req: AuthRequest, res) => {
     'category': 'corrected_category',
     'cardLastFour': 'corrected_card_last_four'
   };
-  
+
+  // Validate field: an unknown value produced `undefined IS NOT NULL` SQL.
+  if (field && !fieldMapping[field as string]) {
+    throw new ValidationError(
+      `Invalid field "${field}". Must be one of: ${Object.keys(fieldMapping).join(', ')}`
+    );
+  }
+
   const fields = field ? [field as string] : ['merchant', 'amount', 'date', 'category', 'cardLastFour'];
-  
+
   // First, get the total number of OCR correction sessions (unique correction records)
-  const totalCorrectionsResult = await query(`
-    SELECT COUNT(*) as total_sessions
-    FROM ocr_corrections
-    WHERE created_at >= NOW() - INTERVAL '${daysBack} days'
-  `);
-  
+  const totalCorrectionsResult = await query(
+    `SELECT COUNT(*) as total_sessions
+     FROM ocr_corrections
+     WHERE created_at >= NOW() - ($1::int * INTERVAL '1 day')`,
+    [daysBack]
+  );
+
   const totalExtractions = parseInt(totalCorrectionsResult.rows[0]?.total_sessions || '0');
-  
+
   const accuracyData = await Promise.all(
     fields.map(async (f) => {
       const dbColumn = fieldMapping[f];
-      
+
       // Count how many times this field was corrected
-      const correctionResult = await query(`
-        SELECT COUNT(*) as correction_count
-        FROM ocr_corrections
-        WHERE ${dbColumn} IS NOT NULL
-          AND created_at >= NOW() - INTERVAL '${daysBack} days'
-      `);
+      // (dbColumn is safe to interpolate: validated against fieldMapping above)
+      const correctionResult = await query(
+        `SELECT COUNT(*) as correction_count
+         FROM ocr_corrections
+         WHERE ${dbColumn} IS NOT NULL
+           AND created_at >= NOW() - ($1::int * INTERVAL '1 day')`,
+        [daysBack]
+      );
       
       const correctionCount = parseInt(correctionResult.rows[0]?.correction_count || '0');
       

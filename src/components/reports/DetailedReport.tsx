@@ -330,8 +330,15 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                           </div>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-4 py-2.5 align-middle">
-                        <CategoryBadge category={expense.category} size="sm" />
+                      <td
+                        className="overflow-hidden whitespace-nowrap px-4 py-2.5 align-middle"
+                        title={expense.category}
+                      >
+                        <CategoryBadge
+                          category={expense.category}
+                          size="sm"
+                          className="inline-block max-w-full truncate align-middle"
+                        />
                       </td>
                       <td className="px-4 py-2.5 align-middle">
                         <div className="truncate text-sm text-stone-700" title={expense.cardUsed}>

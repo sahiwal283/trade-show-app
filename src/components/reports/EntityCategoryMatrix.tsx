@@ -8,6 +8,8 @@ interface EntityCategoryMatrixProps {
   expenses: Expense[];
   entityColorMap: Record<string, string>;
   entityOrder: string[];
+  /** Render body only (no card shell / header) — for use inside CollapsibleCard */
+  embedded?: boolean;
 }
 
 const formatCell = (amount: number): string =>
@@ -20,6 +22,7 @@ export const EntityCategoryMatrix: React.FC<EntityCategoryMatrixProps> = ({
   expenses,
   entityColorMap,
   entityOrder,
+  embedded = false,
 }) => {
   const matrix = useMemo(
     () => calculateEntityCategoryMatrix(expenses, entityOrder),
@@ -53,32 +56,40 @@ export const EntityCategoryMatrix: React.FC<EntityCategoryMatrixProps> = ({
     URL.revokeObjectURL(url);
   };
 
-  return (
-    <div className="card overflow-hidden">
-      <div className="flex flex-col gap-3 border-b border-stone-200/80 bg-stone-50/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
-        <div className="flex items-center space-x-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
-            <Table2 className="w-4 h-4" />
-          </span>
-          <div>
-            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-              Category × Company Summary
-            </h3>
-            <p className="text-xs text-stone-500">
-              Exact amounts per paying company • For selected filters
-            </p>
-          </div>
-        </div>
-        <button
-          onClick={handleExportSummary}
-          className="btn-secondary min-h-[44px] self-start px-3 py-1.5 text-xs sm:self-auto lg:min-h-[36px]"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export Summary CSV</span>
-        </button>
-      </div>
+  const exportButton = (
+    <button
+      onClick={handleExportSummary}
+      className="btn-secondary min-h-[44px] self-start px-3 py-1.5 text-xs sm:self-auto lg:min-h-[36px]"
+    >
+      <Download className="w-3.5 h-3.5" />
+      <span>Export Summary CSV</span>
+    </button>
+  );
 
-      <div className="overflow-x-auto">
+  return (
+    <div className={embedded ? undefined : 'card overflow-hidden'}>
+      {embedded ? (
+        <div className="mb-3 flex justify-end">{exportButton}</div>
+      ) : (
+        <div className="flex flex-col gap-3 border-b border-stone-200/80 bg-stone-50/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
+          <div className="flex items-center space-x-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+              <Table2 className="w-4 h-4" />
+            </span>
+            <div>
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                Category × Company Summary
+              </h3>
+              <p className="text-xs text-stone-500">
+                Exact amounts per paying company • For selected filters
+              </p>
+            </div>
+          </div>
+          {exportButton}
+        </div>
+      )}
+
+      <div className={embedded ? 'overflow-x-auto rounded-lg border border-stone-200/80' : 'overflow-x-auto'}>
         <table className="w-full">
           <thead className="bg-stone-50/80">
             <tr>

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-08-01 - Reports split into ROI + Analytics; backend hardening
+
+### Changed
+- Reports reorganized into two hash-persisted tabs: ROI (verdict band, league table + insights, fixed cost-vs-revenue quadrant, investment tiles + exports) and Analytics (Lead Performance, entity totals filling the row, Who Paid, matrix, trends). Consistent zone headers and spacing; quadrant now renders real-pixel geometry at every width; entity tiles are a full-width responsive grid; several overflow fixes.
+
+### Fixed
+- Zoho double-push race: atomic DB claim + in-process guard; concurrent pushes get 409 instead of duplicate Books expenses.
+- Offline-sync idempotency: keys claimed before creation, eliminating duplicate expenses from retries.
+- GET /api/checklist/templates no longer shadowed by /:eventId (was returning 500).
+- Migrations serialized with an advisory lock; OCR accuracy endpoint validates input; nightly lead reconcile writes batched and manual overrides protected at write time.
+
 ## [2.8.0] - 2026-08-01 - Executive ROI dashboard
 
 ### Added

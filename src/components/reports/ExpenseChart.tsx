@@ -31,7 +31,7 @@ export const ExpenseChart: React.FC<ExpenseChartProps> = ({ expenses }) => {
           (category breakdown now lives in WhoPaidBreakdown, split by entity) */}
       <CollapsibleCard
         title="Monthly Spending Trend"
-        subtitle={monthlyEntries.length > 1 ? 'Visual comparison across months' : undefined}
+        subtitle="Spend by month for the selected filters"
         icon={BarChart3}
         iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
       >
