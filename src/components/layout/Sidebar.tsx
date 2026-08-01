@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Calendar,
   Receipt,
-  UserCircle,
   BarChart3,
   ChevronLeft,
   Settings,
@@ -28,10 +27,10 @@ const navigationItems = [
   { id: 'events', label: 'Events', icon: Calendar, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer', 'temporary'] },
   { id: 'checklist', label: 'Checklist', icon: CheckSquare, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer', 'temporary'] },
   { id: 'expenses', label: 'Expenses', icon: Receipt, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'] },
-  { id: 'account', label: 'Account', icon: UserCircle, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer', 'temporary'] },
   // NOTE: 'approvals' tab removed in v1.3.0 - approval workflows are now integrated into the Expenses page
+  // NOTE: 'account' item merged into Settings — every role can open Settings and gets at least the Account tab
   { id: 'reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'accountant', 'developer'] },
-  { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'accountant', 'developer'] },
+  { id: 'settings', label: 'Settings', icon: Settings, roles: ['admin', 'coordinator', 'salesperson', 'accountant', 'developer', 'temporary'] },
   { id: 'devdashboard', label: 'Dev Dashboard', icon: Code, roles: ['developer'] },
 ];
 
@@ -39,7 +38,7 @@ const navigationItems = [
 const navSections: { label: string | null; ids: string[] }[] = [
   { label: null, ids: ['dashboard'] },
   { label: 'Workspace', ids: ['events', 'checklist', 'expenses'] },
-  { label: 'Manage', ids: ['account', 'reports', 'settings', 'devdashboard'] },
+  { label: 'Manage', ids: ['reports', 'settings', 'devdashboard'] },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({

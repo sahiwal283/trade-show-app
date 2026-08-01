@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.1] - 2026-08-01 - Account lives under Settings
+
+### Changed
+- Account merged into Settings as its first tab (all roles see Settings; non-privileged roles get just the Account tab). Sidebar slims to one Manage entry; old account links land on the new tab.
+
 ## [2.7.0] - 2026-08-01 - Lead performance, conversion-to-sales, settings overhaul
 
 ### Added

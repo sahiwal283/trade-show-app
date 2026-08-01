@@ -13,7 +13,6 @@ const ExpenseSubmission = lazy(() => import('./components/expenses/ExpenseSubmis
 const AdminSettings = lazy(() => import('./components/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
 const DevDashboard = lazy(() => import('./components/developer/DevDashboard').then(m => ({ default: m.DevDashboard })));
 const Reports = lazy(() => import('./components/reports/Reports').then(m => ({ default: m.Reports })));
-const AccountSettings = lazy(() => import('./components/account/AccountSettings').then(m => ({ default: m.AccountSettings })));
 import { InstallPrompt } from './components/layout/InstallPrompt';
 import { InactivityWarning } from './components/common/InactivityWarning';
 import { NotificationBanner, useNotifications } from './components/common/NotificationBanner';
@@ -394,7 +393,8 @@ function App() {
               {currentPage === 'events' && <EventSetup user={user} onPageChange={handlePageChange} />}
               {currentPage === 'checklist' && <TradeShowChecklist user={user} />}
               {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
-              {currentPage === 'account' && <AccountSettings user={user} />}
+              {/* Legacy page id: Account now lives inside Settings — keep old links landing on the Account tab */}
+              {currentPage === 'account' && <AdminSettings user={user} initialTab="account" />}
               {currentPage === 'reports' && <Reports user={user} />}
               {currentPage === 'settings' && <AdminSettings user={user} />}
               {currentPage === 'devdashboard' && user.role === 'developer' && <DevDashboard user={user} />}

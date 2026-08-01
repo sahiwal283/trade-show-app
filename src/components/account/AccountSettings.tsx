@@ -16,6 +16,8 @@ const APP_VERSION = packageJson.version;
 
 interface AccountSettingsProps {
   user: User;
+  /** True when rendered inside the Settings page, which brings its own masthead */
+  embedded?: boolean;
 }
 
 interface TelegramLinkStatusResponse {
@@ -41,7 +43,7 @@ interface StartLinkResponse {
   instructions?: string[];
 }
 
-export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
+export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, embedded = false }) => {
   const [loading, setLoading] = useState(true);
   const [starting, setStarting] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -180,12 +182,14 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      {/* Masthead */}
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Manage</p>
-        <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">Account</h1>
-        <p className="text-stone-600 mt-1">Your profile, notifications, and connected apps.</p>
-      </div>
+      {/* Masthead — suppressed when embedded in the Settings page, which has its own */}
+      {!embedded && (
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Manage</p>
+          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">Account</h1>
+          <p className="text-stone-600 mt-1">Your profile, notifications, and connected apps.</p>
+        </div>
+      )}
 
       {/* Profile */}
       <section className="card overflow-hidden">

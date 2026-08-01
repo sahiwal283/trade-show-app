@@ -4,6 +4,7 @@ import { User } from '../../App';
 import { api } from '../../utils/api';
 import { UserManagement } from './UserManagement';
 import { RoleManagement } from './RoleManagement';
+import { AccountSettings } from '../account/AccountSettings';
 import {
   AdminSettingsHeader,
   AdminSettingsTabs,
@@ -11,9 +12,12 @@ import {
   EntityOptionsSection,
   CategoryOptionsSection,
 } from './AdminSettings/index';
+import type { SettingsTab } from './AdminSettings/index';
 
 interface AdminSettingsProps {
   user: User;
+  /** Tab to open on mount (e.g. legacy 'account' page id deep-links) */
+  initialTab?: SettingsTab;
 }
 
 interface CardOption {
@@ -38,14 +42,18 @@ interface AppSettings {
   categoryOptions: CategoryOption[];
 }
 
-export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
-  // Access control: Only admins, accountants, and developers can access settings.
-  // The guard render happens below, after hooks, to satisfy the rules of hooks;
-  // effects bail early so unauthorized users trigger no fetches.
-  const isAllowed = user.role === 'admin' || user.role === 'accountant' || user.role === 'developer';
+export const AdminSettings: React.FC<AdminSettingsProps> = ({ user, initialTab }) => {
+  // Access control: the Account tab is available to every role; the System
+  // Settings and User Management tabs are limited to admins, accountants,
+  // and developers. Effects bail early so unprivileged users trigger no
+  // admin-settings fetches.
+  const isPrivileged = user.role === 'admin' || user.role === 'accountant' || user.role === 'developer';
 
-  // State initialization - default to system
-  const [activeTab, setActiveTab] = useState<'system' | 'users'>('system');
+  // State initialization - privileged roles keep the historical System
+  // Settings default; everyone else lands directly on Account.
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    initialTab ?? (isPrivileged ? 'system' : 'account')
+  );
   const [settings, setSettings] = useState<AppSettings>({
     cardOptions: [
       { name: 'Haute Intl USD Debit', lastFour: '0000' },
@@ -103,20 +111,22 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
   // Check sessionStorage and hash on mount to set initial tab
   useEffect(() => {
-    if (!isAllowed) return;
     // Priority 1: Check sessionStorage (more reliable for programmatic navigation)
     const targetTab = sessionStorage.getItem('openSettingsTab');
-    if (targetTab === 'users') {
+    if (targetTab === 'account') {
+      setActiveTab('account');
+      sessionStorage.removeItem('openSettingsTab'); // Clear after reading
+    } else if (targetTab === 'users' && isPrivileged) {
       setActiveTab('users');
       sessionStorage.removeItem('openSettingsTab'); // Clear after reading
-    } else if (window.location.hash === '#users') {
+    } else if (window.location.hash === '#users' && isPrivileged) {
       // Priority 2: Check hash (for manual navigation or bookmarks)
       setActiveTab('users');
     }
-  }, [isAllowed]);
+  }, [isPrivileged]);
 
   useEffect(() => {
-    if (!isAllowed) return;
+    if (!isPrivileged) return;
     (async () => {
       if (api.USE_SERVER) {
         try {
@@ -176,20 +186,20 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per access grant; settings defaults are intentionally the mount-time fallback
-  }, [isAllowed]);
+  }, [isPrivileged]);
 
   // Watch for hash changes to switch tabs
   useEffect(() => {
-    if (!isAllowed) return;
+    if (!isPrivileged) return;
     const handleHashChange = () => {
       if (window.location.hash === '#users') {
         setActiveTab('users');
       }
     };
-    
+
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [isAllowed]);
+  }, [isPrivileged]);
 
   const saveSettings = async (updatedSettings?: AppSettings) => {
     const settingsToSave = updatedSettings || settings;
@@ -412,17 +422,6 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     }
   };
 
-  if (!isAllowed) {
-    return (
-      <div className="p-6">
-        <div className="rounded-xl border border-red-200 bg-red-50 p-5">
-          <p className="text-sm font-semibold text-red-700">Access denied</p>
-          <p className="mt-1 text-sm text-red-600">Only administrators, accountants, and developers can access settings.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <AdminSettingsHeader />
@@ -434,7 +433,9 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       />
 
       {/* Tab Content */}
-      {activeTab === 'users' ? (
+      {activeTab === 'account' ? (
+        <AccountSettings user={user} embedded />
+      ) : activeTab === 'users' ? (
         <div className="space-y-8">
           {/* User Management Section */}
           <UserManagement user={user} />
