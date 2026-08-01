@@ -145,6 +145,11 @@ export function mapLeadRecord(record: CrmRecord): LeadRow {
   };
 }
 
+// converted is co-owned with LeadConversionService (Books invoice matching):
+// the CRM sync may only RAISE the flag (its heuristic OR the reconciler's
+// proven match), and manual overrides (converted_source='manual') are never
+// touched. The Books-derived columns (revenue, converted_customer_*, ...)
+// are not in this upsert at all, so sync can never clobber them.
 export const UPSERT_LEAD_SQL = `
   INSERT INTO crm_leads (
     crm_record_id, show_tag, show_key, year, company, email,
@@ -162,7 +167,10 @@ export const UPSERT_LEAD_SQL = `
     owner = EXCLUDED.owner,
     email_opened = EXCLUDED.email_opened,
     email_bounced = EXCLUDED.email_bounced,
-    converted = EXCLUDED.converted,
+    converted = CASE
+      WHEN crm_leads.converted_source = 'manual' THEN crm_leads.converted
+      ELSE crm_leads.converted OR EXCLUDED.converted
+    END,
     created_time = EXCLUDED.created_time,
     payload = EXCLUDED.payload,
     synced_at = now()
@@ -295,14 +303,23 @@ class ZohoCrmLeadsService {
     }
   }
 
-  /** Lead count + last sync time for the /status endpoint. */
-  async status(): Promise<{ connected: boolean; leadCount: number; lastSyncedAt: string | null }> {
+  /** Lead count + converted count + last sync time for the /status endpoint. */
+  async status(): Promise<{
+    connected: boolean;
+    leadCount: number;
+    convertedCount: number;
+    lastSyncedAt: string | null;
+  }> {
     const result = await query(
-      `SELECT COUNT(*)::int AS lead_count, MAX(synced_at) AS last_synced_at FROM crm_leads`
+      `SELECT COUNT(*)::int AS lead_count,
+              COUNT(*) FILTER (WHERE converted)::int AS converted_count,
+              MAX(synced_at) AS last_synced_at
+       FROM crm_leads`
     );
     return {
       connected: this.isConnected(),
       leadCount: result.rows[0]?.lead_count ?? 0,
+      convertedCount: result.rows[0]?.converted_count ?? 0,
       lastSyncedAt: result.rows[0]?.last_synced_at ?? null,
     };
   }
@@ -319,6 +336,8 @@ class ZohoCrmLeadsService {
       leads: number;
       converted: number;
       opened: number;
+      bounced: number;
+      revenue: number;
       sample_tag: string | null;
     }>
   > {
@@ -327,11 +346,40 @@ class ZohoCrmLeadsService {
               COUNT(*)::int AS leads,
               COUNT(*) FILTER (WHERE converted)::int AS converted,
               COUNT(*) FILTER (WHERE email_opened)::int AS opened,
+              COUNT(*) FILTER (WHERE email_bounced)::int AS bounced,
+              COALESCE(SUM(revenue), 0)::float8 AS revenue,
               MODE() WITHIN GROUP (ORDER BY show_tag) AS sample_tag
        FROM crm_leads
        WHERE show_key IS NOT NULL AND show_key <> '' AND year IS NOT NULL
        GROUP BY show_key, year
        ORDER BY year, show_key`
+    );
+    return result.rows;
+  }
+
+  /**
+   * Per-owner (rep) lead counts, split by show/year so the frontend can
+   * aggregate to whatever scope it is showing. Ordered by leads desc.
+   */
+  async byOwner(): Promise<
+    Array<{
+      owner: string;
+      show_key: string | null;
+      year: number | null;
+      leads: number;
+      opened: number;
+      converted: number;
+    }>
+  > {
+    const result = await query(
+      `SELECT owner, show_key, year,
+              COUNT(*)::int AS leads,
+              COUNT(*) FILTER (WHERE email_opened)::int AS opened,
+              COUNT(*) FILTER (WHERE converted)::int AS converted
+       FROM crm_leads
+       WHERE owner IS NOT NULL AND owner <> ''
+       GROUP BY owner, show_key, year
+       ORDER BY leads DESC`
     );
     return result.rows;
   }

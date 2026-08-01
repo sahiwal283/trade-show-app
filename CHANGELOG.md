@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2026-08-01 - Lead performance, conversion-to-sales, settings overhaul
+
+### Added
+- Lead Performance section on Reports: leads-per-show bars with $/lead, rep leaderboard with open rates, engagement stats; Cost per lead + Leads captured KPIs.
+- Lead-to-sale conversion pipeline (migration 035): leads matched nightly against Zoho Books customers/invoices via the integration service; converted counts + real revenue per show. Manual POST /api/crm-leads/reconcile.
+- DetailedReport: per-show Leads panel (captured / converted / open rate / cost-per-lead).
+
+### Changed
+- DetailedReport table rebuilt: fixed layout, compact rows, one-line merchant + City, ST.
+- Settings (Admin + Account) redesigned: mastheads, titled section cards, clean rows, mobile fixes.
+- Expense table: inline Zoho column restored for approvers (assign entity / Push / Pushed).
+
 ## [2.6.1] - 2026-08-01 - Every tagged lead group visible
 
 ### Changed

@@ -1,6 +1,6 @@
 /**
  * CardOptionsSection Component
- * 
+ *
  * Card options management section.
  */
 
@@ -42,6 +42,13 @@ interface CardOptionsSectionProps {
   onSaveEdit: (index: number) => void;
 }
 
+/* Row actions: always visible on touch devices; revealed on hover/focus
+   when a hover-capable pointer is present. */
+const ROW_ACTIONS_CLASS =
+  'flex shrink-0 items-center gap-1 transition-opacity ' +
+  '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 ' +
+  '[@media(hover:hover)]:group-focus-within:opacity-100';
+
 export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
   cardOptions,
   entityOptions,
@@ -70,51 +77,71 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
   onSaveEdit
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 md:p-5 lg:p-6">
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-          <CreditCard className="w-6 h-6 text-white" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Card Options</h3>
-            <span className="text-xs text-stone-500">{cardOptions?.length || 0} configured</span>
+    <section className="card overflow-hidden">
+      {/* Header */}
+      <div className="border-b border-stone-100 px-4 py-4 sm:px-5">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
+            <CreditCard className="h-4 w-4" />
           </div>
-          <p className="text-sm text-stone-600">Manage available payment card options</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="card-title">Payment Cards</h3>
+              <span className="chip bg-stone-50 px-2 py-0.5 text-[11px] text-stone-500 ring-stone-200">
+                {cardOptions?.length || 0}
+              </span>
+            </div>
+            <p className="mt-0.5 text-sm text-stone-500">Cards offered on expense forms.</p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-3">
-          {/* Card Name and Last 4 — min-w-0 lets the name input shrink so the
-              pair never overflows the card on narrow screens */}
+      {/* Add form */}
+      <div className="border-b border-stone-100 bg-stone-50/60 px-4 py-4 sm:px-5">
+        <p className="micro-label">Add a card</p>
+        <div className="mt-3 space-y-3">
           <div className="flex gap-3">
-            <input
-              type="text"
-              value={newCardName}
-              onChange={(e) => setNewCardName(e.target.value)}
-              className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              placeholder="Card name (e.g., Haute Inc USD Amex)"
-            />
-            <input
-              type="text"
-              value={newCardLastFour}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                setNewCardLastFour(value);
-              }}
-              className="w-20 shrink-0 px-3 py-3 sm:w-32 sm:px-4 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              placeholder="Last 4"
-              maxLength={4}
-            />
+            <div className="min-w-0 flex-1">
+              <label htmlFor="new-card-name" className="mb-1 block text-xs font-semibold text-stone-700">
+                Card name
+              </label>
+              <input
+                id="new-card-name"
+                type="text"
+                value={newCardName}
+                onChange={(e) => setNewCardName(e.target.value)}
+                className="input-field"
+                placeholder="e.g., Haute Inc USD Amex"
+              />
+            </div>
+            <div className="w-20 shrink-0 sm:w-24">
+              <label htmlFor="new-card-last-four" className="mb-1 block text-xs font-semibold text-stone-700">
+                Last 4
+              </label>
+              <input
+                id="new-card-last-four"
+                type="text"
+                value={newCardLastFour}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                  setNewCardLastFour(value);
+                }}
+                className="input-field"
+                placeholder="0000"
+                maxLength={4}
+              />
+            </div>
           </div>
-          
-          {/* Entity Selection */}
-          <div className="flex gap-3">
+
+          <div>
+            <label htmlFor="new-card-entity" className="mb-1 block text-xs font-semibold text-stone-700">
+              Entity
+            </label>
             <select
+              id="new-card-entity"
               value={newCardEntity}
               onChange={(e) => setNewCardEntity(e.target.value)}
-              className="flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
+              className="input-field"
             >
               <option value="">Personal Card (No Entity)</option>
               {entityOptions.map((entity, idx) => (
@@ -122,30 +149,53 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
               ))}
             </select>
           </div>
-          
-          {/* Zoho Payment Account ID and Add Button */}
-          <div className="flex gap-3">
+
+          <div>
+            <label htmlFor="new-card-zoho-id" className="mb-1 block text-xs font-semibold text-stone-700">
+              Zoho payment account ID
+            </label>
             <input
+              id="new-card-zoho-id"
               type="text"
               value={newCardZohoAccountId}
               onChange={(e) => setNewCardZohoAccountId(e.target.value)}
-              className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              placeholder="Zoho Payment Account ID (optional)"
+              className="input-field"
+              placeholder="Optional"
             />
+            <p className="mt-1 text-xs text-stone-500">Links this card to a Zoho Books payment account.</p>
+          </div>
+
+          <div className="flex justify-end">
             <button
               onClick={onAddCard}
               disabled={!newCardName || !newCardLastFour || newCardLastFour.length !== 4 || isSaving}
-              className="btn-primary px-6 py-3 whitespace-nowrap"
+              className="btn-primary px-4 py-2"
             >
-              <Plus className="w-5 h-5" />
-              <span>Add</span>
+              <Plus className="h-4 w-4" />
+              <span>Add card</span>
             </button>
           </div>
         </div>
+      </div>
 
-        <div className="space-y-2">
+      {/* List */}
+      {cardOptions.length === 0 ? (
+        <div className="px-4 py-10 text-center sm:px-5">
+          <CreditCard className="mx-auto h-6 w-6 text-stone-300" />
+          <p className="mt-2 text-sm font-medium text-stone-700">No cards yet</p>
+          <p className="mt-1 text-xs text-stone-500">Add your first card using the form above.</p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-stone-100">
           {cardOptions.map((option, index) => (
-            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-stone-50 p-3 rounded-lg">
+            <li
+              key={index}
+              className={
+                editingCardIndex === index
+                  ? 'bg-stone-50 px-4 py-4 sm:px-5'
+                  : 'group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-stone-50 sm:px-5'
+              }
+            >
               {editingCardIndex === index ? (
                 <div className="w-full space-y-2">
                   <div className="flex gap-2">
@@ -153,8 +203,9 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                       type="text"
                       value={editCardName}
                       onChange={(e) => setEditCardName(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      className="input-field min-w-0 flex-1 py-2 sm:text-sm"
                       placeholder="Card name"
+                      aria-label="Card name"
                     />
                     <input
                       type="text"
@@ -163,91 +214,96 @@ export const CardOptionsSection: React.FC<CardOptionsSectionProps> = ({
                         const value = e.target.value.replace(/\D/g, '').slice(0, 4);
                         setEditCardLastFour(value);
                       }}
-                      className="w-24 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                      className="input-field w-20 shrink-0 py-2 sm:w-24 sm:text-sm"
                       placeholder="Last 4"
+                      aria-label="Last four digits"
                       maxLength={4}
                     />
                   </div>
-                  <div className="flex gap-2">
-                    <select
-                      value={editCardEntity}
-                      onChange={(e) => setEditCardEntity(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent bg-white"
-                    >
-                      <option value="">Personal Card (No Entity)</option>
-                      {entityOptions.map((entity, idx) => (
-                        <option key={idx} value={entity}>{entity}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={editCardZohoAccountId}
-                      onChange={(e) => setEditCardZohoAccountId(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                      placeholder="Zoho Payment Account ID"
-                    />
-                    <button
-                      onClick={() => onSaveEdit(index)}
-                      disabled={isSaving || !editCardName || !editCardLastFour || editCardLastFour.length !== 4}
-                      className="btn-ghost p-2 text-brand-600 disabled:opacity-50"
-                      title="Save"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
+                  <select
+                    value={editCardEntity}
+                    onChange={(e) => setEditCardEntity(e.target.value)}
+                    className="input-field py-2 sm:text-sm"
+                    aria-label="Entity"
+                  >
+                    <option value="">Personal Card (No Entity)</option>
+                    {entityOptions.map((entity, idx) => (
+                      <option key={idx} value={entity}>{entity}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={editCardZohoAccountId}
+                    onChange={(e) => setEditCardZohoAccountId(e.target.value)}
+                    className="input-field py-2 sm:text-sm"
+                    placeholder="Zoho Payment Account ID"
+                    aria-label="Zoho payment account ID"
+                  />
+                  <div className="flex justify-end gap-1">
                     <button
                       onClick={onCancelEdit}
                       disabled={isSaving}
                       className="btn-ghost p-2 disabled:opacity-50"
                       title="Cancel"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => onSaveEdit(index)}
+                      disabled={isSaving || !editCardName || !editCardLastFour || editCardLastFour.length !== 4}
+                      className="btn-ghost p-2 text-brand-600 hover:text-brand-700 disabled:opacity-50"
+                      title="Save"
+                    >
+                      <Check className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
               ) : (
                 <>
-                  <div className="flex-1">
-                    <div className="text-stone-900 font-medium">{option.name} | {option.lastFour}</div>
-                    <div className="text-sm mt-0.5 space-y-0.5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="truncate font-medium text-stone-900">{option.name}</span>
+                      <span className="font-mono text-xs text-stone-500">&bull;&bull;&bull;&bull; {option.lastFour}</span>
+                    </div>
+                    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                       {option.entity ? (
-                        <span className="text-blue-600 font-medium">{option.entity}</span>
+                        <span className="chip bg-brand-50 px-2 py-0.5 text-[11px] text-brand-700 ring-brand-200/70">
+                          {option.entity}
+                        </span>
                       ) : (
-                        <span className="text-stone-500">Personal Card</span>
+                        <span className="text-xs text-stone-400">Personal card</span>
                       )}
                       {option.zohoPaymentAccountId && (
-                        <div className="text-xs text-emerald-600">
-                          Zoho: {option.zohoPaymentAccountId}
-                        </div>
+                        <span className="font-mono text-[11px] text-stone-400">
+                          Zoho {option.zohoPaymentAccountId}
+                        </span>
                       )}
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className={ROW_ACTIONS_CLASS}>
                     <button
                       onClick={() => onStartEdit(index)}
                       disabled={isSaving}
                       className="btn-ghost p-2 disabled:opacity-50"
                       title="Edit"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => onRemoveCard(option)}
                       disabled={isSaving}
-                      className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      className="btn-ghost p-2 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                       title="Delete"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </>
               )}
-            </div>
+            </li>
           ))}
-        </div>
-      </div>
-    </div>
+        </ul>
+      )}
+    </section>
   );
 };
-

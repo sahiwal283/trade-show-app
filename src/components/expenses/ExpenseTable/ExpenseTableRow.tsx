@@ -1,14 +1,14 @@
 /**
  * ExpenseTableRow Component
  *
- * Pure-data expense row: the entire row is clickable and opens the detail
- * modal, which carries every action (entity, Zoho push, approve/reject,
- * delete). The only interactive control left in the row is the bulk-select
- * checkbox; Zoho state appears as a quiet indicator in the status stack.
+ * Clickable data row that opens the detail modal, which carries every action
+ * (entity, Zoho push, approve/reject, delete). For approvers, a compact
+ * trailing "Zoho" column restores the accountant fast path — assign an entity
+ * or push straight from the row; clicks there never open the detail modal.
  */
 
 import React from 'react';
-import { AlertTriangle, Check, Paperclip } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, Paperclip } from 'lucide-react';
 import { Expense, TradeShow } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 import {
@@ -23,7 +23,11 @@ interface ExpenseTableRowProps {
   event: TradeShow | undefined;
   userName: string;
   hasApprovalPermission: boolean;
+  entityOptions: string[];
+  pushingExpenseId: string | null;
   pushedExpenses: Set<string>;
+  onAssignEntity: (expense: Expense, entity: string) => void;
+  onPushToZoho: (expense: Expense) => void;
   onViewExpense: (expense: Expense) => void;
   isSelected?: boolean;
   onToggleSelect?: (expenseId: string) => void;
@@ -42,7 +46,11 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
   event,
   userName,
   hasApprovalPermission,
+  entityOptions,
+  pushingExpenseId,
   pushedExpenses,
+  onAssignEntity,
+  onPushToZoho,
   onViewExpense,
   isSelected = false,
   onToggleSelect,
@@ -151,7 +159,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
         {expense.cardUsed && <div className="text-xs text-stone-500">{expense.cardUsed}</div>}
       </td>
 
-      {/* Status stack: status chip, reimbursement (when required), Zoho state */}
+      {/* Status stack: status chip, reimbursement (when required) */}
       <td className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5">
         <div className="space-y-1">
           <StatusBadge
@@ -170,19 +178,6 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
               </span>
             </div>
           )}
-          {hasApprovalPermission && !expense.zohoEntity && (
-            <div>
-              <span className="chip bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-800 ring-amber-200/70">
-                Needs entity
-              </span>
-            </div>
-          )}
-          {hasApprovalPermission && isPushed && (
-            <div className="flex items-center gap-1 text-[10px] font-medium text-stone-400">
-              <Check aria-hidden="true" className="h-3 w-3 text-accent-500" />
-              Pushed
-            </div>
-          )}
         </div>
       </td>
 
@@ -197,6 +192,57 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
           <span className="text-xs text-stone-300">—</span>
         )}
       </td>
+
+      {/* Zoho fast path (approvers only): assign entity → push → pushed.
+          Clicks and key presses stay inside the cell so they never open
+          the row's detail modal. */}
+      {hasApprovalPermission && (
+        <td
+          className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 whitespace-nowrap"
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
+          {!expense.zohoEntity ? (
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value) onAssignEntity(expense, e.target.value);
+              }}
+              aria-label={`Assign entity for expense at ${expense.merchant}`}
+              className="h-8 max-w-[130px] rounded-md border border-stone-200 bg-white px-1.5 text-xs text-stone-700 shadow-sm transition-colors duration-150 hover:border-stone-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15"
+            >
+              <option value="">Assign entity…</option>
+              {entityOptions.map((entity) => (
+                <option key={entity} value={entity}>
+                  {entity}
+                </option>
+              ))}
+            </select>
+          ) : isPushed ? (
+            <span className="flex items-center gap-1 text-[10px] font-medium text-stone-400">
+              <Check aria-hidden="true" className="h-3 w-3 text-accent-500" />
+              Pushed
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onPushToZoho(expense)}
+              disabled={pushingExpenseId === expense.id}
+              title={`Push to ${expense.zohoEntity} Zoho Books`}
+              className="btn-secondary h-8 min-h-0 gap-1.5 px-2.5 py-0 text-xs"
+            >
+              {pushingExpenseId === expense.id ? (
+                <>
+                  <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+                  Pushing…
+                </>
+              ) : (
+                'Push'
+              )}
+            </button>
+          )}
+        </td>
+      )}
     </tr>
   );
 };

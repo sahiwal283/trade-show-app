@@ -1,6 +1,6 @@
 /**
  * EntityOptionsSection Component
- * 
+ *
  * Entity options management section.
  */
 
@@ -22,6 +22,13 @@ interface EntityOptionsSectionProps {
   onSaveEdit: (index: number) => void;
 }
 
+/* Row actions: always visible on touch devices; revealed on hover/focus
+   when a hover-capable pointer is present. */
+const ROW_ACTIONS_CLASS =
+  'flex shrink-0 items-center gap-1 transition-opacity ' +
+  '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 ' +
+  '[@media(hover:hover)]:group-focus-within:opacity-100';
+
 export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
   entityOptions,
   newEntityOption,
@@ -37,99 +44,123 @@ export const EntityOptionsSection: React.FC<EntityOptionsSectionProps> = ({
   onSaveEdit
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 md:p-5 lg:p-6">
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-lg flex items-center justify-center">
-          <Building2 className="w-6 h-6 text-white" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Entity Options</h3>
-            <span className="text-xs text-stone-500">{entityOptions?.length || 0} configured</span>
+    <section className="card overflow-hidden">
+      {/* Header */}
+      <div className="border-b border-stone-100 px-4 py-4 sm:px-5">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
+            <Building2 className="h-4 w-4" />
           </div>
-          <p className="text-sm text-stone-600">Manage Zoho entity assignments</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="card-title">Entities</h3>
+              <span className="chip bg-stone-50 px-2 py-0.5 text-[11px] text-stone-500 ring-stone-200">
+                {entityOptions?.length || 0}
+              </span>
+            </div>
+            <p className="mt-0.5 text-sm text-stone-500">Business entities used for Zoho assignments.</p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex gap-3">
+      {/* Add form */}
+      <div className="border-b border-stone-100 bg-stone-50/60 px-4 py-4 sm:px-5">
+        <label htmlFor="new-entity-name" className="micro-label">Add an entity</label>
+        <div className="mt-2 flex gap-2">
           <input
+            id="new-entity-name"
             type="text"
             value={newEntityOption}
             onChange={(e) => setNewEntityOption(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onAddEntity()}
-            className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-            placeholder="Enter new entity option..."
+            className="input-field min-w-0 flex-1"
+            placeholder="e.g., Entity A - Main Operations"
           />
           <button
             onClick={onAddEntity}
             disabled={!newEntityOption || isSaving}
-            className="btn-primary px-6 py-3"
+            className="btn-primary shrink-0 px-4 py-2"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="h-4 w-4" />
             <span>Add</span>
           </button>
         </div>
+      </div>
 
-        <div className="space-y-2">
+      {/* List */}
+      {entityOptions.length === 0 ? (
+        <div className="px-4 py-10 text-center sm:px-5">
+          <Building2 className="mx-auto h-6 w-6 text-stone-300" />
+          <p className="mt-2 text-sm font-medium text-stone-700">No entities yet</p>
+          <p className="mt-1 text-xs text-stone-500">Add your first entity using the form above.</p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-stone-100">
           {entityOptions.map((option, index) => (
-            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-stone-50 p-3 rounded-lg">
+            <li
+              key={index}
+              className={
+                editingEntityIndex === index
+                  ? 'bg-stone-50 px-4 py-3 sm:px-5'
+                  : 'group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-stone-50 sm:px-5'
+              }
+            >
               {editingEntityIndex === index ? (
-                <>
+                <div className="flex w-full items-center gap-2">
                   <input
                     type="text"
                     value={editEntityValue}
                     onChange={(e) => setEditEntityValue(e.target.value)}
-                    className="min-w-0 flex-1 px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                    className="input-field min-w-0 flex-1 py-2 sm:text-sm"
                     placeholder="Entity name"
+                    aria-label="Entity name"
                   />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onSaveEdit(index)}
-                      disabled={isSaving || !editEntityValue.trim()}
-                      className="btn-ghost p-2 text-brand-600 disabled:opacity-50"
-                      title="Save"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
+                  <div className="flex shrink-0 gap-1">
                     <button
                       onClick={onCancelEdit}
                       disabled={isSaving}
                       className="btn-ghost p-2 disabled:opacity-50"
                       title="Cancel"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => onSaveEdit(index)}
+                      disabled={isSaving || !editEntityValue.trim()}
+                      className="btn-ghost p-2 text-brand-600 hover:text-brand-700 disabled:opacity-50"
+                      title="Save"
+                    >
+                      <Check className="h-4 w-4" />
                     </button>
                   </div>
-                </>
+                </div>
               ) : (
                 <>
-                  <span className="flex-1 text-stone-900">{option}</span>
-                  <div className="flex gap-2">
+                  <span className="min-w-0 flex-1 truncate font-medium text-stone-900">{option}</span>
+                  <div className={ROW_ACTIONS_CLASS}>
                     <button
                       onClick={() => onStartEdit(index)}
                       disabled={isSaving}
                       className="btn-ghost p-2 disabled:opacity-50"
                       title="Edit"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => onRemoveEntity(option)}
                       disabled={isSaving}
-                      className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+                      className="btn-ghost p-2 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
                       title="Delete"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </>
               )}
-            </div>
+            </li>
           ))}
-        </div>
-      </div>
-    </div>
+        </ul>
+      )}
+    </section>
   );
 };
-

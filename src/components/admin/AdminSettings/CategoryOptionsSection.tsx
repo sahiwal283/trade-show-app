@@ -1,6 +1,6 @@
 /**
  * CategoryOptionsSection Component
- * 
+ *
  * Category options management section.
  */
 
@@ -43,6 +43,13 @@ interface CategoryOptionsSectionProps {
   onSaveEdit: (index: number) => void;
 }
 
+/* Row actions: always visible on touch devices; revealed on hover/focus
+   when a hover-capable pointer is present. */
+const ROW_ACTIONS_CLASS =
+  'flex shrink-0 items-center gap-1 transition-opacity ' +
+  '[@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 ' +
+  '[@media(hover:hover)]:group-focus-within:opacity-100';
+
 export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
   categoryOptions,
   newCategoryOption,
@@ -70,162 +77,209 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
   onSaveEdit
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 md:p-5 lg:p-6">
-      <div className="flex items-center space-x-3 mb-6">
-        <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-          <Tag className="w-6 h-6 text-white" />
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center justify-between">
-            <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Expense Categories</h3>
-            <span className="text-xs text-stone-500">{categoryOptions?.length || 0} configured</span>
+    <section className="card overflow-hidden">
+      {/* Header */}
+      <div className="border-b border-stone-100 px-4 py-4 sm:px-5">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
+            <Tag className="h-4 w-4" />
           </div>
-          <p className="text-sm text-stone-600">Manage expense category options</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="card-title">Expense Categories</h3>
+              <span className="chip bg-stone-50 px-2 py-0.5 text-[11px] text-stone-500 ring-stone-200">
+                {categoryOptions?.length || 0}
+              </span>
+            </div>
+            <p className="mt-0.5 text-sm text-stone-500">Categories offered when logging expenses.</p>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-3">
-          <div className="flex gap-3">
+      {/* Add form */}
+      <div className="border-b border-stone-100 bg-stone-50/60 px-4 py-4 sm:px-5">
+        <p className="micro-label">Add a category</p>
+        <div className="mt-3 space-y-3">
+          <div>
+            <label htmlFor="new-category-name" className="mb-1 block text-xs font-semibold text-stone-700">
+              Category name
+            </label>
             <input
+              id="new-category-name"
               type="text"
               value={newCategoryOption}
               onChange={(e) => setNewCategoryOption(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onAddCategory()}
-              className="min-w-0 flex-1 px-4 py-3 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              placeholder="Enter new category name..."
+              className="input-field"
+              placeholder="e.g., Travel - Flight"
             />
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <input
-              type="text"
-              value={newCategoryZohoHauteId}
-              onChange={(e) => setNewCategoryZohoHauteId(e.target.value)}
-              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              placeholder="Haute Zoho ID"
-            />
-            <input
-              type="text"
-              value={newCategoryZohoBoomId}
-              onChange={(e) => setNewCategoryZohoBoomId(e.target.value)}
-              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              placeholder="Boomin Zoho ID"
-            />
-            <input
-              type="text"
-              value={newCategoryZohoNirvanaId}
-              onChange={(e) => setNewCategoryZohoNirvanaId(e.target.value)}
-              className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-              placeholder="Nirvana Zoho ID"
-            />
-          </div>
-          <button
-            onClick={onAddCategory}
-            disabled={!newCategoryOption || isSaving}
-            className="btn-primary w-full px-6 py-3"
-          >
-            <Plus className="w-5 h-5" />
-            <span>Add Category</span>
-          </button>
-        </div>
-
-        <div className="space-y-2 max-h-96 overflow-y-auto">
-          {categoryOptions.map((option, index) => (
-            <div key={index} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-stone-50 p-3 rounded-lg">
-              {editingCategoryIndex === index ? (
-                <div className="w-full space-y-2">
-                  <input
-                    type="text"
-                    value={editCategoryValue}
-                    onChange={(e) => setEditCategoryValue(e.target.value)}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                    placeholder="Category name"
-                  />
-                  <div className="grid grid-cols-3 gap-2">
-                    <input
-                      type="text"
-                      value={editCategoryZohoHauteId}
-                      onChange={(e) => setEditCategoryZohoHauteId(e.target.value)}
-                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                      placeholder="Haute Zoho ID"
-                    />
-                    <input
-                      type="text"
-                      value={editCategoryZohoBoomId}
-                      onChange={(e) => setEditCategoryZohoBoomId(e.target.value)}
-                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                      placeholder="Boomin Zoho ID"
-                    />
-                    <input
-                      type="text"
-                      value={editCategoryZohoNirvanaId}
-                      onChange={(e) => setEditCategoryZohoNirvanaId(e.target.value)}
-                      className="px-3 py-2 text-xs border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
-                      placeholder="Nirvana Zoho ID"
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => onSaveEdit(index)}
-                      disabled={isSaving || !editCategoryValue.trim()}
-                      className="btn-ghost p-2 text-brand-600 disabled:opacity-50"
-                      title="Save"
-                    >
-                      <Check className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={onCancelEdit}
-                      disabled={isSaving}
-                      className="btn-ghost p-2 disabled:opacity-50"
-                      title="Cancel"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="flex-1">
-                    <span className="text-stone-900 font-medium">{option.name}</span>
-                    {(option.zohoExpenseAccountIds?.haute_brands || option.zohoExpenseAccountIds?.boomin_brands || option.zohoExpenseAccountIds?.nirvana_kulture) && (
-                      <div className="text-xs mt-1 space-y-0.5">
-                        {option.zohoExpenseAccountIds.haute_brands && (
-                          <div className="text-blue-600">Haute: {option.zohoExpenseAccountIds.haute_brands}</div>
-                        )}
-                        {option.zohoExpenseAccountIds.boomin_brands && (
-                          <div className="text-orange-600">Boomin: {option.zohoExpenseAccountIds.boomin_brands}</div>
-                        )}
-                        {option.zohoExpenseAccountIds.nirvana_kulture && (
-                          <div className="text-purple-600">Nirvana: {option.zohoExpenseAccountIds.nirvana_kulture}</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => onStartEdit(index)}
-                      disabled={isSaving}
-                      className="btn-ghost p-2 disabled:opacity-50"
-                      title="Edit"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onRemoveCategory(option)}
-                      disabled={isSaving}
-                      className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </>
-              )}
+          <div>
+            <span className="mb-1 block text-xs font-semibold text-stone-700">Zoho expense account IDs</span>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <input
+                type="text"
+                value={newCategoryZohoHauteId}
+                onChange={(e) => setNewCategoryZohoHauteId(e.target.value)}
+                className="input-field py-2 sm:text-xs"
+                placeholder="Haute Zoho ID"
+                aria-label="Haute Zoho ID"
+              />
+              <input
+                type="text"
+                value={newCategoryZohoBoomId}
+                onChange={(e) => setNewCategoryZohoBoomId(e.target.value)}
+                className="input-field py-2 sm:text-xs"
+                placeholder="Boomin Zoho ID"
+                aria-label="Boomin Zoho ID"
+              />
+              <input
+                type="text"
+                value={newCategoryZohoNirvanaId}
+                onChange={(e) => setNewCategoryZohoNirvanaId(e.target.value)}
+                className="input-field py-2 sm:text-xs"
+                placeholder="Nirvana Zoho ID"
+                aria-label="Nirvana Zoho ID"
+              />
             </div>
-          ))}
+            <p className="mt-1 text-xs text-stone-500">Optional — maps this category to Zoho Books per brand.</p>
+          </div>
+          <div className="flex justify-end">
+            <button
+              onClick={onAddCategory}
+              disabled={!newCategoryOption || isSaving}
+              className="btn-primary px-4 py-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add category</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* List */}
+      {categoryOptions.length === 0 ? (
+        <div className="px-4 py-10 text-center sm:px-5">
+          <Tag className="mx-auto h-6 w-6 text-stone-300" />
+          <p className="mt-2 text-sm font-medium text-stone-700">No categories yet</p>
+          <p className="mt-1 text-xs text-stone-500">Add your first category using the form above.</p>
+        </div>
+      ) : (
+        <div className="max-h-96 overflow-y-auto">
+          <ul className="divide-y divide-stone-100">
+            {categoryOptions.map((option, index) => (
+              <li
+                key={index}
+                className={
+                  editingCategoryIndex === index
+                    ? 'bg-stone-50 px-4 py-4 sm:px-5'
+                    : 'group flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-stone-50 sm:px-5'
+                }
+              >
+                {editingCategoryIndex === index ? (
+                  <div className="w-full space-y-2">
+                    <input
+                      type="text"
+                      value={editCategoryValue}
+                      onChange={(e) => setEditCategoryValue(e.target.value)}
+                      className="input-field py-2 sm:text-sm"
+                      placeholder="Category name"
+                      aria-label="Category name"
+                    />
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                      <input
+                        type="text"
+                        value={editCategoryZohoHauteId}
+                        onChange={(e) => setEditCategoryZohoHauteId(e.target.value)}
+                        className="input-field py-2 sm:text-xs"
+                        placeholder="Haute Zoho ID"
+                        aria-label="Haute Zoho ID"
+                      />
+                      <input
+                        type="text"
+                        value={editCategoryZohoBoomId}
+                        onChange={(e) => setEditCategoryZohoBoomId(e.target.value)}
+                        className="input-field py-2 sm:text-xs"
+                        placeholder="Boomin Zoho ID"
+                        aria-label="Boomin Zoho ID"
+                      />
+                      <input
+                        type="text"
+                        value={editCategoryZohoNirvanaId}
+                        onChange={(e) => setEditCategoryZohoNirvanaId(e.target.value)}
+                        className="input-field py-2 sm:text-xs"
+                        placeholder="Nirvana Zoho ID"
+                        aria-label="Nirvana Zoho ID"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={onCancelEdit}
+                        disabled={isSaving}
+                        className="btn-ghost p-2 disabled:opacity-50"
+                        title="Cancel"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => onSaveEdit(index)}
+                        disabled={isSaving || !editCategoryValue.trim()}
+                        className="btn-ghost p-2 text-brand-600 hover:text-brand-700 disabled:opacity-50"
+                        title="Save"
+                      >
+                        <Check className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-stone-900">{option.name}</span>
+                      {(option.zohoExpenseAccountIds?.haute_brands || option.zohoExpenseAccountIds?.boomin_brands || option.zohoExpenseAccountIds?.nirvana_kulture) && (
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                          {option.zohoExpenseAccountIds.haute_brands && (
+                            <span className="chip bg-stone-50 px-2 py-0.5 text-[11px] text-stone-500 ring-stone-200">
+                              Haute&nbsp;<span className="font-mono">{option.zohoExpenseAccountIds.haute_brands}</span>
+                            </span>
+                          )}
+                          {option.zohoExpenseAccountIds.boomin_brands && (
+                            <span className="chip bg-stone-50 px-2 py-0.5 text-[11px] text-stone-500 ring-stone-200">
+                              Boomin&nbsp;<span className="font-mono">{option.zohoExpenseAccountIds.boomin_brands}</span>
+                            </span>
+                          )}
+                          {option.zohoExpenseAccountIds.nirvana_kulture && (
+                            <span className="chip bg-stone-50 px-2 py-0.5 text-[11px] text-stone-500 ring-stone-200">
+                              Nirvana&nbsp;<span className="font-mono">{option.zohoExpenseAccountIds.nirvana_kulture}</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className={ROW_ACTIONS_CLASS}>
+                      <button
+                        onClick={() => onStartEdit(index)}
+                        disabled={isSaving}
+                        className="btn-ghost p-2 disabled:opacity-50"
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => onRemoveCategory(option)}
+                        disabled={isSaving}
+                        className="btn-ghost p-2 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 };
-

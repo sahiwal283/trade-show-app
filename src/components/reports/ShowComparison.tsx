@@ -9,7 +9,7 @@
 import React, { useMemo, useState } from 'react';
 import { Download, TrendingUp, TrendingDown, Minus, FileText, FileSpreadsheet } from 'lucide-react';
 import { ShowSummaryRow } from './hooks/useShowSummaries';
-import { CrmLeadRow } from './hooks/useCrmLeads';
+import { CrmLeadRow, leadGroupName } from './hooks/useCrmLeads';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { API_CONFIG, STORAGE_KEYS } from '../../constants/appConstants';
 
@@ -60,17 +60,6 @@ function displayName(rowsForKey: ShowSummaryRow[]): string {
 }
 
 const csvField = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-
-/** Display name for a leads-only group: its raw CRM tag minus year noise,
- *  falling back to a title-cased show_key. */
-function leadGroupName(l: CrmLeadRow): string {
-  const tag = (l.sample_tag || '')
-    .replace(/[-\s]*20\d\d([-\s]*20\d\d)?/g, '')
-    .replace(/[-\s]+$/, '')
-    .trim();
-  if (tag) return tag;
-  return l.show_key.replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 export const ShowComparison: React.FC<ShowComparisonProps> = ({
   rows,
@@ -255,9 +244,10 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
         </div>
       </div>
 
-      {/* KPI band — a 5th "Leads captured" tile appears only when CRM leads exist */}
+      {/* KPI band — "Leads captured" and "Cost per lead" tiles appear only
+          when CRM leads exist for the scope (4 tiles otherwise, unchanged) */}
       <div
-        className={`mb-5 grid grid-cols-2 gap-3 ${leadKpi.captured > 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+        className={`mb-5 grid grid-cols-2 gap-3 ${leadKpi.captured > 0 ? 'lg:grid-cols-3 xl:grid-cols-6' : 'lg:grid-cols-4'}`}
       >
         {[
           { label: scope === 'compare' ? 'Total invested (all years)' : `Invested in ${scope}`, value: fmt(kpi.total) },
@@ -274,6 +264,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                       ? `${leadKpi.converted.toLocaleString()} converted`
                       : undefined,
                 },
+                { label: 'Cost per lead', value: fmt(kpi.total / leadKpi.captured) },
               ]
             : []),
         ].map(({ label, value, context }: { label: string; value: string; context?: string }) => (
@@ -432,6 +423,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                           {leadInfo.leads.toLocaleString()} lead{leadInfo.leads === 1 ? '' : 's'}
                           {leadInfo.converted > 0 &&
                             ` · ${leadInfo.converted.toLocaleString()} converted`}
+                          {(leadInfo.revenue || 0) > 0 && ` · ${fmt(leadInfo.revenue)} revenue`}
                           {total > 0 && ` · ${fmt(total / leadInfo.leads)}/lead`}
                         </span>
                       </div>

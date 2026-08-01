@@ -4,6 +4,7 @@ import {
   Calendar,
   MapPin,
   User,
+  Users,
   DollarSign,
   Eye,
   X,
@@ -18,6 +19,26 @@ import { CATEGORY_COLORS } from '../../constants/appConstants';
 import { useToast, ToastContainer } from '../common/Toast';
 import { StatusBadge, CategoryBadge } from '../common';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { useDetailedLeads } from './hooks/useDetailedLeads';
+
+/** Trailing "City, ST 89109[, USA]" — capture the city and state. */
+const CITY_STATE_TAIL =
+  /(?:^|,)\s*([^,]+?)\s*,\s*([A-Za-z]{2})\.?,?\s+\d{5}(?:-\d{4})?(?:\s*,?\s*(?:USA|US|United States(?: of America)?))?\.?\s*$/;
+
+/** Collapse a full street address to a quiet "City, ST"; otherwise return it unchanged (the cell truncates it). */
+function shortLocation(location: string): string {
+  const match = location.match(CITY_STATE_TAIL);
+  if (match) return `${match[1].trim()}, ${match[2].toUpperCase()}`;
+  return location;
+}
+
+/** "$1,234.56" with the currency glyph inside the same text run. */
+function formatUsd(amount: number): string {
+  return `$${amount.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
 interface DetailedReportProps {
   expenses: Expense[];
@@ -36,6 +57,9 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
   const { toasts, removeToast } = useToast();
   const [viewingExpense, setViewingExpense] = useState<Expense | null>(null);
   const [showFullReceipt, setShowFullReceipt] = useState(true);
+  // CRM lead stats for the single show this report is scoped to (null when
+  // multi-show, CRM disconnected, or no matching leads — panel hides itself).
+  const leadStats = useDetailedLeads(expenses, events);
 
   // Escape closes the expense-details dialog
   useEscapeKey(() => {
@@ -143,6 +167,64 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
           </div>
         )}
 
+        {/* Show leads — CRM capture stats for this show; hidden when no data */}
+        {leadStats && (
+          <div className="card overflow-hidden">
+            <div className="flex items-center gap-2 border-b border-stone-200/80 bg-stone-50/80 px-6 py-4">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
+                <Users className="h-4 w-4" />
+              </span>
+              <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                Leads
+              </h3>
+            </div>
+            <dl className="grid grid-cols-2 gap-px bg-stone-100 lg:grid-cols-4">
+              <div className="bg-white px-5 py-4">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  Leads Captured
+                </dt>
+                <dd className="mt-1 font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
+                  {leadStats.leads.toLocaleString()}
+                </dd>
+              </div>
+              <div className="bg-white px-5 py-4">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  Converted
+                </dt>
+                <dd className="mt-1 font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
+                  {leadStats.converted.toLocaleString()}
+                  {leadStats.converted > 0 && (
+                    <span className="ml-1.5 text-xs font-medium tracking-normal text-stone-500">
+                      ({Math.round((leadStats.converted / leadStats.leads) * 100)}%)
+                    </span>
+                  )}
+                </dd>
+              </div>
+              <div className="bg-white px-5 py-4">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  Email Open Rate
+                </dt>
+                <dd className="mt-1 font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
+                  {leadStats.openRate !== null ? `${Math.round(leadStats.openRate * 100)}%` : '—'}
+                </dd>
+              </div>
+              <div className="bg-white px-5 py-4">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  Cost Per Lead
+                </dt>
+                <dd className="mt-1 font-display text-lg font-bold tracking-tight tabular-nums text-stone-900">
+                  {leadStats.costPerLead !== null
+                    ? `$${leadStats.costPerLead.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`
+                    : '—'}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        )}
+
         {/* Detailed Expense Table */}
         <div className="card overflow-hidden">
           <div className="px-6 py-4 bg-stone-50/80 border-b border-stone-200/80">
@@ -163,39 +245,57 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full min-w-[1080px] table-fixed">
+              <colgroup>
+                <col className="w-36" />
+                <col className="w-48" />
+                <col className="w-32" />
+                <col className="w-28" />
+                <col className="w-28" />
+                <col className="w-28" />
+                <col className="w-40" />
+                <col className="w-28" />
+                <col className="w-52" />
+                <col className="w-14" />
+                {onReimbursementApproval && <col className="w-20" />}
+              </colgroup>
               <thead className="bg-stone-50/80">
                 <tr>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  <th className="py-2.5 pl-5 pr-4 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 sm:pl-6">
                     Date & Event
                   </th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                     Merchant & Location
                   </th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                     Category
                   </th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                     Card Used
                   </th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  <th className="px-4 py-2.5 text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                     Amount
                   </th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                     Status
                   </th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                     Reimbursement
                   </th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                     Entity
                   </th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                  <th className="px-4 py-2.5 text-left text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
                     Description
                   </th>
-                  <th className="px-4 sm:px-5 md:px-6 py-2.5 sm:py-3 min-h-[44px] text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                    Details
+                  <th className="px-2 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
+                    <span className="sr-only">Details</span>
                   </th>
+                  {onReimbursementApproval && (
+                    <th className="py-2.5 pl-2 pr-5 text-right text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 sm:pr-6">
+                      Approve
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-stone-100">
@@ -207,87 +307,99 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                       key={expense.id}
                       className="transition-colors duration-150 hover:bg-brand-50/40"
                     >
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="flex items-center text-sm text-stone-900">
-                            <Calendar className="w-4 h-4 mr-1" />
-                            {formatLocalDate(expense.date)}
-                          </div>
-                          {event && <div className="text-xs text-stone-500 mt-1">{event.name}</div>}
+                      <td className="py-2.5 pl-5 pr-4 align-middle sm:pl-6">
+                        <div className="truncate text-sm font-semibold tabular-nums text-stone-900">
+                          {formatLocalDate(expense.date)}
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div>
-                          <div className="text-sm font-medium text-stone-900">
-                            {expense.merchant}
+                        {event && (
+                          <div className="truncate text-xs text-stone-500" title={event.name}>
+                            {event.name}
                           </div>
-                          {expense.location && (
-                            <div className="flex items-center text-xs text-stone-500 mt-1">
-                              <MapPin className="w-3 h-3 mr-1" />
-                              {expense.location}
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-2.5 align-middle">
+                        <div
+                          className="truncate text-sm font-semibold text-stone-900"
+                          title={expense.merchant}
+                        >
+                          {expense.merchant}
+                        </div>
+                        {expense.location && (
+                          <div className="truncate text-xs text-stone-500" title={expense.location}>
+                            {shortLocation(expense.location)}
+                          </div>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 align-middle">
                         <CategoryBadge category={expense.category} size="sm" />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                        {expense.cardUsed}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="inline-flex items-center text-sm font-semibold tabular-nums text-stone-900">
-                          <DollarSign className="w-4 h-4 mr-0.5 text-stone-400" />
-                          {expense.amount.toFixed(2)}
+                      <td className="px-4 py-2.5 align-middle">
+                        <div className="truncate text-sm text-stone-700" title={expense.cardUsed}>
+                          {expense.cardUsed}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="whitespace-nowrap px-4 py-2.5 text-right align-middle text-sm font-bold tabular-nums text-stone-900">
+                        {formatUsd(expense.amount)}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-2.5 align-middle">
                         <StatusBadge status={expense.status} size="sm" />
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-4 py-2.5 align-middle">
                         <span
-                          className={`chip px-2 py-1 text-xs ${
+                          className={`chip max-w-full px-2 py-1 text-xs ${
                             expense.reimbursementRequired
                               ? 'bg-orange-50 text-orange-700 ring-orange-200/70'
                               : 'bg-stone-50 text-stone-500 ring-stone-200'
                           }`}
+                          title={
+                            expense.reimbursementRequired
+                              ? `Required (${expense.reimbursementStatus || 'pending review'})`
+                              : 'Not Required'
+                          }
                         >
-                          {expense.reimbursementRequired
-                            ? `Required (${expense.reimbursementStatus || 'pending review'})`
-                            : 'Not Required'}
+                          <span className="min-w-0 truncate">
+                            {expense.reimbursementRequired
+                              ? `Required (${expense.reimbursementStatus || 'pending review'})`
+                              : 'Not Required'}
+                          </span>
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                        {expense.zohoEntity || (
-                          <span className="text-stone-400 italic">Unassigned</span>
+                      <td className="px-4 py-2.5 align-middle">
+                        {expense.zohoEntity ? (
+                          <div
+                            className="truncate text-sm text-stone-700"
+                            title={expense.zohoEntity}
+                          >
+                            {expense.zohoEntity}
+                          </div>
+                        ) : (
+                          <span className="text-sm italic text-stone-400">Unassigned</span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-4 py-2.5 align-middle">
                         <div
-                          className="text-sm text-stone-900 max-w-xs truncate"
+                          className="truncate text-sm text-stone-600"
                           title={expense.description}
                         >
                           {expense.description || (
-                            <span className="text-stone-400 italic">No description</span>
+                            <span className="italic text-stone-400">No description</span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => setViewingExpense(expense)}
-                            className="inline-flex items-center justify-center rounded-lg p-2 text-stone-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
-                            title="View Details & Receipt"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
-                        </div>
+                      <td className="px-2 py-2.5 text-center align-middle">
+                        <button
+                          onClick={() => setViewingExpense(expense)}
+                          className="inline-flex items-center justify-center rounded-lg p-1.5 text-stone-400 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-600 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-1"
+                          title="View Details & Receipt"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
                       </td>
                       {onReimbursementApproval && (
-                        <td className="px-6 py-4 text-right">
+                        <td className="py-2.5 pl-2 pr-5 text-right align-middle sm:pr-6">
                           {expense.reimbursementRequired &&
                             expense.reimbursementStatus === 'pending review' && (
-                              <div className="flex items-center justify-end space-x-2">
+                              <div className="flex items-center justify-end gap-1">
                                 <button
                                   onClick={() => onReimbursementApproval(expense, 'approved')}
                                   className="inline-flex items-center justify-center rounded-md p-1 text-accent-600 transition-colors duration-150 hover:bg-accent-50 hover:text-accent-700 focus-visible:ring-2 focus-visible:ring-accent-500 focus-visible:ring-offset-1"

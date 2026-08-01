@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
+import packageJson from '../../../package.json';
 import {
   isPushSupported,
   getSubscriptionState,
@@ -10,6 +11,8 @@ import {
   sendTestPushNotification,
   PushSubscriptionState,
 } from '../../utils/pushNotifications';
+
+const APP_VERSION = packageJson.version;
 
 interface AccountSettingsProps {
   user: User;
@@ -177,194 +180,224 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user }) => {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-xl border border-stone-200 p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Settings</p>
-        <h2 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">Account</h2>
-        <p className="text-sm text-stone-600 mt-1">
-          Logged in as <span className="font-medium">{user.name}</span> ({user.username})
-        </p>
+      {/* Masthead */}
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Manage</p>
+        <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">Account</h1>
+        <p className="text-stone-600 mt-1">Your profile, notifications, and connected apps.</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
-        <div>
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Telegram Integration</h3>
-          <p className="text-sm text-stone-600 mt-1">
-            Connect your Telegram account to submit receipts and run app actions through the bot.
-          </p>
+      {/* Profile */}
+      <section className="card overflow-hidden">
+        <div className="border-b border-stone-100 px-4 py-4 sm:px-5">
+          <h2 className="card-title">Profile</h2>
+          <p className="mt-0.5 text-sm text-stone-500">How you appear across the app.</p>
         </div>
-
-        {error && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {error}
+        <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-accent-500 font-display text-base font-semibold text-white">
+            {user.name.charAt(0).toUpperCase()}
           </div>
-        )}
-
-        {success && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {success}
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium text-stone-900">{user.name}</p>
+            <p className="truncate text-sm text-stone-500">@{user.username}</p>
           </div>
-        )}
+          <span className="chip shrink-0 bg-stone-50 px-2.5 py-1 text-xs capitalize text-stone-600 ring-stone-200">
+            {user.role}
+          </span>
+        </div>
+      </section>
 
-        {loading ? (
-          <div className="text-sm text-stone-500">Loading Telegram status...</div>
-        ) : status.linked ? (
-          <div className="space-y-3">
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-sm font-medium text-emerald-700">Connected</p>
-              <p className="text-sm text-emerald-700 mt-1">
-                Telegram: {linkedUsername}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={loadStatus}
-                className="btn-secondary"
-              >
-                Refresh status
-              </button>
-              <button
-                type="button"
-                onClick={handleDisconnect}
-                disabled={disconnecting}
-                className="btn-danger"
-              >
-                {disconnecting ? 'Disconnecting...' : 'Disconnect Telegram'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-              Not connected yet. Generate a one-time link code below, then finish linking in Telegram.
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleStartLink}
-                disabled={starting}
-                className="btn-primary"
-              >
-                {starting ? 'Generating...' : 'Connect Telegram'}
-              </button>
-              <button
-                type="button"
-                onClick={loadStatus}
-                className="btn-secondary"
-              >
-                Refresh status
-              </button>
-            </div>
-
-            {startInfo && (
-              <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 space-y-3">
-                <p className="text-sm text-stone-700">
-                  <span className="font-semibold">Manual command:</span> Send{' '}
-                  <code className="bg-white px-1.5 py-0.5 rounded border">/link {startInfo.linkCode}</code>{' '}
-                  to the bot.
-                </p>
-                {startInfo.deepLinkUrl && (
-                  <p className="text-sm text-stone-700">
-                    <span className="font-semibold">Deep link:</span>{' '}
-                    <a
-                      href={startInfo.deepLinkUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-blue-700 hover:underline break-all"
-                    >
-                      {startInfo.deepLinkUrl}
-                    </a>
-                  </p>
-                )}
-                <p className="text-xs text-stone-500">
-                  Expires at: {new Date(startInfo.expiresAt).toLocaleString()}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-xl border border-stone-200 p-5 space-y-4">
-        <div>
-          <h3 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Notifications</h3>
-          <p className="text-sm text-stone-600 mt-1">
+      {/* Notifications */}
+      <section className="card overflow-hidden">
+        <div className="border-b border-stone-100 px-4 py-4 sm:px-5">
+          <h2 className="card-title">Notifications</h2>
+          <p className="mt-0.5 text-sm text-stone-500">
             Get a push notification on this device when a flight, hotel, or car rental is booked for you.
           </p>
         </div>
 
-        {pushError && (
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {pushError}
-          </div>
-        )}
+        <div className="space-y-4 px-4 py-4 sm:px-5">
+          {pushError && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {pushError}
+            </div>
+          )}
 
-        {pushSuccess && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-            {pushSuccess}
-          </div>
-        )}
+          {pushSuccess && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {pushSuccess}
+            </div>
+          )}
 
-        {pushLoading ? (
-          <div className="text-sm text-stone-500">Loading notification status...</div>
-        ) : !pushSupported ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            {isIos && !isStandalone
-              ? 'Push notifications on iPhone and iPad only work once the app is installed. In Safari, tap Share and choose "Add to Home Screen", then open the app from your home screen and enable notifications here.'
-              : 'Push notifications are not supported in this browser.'}
-          </div>
-        ) : pushServerEnabled === false ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            Notifications aren't available yet — your administrator needs to finish server setup.
-          </div>
-        ) : pushState === 'denied' ? (
-          <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            Notifications are blocked for this site. Allow notifications in your browser settings, then try again.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-medium text-stone-900">Push notifications</p>
-                <p className="text-sm text-stone-500">
-                  {pushState === 'subscribed' ? 'Enabled on this device' : 'Disabled on this device'}
+          {pushLoading ? (
+            <div className="text-sm text-stone-500">Loading notification status...</div>
+          ) : !pushSupported ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              {isIos && !isStandalone
+                ? 'Push notifications on iPhone and iPad only work once the app is installed. In Safari, tap Share and choose "Add to Home Screen", then open the app from your home screen and enable notifications here.'
+                : 'Push notifications are not supported in this browser.'}
+            </div>
+          ) : pushServerEnabled === false ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              Notifications aren't available yet — your administrator needs to finish server setup.
+            </div>
+          ) : pushState === 'denied' ? (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+              Notifications are blocked for this site. Allow notifications in your browser settings, then try again.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-semibold text-stone-700">Push notifications</p>
+                  <p className="text-xs text-stone-500">
+                    {pushState === 'subscribed' ? 'Enabled on this device' : 'Disabled on this device'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pushState === 'subscribed'}
+                  aria-label="Toggle push notifications"
+                  onClick={handleTogglePush}
+                  disabled={pushBusy}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
+                    pushState === 'subscribed' ? 'bg-brand-600' : 'bg-stone-300'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      pushState === 'subscribed' ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {pushState === 'subscribed' && (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSendTestPush}
+                    disabled={pushTesting}
+                    className="btn-secondary"
+                  >
+                    {pushTesting ? 'Sending...' : 'Send test'}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Telegram */}
+      <section className="card overflow-hidden">
+        <div className="border-b border-stone-100 px-4 py-4 sm:px-5">
+          <h2 className="card-title">Telegram</h2>
+          <p className="mt-0.5 text-sm text-stone-500">
+            Connect your Telegram account to submit receipts and run app actions through the bot.
+          </p>
+        </div>
+
+        <div className="space-y-4 px-4 py-4 sm:px-5">
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {success}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="text-sm text-stone-500">Loading Telegram status...</div>
+          ) : status.linked ? (
+            <div className="space-y-3">
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <p className="text-sm font-medium text-emerald-700">Connected</p>
+                <p className="text-sm text-emerald-700 mt-1">
+                  Telegram: {linkedUsername}
                 </p>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={pushState === 'subscribed'}
-                aria-label="Toggle push notifications"
-                onClick={handleTogglePush}
-                disabled={pushBusy}
-                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:opacity-60 ${
-                  pushState === 'subscribed' ? 'bg-brand-600' : 'bg-stone-300'
-                }`}
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    pushState === 'subscribed' ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-
-            {pushState === 'subscribed' && (
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={handleSendTestPush}
-                  disabled={pushTesting}
+                  onClick={loadStatus}
                   className="btn-secondary"
                 >
-                  {pushTesting ? 'Sending...' : 'Send test'}
+                  Refresh status
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDisconnect}
+                  disabled={disconnecting}
+                  className="btn-danger"
+                >
+                  {disconnecting ? 'Disconnecting...' : 'Disconnect Telegram'}
                 </button>
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                Not connected yet. Generate a one-time link code below, then finish linking in Telegram.
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleStartLink}
+                  disabled={starting}
+                  className="btn-primary"
+                >
+                  {starting ? 'Generating...' : 'Connect Telegram'}
+                </button>
+                <button
+                  type="button"
+                  onClick={loadStatus}
+                  className="btn-secondary"
+                >
+                  Refresh status
+                </button>
+              </div>
+
+              {startInfo && (
+                <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 space-y-3">
+                  <p className="text-sm text-stone-700">
+                    <span className="font-semibold">Manual command:</span> Send{' '}
+                    <code className="bg-white px-1.5 py-0.5 rounded border">/link {startInfo.linkCode}</code>{' '}
+                    to the bot.
+                  </p>
+                  {startInfo.deepLinkUrl && (
+                    <p className="text-sm text-stone-700">
+                      <span className="font-semibold">Deep link:</span>{' '}
+                      <a
+                        href={startInfo.deepLinkUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="card-link break-all"
+                      >
+                        {startInfo.deepLinkUrl}
+                      </a>
+                    </p>
+                  )}
+                  <p className="text-xs text-stone-500">
+                    Expires at: {new Date(startInfo.expiresAt).toLocaleString()}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Version / meta */}
+      <p className="pb-2 text-center text-[11px] font-medium tracking-wide text-stone-400">
+        Version {APP_VERSION}
+      </p>
     </div>
   );
 };

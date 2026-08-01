@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { CheckCircle2 } from 'lucide-react';
 import { User } from '../../App';
 import { api } from '../../utils/api';
 import { UserManagement } from './UserManagement';
@@ -38,16 +39,10 @@ interface AppSettings {
 }
 
 export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
-  // Access control: Only admins, accountants, and developers can access settings
-  if (user.role !== 'admin' && user.role !== 'accountant' && user.role !== 'developer') {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">Access denied. Only administrators, accountants, and developers can access settings.</p>
-        </div>
-      </div>
-    );
-  }
+  // Access control: Only admins, accountants, and developers can access settings.
+  // The guard render happens below, after hooks, to satisfy the rules of hooks;
+  // effects bail early so unauthorized users trigger no fetches.
+  const isAllowed = user.role === 'admin' || user.role === 'accountant' || user.role === 'developer';
 
   // State initialization - default to system
   const [activeTab, setActiveTab] = useState<'system' | 'users'>('system');
@@ -108,6 +103,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
 
   // Check sessionStorage and hash on mount to set initial tab
   useEffect(() => {
+    if (!isAllowed) return;
     // Priority 1: Check sessionStorage (more reliable for programmatic navigation)
     const targetTab = sessionStorage.getItem('openSettingsTab');
     if (targetTab === 'users') {
@@ -117,9 +113,10 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
       // Priority 2: Check hash (for manual navigation or bookmarks)
       setActiveTab('users');
     }
-  }, []);
+  }, [isAllowed]);
 
   useEffect(() => {
+    if (!isAllowed) return;
     (async () => {
       if (api.USE_SERVER) {
         try {
@@ -178,10 +175,12 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
         if (storedSettings) setSettings(JSON.parse(storedSettings));
       }
     })();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per access grant; settings defaults are intentionally the mount-time fallback
+  }, [isAllowed]);
 
   // Watch for hash changes to switch tabs
   useEffect(() => {
+    if (!isAllowed) return;
     const handleHashChange = () => {
       if (window.location.hash === '#users') {
         setActiveTab('users');
@@ -190,7 +189,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [isAllowed]);
 
   const saveSettings = async (updatedSettings?: AppSettings) => {
     const settingsToSave = updatedSettings || settings;
@@ -413,6 +412,17 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
     }
   };
 
+  if (!isAllowed) {
+    return (
+      <div className="p-6">
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+          <p className="text-sm font-semibold text-red-700">Access denied</p>
+          <p className="mt-1 text-sm text-red-600">Only administrators, accountants, and developers can access settings.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <AdminSettingsHeader />
@@ -436,15 +446,14 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user }) => {
           <RoleManagement />
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Auto-save Note */}
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <p className="text-sm text-blue-800">
-              <strong>Note:</strong> Changes to these settings are automatically saved to the database and will be immediately reflected in all expense forms and dropdowns throughout the application.
-            </p>
-          </div>
+          <p className="flex items-start gap-1.5 text-xs text-stone-500">
+            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
+            <span>Changes save automatically and apply immediately to expense forms and dropdowns across the app.</span>
+          </p>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-5 lg:gap-6">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start md:gap-5 lg:gap-6">
             <CardOptionsSection
               cardOptions={settings.cardOptions}
               entityOptions={settings.entityOptions}

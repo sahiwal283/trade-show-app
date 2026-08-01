@@ -349,6 +349,7 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
               <SortableTh label="Amount" primaryKey="amount-highest" secondaryKey="amount-lowest" sortBy={sortBy} setSortBy={setSortBy} align="right" />
               <th className={`${thBase} text-left`}>Status</th>
               <th className={`${thBase} text-left`}>Receipt</th>
+              {hasApprovalPermission && <th className={`${thBase} text-left`}>Zoho</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
@@ -363,7 +364,11 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
                   event={event}
                   userName={userName}
                   hasApprovalPermission={hasApprovalPermission}
+                  entityOptions={entityOptions}
+                  pushingExpenseId={props.pushingExpenseId}
                   pushedExpenses={props.pushedExpenses}
+                  onAssignEntity={props.onAssignEntity}
+                  onPushToZoho={props.onPushToZoho}
                   onViewExpense={props.onViewExpense}
                   isSelected={selectedIds.has(expense.id)}
                   onToggleSelect={hasApprovalPermission ? toggleSelect : undefined}

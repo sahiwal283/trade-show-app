@@ -8,6 +8,7 @@ import {
   Building2,
   X,
   ArrowLeft,
+  Users,
 } from 'lucide-react';
 import { User, Expense } from '../../App';
 import { ExpenseChart } from './ExpenseChart';
@@ -18,7 +19,8 @@ import { EntityCategoryMatrix } from './EntityCategoryMatrix';
 import { CollapsibleCard } from './CollapsibleCard';
 import { ShowComparison } from './ShowComparison';
 import { useShowSummaries } from './hooks/useShowSummaries';
-import { useCrmLeads } from './hooks/useCrmLeads';
+import { useCrmLeads, useCrmLeadOwners } from './hooks/useCrmLeads';
+import { LeadPerformance } from './LeadPerformance';
 import { api } from '../../utils/api';
 import { useReportsData } from './hooks/useReportsData';
 import { useReportsFilters } from './hooks/useReportsFilters';
@@ -77,6 +79,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   // Aggregate show totals: imported 2025 history + live data (investment view)
   const { rows: summaryRows } = useShowSummaries();
   const { rows: crmLeadRows } = useCrmLeads();
+  const { rows: crmOwnerRows } = useCrmLeadOwners();
 
   // Stable entity → color assignment shared by the donut, stacked bars, matrix,
   // and the investment comparison (historical companies included)
@@ -480,6 +483,23 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
           leads={crmLeadRows}
           onOpenShow={handleTradeShowClick}
         />
+      )}
+
+      {/* Lead performance — what the shows produced (CRM leads). Hidden
+          entirely while the CRM is not connected / has no leads. */}
+      {selectedEvent === 'all' && reportType === 'overview' && crmLeadRows.length > 0 && (
+        <CollapsibleCard
+          title="Lead Performance"
+          subtitle="Leads captured at each show, rep leaderboard, and email engagement"
+          icon={Users}
+          iconClassName="bg-brand-50 text-brand-600 ring-brand-100"
+        >
+          <LeadPerformance
+            leadRows={crmLeadRows}
+            ownerRows={crmOwnerRows}
+            costRows={summaryRows}
+          />
+        </CollapsibleCard>
       )}
 
       {/* Who paid for what — entity split per category, click rows to filter */}

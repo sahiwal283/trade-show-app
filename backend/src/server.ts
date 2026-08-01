@@ -31,6 +31,7 @@ import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
 import { travelReminderService } from './services/TravelReminderService';
 import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
+import { leadConversionService } from './services/LeadConversionService';
 import { runMigrations } from './database/migrate';
 
 dotenv.config();
@@ -204,6 +205,11 @@ const startServer = () => {
 
     // Zoho CRM lead sync — daily; idles until ZOHO_CRM_REFRESH_TOKEN is set
     zohoCrmLeadsService.startScheduler();
+
+    // Lead → Books customer conversion matching — nightly, after the lead
+    // sync's startup pass; no-ops until the Books list actions are enabled
+    // on the shared Zoho integration service
+    leadConversionService.startScheduler();
   });
 };
 
