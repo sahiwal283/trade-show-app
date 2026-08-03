@@ -18,6 +18,7 @@ interface ExpenseCardListProps {
   events: TradeShow[];
   users: User[];
   hasApprovalPermission: boolean;
+  reviewInMidas?: boolean;
   onViewExpense: (expense: Expense) => void;
 }
 
@@ -26,6 +27,7 @@ export function ExpenseCardList({
   events,
   users,
   hasApprovalPermission,
+  reviewInMidas = false,
   onViewExpense,
 }: ExpenseCardListProps) {
   return (
@@ -34,7 +36,7 @@ export function ExpenseCardList({
         const eventName = events.find(e => e.id === expense.tradeShowId)?.name;
         const userName =
           expense.user_name || users.find(u => u.id === expense.userId)?.name || 'Unknown';
-        const needsEntity = hasApprovalPermission && !expense.zohoEntity;
+        const needsEntity = hasApprovalPermission && !reviewInMidas && !expense.zohoEntity;
         const needsReimbursement =
           expense.reimbursementRequired &&
           expense.reimbursementStatus !== 'paid' &&

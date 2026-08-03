@@ -7,6 +7,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from './logger';
 import { AppError } from '../utils/errors';
+import { MidasApiError } from '../services/midas/MidasTypes';
 
 export interface ApiError extends Error {
   statusCode?: number;
@@ -19,7 +20,7 @@ export interface ApiError extends Error {
  * Now supports both legacy ApiError and new AppError classes
  */
 export function errorHandler(
-  err: ApiError | AppError,
+  err: ApiError | AppError | MidasApiError,
   req: Request,
   res: Response,
   next: NextFunction
@@ -38,6 +39,26 @@ export function errorHandler(
       error: err.message,
       ...(err.context && { details: err.context }),
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    });
+  }
+
+  // Midas Ext errors use `status` (not statusCode) — forward client/upstream codes as-is
+  // (e.g. Ext 400 OCR_INVALID_FILE must remain 400 on BFF, never collapsed to 500).
+  if (err instanceof MidasApiError) {
+    logger.error(`Midas API Error: ${err.message}`, {
+      statusCode: err.status,
+      code: err.code,
+      requestId: err.requestId,
+      path: req.path,
+      method: req.method,
+    });
+    if (err.requestId) {
+      res.setHeader('X-Request-Id', err.requestId);
+    }
+    return res.status(err.status).json({
+      error: err.message,
+      code: err.code,
+      ...(err.requestId ? { requestId: err.requestId } : {}),
     });
   }
 

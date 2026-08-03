@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { AlertTriangle, Loader2, Upload } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Loader2, Upload } from 'lucide-react';
 import { Expense } from '../../../App';
 import { getStatusColor, getReimbursementStatusColor, formatReimbursementStatus } from '../../../constants/appConstants';
 
@@ -24,6 +24,8 @@ type ExpenseStatus = 'pending' | 'approved' | 'rejected' | 'needs further review
 interface ExpenseModalStatusManagementProps {
   expense: Expense;
   hasApprovalPermission: boolean;
+  /** When true, local approve/entity/Zoho controls are replaced by Open in Midas */
+  reviewInMidas?: boolean;
   entityOptions: string[];
   auditTrail: AuditEntry[];
   onStatusChange?: (newStatus: ExpenseStatus) => Promise<void>;
@@ -69,6 +71,7 @@ const EditWarning: React.FC<{ count: number; message: string }> = ({ count, mess
 export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagementProps> = ({
   expense,
   hasApprovalPermission,
+  reviewInMidas = false,
   entityOptions,
   auditTrail,
   onStatusChange,
@@ -80,14 +83,37 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
 }) => {
   const editCount = getEditCount(auditTrail);
   const hasBeenPushed = !!expense.zohoExpenseId || isPushed;
+  const canEditLocally = hasApprovalPermission && !reviewInMidas;
 
   return (
+    <div className="space-y-4">
+      {reviewInMidas && hasApprovalPermission && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
+          <p className="text-sm text-stone-600">
+            Approve, assign entity, and push to Zoho in Midas.
+          </p>
+          {expense.midasUrl ? (
+            <a
+              href={expense.midasUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-sm"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Open in Midas
+            </a>
+          ) : (
+            <span className="text-xs text-stone-400">Midas link unavailable</span>
+          )}
+        </div>
+      )}
+
     <div className="flex flex-wrap gap-6">
       {/* Status - Editable by admin/accountant, or read-only (auto-updates on entity/reimbursement/push) */}
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Status</p>
         <div className="flex items-center space-x-2">
-          {hasApprovalPermission && onStatusChange ? (
+          {canEditLocally && onStatusChange ? (
             <select
               value={expense.status}
               onChange={async (e) => {
@@ -116,7 +142,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
                   ? 'Needs Further Review'
                   : expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
               </span>
-              {hasApprovalPermission && <span className="text-xs text-stone-400 italic">(auto-updates)</span>}
+              {canEditLocally && <span className="text-xs text-stone-400 italic">(auto-updates)</span>}
             </>
           )}
         </div>
@@ -126,7 +152,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
       {expense.reimbursementRequired ? (
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Reimbursement</p>
-          {hasApprovalPermission ? (
+          {canEditLocally ? (
             <select
               value={expense.reimbursementStatus || 'pending review'}
               onChange={async (e) => {
@@ -176,7 +202,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
       {/* Entity */}
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Entity</p>
-        {hasApprovalPermission ? (
+        {canEditLocally ? (
           <select
             value={expense.zohoEntity || ''}
             onChange={async (e) => {
@@ -219,7 +245,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
       </div>
 
       {/* Zoho Push Status */}
-      {hasApprovalPermission && expense.zohoEntity && (
+      {canEditLocally && expense.zohoEntity && (
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Zoho Status</p>
           {hasBeenPushed ? (
@@ -265,6 +291,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
           )}
         </div>
       )}
+    </div>
     </div>
   );
 };

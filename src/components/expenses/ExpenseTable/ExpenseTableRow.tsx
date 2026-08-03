@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { AlertTriangle, Check, Loader2, Paperclip } from 'lucide-react';
+import { AlertTriangle, Check, ExternalLink, Loader2, Paperclip } from 'lucide-react';
 import { Expense, TradeShow } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 import {
@@ -23,6 +23,7 @@ interface ExpenseTableRowProps {
   event: TradeShow | undefined;
   userName: string;
   hasApprovalPermission: boolean;
+  reviewInMidas?: boolean;
   entityOptions: string[];
   pushingExpenseId: string | null;
   pushedExpenses: Set<string>;
@@ -46,6 +47,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
   event,
   userName,
   hasApprovalPermission,
+  reviewInMidas = false,
   entityOptions,
   pushingExpenseId,
   pushedExpenses,
@@ -194,6 +196,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
       </td>
 
       {/* Zoho fast path (approvers only): assign entity → push → pushed.
+          When review is owned by Midas, show Open in Midas instead.
           Clicks and key presses stay inside the cell so they never open
           the row's detail modal. */}
       {hasApprovalPermission && (
@@ -202,7 +205,22 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          {!expense.zohoEntity ? (
+          {reviewInMidas ? (
+            expense.midasUrl ? (
+              <a
+                href={expense.midasUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-secondary inline-flex h-8 min-h-0 items-center gap-1.5 px-2.5 py-0 text-xs"
+                title="Open expense in Midas"
+              >
+                <ExternalLink className="h-3.5 w-3.5" />
+                Midas
+              </a>
+            ) : (
+              <span className="text-xs text-stone-300">—</span>
+            )
+          ) : !expense.zohoEntity ? (
             <select
               value=""
               onChange={(e) => {

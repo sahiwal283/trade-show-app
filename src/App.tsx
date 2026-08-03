@@ -91,6 +91,9 @@ export interface Expense {
   // Pre-fetched from backend JOINs (when available)
   user_name?: string;
   event_name?: string;
+  /** Deep link into Midas when EXPENSE_BACKEND=midas|dual */
+  midasUrl?: string;
+  midasExpenseId?: string;
 }
 
 function App() {

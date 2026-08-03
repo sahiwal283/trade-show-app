@@ -45,6 +45,13 @@ export const api = {
   // Expenses
   getExpenses: (params?: Record<string, string | number | boolean>) => 
     apiClient.get('/expenses', { params }),
+
+  getExpenseEngine: (): Promise<{
+    backend: 'local' | 'dual' | 'midas';
+    midasMode: string;
+    reviewInMidas: boolean;
+    poweredByMidas: boolean;
+  }> => apiClient.get('/expenses/engine'),
   
   createExpense: async (payload: Record<string, any>, receipt?: File) => {
     if (receipt) {
