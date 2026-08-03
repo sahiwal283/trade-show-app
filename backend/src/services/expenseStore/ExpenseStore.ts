@@ -55,6 +55,8 @@ export interface CreateExpenseInput {
   category: string;
   description?: string;
   cardUsed?: string;
+  /** Prefer when known; otherwise BFF resolves from cardUsed via Ext catalog */
+  paymentMethodId?: string | null;
   location?: string;
   reimbursementRequired?: boolean;
   zohoEntity?: string | null;
@@ -71,6 +73,7 @@ export interface UpdateExpenseInput {
   category?: string;
   description?: string | null;
   cardUsed?: string | null;
+  paymentMethodId?: string | null;
   location?: string | null;
   reimbursementRequired?: boolean;
   zohoEntity?: string | null;

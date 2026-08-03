@@ -19,6 +19,7 @@ import {
   MidasPatchBody,
   MidasReceiptDto,
   MidasCategory,
+  MidasPaymentMethod,
 } from './MidasTypes';
 
 function actorHeaders(actor?: MidasActor): Record<string, string> {
@@ -244,6 +245,16 @@ export class MidasClient {
       const res = await this.http.get('/categories');
       const data = await this.parse<{ categories: MidasCategory[] }>(res.status, res.data, [200]);
       return data.categories;
+    } catch (e) {
+      return toMidasError(e);
+    }
+  }
+
+  async listPaymentMethods(): Promise<MidasPaymentMethod[]> {
+    try {
+      const res = await this.http.get('/payment-methods');
+      const data = await this.parse<{ paymentMethods: MidasPaymentMethod[] }>(res.status, res.data, [200]);
+      return data.paymentMethods;
     } catch (e) {
       return toMidasError(e);
     }

@@ -1,6 +1,7 @@
 import { getMidasClient } from '../midas';
 import { mapTsStatusToMidas } from '../midas/statusMaps';
 import { resolveCategoryName } from '../midas/categoryMap';
+import { resolvePaymentMethod } from '../midas/paymentMethodMap';
 import { midasDtoToTsExpense } from './midasAdapter';
 import type {
   CreateExpenseInput,
@@ -58,6 +59,16 @@ export class MidasExpenseStore implements ExpenseStore {
   async create(input: CreateExpenseInput, actor: ExpenseActor): Promise<TsExpenseApi> {
     const client = getMidasClient();
     const sourceRefId = input.sourceRefId || randomUUID();
+    const payment = await resolvePaymentMethod({
+      cardUsed: input.cardUsed,
+      paymentMethodId: input.paymentMethodId,
+      lister: () => client.listPaymentMethods(),
+    });
+    const zohoEntity =
+      input.zohoEntity && String(input.zohoEntity).trim()
+        ? input.zohoEntity
+        : payment?.defaultZohoEntity ?? null;
+
     const created = await client.createExpense(
       {
         sourceApp: 'trade_show',
@@ -72,11 +83,12 @@ export class MidasExpenseStore implements ExpenseStore {
         date: input.date,
         description: input.description ?? null,
         categoryName: resolveCategoryName(input.category),
+        paymentMethodId: payment?.id ?? input.paymentMethodId ?? null,
         cardUsed: input.cardUsed ?? null,
         location: input.location ?? null,
         reimbursementRequired: Boolean(input.reimbursementRequired),
         status: 'pending',
-        zohoEntity: input.zohoEntity ?? null,
+        zohoEntity,
       },
       { email: actor.email, externalUserId: actor.id, name: actor.name }
     );
@@ -98,6 +110,17 @@ export class MidasExpenseStore implements ExpenseStore {
   async update(id: string, input: UpdateExpenseInput, actor: ExpenseActor): Promise<TsExpenseApi> {
     const client = getMidasClient();
     const current = await this.resolveDto(id);
+
+    let paymentMethodId: string | null | undefined;
+    if (input.cardUsed !== undefined || input.paymentMethodId !== undefined) {
+      const payment = await resolvePaymentMethod({
+        cardUsed: input.cardUsed !== undefined ? input.cardUsed : current.cardUsed,
+        paymentMethodId: input.paymentMethodId,
+        lister: () => client.listPaymentMethods(),
+      });
+      paymentMethodId = payment?.id ?? input.paymentMethodId ?? null;
+    }
+
     const patched = await client.updateExpense(
       current.id,
       {
@@ -106,6 +129,7 @@ export class MidasExpenseStore implements ExpenseStore {
         date: input.date,
         description: input.description,
         categoryName: input.category ? resolveCategoryName(input.category) : undefined,
+        paymentMethodId,
         cardUsed: input.cardUsed,
         location: input.location,
         reimbursementRequired: input.reimbursementRequired,

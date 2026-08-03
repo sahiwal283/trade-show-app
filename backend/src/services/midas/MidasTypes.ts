@@ -60,6 +60,17 @@ export interface MidasCategory {
   isActive: boolean;
 }
 
+/** Ext GET /payment-methods (scope expenses:read) */
+export interface MidasPaymentMethod {
+  id: string;
+  label: string;
+  lastFour: string;
+  brand?: string | null;
+  defaultZohoEntity: string | null;
+  zohoPaymentAccountId?: string | null;
+  zohoAccountName?: string | null;
+}
+
 export interface MidasReceiptDto {
   id: string;
   filename: string;
@@ -188,6 +199,7 @@ export interface MidasImportItem {
   date: string;
   description?: string | null;
   categoryName?: string;
+  paymentMethodId?: string | null;
   cardUsed?: string | null;
   location?: string | null;
   status: string;

@@ -183,11 +183,24 @@ async function main() {
     process.exit(1);
   }
 
-  const { getMidasClient, getMidasMode } = await import('../services/midas');
+  const { getMidasClient } = await import('../services/midas');
   const { resolveCategoryName } = await import('../services/midas/categoryMap');
+  const { matchPaymentMethod } = await import('../services/midas/paymentMethodMap');
   const { mapTsStatusToMidas, mapTsReimbursementToMidas } = await import(
     '../services/midas/statusMaps'
   );
+
+  let paymentCatalog: import('../services/midas/MidasTypes').MidasPaymentMethod[] = [];
+  if (midasMode === 'live' || midasMode === 'mock') {
+    try {
+      paymentCatalog = await getMidasClient().listPaymentMethods();
+      console.log(
+        `[migrateExpensesToMidas] loaded ${paymentCatalog.length} payment method(s) from Ext`
+      );
+    } catch (err) {
+      console.warn('[migrateExpensesToMidas] payment-methods list failed; continuing without IDs:', err);
+    }
+  }
 
   const checkpoint = resume ? loadCheckpoint() : emptyCheckpoint();
 
@@ -274,6 +287,18 @@ async function main() {
       comments: r.comments || null,
     };
 
+    if (paymentCatalog.length > 0 && item.cardUsed) {
+      const payment = matchPaymentMethod(paymentCatalog, item.cardUsed);
+      if (payment) {
+        item.paymentMethodId = payment.id;
+        if (!item.zohoEntity || !String(item.zohoEntity).trim()) {
+          item.zohoEntity = payment.defaultZohoEntity;
+        }
+      } else {
+        warnings.push(`unmatched_payment_method:${item.cardUsed}`);
+      }
+    }
+
     if (r.extracted_data && typeof r.extracted_data === 'object' && !Array.isArray(r.extracted_data)) {
       item.extractedData = r.extracted_data;
     }
@@ -309,6 +334,9 @@ async function main() {
       amount: item.amount,
       status: item.status,
       categoryName: item.categoryName,
+      cardUsed: item.cardUsed,
+      paymentMethodId: item.paymentMethodId ?? null,
+      zohoEntity: item.zohoEntity,
       hasReceipt: Boolean(item.receipt),
       receiptBytes: item.receipt ? Buffer.from(item.receipt.contentBase64, 'base64').length : 0,
       skipOcr: item.receipt?.skipOcr,
@@ -317,7 +345,14 @@ async function main() {
     }));
     const report: Record<string, unknown> = {
       mode: 'dry-run',
-      inventory,
+      inventory: {
+        ...inventory,
+        paymentMethodsLoaded: paymentCatalog.length,
+        withPaymentMethodId: built.filter((b) => b.item.paymentMethodId).length,
+        unmatchedPaymentMethod: built.filter((b) =>
+          b.warnings.some((w) => w.startsWith('unmatched_payment_method:'))
+        ).length,
+      },
       sample,
       wouldImport: rows.length,
       batchSize,
@@ -380,7 +415,7 @@ async function main() {
     );
   }
 
-  if (getMidasMode() === 'disabled') {
+  if (midasMode === 'disabled') {
     console.error('MIDAS_MODE is disabled');
     process.exit(1);
   }

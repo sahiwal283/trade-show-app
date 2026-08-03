@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   mapTsStatusToMidas,
   mapMidasStatusToTs,
@@ -7,6 +7,15 @@ import {
 } from '../../../src/services/midas/statusMaps';
 import { resolveCategoryName } from '../../../src/services/midas/categoryMap';
 import { MockMidasClient } from '../../../src/services/midas/MockMidasClient';
+import {
+  clearPaymentMethodCache,
+  matchPaymentMethod,
+  parseCardUsed,
+  resolvePaymentMethod,
+  TRADE_SHOW_PAYMENT_METHOD_SEED,
+} from '../../../src/services/midas/paymentMethodMap';
+import { MidasExpenseStore } from '../../../src/services/expenseStore/MidasExpenseStore';
+import { getMidasClient, resetMidasClientSingleton } from '../../../src/services/midas';
 
 describe('statusMaps', () => {
   it('maps needs further review to awaiting_info and back', () => {
@@ -37,6 +46,64 @@ describe('categoryMap', () => {
     expect(resolveCategoryName('Meal and Entertainment')).toBe('Meal and Entertainment');
     expect(resolveCategoryName('Uber ride')).toBe('Transportation - Uber / Lyft / Others');
     expect(resolveCategoryName('weird stuff')).toBe('Other');
+  });
+});
+
+describe('paymentMethodMap', () => {
+  const catalog = TRADE_SHOW_PAYMENT_METHOD_SEED.map((m) => ({
+    id: m.id,
+    label: m.label,
+    lastFour: m.lastFour,
+    brand: 'other',
+    defaultZohoEntity: m.defaultZohoEntity,
+    zohoPaymentAccountId: m.zohoPaymentAccountId,
+    zohoAccountName: m.zohoPaymentAccountId,
+  }));
+
+  it('parses UI cardUsed form with lastFour', () => {
+    expect(parseCardUsed('Haute PNC (...3490)')).toEqual({
+      label: 'Haute PNC',
+      lastFour: '3490',
+      raw: 'Haute PNC (...3490)',
+    });
+  });
+
+  it('matches uniquely by lastFour', () => {
+    const hit = matchPaymentMethod(catalog, 'Haute PNC (...3490)');
+    expect(hit?.match).toBe('lastFour');
+    expect(hit?.id).toBe('11111111-0000-4000-8000-000000000002');
+    expect(hit?.defaultZohoEntity).toBe('Haute Brands');
+  });
+
+  it('disambiguates duplicate labels via lastFour', () => {
+    const hit = matchPaymentMethod(catalog, 'Nirvana PNC (...4171)');
+    expect(hit?.lastFour).toBe('4171');
+    expect(hit?.id).toBe('11111111-0000-4000-8000-000000000007');
+  });
+
+  it('does not match ambiguous label-only when duplicates exist', () => {
+    expect(matchPaymentMethod(catalog, 'Nirvana PNC')).toBeNull();
+  });
+
+  it('resolvePaymentMethod uses mock lister and caches', async () => {
+    clearPaymentMethodCache();
+    const client = new MockMidasClient();
+    let calls = 0;
+    const lister = async () => {
+      calls += 1;
+      return client.listPaymentMethods();
+    };
+    const a = await resolvePaymentMethod({
+      cardUsed: 'Boomin PNC (...7458)',
+      lister,
+    });
+    const b = await resolvePaymentMethod({
+      cardUsed: 'Boomin Capital One (...9330)',
+      lister,
+    });
+    expect(a?.id).toBe('11111111-0000-4000-8000-000000000003');
+    expect(b?.defaultZohoEntity).toBe('Boomin Brands');
+    expect(calls).toBe(1);
   });
 });
 
@@ -71,5 +138,51 @@ describe('MockMidasClient', () => {
     expect(ocr.fields.merchant.value).toBeTruthy();
     const list = await client.listExpenses({ sourceApp: 'trade_show' });
     expect(list.expenses).toHaveLength(0);
+  });
+
+  it('lists the seeded payment method catalog', async () => {
+    const client = new MockMidasClient();
+    const methods = await client.listPaymentMethods();
+    expect(methods).toHaveLength(12);
+    expect(methods.find((m) => m.lastFour === '3490')?.label).toBe('Haute PNC');
+  });
+});
+
+describe('MidasExpenseStore paymentMethodId', () => {
+  beforeEach(() => {
+    process.env.MIDAS_MODE = 'mock';
+    resetMidasClientSingleton();
+    clearPaymentMethodCache();
+  });
+
+  it('sends paymentMethodId and fills defaultZohoEntity on create', async () => {
+    const store = new MidasExpenseStore();
+    const actor = {
+      id: 'user-1',
+      email: 'a@example.com',
+      name: 'A',
+      role: 'admin',
+      username: 'admin',
+    };
+    const created = await store.create(
+      {
+        eventId: 'event-1',
+        eventName: 'Expo',
+        merchant: 'Cafe',
+        amount: 22.5,
+        date: '2026-08-01',
+        category: 'Meal and Entertainment',
+        cardUsed: 'Haute PNC (...3490)',
+      },
+      actor
+    );
+    expect(created.midasExpenseId).toBeTruthy();
+    expect(created.zohoEntity).toBe('Haute Brands');
+    expect(created.cardUsed).toBe('Haute PNC (...3490)');
+
+    const dto = await getMidasClient().getExpense(created.midasExpenseId!);
+    expect(dto.paymentMethod?.id).toBe('11111111-0000-4000-8000-000000000002');
+    expect(dto.zohoEntity).toBe('Haute Brands');
+    expect(dto.sourceContext.cardUsed).toBe('Haute PNC (...3490)');
   });
 });

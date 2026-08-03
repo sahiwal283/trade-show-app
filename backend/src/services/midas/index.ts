@@ -5,6 +5,7 @@
 import { MidasClient } from './MidasClient';
 import { MockMidasClient } from './MockMidasClient';
 import type { MidasClientConfig } from './MidasTypes';
+import { clearPaymentMethodCache, setPaymentMethodLister } from './paymentMethodMap';
 
 export type MidasMode = 'disabled' | 'mock' | 'live';
 
@@ -47,17 +48,23 @@ export function createMidasClient(): AnyMidasClient {
 let singleton: AnyMidasClient | null = null;
 
 export function getMidasClient(): AnyMidasClient {
-  if (!singleton) singleton = createMidasClient();
+  if (!singleton) {
+    singleton = createMidasClient();
+    setPaymentMethodLister(() => singleton!.listPaymentMethods());
+  }
   return singleton;
 }
 
 /** Test helper */
 export function resetMidasClientSingleton(): void {
   singleton = null;
+  setPaymentMethodLister(null);
+  clearPaymentMethodCache();
 }
 
 export * from './MidasTypes';
 export * from './statusMaps';
 export * from './categoryMap';
+export * from './paymentMethodMap';
 export { MidasClient } from './MidasClient';
 export { MockMidasClient } from './MockMidasClient';

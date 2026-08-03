@@ -4,6 +4,7 @@
 
 import { randomUUID, createHash } from 'crypto';
 import { TRADE_SHOW_CATEGORY_NAMES } from './categoryMap';
+import { TRADE_SHOW_PAYMENT_METHOD_SEED } from './paymentMethodMap';
 import {
   MidasActor,
   MidasCategory,
@@ -16,6 +17,7 @@ import {
   MidasListResult,
   MidasOcrResult,
   MidasPatchBody,
+  MidasPaymentMethod,
   MidasReceiptDto,
   MidasApiError,
 } from './MidasTypes';
@@ -29,6 +31,7 @@ export class MockMidasClient {
   private byRef = new Map<string, string>(); // sourceApp::sourceRefId -> id
   private receipts = new Map<string, Buffer>(); // receiptId -> bytes
   private readonly categories: MidasCategory[];
+  private readonly paymentMethods: MidasPaymentMethod[];
   private readonly webBaseUrl: string;
 
   constructor(webBaseUrl = 'http://localhost:5174') {
@@ -38,6 +41,15 @@ export class MockMidasClient {
       name,
       description: null,
       isActive: true,
+    }));
+    this.paymentMethods = TRADE_SHOW_PAYMENT_METHOD_SEED.map((m) => ({
+      id: m.id,
+      label: m.label,
+      lastFour: m.lastFour,
+      brand: 'other',
+      defaultZohoEntity: m.defaultZohoEntity,
+      zohoPaymentAccountId: m.zohoPaymentAccountId,
+      zohoAccountName: m.zohoPaymentAccountId,
     }));
   }
 
@@ -55,6 +67,12 @@ export class MockMidasClient {
       return { id: c.id, name: c.name };
     }
     return null;
+  }
+
+  private resolvePaymentMethod(paymentMethodId?: string | null) {
+    if (!paymentMethodId) return null;
+    const m = this.paymentMethods.find((x) => x.id === paymentMethodId);
+    return m ? { id: m.id, label: m.label } : null;
   }
 
   async processOcr(_file: Buffer, filename: string, _mime: string): Promise<MidasOcrResult> {
@@ -91,6 +109,7 @@ export class MockMidasClient {
     const id = randomUUID();
     const now = new Date().toISOString();
     const category = this.resolveCategory(body.categoryId, body.categoryName);
+    const paymentMethod = this.resolvePaymentMethod(body.paymentMethodId);
     const expense: MidasExpenseDto = {
       id,
       merchant: body.merchant,
@@ -117,7 +136,7 @@ export class MockMidasClient {
         externalUserId: body.externalUserId || actor.externalUserId,
       },
       category,
-      paymentMethod: null,
+      paymentMethod,
       user: {
         id: randomUUID(),
         name: actor.name || actor.email.split('@')[0],
@@ -176,6 +195,9 @@ export class MockMidasClient {
     if (patch.description !== undefined) e.description = patch.description;
     if (patch.location !== undefined) e.location = patch.location;
     if (patch.cardUsed !== undefined) e.cardUsed = patch.cardUsed;
+    if (patch.paymentMethodId !== undefined) {
+      e.paymentMethod = this.resolvePaymentMethod(patch.paymentMethodId);
+    }
     if (patch.categoryId || patch.categoryName) {
       e.category = this.resolveCategory(patch.categoryId, patch.categoryName);
     }
@@ -258,6 +280,7 @@ export class MockMidasClient {
             date: item.date,
             description: item.description,
             categoryName: item.categoryName,
+            paymentMethodId: item.paymentMethodId,
             cardUsed: item.cardUsed,
             location: item.location,
             reimbursementRequired: item.reimbursementRequired,
@@ -293,5 +316,9 @@ export class MockMidasClient {
 
   async listCategories(): Promise<MidasCategory[]> {
     return this.categories;
+  }
+
+  async listPaymentMethods(): Promise<MidasPaymentMethod[]> {
+    return this.paymentMethods;
   }
 }
