@@ -258,3 +258,45 @@ actually see.
 **Phase 2 is required, not optional.** Until it lands, the hardcoded lists and dead admin
 components remain in the tree behind a flag. Leaving them indefinitely recreates the
 drift this design exists to remove.
+
+
+## Follow-up: expense store retirement (added 2026-08-11)
+
+Midas is the system of record for expenses under `EXPENSE_BACKEND=midas`;
+`MidasExpenseStore` has no local database access. The local `expenses` table
+stopped receiving writes at the migration cutover (375 rows, newest
+`created_at` 2026-07-31) while Midas moved ahead, so any consumer still
+querying it was answering from pre-cutover data.
+
+Every runtime reader has been repointed at Midas or removed. The local SQL
+paths remain behind `resolveExpenseBackend()` guards because production still
+runs `EXPENSE_BACKEND=local` and depends on them. `ExpenseService`,
+`LocalExpenseStore` and `expenseRepository` are that implementation and stay
+until production cuts over; the table is not dropped.
+
+### Open request to Midas: an Ext aggregates endpoint
+
+`GET /ext/expenses` offers cursor paging at 200 rows per request with no
+totals, counts, or grouping. Consumers that previously used SQL `SUM`/`COUNT`/
+`GROUP BY` — the developer dashboard and the show-summary report — now page the
+full set and fold it in memory (`midasExpenseReader`).
+
+That is correct and fast enough at a few hundred expenses (one or two
+requests). It scales linearly, so it becomes a real problem in the thousands.
+The fix is a Midas-side `GET /ext/expenses/summary` returning grouped totals,
+keeping aggregation in the database. Until it exists, `MAX_PAGES` in
+`midasExpenseReader` bounds the work and logs when it truncates.
+
+`GET /ext/expenses` also has no `updatedSince` filter. Nothing depends on one
+today — the dead `/api/sync` route that would have needed it has been deleted —
+but any future incremental sync would require it.
+
+### Known gap: duplicate detection does not run under Midas
+
+`DuplicateDetectionService` has been corrected to read candidates from Midas,
+but the create and update handlers in `routes/expenses.ts` return early on the
+`midas`/`dual` branch, before the duplicate check runs. Duplicate detection is
+therefore inactive under Midas — a dropped feature rather than a stale-data
+bug. Re-enabling it means calling the service inside the store branch and
+deciding where the warnings live, since `duplicate_check` is a local column
+that Midas has no equivalent for.
