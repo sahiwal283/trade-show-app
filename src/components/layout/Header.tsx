@@ -4,6 +4,7 @@ import { User, Expense } from '../../App';
 import { api } from '../../utils/api';
 import packageJson from '../../../package.json';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
+import { IS_SANDBOX } from '../../constants/appEnv';
 
 const APP_VERSION = packageJson.version;
 
@@ -94,8 +95,19 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
           </div>
 
           {/* Visible on every size so anyone can read off the running version */}
-          <div className="flex shrink-0 items-center px-2.5 py-1 rounded-full border border-stone-200 bg-stone-50">
-            <span className="text-[11px] font-medium tracking-wide text-stone-500">v{APP_VERSION}</span>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex items-center px-2.5 py-1 rounded-full border border-stone-200 bg-stone-50">
+              <span className="text-[11px] font-medium tracking-wide text-stone-500">v{APP_VERSION}</span>
+            </div>
+            {/* Non-production marker. Amber so it reads as a warning at a
+                glance and nobody mistakes sandbox data for the real thing. */}
+            {IS_SANDBOX && (
+              <div className="flex items-center px-2.5 py-1 rounded-full border border-amber-300 bg-amber-100">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-amber-800">
+                  Sandbox
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
