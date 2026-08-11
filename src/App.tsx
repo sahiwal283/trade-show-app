@@ -17,6 +17,7 @@ import { InstallPrompt } from './components/layout/InstallPrompt';
 import { InactivityWarning } from './components/common/InactivityWarning';
 import { NotificationBanner, useNotifications } from './components/common/NotificationBanner';
 import { SyncStatusBar } from './components/common/SyncStatusBar';
+import { PicklistProvider } from './contexts/PicklistContext';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { useAuth } from './hooks/useAuth';
 import { sessionManager } from './utils/sessionManager';
@@ -376,6 +377,9 @@ function App() {
   };
 
   return (
+    // Wraps only the authenticated tree — picklists need a token, so mounting
+    // this above the login screen would just produce a guaranteed 401.
+    <PicklistProvider>
     <div className="min-h-screen bg-stone-50 flex">
       {/* Sync Status Bar */}
       <SyncStatusBar position="top" />
@@ -457,6 +461,7 @@ function App() {
         timeRemaining={timeRemaining}
       />
     </div>
+    </PicklistProvider>
   );
 }
 

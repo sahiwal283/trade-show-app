@@ -5,9 +5,10 @@
  * Enhanced to support approval workflows when hasApprovalPermission is true
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { api } from '../../../../utils/api';
 import { Expense, TradeShow, User } from '../../../../App';
+import { usePicklists } from '../../../../contexts/PicklistContext';
 
 export interface ExpenseEngineMeta {
   backend: 'local' | 'dual' | 'midas';
@@ -33,7 +34,12 @@ export function useExpenses(options: UseExpensesOptions = {}) {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [entityOptions, setEntityOptions] = useState<string[]>([]);
+  // Companies (still labelled "Entity" in the UI) come from the shared picklist
+  // context now, not from app_settings — Midas is SoR after cutover. Every role
+  // gets the list; the approval-permission gate that used to hide it lived on
+  // the settings fetch, not on the data itself.
+  const { companies } = usePicklists();
+  const entityOptions = useMemo(() => companies.map((c) => c.name), [companies]);
   const [engine, setEngine] = useState<ExpenseEngineMeta>(DEFAULT_ENGINE);
   const [loading, setLoading] = useState(true);
 
@@ -44,12 +50,11 @@ export function useExpenses(options: UseExpensesOptions = {}) {
     if (api.USE_SERVER) {
       // All fetches are independent — run in parallel (1 round trip, not 2-4).
       // Failures stay isolated per endpoint, matching the old per-call try/catch.
-      const [expensesResult, eventsResult, usersResult, settingsResult, engineResult] =
+      const [expensesResult, eventsResult, usersResult, engineResult] =
         await Promise.allSettled([
           api.getExpenses(),
           api.getEvents(),
           hasApprovalPermission ? api.getUsers() : Promise.resolve([]),
-          hasApprovalPermission ? api.getSettings() : Promise.resolve(null),
           api.getExpenseEngine(),
         ]);
 
@@ -79,13 +84,6 @@ export function useExpenses(options: UseExpensesOptions = {}) {
         } else {
           console.error('[useExpenses] Failed to load users (non-critical):', usersResult.reason);
           setUsers([]);
-        }
-
-        if (settingsResult.status === 'fulfilled') {
-          setEntityOptions(settingsResult.value?.entityOptions || []);
-        } else {
-          console.error('[useExpenses] Failed to load settings (non-critical):', settingsResult.reason);
-          setEntityOptions([]);
         }
       }
     } else {

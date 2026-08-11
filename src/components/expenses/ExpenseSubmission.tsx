@@ -849,8 +849,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       startDate: e.startDate,
                       endDate: e.endDate,
                     }))}
-                    uniqueCategories={uniqueCategories}
-                    uniqueCards={uniqueCards}
                     onCancel={cancelInlineEdit}
                     onSave={saveInlineEdit}
                     receiptUrl={viewingExpense.receiptUrl}

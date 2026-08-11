@@ -6,6 +6,7 @@ import { AppError } from '../../types/types';
 import { isAcceptableReceiptFile } from '../../utils/fileValidation';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { getZohoExpenseDescriptionValidationMessage } from '../../utils/zohoExpenseDescription';
+import { usePicklists } from '../../contexts/PicklistContext';
 
 export interface ParsedReservation {
   confirmationNumber: string | null;
@@ -52,7 +53,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
   const [processing, setProcessing] = useState(false);
   const [_ocrData, setOcrData] = useState<any>(null); // Reserved for future use (e.g., OCR correction tracking)
   const [reservation, setReservation] = useState<ParsedReservation | null>(null);
-  const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string; entity?: string | null}>>([]);
+  const { paymentMethods } = usePicklists();
   const [formData, setFormData] = useState({
     merchant: '',
     amount: '',
@@ -86,20 +87,17 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
     handleFileSelect(file);
   };
 
-  // Load card options
-  React.useEffect(() => {
-    (async () => {
-      if (api.USE_SERVER) {
-        try {
-          const settings = await api.getSettings() as { cardOptions?: Array<{name: string; lastFour: string; entity?: string | null}> };
-          setCardOptions(settings.cardOptions || []);
-        } catch (error) {
-          console.error('[ChecklistReceiptUpload] Failed to load card options:', error);
-          setCardOptions([]);
-        }
-      }
-    })();
-  }, []);
+  // Card options come from the shared picklist context (Midas is SoR after
+  // cutover), mapped to this component's existing {name, lastFour, entity} shape.
+  const cardOptions = React.useMemo(
+    () =>
+      paymentMethods.map((pm) => ({
+        name: pm.label,
+        lastFour: pm.lastFour,
+        entity: pm.company,
+      })),
+    [paymentMethods]
+  );
 
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file);

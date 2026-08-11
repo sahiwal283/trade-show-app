@@ -60,6 +60,21 @@ export interface SyncMetadata {
   updatedAt: number;          // When this was last updated
 }
 
+/**
+ * Last known good option lists (categories, cards, companies) from
+ * GET /api/picklists. Single row, keyed 'current'.
+ *
+ * Expense entry cannot proceed without these, so they are cached to survive
+ * going offline. There is deliberately no hardcoded fallback: if this row is
+ * missing and the network is down, submission blocks rather than writing an
+ * expense against a guessed category or card.
+ */
+export interface CachedPicklists {
+  key: string;                // always 'current'
+  data: any;                  // the picklists payload as served
+  cachedAt: number;
+}
+
 // ========== DATABASE CLASS ==========
 
 export class OfflineDatabase extends Dexie {
@@ -69,10 +84,11 @@ export class OfflineDatabase extends Dexie {
   cachedEvents!: Table<CachedEvent, string>;
   cachedUsers!: Table<CachedUser, string>;
   syncMetadata!: Table<SyncMetadata, string>;
+  cachedPicklists!: Table<CachedPicklists, string>;
 
   constructor() {
     super('ExpenseAppOfflineDB');
-    
+
     // Define schema
     this.version(1).stores({
       syncQueue: 'id, status, entity, timestamp, userId',
@@ -81,6 +97,33 @@ export class OfflineDatabase extends Dexie {
       cachedUsers: 'id, syncStatus, lastModified',
       syncMetadata: 'key'
     });
+
+    // v2 adds the picklist cache. Dexie carries v1 tables forward, so only the
+    // new store is declared here.
+    this.version(2).stores({
+      cachedPicklists: 'key'
+    });
+  }
+
+  // ========== PICKLIST CACHE ==========
+
+  /** Last known good picklists, or null if nothing has ever been cached. */
+  async getCachedPicklists(): Promise<CachedPicklists | null> {
+    try {
+      return (await this.cachedPicklists.get('current')) ?? null;
+    } catch (error) {
+      console.error('[offlineDb] Failed to read cached picklists:', error);
+      return null;
+    }
+  }
+
+  async setCachedPicklists(data: any): Promise<void> {
+    try {
+      await this.cachedPicklists.put({ key: 'current', data, cachedAt: Date.now() });
+    } catch (error) {
+      // A failed cache write must not break a working online session.
+      console.error('[offlineDb] Failed to cache picklists:', error);
+    }
   }
 
   // ========== SYNC QUEUE OPERATIONS ==========

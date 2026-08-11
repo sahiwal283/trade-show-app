@@ -5,6 +5,7 @@ import { api } from '../../utils/api';
 import { UserManagement } from './UserManagement';
 import { RoleManagement } from './RoleManagement';
 import { AccountSettings } from '../account/AccountSettings';
+import { usePicklists } from '../../contexts/PicklistContext';
 import {
   AdminSettingsHeader,
   AdminSettingsTabs,
@@ -48,6 +49,9 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user, initialTab }
   // and developers. Effects bail early so unprivileged users trigger no
   // admin-settings fetches.
   const isPrivileged = user.role === 'admin' || user.role === 'accountant' || user.role === 'developer';
+
+  // 'midas' means the backend is cut over and these lists are read-only here.
+  const { source: picklistSource } = usePicklists();
 
   // State initialization - privileged roles keep the historical System
   // Settings default; everyone else lands directly on Account.
@@ -448,12 +452,28 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user, initialTab }
         </div>
       ) : (
         <div className="space-y-5">
-          {/* Auto-save Note */}
-          <p className="flex items-start gap-1.5 text-xs text-stone-500">
-            <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
-            <span>Changes save automatically and apply immediately to expense forms and dropdowns across the app.</span>
-          </p>
+          {/* Once Midas owns these lists they are not Trade Show's to edit, so
+              the editors are replaced by a pointer to where they now live.
+              The components stay in the tree until production cuts over too. */}
+          {picklistSource === 'midas' ? (
+            <p className="flex items-start gap-1.5 text-xs text-stone-500">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
+              <span>
+                Cards, entities, and categories are managed in Midas and sync automatically.
+                Add or change them there and they appear here within a minute.
+              </span>
+            </p>
+          ) : (
+            <p className="flex items-start gap-1.5 text-xs text-stone-500">
+              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-stone-400" />
+              <span>Changes save automatically and apply immediately to expense forms and dropdowns across the app.</span>
+            </p>
+          )}
 
+          {/* Explicitly 'settings', not "not midas" — source is null until the
+              picklists load, and rendering editors during that gap makes them
+              flash in and vanish. */}
+          {picklistSource === 'settings' && (
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2 xl:items-start md:gap-5 lg:gap-6">
             <CardOptionsSection
               cardOptions={settings.cardOptions}
@@ -525,6 +545,7 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user, initialTab }
               onSaveEdit={saveEditCategory}
             />
           </div>
+          )}
         </div>
       )}
     </div>

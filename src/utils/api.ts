@@ -333,6 +333,9 @@ export const api = {
   getSettings: () => apiClient.get('/settings'),
   updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
 
+  // Picklists (categories / cards / companies — Midas is SoR after cutover)
+  getPicklists: () => apiClient.get('/picklists'),
+
   // OCR
   processReceiptWithOCR: async (formData: FormData) => {
     const token = TokenManager.getToken();
