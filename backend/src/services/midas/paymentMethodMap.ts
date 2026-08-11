@@ -195,6 +195,22 @@ export async function resolvePaymentMethod(opts: {
   return resolved;
 }
 
+/**
+ * Companies snapshot used by MockMidasClient + unit tests.
+ * Mirrors Midas Ext GET /companies. `Summitt Labs` is intentionally
+ * zohoEnabled:false — a real, chargeable company that does not sync to Zoho.
+ */
+export const TRADE_SHOW_COMPANY_SEED: Array<{
+  name: string;
+  zohoEnabled: boolean;
+  sortOrder: number;
+}> = [
+  { name: 'Haute Brands', zohoEnabled: true, sortOrder: 1 },
+  { name: 'Nirvana Kulture', zohoEnabled: true, sortOrder: 2 },
+  { name: 'Boomin Brands', zohoEnabled: true, sortOrder: 3 },
+  { name: 'Summitt Labs', zohoEnabled: false, sortOrder: 4 },
+];
+
 /** Catalog snapshot used by MockMidasClient + unit tests (labels/lastFour from Midas sync). */
 export const TRADE_SHOW_PAYMENT_METHOD_SEED: Array<{
   id: string;
@@ -236,13 +252,6 @@ export const TRADE_SHOW_PAYMENT_METHOD_SEED: Array<{
     label: 'Nirvana PNC',
     lastFour: '7210',
     defaultZohoEntity: 'Nirvana Kulture',
-    zohoPaymentAccountId: null,
-  },
-  {
-    id: '11111111-0000-4000-8000-000000000006',
-    label: 'Sameer Summitt Card OLD',
-    lastFour: '3019',
-    defaultZohoEntity: 'Summitt Labs',
     zohoPaymentAccountId: null,
   },
   {

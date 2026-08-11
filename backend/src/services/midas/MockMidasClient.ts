@@ -4,10 +4,12 @@
 
 import { randomUUID, createHash } from 'crypto';
 import { TRADE_SHOW_CATEGORY_NAMES } from './categoryMap';
-import { TRADE_SHOW_PAYMENT_METHOD_SEED } from './paymentMethodMap';
+import { TRADE_SHOW_COMPANY_SEED, TRADE_SHOW_PAYMENT_METHOD_SEED } from './paymentMethodMap';
 import {
   MidasActor,
   MidasCategory,
+  MidasCompany,
+  MidasVocabularyHealth,
   MidasCreateExpenseBody,
   MidasCreateResult,
   MidasExpenseDto,
@@ -320,5 +322,26 @@ export class MockMidasClient {
 
   async listPaymentMethods(): Promise<MidasPaymentMethod[]> {
     return this.paymentMethods;
+  }
+
+  async listCompanies(): Promise<MidasCompany[]> {
+    return TRADE_SHOW_COMPANY_SEED.map((c) => ({ ...c }));
+  }
+
+  async vocabularyHealth(): Promise<MidasVocabularyHealth> {
+    const companies = TRADE_SHOW_COMPANY_SEED;
+    return {
+      appName: 'trade_show',
+      categories: {
+        visible: this.categories.length,
+        totalActiveInMidas: this.categories.length,
+        scoped: false,
+      },
+      paymentMethods: { visible: this.paymentMethods.length },
+      companies: {
+        visible: companies.length,
+        zohoEnabled: companies.filter((c) => c.zohoEnabled).length,
+      },
+    };
   }
 }

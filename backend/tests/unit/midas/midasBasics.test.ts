@@ -143,8 +143,28 @@ describe('MockMidasClient', () => {
   it('lists the seeded payment method catalog', async () => {
     const client = new MockMidasClient();
     const methods = await client.listPaymentMethods();
-    expect(methods).toHaveLength(12);
+    expect(methods).toHaveLength(11);
     expect(methods.find((m) => m.lastFour === '3490')?.label).toBe('Haute PNC');
+  });
+
+  it('omits cards Midas has deactivated', async () => {
+    const client = new MockMidasClient();
+    const methods = await client.listPaymentMethods();
+    // "Sameer Summitt Card OLD" (...3019) was deactivated in Midas. The mock
+    // catalog tracks the live one, so a stale card must not reappear here.
+    expect(methods.find((m) => m.lastFour === '3019')).toBeUndefined();
+  });
+
+  it('lists the seeded company catalog in sort order', async () => {
+    const client = new MockMidasClient();
+    const companies = await client.listCompanies();
+    expect(companies.map((c) => c.name)).toEqual([
+      'Haute Brands',
+      'Nirvana Kulture',
+      'Boomin Brands',
+      'Summitt Labs',
+    ]);
+    expect(companies.find((c) => c.name === 'Summitt Labs')?.zohoEnabled).toBe(false);
   });
 });
 

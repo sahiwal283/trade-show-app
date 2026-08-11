@@ -19,7 +19,9 @@ import {
   MidasPatchBody,
   MidasReceiptDto,
   MidasCategory,
+  MidasCompany,
   MidasPaymentMethod,
+  MidasVocabularyHealth,
 } from './MidasTypes';
 
 function actorHeaders(actor?: MidasActor): Record<string, string> {
@@ -255,6 +257,27 @@ export class MidasClient {
       const res = await this.http.get('/payment-methods');
       const data = await this.parse<{ paymentMethods: MidasPaymentMethod[] }>(res.status, res.data, [200]);
       return data.paymentMethods;
+    } catch (e) {
+      return toMidasError(e);
+    }
+  }
+
+  /** Companies catalog — Midas is SoR for what Trade Show calls entities. */
+  async listCompanies(): Promise<MidasCompany[]> {
+    try {
+      const res = await this.http.get('/companies');
+      const data = await this.parse<{ companies: MidasCompany[] }>(res.status, res.data, [200]);
+      return data.companies;
+    } catch (e) {
+      return toMidasError(e);
+    }
+  }
+
+  /** Vocabulary counts for cutover verification. */
+  async vocabularyHealth(): Promise<MidasVocabularyHealth> {
+    try {
+      const res = await this.http.get('/health/vocabulary');
+      return await this.parse<MidasVocabularyHealth>(res.status, res.data, [200]);
     } catch (e) {
       return toMidasError(e);
     }

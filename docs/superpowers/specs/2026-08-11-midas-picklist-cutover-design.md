@@ -41,20 +41,38 @@ Verified against the live Midas Ext API (read-only `GET`s) and the codebase on
 
 ### Midas readiness differs per list
 
+Midas shipped cutover prep on 2026-08-11 that changed this picture materially. All three
+lists are now first-class.
+
 | List | Midas endpoint | Status |
 | --- | --- | --- |
-| Categories | `GET /ext/categories` | 200, 15 active. All 13 names in `TRADE_SHOW_CATEGORY_NAMES` present, plus `Stationaries` and `Storage charges`. |
-| Payment methods | `GET /ext/payment-methods` | 200, 12 methods with `id`, `label`, `lastFour`, `brand`, `defaultZohoEntity`, `requiresReimbursement`, `zohoPaymentAccountId`. Full parity with Trade Show's `cardOptions` shape. |
-| Entities | **none** | No entities endpoint exists in Midas Ext. |
+| Categories | `GET /ext/categories` | 200, **vocabulary-scoped per connection**. The `trade_show` connection sees 15 of 26 active categories. |
+| Payment methods | `GET /ext/payment-methods` | 200, 11 methods. Now returns `defaultCompany` (preferred) alongside `defaultZohoEntity` (deprecated alias), plus `requiresReimbursement` and `zohoPaymentAccountId`. |
+| Companies | `GET /ext/companies` | 200, 4 companies. **New** — this is what Trade Show calls entities. |
+| Vocabulary health | `GET /ext/health/vocabulary` | 200. Cutover self-check returning the three counts. |
 
-Entities have to be derived as the distinct non-null `defaultZohoEntity` across payment
-methods: `Boomin Brands`, `Haute Brands`, `Nirvana Kulture`, `Summitt Labs`. `Personal
-(Need reimbursement)` carries `null`.
+**Entities are now companies.** `GET /ext/companies` returns `{ name, zohoEnabled,
+sortOrder }`, keyed by `name` rather than id — `expenses.zoho_entity` already stores the
+name and Midas accepts names on write, so there is no id translation to get wrong. This
+supersedes the earlier plan to derive entities from `defaultZohoEntity`, which could not
+have seen a company with no card.
 
-The derivation has one structural limitation: an entity with no card is invisible. That
-is acceptable today — an entity with no payment method cannot be charged — but it is a
-real constraint, not an oversight, and should be revisited if Midas ever adds a
-first-class entities endpoint.
+Live values: `Haute Brands` (1), `Nirvana Kulture` (2), `Boomin Brands` (3), all
+`zohoEnabled: true`; and `Summitt Labs` (4) with `zohoEnabled: false`. Summitt Labs is a
+real, chargeable company that does not sync to Zoho Books, and two active cards default
+to it. Trade Show therefore offers all four and does not filter on `zohoEnabled` — an
+expense on a Summitt card must be assignable even though it will not reach Zoho.
+
+**Categories are curated, not drifting.** `health/vocabulary` reports `scoped: true` for
+`trade_show`. The 15 visible categories are a deliberate allowlist, so `Stationaries` and
+`Storage charges` are intended for Trade Show rather than stray extras. The real defect
+is on the Trade Show side: `resolveCategoryName` maps both to `Other` because they are
+absent from the hardcoded `TRADE_SHOW_CATEGORY_NAMES`.
+
+**Card drift is already real.** `Sameer Summitt Card OLD` (...3019) has been deactivated
+in Midas but is still present in Trade Show's hardcoded
+`TRADE_SHOW_PAYMENT_METHOD_SEED`. Live payment methods went from 12 to 11 during this
+investigation.
 
 ### Zoho ownership is already enforced in code
 
@@ -65,8 +83,9 @@ carries once Midas owns posting.
 
 `ENTITY_TO_BRAND` (`backend/src/services/zohoIntegrationClient.ts:24-31`) maps only
 `haute_brands`, `boomin_brands`, and `nirvana_kulture`. Two live Midas cards point at
-`Summitt Labs`, which has no mapping. This is latent breakage on the *local* backend
-path only; it becomes moot under Midas. Noted, not fixed here.
+`Summitt Labs`, which has no mapping. Midas reporting `zohoEnabled: false` for that
+company explains why: it is not meant to reach Zoho at all. This is latent breakage on
+the *local* backend path only; it becomes moot under Midas. Noted, not fixed here.
 
 ### Trade Show's current storage
 
@@ -101,11 +120,12 @@ Response:
 
 ```json
 {
-  "categories":     [{ "id": "...", "name": "...", "isActive": true }],
-  "paymentMethods": [{ "id": "...", "label": "...", "lastFour": "1002",
-                       "defaultZohoEntity": "Haute Brands",
-                       "requiresReimbursement": false }],
-  "entities":       ["Boomin Brands", "Haute Brands", "Nirvana Kulture", "Summitt Labs"],
+  "categories":     [{ "id": "...", "name": "...", "description": null }],
+  "paymentMethods": [{ "id": "...", "label": "Haute Amex", "lastFour": "1002",
+                       "company": "Haute Brands",
+                       "requiresReimbursement": false,
+                       "zohoPaymentAccountId": "..." }],
+  "companies":      [{ "name": "Haute Brands", "zohoEnabled": true, "sortOrder": 1 }],
   "source":         "midas",
   "stale":          false,
   "fetchedAt":      "2026-08-11T17:00:00.000Z"
@@ -114,19 +134,30 @@ Response:
 
 `PicklistService` behavior:
 
-- Fetches categories and payment methods in parallel through the existing Midas client
-  factory (`backend/src/services/midas/index.ts`). The API key never leaves the server.
-- Derives `entities` from distinct non-null `defaultZohoEntity`, sorted alphabetically.
+- Fetches categories, payment methods, and companies in parallel through the existing
+  Midas client factory (`backend/src/services/midas/index.ts`). The API key never leaves
+  the server.
+- Normalizes the company field once, via `paymentMethodCompany()`, which prefers
+  `defaultCompany` and falls back to the `defaultZohoEntity` alias. Callers never read
+  either field directly, so the alias can be dropped in one place when Midas removes it.
+- Sorts companies by `sortOrder`, and does not filter on `zohoEnabled`.
 - Caches in memory for 60s, matching the TTL `paymentMethodMap.ts` already uses
   (`backend/src/services/midas/paymentMethodMap.ts:8,30-46`).
-- Serves both backends. When `resolveExpenseBackend() !== 'midas'`, it returns the same
-  shape assembled from `app_settings` with `source: "settings"`. This is what allows a
-  single build to run correctly in sandbox and production at once.
+- Serves both backends. When `getExpenseBackend() !== 'midas'`, it returns the same shape
+  assembled from `app_settings` with `source: "settings"`. This is what allows a single
+  build to run correctly in sandbox and production at once. On that path companies are
+  reported `zohoEnabled: true`, because Trade Show itself posts to Zoho for every entity
+  it knows about.
 
 ### Frontend: `usePicklists()`
 
 New `src/hooks/usePicklists.ts` returning
-`{ categories, paymentMethods, entities, source, isStale, isUnavailable, isLoading }`.
+`{ categories, paymentMethods, companies, source, isStale, isUnavailable, isLoading }`.
+
+The UI keeps the user-facing label "Entity" for now — renaming the field the accountants
+see is a separate decision from changing where the data comes from, and bundling them
+would make the cutover harder to verify. Internally the field is `companies`, matching
+Midas.
 
 Responses are cached in a new `picklists` Dexie table in `src/utils/offlineDb.ts` so
 offline expense entry keeps working. On mount the hook serves the cached copy
@@ -190,10 +221,12 @@ and is out of scope here.
 
 ## Testing
 
-Backend unit tests for `PicklistService`: entity derivation from payment methods
-including the `null` case, cache hit inside the TTL, stale-serve when Midas errors,
-`PICKLISTS_UNAVAILABLE` with a cold cache, and the `app_settings` path when
-`EXPENSE_BACKEND` is not `midas`.
+Backend unit tests for `PicklistService`: company sort order and `zohoEnabled`
+preservation, `defaultCompany` winning over the `defaultZohoEntity` alias and the
+fallback when it is absent, cache hit inside the TTL, re-fetch after it, stale-serve when
+Midas errors, `PICKLISTS_UNAVAILABLE` with a cold cache, no hardcoded substitution on
+that path, and the `app_settings` path when `EXPENSE_BACKEND` is not `midas` including
+the legacy bare-string category shape.
 
 Backend integration test for `GET /api/picklists` against a mocked Midas client covering
 both `source` values.
@@ -213,9 +246,14 @@ and that submission blocks when the Midas base URL is pointed at a dead port.
 instance. Any UAT that creates or mutates expenses writes into Midas production data.
 Read-only verification is safe; write testing needs a decision from the Midas side first.
 
-**Entity derivation is indirect.** Entities exist only as a string on each payment
-method. An entity with no card cannot appear. If Midas adds a first-class entities
-endpoint, `PicklistService` should switch to it.
+**`defaultZohoEntity` is deprecated.** Midas serves both keys today but intends to drop
+the alias. `paymentMethodCompany()` is the single read point, so the removal is a
+one-line change — provided nothing starts reading the raw fields again.
+
+**Category vocabulary is a Midas-side allowlist.** What Trade Show sees is controlled by
+the `trade_show` connection's scoping, not by Trade Show. Adding a category is a Midas
+operation now. `GET /ext/health/vocabulary` is the way to confirm what the connection can
+actually see.
 
 **Phase 2 is required, not optional.** Until it lands, the hardcoded lists and dead admin
 components remain in the tree behind a flag. Leaving them indefinitely recreates the

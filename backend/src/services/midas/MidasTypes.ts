@@ -66,9 +66,47 @@ export interface MidasPaymentMethod {
   label: string;
   lastFour: string;
   brand?: string | null;
+  /**
+   * Company this card bills to. Midas renamed "entity" to "company" and now
+   * serves both keys; `defaultZohoEntity` is its deprecated alias. Read through
+   * `paymentMethodCompany()` rather than either field directly.
+   */
+  defaultCompany?: string | null;
   defaultZohoEntity: string | null;
+  requiresReimbursement?: boolean;
   zohoPaymentAccountId?: string | null;
   zohoAccountName?: string | null;
+}
+
+/**
+ * Ext GET /companies (scope expenses:read) — what Trade Show calls an "entity".
+ *
+ * Keyed by `name`, not id: `expenses.zoho_entity` stores the company name and
+ * Midas accepts names on write, so there is no id translation to get wrong.
+ *
+ * `zohoEnabled: false` companies are real and chargeable but do not sync to
+ * Zoho Books. Midas serves them and leaves the decision to the consumer.
+ */
+export interface MidasCompany {
+  name: string;
+  zohoEnabled: boolean;
+  sortOrder: number;
+}
+
+/** Ext GET /health/vocabulary (scope expenses:read) — cutover self-check. */
+export interface MidasVocabularyHealth {
+  appName: string | null;
+  categories: { visible: number; totalActiveInMidas: number; scoped: boolean };
+  paymentMethods: { visible: number };
+  companies: { visible: number; zohoEnabled: number };
+}
+
+/**
+ * Company for a payment method, preferring the current key over the alias.
+ * Returns null for cards with no company (e.g. "Personal (Need reimbursement)").
+ */
+export function paymentMethodCompany(pm: MidasPaymentMethod): string | null {
+  return pm.defaultCompany ?? pm.defaultZohoEntity ?? null;
 }
 
 export interface MidasReceiptDto {
