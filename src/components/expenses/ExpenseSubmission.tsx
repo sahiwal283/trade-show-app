@@ -733,7 +733,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         hasActiveFilters={hasActiveFilters}
         pendingCount={pendingCount}
         poweredByMidas={poweredByMidas}
-        reviewInMidas={reviewInMidas}
         onClearFilters={clearAllFilters}
         onShowPendingSync={() => setShowPendingSync(true)}
         onAddExpense={() => setShowReceiptUpload(true)}

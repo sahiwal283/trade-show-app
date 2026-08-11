@@ -352,7 +352,9 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
               <SortableTh label="Amount" primaryKey="amount-highest" secondaryKey="amount-lowest" sortBy={sortBy} setSortBy={setSortBy} align="right" />
               <th className={`${thBase} text-left`}>Status</th>
               <th className={`${thBase} text-left`}>Receipt</th>
-              {hasApprovalPermission && <th className={`${thBase} text-left`}>{reviewInMidas ? 'Midas' : 'Zoho'}</th>}
+              {hasApprovalPermission && !reviewInMidas && (
+                <th className={`${thBase} text-left`}>Zoho</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">

@@ -12,7 +12,6 @@ interface ExpenseSubmissionHeaderProps {
   hasActiveFilters: boolean;
   pendingCount: number;
   poweredByMidas?: boolean;
-  reviewInMidas?: boolean;
   onClearFilters: () => void;
   onShowPendingSync: () => void;
   onAddExpense: () => void;
@@ -23,7 +22,6 @@ export const ExpenseSubmissionHeader: React.FC<ExpenseSubmissionHeaderProps> = (
   hasActiveFilters,
   pendingCount,
   poweredByMidas = false,
-  reviewInMidas = false,
   onClearFilters,
   onShowPendingSync,
   onAddExpense
@@ -44,9 +42,7 @@ export const ExpenseSubmissionHeader: React.FC<ExpenseSubmissionHeaderProps> = (
         )}
         <p className="mt-0.5 text-sm text-stone-500">
           {hasApprovalPermission
-            ? reviewInMidas
-              ? 'Submit and review event expenses — approve, entity, and Zoho in Midas'
-              : 'Review, approve, and manage expense submissions'
+            ? 'Review, approve, and manage expense submissions'
             : 'Submit and track your trade show expenses'}
         </p>
       </div>

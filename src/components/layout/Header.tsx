@@ -66,8 +66,11 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
     }
   };
 
+  // z-40 keeps the header (and its overflowing notification panel) above
+  // main content. backdrop-blur creates a stacking context; without an
+  // explicit z-index, the dashboard hero painted over the dropdown.
   return (
-    <header className="bg-white/95 backdrop-blur border-b border-stone-200/80 px-3 sm:px-4 md:px-6 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
+    <header className="relative z-40 bg-white/95 backdrop-blur border-b border-stone-200/80 px-3 sm:px-4 md:px-6 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))]">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 md:gap-4 flex-1">
           {/* Mobile Menu Button */}
@@ -103,6 +106,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
               className="tap-target relative p-2 text-stone-500 hover:text-stone-900 hover:bg-stone-100 rounded-lg transition-colors"
               title="Notifications"
               aria-label="Notifications"
+              aria-expanded={showNotifications}
             >
               <Bell className="w-5 h-5" />
               {hasUnreadNotifications && (
@@ -117,14 +121,15 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
               <>
                 {/* Tap-outside backdrop (closes the panel) */}
                 <div
-                  className="fixed inset-0 z-40"
+                  className="fixed inset-0 z-[45]"
                   aria-hidden="true"
                   onClick={() => setShowNotifications(false)}
                 />
-                {/* Phone: full-width sheet under the header (the old bell-
-                    anchored popover hung off the left edge of the screen).
-                    sm+: classic anchored dropdown. */}
-                <div className="fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-50 overflow-hidden rounded-card bg-white shadow-elevation-3 ring-1 ring-stone-900/5 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
+                {/* Phone: full-width sheet under the header. sm+: absolute to
+                    the bell (header z-40 keeps this above the dashboard hero).
+                    Avoid fixed here — header backdrop-blur makes fixed
+                    descendants position against the header, not the viewport. */}
+                <div className="fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-50 max-h-[min(24rem,calc(100vh-5rem))] overflow-hidden rounded-card bg-white shadow-elevation-3 ring-1 ring-stone-900/5 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
                   <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
                     <h3 className="font-display font-semibold tracking-tight text-stone-900">Notifications</h3>
                     {notifications.length > 0 && (
@@ -147,11 +152,17 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
                           }}
                           className="block w-full px-4 py-3 text-left transition-colors hover:bg-stone-50 focus-visible:bg-stone-50 border-b border-stone-50"
                         >
-                          <div className="flex items-center justify-between gap-2">
-                            <p className="text-sm text-stone-900 font-medium truncate">{expense.merchant}</p>
-                            <p className="text-sm font-semibold tabular-nums text-stone-900 shrink-0">${expense.amount}</p>
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="min-w-0 flex-1 text-sm font-medium text-stone-900 truncate">
+                              {expense.merchant}
+                            </p>
+                            <p className="shrink-0 text-sm font-semibold tabular-nums text-stone-900">
+                              ${expense.amount}
+                            </p>
                           </div>
-                          <p className="text-xs text-stone-500 mt-0.5">Pending expense approval · tap to review</p>
+                          <p className="mt-0.5 truncate text-xs text-stone-500">
+                            Pending expense approval · tap to review
+                          </p>
                         </button>
                       ))
                     ) : (

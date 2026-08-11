@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { AlertTriangle, ExternalLink, Loader2, Upload } from 'lucide-react';
+import { AlertTriangle, Loader2, Upload } from 'lucide-react';
 import { Expense } from '../../../App';
 import { getStatusColor, getReimbursementStatusColor, formatReimbursementStatus } from '../../../constants/appConstants';
 
@@ -24,7 +24,7 @@ type ExpenseStatus = 'pending' | 'approved' | 'rejected' | 'needs further review
 interface ExpenseModalStatusManagementProps {
   expense: Expense;
   hasApprovalPermission: boolean;
-  /** When true, local approve/entity/Zoho controls are replaced by Open in Midas */
+  /** When true, local approve/entity/Zoho controls are read-only (Midas owns review) */
   reviewInMidas?: boolean;
   entityOptions: string[];
   auditTrail: AuditEntry[];
@@ -87,27 +87,6 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
 
   return (
     <div className="space-y-4">
-      {reviewInMidas && hasApprovalPermission && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2.5">
-          <p className="text-sm text-stone-600">
-            Approve, assign entity, and push to Zoho in Midas.
-          </p>
-          {expense.midasUrl ? (
-            <a
-              href={expense.midasUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-secondary inline-flex items-center gap-1.5 px-3 py-1.5 text-sm"
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-              Open in Midas
-            </a>
-          ) : (
-            <span className="text-xs text-stone-400">Midas link unavailable</span>
-          )}
-        </div>
-      )}
-
     <div className="flex flex-wrap gap-6">
       {/* Status - Editable by admin/accountant, or read-only (auto-updates on entity/reimbursement/push) */}
       <div>

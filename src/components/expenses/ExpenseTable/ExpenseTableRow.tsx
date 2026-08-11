@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { AlertTriangle, Check, ExternalLink, Loader2, Paperclip } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, Paperclip } from 'lucide-react';
 import { Expense, TradeShow } from '../../../App';
 import { formatLocalDate } from '../../../utils/dateUtils';
 import {
@@ -23,6 +23,7 @@ interface ExpenseTableRowProps {
   event: TradeShow | undefined;
   userName: string;
   hasApprovalPermission: boolean;
+  /** When true, Zoho fast-path column is omitted (Midas owns review). */
   reviewInMidas?: boolean;
   entityOptions: string[];
   pushingExpenseId: string | null;
@@ -196,31 +197,15 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
       </td>
 
       {/* Zoho fast path (approvers only): assign entity → push → pushed.
-          When review is owned by Midas, show Open in Midas instead.
-          Clicks and key presses stay inside the cell so they never open
-          the row's detail modal. */}
-      {hasApprovalPermission && (
+          Omitted when Midas owns review. Clicks stay inside the cell so
+          they never open the row's detail modal. */}
+      {hasApprovalPermission && !reviewInMidas && (
         <td
           className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 whitespace-nowrap"
           onClick={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          {reviewInMidas ? (
-            expense.midasUrl ? (
-              <a
-                href={expense.midasUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-secondary inline-flex h-8 min-h-0 items-center gap-1.5 px-2.5 py-0 text-xs"
-                title="Open expense in Midas"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Midas
-              </a>
-            ) : (
-              <span className="text-xs text-stone-300">—</span>
-            )
-          ) : !expense.zohoEntity ? (
+          {!expense.zohoEntity ? (
             <select
               value=""
               onChange={(e) => {
