@@ -23,6 +23,13 @@ import {
   checkOCRServiceHealth,
   calculateOCRCosts
 } from './DevDashboardService.helpers';
+import { resolveExpenseBackend } from './expenseStore';
+import {
+  expenseSummaryTotals,
+  expenseTrendsAndCategories,
+  expenseReceiptCounts,
+  intervalStart,
+} from './DevDashboardService.expenseStats';
 
 export class DevDashboardService {
   /**
@@ -66,25 +73,20 @@ export class DevDashboardService {
   static async getSummary() {
     // Get counts
     const usersResult = await pool.query('SELECT COUNT(*) as count FROM users');
-    const expensesResult = await pool.query('SELECT COUNT(*) as count FROM expenses');
     const eventsResult = await pool.query('SELECT COUNT(*) as count FROM events');
-    const pendingExpensesResult = await pool.query(
-      `SELECT COUNT(*) as count FROM expenses WHERE status = 'pending'`
-    );
-    
+
+    // Expense aggregates come from whichever store owns them. Under
+    // EXPENSE_BACKEND=midas the local table is frozen at the migration cutover,
+    // so querying it here would report pre-cutover numbers as if they were current.
+    const expenseTotals = await expenseSummaryTotals();
+    const expensesResult = { rows: [{ count: String(expenseTotals.total) }] };
+    const pendingExpensesResult = { rows: [{ count: String(expenseTotals.pending) }] };
+    const totalAmountResult = { rows: [{ total: String(expenseTotals.amount) }] };
+    const zohoPushedResult = { rows: [{ count: String(expenseTotals.zohoPushed) }] };
+
     // Get active sessions count (valid, non-expired sessions)
     const activeSessionsResult = await pool.query(
       `SELECT COUNT(*) as count FROM user_sessions WHERE expires_at > NOW()`
-    );
-    
-    // Get total expense amount
-    const totalAmountResult = await pool.query(
-      'SELECT COALESCE(SUM(amount), 0) as total FROM expenses'
-    );
-    
-    // Get expenses pushed to Zoho
-    const zohoPushedResult = await pool.query(
-      `SELECT COUNT(*) as count FROM expenses WHERE zoho_expense_id IS NOT NULL`
     );
     
     // Get recent activity (last 24 hours) from api_requests
@@ -186,29 +188,37 @@ export class DevDashboardService {
     // Parse time range
     const interval = parseTimeRange(timeRange);
     
-    // Get expense trends
-    const expenseTrendsResult = await pool.query(`
-      SELECT 
-        DATE(created_at) as date,
-        COUNT(*) as count,
-        SUM(amount) as total
-      FROM expenses
-      WHERE created_at > NOW() - INTERVAL '${interval}'
-      GROUP BY DATE(created_at)
-      ORDER BY date ASC
-    `);
-    
-    // Get category breakdown
-    const categoryResult = await pool.query(`
-      SELECT 
-        category,
-        COUNT(*) as count,
-        SUM(amount) as total
-      FROM expenses
-      WHERE created_at > NOW() - INTERVAL '${interval}'
-      GROUP BY category
-      ORDER BY total DESC
-    `);
+    // Expense trends and category breakdown, from whichever store owns expenses.
+    let expenseTrendsResult: { rows: any[] };
+    let categoryResult: { rows: any[] };
+
+    if (resolveExpenseBackend() === 'midas') {
+      const { trends, categories } = await expenseTrendsAndCategories(intervalStart(interval));
+      expenseTrendsResult = { rows: trends };
+      categoryResult = { rows: categories };
+    } else {
+      expenseTrendsResult = await pool.query(`
+        SELECT
+          DATE(created_at) as date,
+          COUNT(*) as count,
+          SUM(amount) as total
+        FROM expenses
+        WHERE created_at > NOW() - INTERVAL '${interval}'
+        GROUP BY DATE(created_at)
+        ORDER BY date ASC
+      `);
+
+      categoryResult = await pool.query(`
+        SELECT
+          category,
+          COUNT(*) as count,
+          SUM(amount) as total
+        FROM expenses
+        WHERE created_at > NOW() - INTERVAL '${interval}'
+        GROUP BY category
+        ORDER BY total DESC
+      `);
+    }
     
     // Get user activity
     const userActivityResult = await pool.query(`
@@ -339,6 +349,18 @@ export class DevDashboardService {
     } catch (error) {
       // If audit_logs table doesn't exist or query fails, fall back to simulated logs
       console.warn('[DevDashboard] Audit logs not available, using fallback');
+
+      // The fallback derives activity from the local expenses table. Under
+      // EXPENSE_BACKEND=midas that table stopped receiving writes at the
+      // migration cutover, so it would present pre-cutover rows as recent
+      // activity. Report nothing rather than something false.
+      if (resolveExpenseBackend() === 'midas') {
+        console.warn(
+          '[DevDashboard] Expense-derived fallback unavailable under EXPENSE_BACKEND=midas; expense activity lives in Midas'
+        );
+        return { logs: [], total: 0 };
+      }
+
       // Fallback: simulate audit logs from expense activity
       let query = `
         SELECT 
@@ -678,14 +700,7 @@ export class DevDashboardService {
     const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://192.168.1.195:8000';
     
     // Get ALL receipts with images
-    const allReceiptsResult = await pool.query(`
-      SELECT 
-        COUNT(*) as total_receipts_processed,
-        COUNT(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN 1 END) as receipts_this_month,
-        COUNT(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 END) as receipts_today
-      FROM expenses
-      WHERE receipt_url IS NOT NULL
-    `);
+    const allReceiptsResult = { rows: [await expenseReceiptCounts()] };
     
     const allTotalReceipts = parseInt(allReceiptsResult.rows[0].total_receipts_processed) || 0;
     const allReceiptsThisMonth = parseInt(allReceiptsResult.rows[0].receipts_this_month) || 0;

@@ -23,7 +23,7 @@ import {
 import { expenseRepository, userRepository, eventRepository } from '../database/repositories';
 import { generateExpensePDF } from '../services/ExpensePDFService';
 import { getExpenseStore, resolveExpenseBackend } from '../services/expenseStore';
-import type { ExpenseActor } from '../services/expenseStore';
+import type { ExpenseActor, TsExpenseApi } from '../services/expenseStore';
 import { getMidasClient, getMidasMode } from '../services/midas';
 
 const router = Router();
@@ -31,6 +31,46 @@ const router = Router();
 router.use(authenticateToken);
 
 /** Accountant SoT mutations live in Midas when EXPENSE_BACKEND=midas */
+/**
+ * Midas expense → the snake_case shape the PDF generator and other legacy
+ * consumers expect. Every field they read exists on the Midas record; only the
+ * naming differs, so this is a rename rather than a lossy conversion.
+ */
+function tsExpenseToDetailShape(e: TsExpenseApi): any {
+  return {
+    ...e,
+    card_used: e.cardUsed,
+    receipt_url: e.receiptUrl,
+    reimbursement_required: e.reimbursementRequired,
+    reimbursement_status: e.reimbursementStatus,
+    zoho_entity: e.zohoEntity,
+    zoho_expense_id: e.zohoExpenseId,
+    event_id: e.tradeShowId,
+    user_id: e.userId,
+    created_at: e.createdAt,
+    updated_at: e.updatedAt,
+  };
+}
+
+/**
+ * Persist duplicate warnings alongside the expense.
+ *
+ * `duplicate_check` is a column on the local `expenses` table. Under
+ * EXPENSE_BACKEND=midas the id here is a Midas id and that table is frozen at
+ * the migration cutover, so the write matches no row and silently does nothing.
+ * The warnings still belong in the response either way, so callers get them
+ * back regardless of where (or whether) they were stored.
+ */
+async function persistDuplicateCheck(
+  id: string,
+  duplicates: unknown[] | null
+): Promise<void> {
+  if (resolveExpenseBackend() === 'midas') return;
+  await expenseRepository.update(id, {
+    duplicate_check: duplicates && duplicates.length ? JSON.stringify(duplicates) : null,
+  } as any);
+}
+
 function rejectLocalReviewWhenMidasOwned(res: Response): boolean {
   if (resolveExpenseBackend() !== 'midas') return false;
   res.status(409).json({
@@ -150,7 +190,20 @@ router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'develope
   try {
     // Get expense with user/event details
     console.log(`[ExpensePDF] Fetching expense details for: ${id}`);
-    const expense = await expenseService.getExpenseByIdWithDetails(id);
+    // Midas owns expenses after cutover; the local table is frozen there, so
+    // reading it would 404 every expense created since.
+    const pdfBackend = resolveExpenseBackend();
+    let expense: any;
+    if (pdfBackend === 'midas' || pdfBackend === 'dual') {
+      const actor = await buildExpenseActor(req);
+      const fromStore = await getExpenseStore().getById(id, actor);
+      if (!fromStore) {
+        return res.status(404).json({ error: 'Expense not found' });
+      }
+      expense = tsExpenseToDetailShape(fromStore);
+    } else {
+      expense = await expenseService.getExpenseByIdWithDetails(id);
+    }
     console.log(`[ExpensePDF] Expense fetched successfully: ${expense.id}`);
     
     // Generate PDF
@@ -263,7 +316,12 @@ router.get(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
-    const expense = await expenseService.getExpenseById(id);
+    // Existence check must consult the owning store, not the frozen local table.
+    const auditBackend = resolveExpenseBackend();
+    const expense =
+      auditBackend === 'midas' || auditBackend === 'dual'
+        ? await getExpenseStore().getById(id, await buildExpenseActor(req))
+        : await expenseService.getExpenseById(id);
     if (!expense) {
       return res.status(404).json({ error: 'Expense not found' });
     }
@@ -621,9 +679,8 @@ router.post('/', authorize('admin', 'coordinator', 'salesperson', 'accountant', 
 
   // Update expense with duplicate warnings if found
   if (duplicates.length > 0) {
-    await expenseRepository.update(expense.id, {
-      duplicate_check: JSON.stringify(duplicates)
-    });
+    await persistDuplicateCheck(expense.id, duplicates);
+    (expense as any).duplicateCheck = duplicates;
     console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${expense.id}`);
   }
 
@@ -868,15 +925,11 @@ router.put('/:id', authorize('admin', 'coordinator', 'salesperson', 'accountant'
     if (hasDuplicateCheckColumn) {
       // Update expense with duplicate warnings (only if column exists)
       if (duplicates.length > 0) {
-        await expenseRepository.update(id, {
-          duplicate_check: JSON.stringify(duplicates)
-        });
+        await persistDuplicateCheck(id, duplicates);
         console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
         (expense as any).duplicate_check = duplicates;
       } else {
-        await expenseRepository.update(id, {
-          duplicate_check: null
-        });
+        await persistDuplicateCheck(id, null);
       }
     } else {
       // Column doesn't exist - just include in response without updating database
@@ -1024,15 +1077,11 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
     if (hasDuplicateCheckColumn) {
       // Update expense with duplicate warnings (only if column exists)
       if (duplicates.length > 0) {
-        await expenseRepository.update(id, {
-          duplicate_check: JSON.stringify(duplicates)
-        });
+        await persistDuplicateCheck(id, duplicates);
         console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
         (expense as any).duplicate_check = duplicates;
       } else {
-        await expenseRepository.update(id, {
-          duplicate_check: null
-        });
+        await persistDuplicateCheck(id, null);
       }
     } else {
       // Column doesn't exist - just include in response without updating database

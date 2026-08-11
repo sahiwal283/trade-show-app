@@ -1,7 +1,10 @@
 import { query } from '../config/database';
+import { resolveExpenseBackend } from './expenseStore';
+import { fetchMidasExpenses } from './expenseStore/midasExpenseReader';
 
 interface DuplicateWarning {
-  expenseId: number;
+  /** UUID in both stores — this was previously typed `number`, which never matched reality. */
+  expenseId: string;
   merchant: string;
   amount: number;
   date: string;
@@ -92,6 +95,52 @@ export class DuplicateDetectionService {
    * Check for potential duplicate expenses
    * Returns array of potential duplicates with similarity scores
    */
+  /**
+   * Expenses to compare against, from whichever store owns them.
+   *
+   * Under EXPENSE_BACKEND=midas the local `expenses` table is frozen at the
+   * migration cutover, so querying it here would compare every new expense
+   * against pre-cutover rows only — duplicate detection would silently never
+   * fire, and could flag a stale match. Midas is the system of record.
+   */
+  private static async fetchCandidates(
+    userId: string,
+    dateFrom: string,
+    dateTo: string,
+    excludeExpenseId?: string
+  ): Promise<Array<{ id: string; merchant: string; amount: number; date: string }>> {
+    if (resolveExpenseBackend() === 'midas') {
+      const expenses = await fetchMidasExpenses({
+        externalUserId: userId,
+        dateFrom,
+        dateTo,
+      });
+      return expenses
+        .filter((e) => e.id !== excludeExpenseId)
+        .map((e) => ({
+          id: e.id,
+          merchant: e.merchant,
+          amount: e.amount ?? 0,
+          date: e.date,
+        }));
+    }
+
+    let sql = `
+      SELECT id, merchant, amount, date
+      FROM expenses
+      WHERE user_id = $1
+      AND date >= $2
+      AND date <= $3
+    `;
+    const params: any[] = [userId, dateFrom, dateTo];
+    if (excludeExpenseId) {
+      sql += ` AND id != $4`;
+      params.push(excludeExpenseId);
+    }
+    const result = await query(sql, params);
+    return result.rows as Array<{ id: string; merchant: string; amount: number; date: string }>;
+  }
+
   static async checkForDuplicates(
     merchant: string,
     amount: number,
@@ -109,26 +158,21 @@ export class DuplicateDetectionService {
       const thirtyDaysLater = new Date(dateObj);
       thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
 
-      let sql = `
-        SELECT id, merchant, amount, date
-        FROM expenses
-        WHERE user_id = $1
-        AND date >= $2
-        AND date <= $3
-      `;
-      const params: any[] = [userId, thirtyDaysAgo.toISOString().split('T')[0], thirtyDaysLater.toISOString().split('T')[0]];
+      const dateFrom = thirtyDaysAgo.toISOString().split('T')[0];
+      const dateTo = thirtyDaysLater.toISOString().split('T')[0];
 
-      if (excludeExpenseId) {
-        sql += ` AND id != $4`;
-        params.push(excludeExpenseId);
-      }
+      const candidates = await this.fetchCandidates(
+        String(userId),
+        dateFrom,
+        dateTo,
+        excludeExpenseId === undefined ? undefined : String(excludeExpenseId)
+      );
 
-      const result = await query(sql, params);
       const potentialDuplicates: DuplicateWarning[] = [];
-      
-      console.log(`[DuplicateCheck] Found ${result.rows.length} candidate expenses to check`);
 
-      for (const expense of result.rows) {
+      console.log(`[DuplicateCheck] Found ${candidates.length} candidate expenses to check`);
+
+      for (const expense of candidates) {
         const merchantSimilarity = this.calculateSimilarity(merchant, expense.merchant);
         const amountSimilarity = this.calculateSimilarity(
           amount.toString(),
@@ -143,7 +187,7 @@ export class DuplicateDetectionService {
           potentialDuplicates.push({
             expenseId: expense.id,
             merchant: expense.merchant,
-            amount: parseFloat(expense.amount),
+            amount: expense.amount,
             date: expense.date,
             similarity: {
               merchant: merchantSimilarity,
