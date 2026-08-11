@@ -1,12 +1,12 @@
 {
   "name": "trade-show-app-backend",
-  "version": "2.13.0",
+  "version": "2.13.1",
   "description": "Trade Show Expense Management Backend",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "npm run update-version && tsc && mkdir -p dist/database/migrations && cp src/database/migrations/*.sql dist/database/migrations/ && cp src/database/schema.sql dist/database/schema.sql",
+    "build": "npm run update-version && rm -rf dist && tsc && mkdir -p dist/database/migrations && cp src/database/migrations/*.sql dist/database/migrations/ && cp src/database/schema.sql dist/database/schema.sql",
     "check:zoho-boundary": "node scripts/check-zoho-integration-boundary.js",
     "update-version": "node scripts/update-version.js",
     "migrate": "ts-node src/database/migrate.ts",
