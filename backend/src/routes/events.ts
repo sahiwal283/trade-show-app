@@ -8,7 +8,6 @@ import { pool } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { eventRepository, EventWithParticipants } from '../database/repositories';
 import { processParticipants, removeAllParticipants, getCurrentParticipantIds } from '../services/EventParticipantService';
-import { notifyParticipantsAdded } from '../services/telegram/TelegramNotifications';
 
 const router = Router();
 
@@ -153,17 +152,13 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
     if (participants || participant_ids) {
       const previousIds = new Set(await getCurrentParticipantIds(id, client));
       await removeAllParticipants(id, client);
-      const addedIds = await processParticipants(id, participants, participant_ids, client, { notify: false });
+      const addedIds = await processParticipants(id, participants, participant_ids, client);
       newlyAddedIds = addedIds.filter((uid) => !previousIds.has(uid));
     }
 
     // Commit transaction
     await client.query('COMMIT');
     console.log('[Events] Transaction committed successfully');
-
-    if (newlyAddedIds.length > 0) {
-      notifyParticipantsAdded(id, newlyAddedIds);
-    }
 
     res.json(convertEventTypes(event));
   } catch (error: any) {
@@ -200,12 +195,8 @@ router.post('/:id/participants', authorize('admin', 'coordinator', 'developer'),
     }
 
     const previousIds = new Set(await getCurrentParticipantIds(id));
-    const addedIds = await processParticipants(id, undefined, userIds, undefined, { notify: false });
+    const addedIds = await processParticipants(id, undefined, userIds);
     const newlyAddedIds = addedIds.filter((uid) => !previousIds.has(uid));
-
-    if (newlyAddedIds.length > 0) {
-      notifyParticipantsAdded(id, newlyAddedIds);
-    }
 
     res.json({ added: newlyAddedIds });
   } catch (error: any) {

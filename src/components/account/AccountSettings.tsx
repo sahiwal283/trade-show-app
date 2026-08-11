@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { User } from '../../App';
-import { api } from '../../utils/api';
 import packageJson from '../../../package.json';
 import {
   isPushSupported,
@@ -20,37 +19,7 @@ interface AccountSettingsProps {
   embedded?: boolean;
 }
 
-interface TelegramLinkStatusResponse {
-  linked: boolean;
-  botUsername?: string | null;
-  link?: {
-    telegramUserId: string;
-    telegramUsername?: string | null;
-    telegramFirstName?: string | null;
-    telegramLastName?: string | null;
-    linkedAt: string;
-    updatedAt: string;
-  };
-}
-
-interface StartLinkResponse {
-  success: boolean;
-  linkCode: string;
-  startToken: string;
-  expiresAt: string;
-  botUsername?: string | null;
-  deepLinkUrl?: string | null;
-  instructions?: string[];
-}
-
 export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, embedded = false }) => {
-  const [loading, setLoading] = useState(true);
-  const [starting, setStarting] = useState(false);
-  const [disconnecting, setDisconnecting] = useState(false);
-  const [status, setStatus] = useState<TelegramLinkStatusResponse>({ linked: false });
-  const [startInfo, setStartInfo] = useState<StartLinkResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const pushSupported = isPushSupported();
   const [pushState, setPushState] = useState<PushSubscriptionState>(pushSupported ? 'unsubscribed' : 'unsupported');
@@ -120,65 +89,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, embedded
       setPushTesting(false);
     }
   };
-
-  const loadStatus = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (!api.USE_SERVER) {
-        setStatus({ linked: false });
-        return;
-      }
-      const data = await api.telegram.getLinkStatus() as TelegramLinkStatusResponse;
-      setStatus(data);
-    } catch (e) {
-      console.error('[AccountSettings] Failed to load Telegram status:', e);
-      setError('Failed to load Telegram connection status.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadStatus();
-  }, [loadStatus]);
-
-  const handleStartLink = async () => {
-    setStarting(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const data = await api.telegram.startLink() as StartLinkResponse;
-      setStartInfo(data);
-      setSuccess('Link token generated. Complete linking in Telegram before it expires.');
-    } catch (e) {
-      console.error('[AccountSettings] Failed to start link:', e);
-      setError('Failed to start Telegram linking. Please try again.');
-    } finally {
-      setStarting(false);
-    }
-  };
-
-  const handleDisconnect = async () => {
-    setDisconnecting(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      await api.telegram.disconnect();
-      setStartInfo(null);
-      setSuccess('Telegram account disconnected.');
-      await loadStatus();
-    } catch (e) {
-      console.error('[AccountSettings] Failed to disconnect Telegram:', e);
-      setError('Failed to disconnect Telegram account.');
-    } finally {
-      setDisconnecting(false);
-    }
-  };
-
-  const linkedUsername = status.link?.telegramUsername
-    ? `@${status.link.telegramUsername}`
-    : 'Unavailable';
 
   return (
     <div className="space-y-6">
@@ -287,110 +197,6 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, embedded
                   >
                     {pushTesting ? 'Sending...' : 'Send test'}
                   </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Telegram */}
-      <section className="card overflow-hidden">
-        <div className="border-b border-stone-100 px-4 py-4 sm:px-5">
-          <h2 className="card-title">Telegram</h2>
-          <p className="mt-0.5 text-sm text-stone-500">
-            Connect your Telegram account to submit receipts and run app actions through the bot.
-          </p>
-        </div>
-
-        <div className="space-y-4 px-4 py-4 sm:px-5">
-          {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              {success}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="text-sm text-stone-500">Loading Telegram status...</div>
-          ) : status.linked ? (
-            <div className="space-y-3">
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-                <p className="text-sm font-medium text-emerald-700">Connected</p>
-                <p className="text-sm text-emerald-700 mt-1">
-                  Telegram: {linkedUsername}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={loadStatus}
-                  className="btn-secondary"
-                >
-                  Refresh status
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDisconnect}
-                  disabled={disconnecting}
-                  className="btn-danger"
-                >
-                  {disconnecting ? 'Disconnecting...' : 'Disconnect Telegram'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                Not connected yet. Generate a one-time link code below, then finish linking in Telegram.
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={handleStartLink}
-                  disabled={starting}
-                  className="btn-primary"
-                >
-                  {starting ? 'Generating...' : 'Connect Telegram'}
-                </button>
-                <button
-                  type="button"
-                  onClick={loadStatus}
-                  className="btn-secondary"
-                >
-                  Refresh status
-                </button>
-              </div>
-
-              {startInfo && (
-                <div className="rounded-lg border border-stone-200 bg-stone-50 p-4 space-y-3">
-                  <p className="text-sm text-stone-700">
-                    <span className="font-semibold">Manual command:</span> Send{' '}
-                    <code className="bg-white px-1.5 py-0.5 rounded border">/link {startInfo.linkCode}</code>{' '}
-                    to the bot.
-                  </p>
-                  {startInfo.deepLinkUrl && (
-                    <p className="text-sm text-stone-700">
-                      <span className="font-semibold">Deep link:</span>{' '}
-                      <a
-                        href={startInfo.deepLinkUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="card-link break-all"
-                      >
-                        {startInfo.deepLinkUrl}
-                      </a>
-                    </p>
-                  )}
-                  <p className="text-xs text-stone-500">
-                    Expires at: {new Date(startInfo.expiresAt).toLocaleString()}
-                  </p>
                 </div>
               )}
             </div>

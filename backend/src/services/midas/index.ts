@@ -64,7 +64,6 @@ export function resetMidasClientSingleton(): void {
 
 export * from './MidasTypes';
 export * from './statusMaps';
-export * from './categoryMap';
 export * from './paymentMethodMap';
 export { MidasClient } from './MidasClient';
 export { MockMidasClient } from './MockMidasClient';

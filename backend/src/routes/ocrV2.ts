@@ -134,7 +134,7 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     
     console.log('[OCR v2] Using external OCR service');
     
-    // Call external OCR service (shared pipeline with Telegram: prep + rule-based enrichment)
+    // Call external OCR service (prep + rule-based enrichment)
     const result = await runExternalReceiptOcrWithCleanup(req.file.path);
     
     // Analyze fields for potential issues

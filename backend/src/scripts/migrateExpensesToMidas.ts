@@ -184,7 +184,6 @@ async function main() {
   }
 
   const { getMidasClient } = await import('../services/midas');
-  const { resolveCategoryName } = await import('../services/midas/categoryMap');
   const { matchPaymentMethod } = await import('../services/midas/paymentMethodMap');
   const { mapTsStatusToMidas, mapTsReimbursementToMidas } = await import(
     '../services/midas/statusMaps'
@@ -271,7 +270,7 @@ async function main() {
       currency: 'USD',
       date: dateOnly(r.date),
       description: r.description || null,
-      categoryName: resolveCategoryName(r.category),
+      categoryName: r.category || null,
       cardUsed: r.card_used || null,
       location: r.location || null,
       status: mapTsStatusToMidas(r.status),

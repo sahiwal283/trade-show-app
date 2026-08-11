@@ -5,7 +5,6 @@ import {
   mapTsReimbursementToMidas,
   mapMidasReimbursementToTs,
 } from '../../../src/services/midas/statusMaps';
-import { resolveCategoryName } from '../../../src/services/midas/categoryMap';
 import { MockMidasClient } from '../../../src/services/midas/MockMidasClient';
 import {
   clearPaymentMethodCache,
@@ -41,11 +40,13 @@ describe('statusMaps', () => {
   });
 });
 
-describe('categoryMap', () => {
-  it('resolves known and unknown names', () => {
-    expect(resolveCategoryName('Meal and Entertainment')).toBe('Meal and Entertainment');
-    expect(resolveCategoryName('Uber ride')).toBe('Transportation - Uber / Lyft / Others');
-    expect(resolveCategoryName('weird stuff')).toBe('Other');
+describe('mock category catalog', () => {
+  it('serves the categories Midas exposes to trade_show, including the ones the old local list lacked', async () => {
+    const names = (await new MockMidasClient().listCategories()).map((c) => c.name);
+    // These two exist in Midas but were absent from the deleted
+    // TRADE_SHOW_CATEGORY_NAMES, which is what silently rewrote them to 'Other'.
+    expect(names).toContain('Stationaries');
+    expect(names).toContain('Storage charges');
   });
 });
 
@@ -204,5 +205,62 @@ describe('MidasExpenseStore paymentMethodId', () => {
     expect(dto.paymentMethod?.id).toBe('11111111-0000-4000-8000-000000000002');
     expect(dto.zohoEntity).toBe('Haute Brands');
     expect(dto.sourceContext.cardUsed).toBe('Haute PNC (...3490)');
+  });
+
+  it('sends the category through untouched instead of coercing it locally', async () => {
+    const store = new MidasExpenseStore();
+    const actor = {
+      id: 'user-1',
+      email: 'a@example.com',
+      name: 'A',
+      role: 'admin',
+      username: 'admin',
+    };
+    const created = await store.create(
+      {
+        eventId: 'event-1',
+        eventName: 'Expo',
+        merchant: 'Office Depot',
+        amount: 12,
+        date: '2026-08-01',
+        // Real Midas category that the deleted local list did not contain.
+        // It used to be rewritten to 'Other' before Midas ever saw it.
+        category: 'Stationaries',
+        cardUsed: 'Haute PNC (...3490)',
+      },
+      actor
+    );
+
+    const dto = await getMidasClient().getExpense(created.midasExpenseId!);
+    expect(dto.category?.name).toBe('Stationaries');
+  });
+
+  it('leaves resolution of an unrecognised category to Midas', async () => {
+    const store = new MidasExpenseStore();
+    const actor = {
+      id: 'user-1',
+      email: 'a@example.com',
+      name: 'A',
+      role: 'admin',
+      username: 'admin',
+    };
+    const created = await store.create(
+      {
+        eventId: 'event-1',
+        eventName: 'Expo',
+        merchant: 'Odd Vendor',
+        amount: 5,
+        date: '2026-08-01',
+        category: 'Something Midas Has Never Heard Of',
+        cardUsed: 'Haute PNC (...3490)',
+      },
+      actor
+    );
+
+    // Trade Show must not decide this. Midas applies exact name →
+    // category_mappings → Other, and reports what it did. The mock mirrors
+    // that, so the fallback lands on 'Other' — from Midas, not from us.
+    const dto = await getMidasClient().getExpense(created.midasExpenseId!);
+    expect(dto.category?.name).toBe('Other');
   });
 });

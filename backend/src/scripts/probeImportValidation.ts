@@ -3,7 +3,6 @@
  */
 import { query } from '../config/database';
 import { getMidasClient, resetMidasClientSingleton } from '../services/midas';
-import { resolveCategoryName } from '../services/midas/categoryMap';
 import { mapTsStatusToMidas, mapTsReimbursementToMidas } from '../services/midas/statusMaps';
 
 function dateOnly(v: unknown): string {
@@ -45,7 +44,7 @@ async function main() {
     currency: 'USD',
     date: dateOnly(r.date),
     description: r.description || null,
-    categoryName: resolveCategoryName(r.category),
+    categoryName: r.category || null,
     cardUsed: r.card_used || null,
     location: r.location || null,
     status: mapTsStatusToMidas(r.status),

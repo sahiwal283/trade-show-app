@@ -3,7 +3,6 @@
  */
 
 import { randomUUID, createHash } from 'crypto';
-import { TRADE_SHOW_CATEGORY_NAMES } from './categoryMap';
 import { TRADE_SHOW_COMPANY_SEED, TRADE_SHOW_PAYMENT_METHOD_SEED } from './paymentMethodMap';
 import {
   MidasActor,
@@ -28,6 +27,33 @@ function midasUrl(webBase: string, id: string): string {
   return `${webBase.replace(/\/$/, '')}/expenses/${id}`;
 }
 
+/**
+ * Category names this mock serves — a fixture for tests and MIDAS_MODE=mock only.
+ *
+ * Midas is the source of truth for the real vocabulary and nothing in the write
+ * path consults this list. Trade Show sends whatever the user picked and lets
+ * Midas resolve it (exact name → its per-app category_mappings → Other, with a
+ * warning). A local lookup table would silently pre-empt that resolution, which
+ * is how "Stationaries" used to become "Other" before it ever reached Midas.
+ */
+const MOCK_CATEGORY_NAMES = [
+  'Accommodation - Hotel',
+  'Booth / Marketing / Tools',
+  'Gas / Fuel',
+  'Meal and Entertainment',
+  'Model',
+  'Other',
+  'Parking Fees',
+  'Rental - Car / U-haul',
+  'Shipping Charges',
+  'Show Allowances - Per Diem',
+  'Stationaries',
+  'Storage charges',
+  'Transportation - Uber / Lyft / Others',
+  'Travel - Flight',
+  'Travel Expenses',
+];
+
 export class MockMidasClient {
   private expenses = new Map<string, MidasExpenseDto>();
   private byRef = new Map<string, string>(); // sourceApp::sourceRefId -> id
@@ -38,7 +64,7 @@ export class MockMidasClient {
 
   constructor(webBaseUrl = 'http://localhost:5174') {
     this.webBaseUrl = webBaseUrl;
-    this.categories = TRADE_SHOW_CATEGORY_NAMES.map((name, i) => ({
+    this.categories = MOCK_CATEGORY_NAMES.map((name, i) => ({
       id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
       name,
       description: null,

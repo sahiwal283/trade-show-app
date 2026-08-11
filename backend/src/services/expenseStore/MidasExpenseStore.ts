@@ -1,6 +1,5 @@
 import { getMidasClient } from '../midas';
 import { mapTsStatusToMidas } from '../midas/statusMaps';
-import { resolveCategoryName } from '../midas/categoryMap';
 import { resolvePaymentMethod } from '../midas/paymentMethodMap';
 import { midasDtoToTsExpense } from './midasAdapter';
 import type {
@@ -82,7 +81,7 @@ export class MidasExpenseStore implements ExpenseStore {
         amount: input.amount,
         date: input.date,
         description: input.description ?? null,
-        categoryName: resolveCategoryName(input.category),
+        categoryName: input.category ?? null,
         paymentMethodId: payment?.id ?? input.paymentMethodId ?? null,
         cardUsed: input.cardUsed ?? null,
         location: input.location ?? null,
@@ -128,7 +127,7 @@ export class MidasExpenseStore implements ExpenseStore {
         amount: input.amount,
         date: input.date,
         description: input.description,
-        categoryName: input.category ? resolveCategoryName(input.category) : undefined,
+        categoryName: input.category ?? undefined,
         paymentMethodId,
         cardUsed: input.cardUsed,
         location: input.location,

@@ -1,6 +1,6 @@
 /**
  * Shared path for calling the external OCR microservice (same as /api/ocr/v2/process).
- * Ensures Telegram and the web app use identical preprocessing and post-processing.
+ * Single preprocessing and post-processing pipeline for all receipt OCR.
  */
 
 import axios from 'axios';

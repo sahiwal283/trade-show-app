@@ -23,7 +23,6 @@ import modelRetrainingRoutes from './routes/modelRetraining';
 import trainingSyncRoutes from './routes/trainingSync';
 import checklistRoutes from './routes/checklist';
 import userChecklistRoutes from './routes/userChecklist';
-import telegramRoutes from './routes/telegram';
 import pushRoutes from './routes/push';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
@@ -80,7 +79,6 @@ app.use('/api/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
 
 // Routes - Auth routes FIRST (no authentication required)
 app.use('/api/auth', authRoutes);
-app.use('/api/telegram', telegramRoutes);
 
 // Authenticated routes with session tracking
 // Session tracking updates last_activity on every API request for real-time monitoring
