@@ -11,7 +11,34 @@ import type {
   UpdateExpenseInput,
 } from './ExpenseStore';
 import { randomUUID } from 'crypto';
-import { MidasApiError, type MidasExpenseDto } from '../midas/MidasTypes';
+import { MidasApiError, type MidasExpenseDto, type MidasWarning } from '../midas/MidasTypes';
+
+/**
+ * A company name safe to send to Midas, or null.
+ *
+ * Midas validates company names on write and rejects unknown ones with
+ * 400 UNKNOWN_COMPANY. Multipart form fields arrive as strings, so an absent
+ * value could reach here as the literal text "undefined" or "null" and be
+ * forwarded as a company name. The client no longer produces those (see
+ * apiClient.upload), but this is the last point before the write leaves us,
+ * and a rejected expense is a submission the user loses.
+ */
+function cleanCompany(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (['undefined', 'null', 'nan'].includes(trimmed.toLowerCase())) return null;
+  return trimmed;
+}
+
+/**
+ * Attach Midas's non-blocking advisories to the expense we return, so the API
+ * response carries them to the submitter. Absent on older Midas builds.
+ */
+function withWarnings(expense: TsExpenseApi, warnings?: MidasWarning[]): TsExpenseApi {
+  if (!warnings?.length) return expense;
+  return { ...expense, midasWarnings: warnings };
+}
 
 export class MidasExpenseStore implements ExpenseStore {
   private async resolveDto(id: string): Promise<MidasExpenseDto> {
@@ -29,6 +56,10 @@ export class MidasExpenseStore implements ExpenseStore {
     const expenses: MidasExpenseDto[] = [];
     let cursor: string | undefined;
     // Ext defaults to a page size (~50); walk cursors so TS BFF returns the full set.
+    // 200 is Midas's maximum — using it halves the request count on this hot
+    // path, which matters more than page size here: this runs on every expense
+    // list load, so we take fewer round trips rather than throttling between
+    // them and adding latency the user feels.
     for (let page = 0; page < 100; page += 1) {
       const result = await client.listExpenses({
         sourceApp: 'trade_show',
@@ -36,7 +67,7 @@ export class MidasExpenseStore implements ExpenseStore {
         externalUserId: filters.userId,
         status: filters.status ? mapTsStatusToMidas(filters.status) : undefined,
         q: filters.q,
-        limit: 100,
+        limit: 200,
         cursor,
       });
       expenses.push(...result.expenses);
@@ -63,16 +94,14 @@ export class MidasExpenseStore implements ExpenseStore {
       paymentMethodId: input.paymentMethodId,
       lister: () => client.listPaymentMethods(),
     });
-    const zohoEntity =
-      input.zohoEntity && String(input.zohoEntity).trim()
-        ? input.zohoEntity
-        : payment?.defaultZohoEntity ?? null;
+    const zohoEntity = cleanCompany(input.zohoEntity) ?? payment?.defaultZohoEntity ?? null;
 
     const created = await client.createExpense(
       {
         sourceApp: 'trade_show',
         sourceRefId,
         submitterEmail: actor.email,
+        submitterUsername: actor.username,
         externalUserId: actor.id,
         eventId: input.eventId,
         sourceLabel: input.eventName || 'Trade Show Event',
@@ -100,10 +129,10 @@ export class MidasExpenseStore implements ExpenseStore {
         input.receipt.mime
       );
       const refreshed = await client.getExpense(created.expense.id);
-      return midasDtoToTsExpense(refreshed);
+      return withWarnings(midasDtoToTsExpense(refreshed), created.warnings);
     }
 
-    return midasDtoToTsExpense(created.expense);
+    return withWarnings(midasDtoToTsExpense(created.expense), created.warnings);
   }
 
   async update(id: string, input: UpdateExpenseInput, actor: ExpenseActor): Promise<TsExpenseApi> {
@@ -120,7 +149,7 @@ export class MidasExpenseStore implements ExpenseStore {
       paymentMethodId = payment?.id ?? input.paymentMethodId ?? null;
     }
 
-    const patched = await client.updateExpense(
+    const { expense: patched, warnings } = await client.updateExpense(
       current.id,
       {
         merchant: input.merchant,
@@ -143,10 +172,10 @@ export class MidasExpenseStore implements ExpenseStore {
         input.receipt.filename,
         input.receipt.mime
       );
-      return midasDtoToTsExpense(await client.getExpense(patched.id));
+      return withWarnings(midasDtoToTsExpense(await client.getExpense(patched.id)), warnings);
     }
 
-    return midasDtoToTsExpense(patched);
+    return withWarnings(midasDtoToTsExpense(patched), warnings);
   }
 
   async replaceReceipt(

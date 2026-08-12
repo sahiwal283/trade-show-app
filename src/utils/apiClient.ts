@@ -376,8 +376,19 @@ class ApiClient {
     try {
       const formData = new FormData();
       
-      // Add form fields
+      // Add form fields.
+      //
+      // Skip undefined/null rather than String()-ing them: FormData has no
+      // concept of an absent value, so `String(undefined)` sent the literal
+      // text "undefined" as the field value. That is how expenses reached
+      // Midas with zoho_entity = "undefined" — a company name that does not
+      // exist, which Midas now rejects with 400 UNKNOWN_COMPANY. Omitting the
+      // field lets the backend apply its own default instead.
+      //
+      // false and 0 are deliberately still sent; only genuinely absent values
+      // are dropped.
       Object.entries(data).forEach(([key, value]) => {
+        if (value === undefined || value === null) return;
         formData.append(key, String(value));
       });
       

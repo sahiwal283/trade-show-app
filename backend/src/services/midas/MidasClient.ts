@@ -20,6 +20,7 @@ import {
   MidasReceiptDto,
   MidasCategory,
   MidasCompany,
+  MidasWarning,
   MidasPaymentMethod,
   MidasVocabularyHealth,
 } from './MidasTypes';
@@ -122,15 +123,17 @@ export class MidasClient {
         { ...body, submitterEmail: body.submitterEmail || actor.email },
         { headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' } }
       );
-      const data = await this.parse<{ expense: MidasExpenseDto; midasUrl?: string; created?: boolean }>(
-        res.status,
-        res.data,
-        [200, 201]
-      );
+      const data = await this.parse<{
+        expense: MidasExpenseDto;
+        midasUrl?: string;
+        created?: boolean;
+        warnings?: MidasWarning[];
+      }>(res.status, res.data, [200, 201]);
       return {
         expense: data.expense,
         midasUrl: data.midasUrl || data.expense.midasUrl || `${this.webBaseUrl}/expenses/${data.expense.id}`,
         created: res.status === 201 ? true : Boolean(data.created),
+        warnings: data.warnings,
       };
     } catch (e) {
       return toMidasError(e);
@@ -166,13 +169,23 @@ export class MidasClient {
     }
   }
 
-  async updateExpense(id: string, patch: MidasPatchBody, actor: MidasActor): Promise<MidasExpenseDto> {
+  /** Returns the patched expense plus any non-blocking warnings Midas raised. */
+  async updateExpense(
+    id: string,
+    patch: MidasPatchBody,
+    actor: MidasActor
+  ): Promise<{ expense: MidasExpenseDto; warnings?: MidasWarning[] }> {
     try {
       const res = await this.http.patch(`/expenses/${id}`, patch, {
         headers: { ...actorHeaders(actor), 'Content-Type': 'application/json' },
       });
-      const data = await this.parse<{ expense?: MidasExpenseDto } | MidasExpenseDto>(res.status, res.data, [200]);
-      return (data as any).expense ?? (data as MidasExpenseDto);
+      const data = await this.parse<{ expense?: MidasExpenseDto; warnings?: MidasWarning[] } | MidasExpenseDto>(
+        res.status,
+        res.data,
+        [200]
+      );
+      const expense = (data as any).expense ?? (data as MidasExpenseDto);
+      return { expense, warnings: (data as any).warnings };
     } catch (e) {
       return toMidasError(e);
     }

@@ -156,6 +156,14 @@ export interface MidasCreateExpenseBody {
   sourceApp: 'trade_show';
   sourceRefId: string;
   submitterEmail: string;
+  /**
+   * Sent alongside submitterEmail, never alone. Several Trade Show usernames
+   * differ from the same person's Midas username, so username-only would
+   * provision a duplicate account; email-only misattributes where usernames
+   * collide. Both together let Midas resolve the real user, or return
+   * 409 SUBMITTER_AMBIGUOUS instead of silently attributing to the wrong one.
+   */
+  submitterUsername?: string;
   externalUserId: string;
   eventId: string;
   sourceLabel: string;
@@ -177,10 +185,27 @@ export interface MidasCreateExpenseBody {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Non-blocking advisories Midas returns on a write. Additive — absent on older
+ * Midas builds, and never a reason to treat the write as failed.
+ *
+ *  - CATEGORY_FALLBACK: the category name we sent was not recognised and Midas
+ *    resolved it to Other.
+ *  - POSSIBLE_DUPLICATE: same amount (±0.005), date within 3 days, one merchant
+ *    name containing the other, same submitter.
+ */
+export interface MidasWarning {
+  code: 'CATEGORY_FALLBACK' | 'POSSIBLE_DUPLICATE' | string;
+  message?: string;
+  matches?: Array<{ id: string; merchant: string; amount: number; date: string }>;
+  [key: string]: unknown;
+}
+
 export interface MidasCreateResult {
   expense: MidasExpenseDto;
   midasUrl: string;
   created: boolean;
+  warnings?: MidasWarning[];
 }
 
 export interface MidasListQuery {

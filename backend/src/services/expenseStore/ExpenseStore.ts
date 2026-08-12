@@ -43,6 +43,8 @@ export interface TsExpenseApi {
   event_name?: string;
   midasUrl?: string;
   midasExpenseId?: string;
+  /** Non-blocking advisories from Midas on the write that produced this. */
+  midasWarnings?: unknown[];
 }
 
 export interface CreateExpenseInput {

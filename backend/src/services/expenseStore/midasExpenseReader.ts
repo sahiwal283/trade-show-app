@@ -29,6 +29,18 @@ const PAGE_SIZE = 200;
  */
 const MAX_PAGES = 200;
 
+/**
+ * Minimum spacing between page requests. Midas has no rate limit on /ext but
+ * asked consumers to stay under ~10 req/s; this caps a paging loop at 8/s so a
+ * large fold cannot monopolise their API. Only applies between pages, so the
+ * common one-page case is unaffected.
+ */
+const MIN_PAGE_INTERVAL_MS = 125;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export type MidasExpenseQuery = Omit<MidasListQuery, 'sourceApp' | 'limit' | 'cursor'>;
 
 /**
@@ -45,6 +57,8 @@ export async function fetchMidasExpenses(
   let pages = 0;
 
   do {
+    if (pages > 0) await sleep(MIN_PAGE_INTERVAL_MS);
+
     const result = await client.listExpenses({
       ...filters,
       sourceApp: SOURCE_APP,

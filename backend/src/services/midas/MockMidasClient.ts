@@ -20,6 +20,7 @@ import {
   MidasPatchBody,
   MidasPaymentMethod,
   MidasReceiptDto,
+  MidasWarning,
   MidasApiError,
 } from './MidasTypes';
 
@@ -212,7 +213,11 @@ export class MockMidasClient {
     return this.getExpense(id);
   }
 
-  async updateExpense(id: string, patch: MidasPatchBody, _actor: MidasActor): Promise<MidasExpenseDto> {
+  async updateExpense(
+    id: string,
+    patch: MidasPatchBody,
+    _actor: MidasActor
+  ): Promise<{ expense: MidasExpenseDto; warnings?: MidasWarning[] }> {
     const e = await this.getExpense(id);
     if (!['draft', 'pending', 'awaiting_info'].includes(e.status)) {
       throw new MidasApiError('Expense not editable', 409, 'CONFLICT');
@@ -234,7 +239,7 @@ export class MockMidasClient {
     if (patch.status) e.status = patch.status;
     e.updatedAt = new Date().toISOString();
     this.expenses.set(id, e);
-    return e;
+    return { expense: e };
   }
 
   async deleteExpense(id: string, _actor: MidasActor): Promise<void> {

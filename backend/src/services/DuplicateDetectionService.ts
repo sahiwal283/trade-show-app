@@ -1,6 +1,4 @@
 import { query } from '../config/database';
-import { resolveExpenseBackend } from './expenseStore';
-import { fetchMidasExpenses } from './expenseStore/midasExpenseReader';
 
 interface DuplicateWarning {
   /** UUID in both stores — this was previously typed `number`, which never matched reality. */
@@ -96,12 +94,15 @@ export class DuplicateDetectionService {
    * Returns array of potential duplicates with similarity scores
    */
   /**
-   * Expenses to compare against, from whichever store owns them.
+   * Candidate expenses to compare against.
    *
-   * Under EXPENSE_BACKEND=midas the local `expenses` table is frozen at the
-   * migration cutover, so querying it here would compare every new expense
-   * against pre-cutover rows only — duplicate detection would silently never
-   * fire, and could flag a stale match. Midas is the system of record.
+   * Local backend only, by design. Under EXPENSE_BACKEND=midas this service is
+   * never reached — the expense handlers return early on the Midas branch — and
+   * Midas runs its own duplicate check, returning POSSIBLE_DUPLICATE in the
+   * write response. Reimplementing it here would mean fetching candidates from
+   * Midas on every submission to duplicate logic they already own.
+   *
+   * This whole service goes away when production cuts over to Midas.
    */
   private static async fetchCandidates(
     userId: string,
@@ -109,22 +110,6 @@ export class DuplicateDetectionService {
     dateTo: string,
     excludeExpenseId?: string
   ): Promise<Array<{ id: string; merchant: string; amount: number; date: string }>> {
-    if (resolveExpenseBackend() === 'midas') {
-      const expenses = await fetchMidasExpenses({
-        externalUserId: userId,
-        dateFrom,
-        dateTo,
-      });
-      return expenses
-        .filter((e) => e.id !== excludeExpenseId)
-        .map((e) => ({
-          id: e.id,
-          merchant: e.merchant,
-          amount: e.amount ?? 0,
-          date: e.date,
-        }));
-    }
-
     let sql = `
       SELECT id, merchant, amount, date
       FROM expenses
