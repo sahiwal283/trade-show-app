@@ -6,6 +6,7 @@ import { ApprovalCards } from './ApprovalCards';
 import { api } from '../../utils/api';
 import { getTodayLocalDateString, formatForDateInput } from '../../utils/dateUtils';
 import { takePendingCapture } from '../../utils/pendingCapture';
+import { describeMidasWarnings } from '../../utils/midasWarnings';
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
 import { usePendingSync } from './ExpenseSubmission/hooks/usePendingSync';
@@ -104,6 +105,17 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
 
   // Toast notifications
   const { toasts, addToast, removeToast } = useToast();
+
+  // Non-blocking advisories Midas attaches to a write (possible duplicate,
+  // unrecognised category). The save already succeeded, so these are warnings
+  // rather than errors — but they must not be swallowed: our own duplicate
+  // detection was removed on the basis that Midas reports it here.
+  const showMidasWarnings = React.useCallback(
+    (warnings: unknown) => {
+      describeMidasWarnings(warnings).forEach((text: string) => addToast(`⚠️ ${text}`, 'warning'));
+    },
+    [addToast]
+  );
 
   const inlineZohoDescriptionError = useMemo(() => {
     if (!isEditingExpense || !editFormData || !viewingExpense) return null;
@@ -204,10 +216,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         
         if (editingExpense) {
           console.log('[ExpenseSubmission] Updating expense:', editingExpense.id);
-          await api.updateExpense(editingExpense.id, apiPayload, file || undefined);
+          const updated = await api.updateExpense(editingExpense.id, apiPayload, file || undefined);
           expenseId = editingExpense.id;
           console.log('[ExpenseSubmission] Expense updated successfully');
           addToast('✅ Expense updated successfully!', 'success');
+          showMidasWarnings(updated?.midasWarnings);
         } else {
           console.log('[ExpenseSubmission] Creating new expense');
           const newExpense = await api.createExpense(
@@ -217,6 +230,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           expenseId = newExpense.id;
           console.log('[ExpenseSubmission] Expense created successfully with ID:', expenseId);
           addToast('✅ Expense saved successfully!', 'success');
+          showMidasWarnings(newExpense?.midasWarnings);
         }
 
         // Track OCR corrections if OCR v2 data exists (use passed data or state)
