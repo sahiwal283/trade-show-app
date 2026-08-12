@@ -45,6 +45,13 @@ export const api = {
   // Expenses
   getExpenses: (params?: Record<string, string | number | boolean>) => 
     apiClient.get('/expenses', { params }),
+
+  getExpenseEngine: (): Promise<{
+    backend: 'local' | 'dual' | 'midas';
+    midasMode: string;
+    reviewInMidas: boolean;
+    poweredByMidas: boolean;
+  }> => apiClient.get('/expenses/engine'),
   
   createExpense: async (payload: Record<string, any>, receipt?: File) => {
     if (receipt) {
@@ -326,6 +333,9 @@ export const api = {
   getSettings: () => apiClient.get('/settings'),
   updateSettings: (payload: Record<string, any>) => apiClient.put('/settings', payload),
 
+  // Picklists (categories / cards / companies — Midas is SoR after cutover)
+  getPicklists: () => apiClient.get('/picklists'),
+
   // OCR
   processReceiptWithOCR: async (formData: FormData) => {
     const token = TokenManager.getToken();
@@ -362,15 +372,6 @@ export const api = {
   // Quick Actions / Pending Tasks
   quickActions: {
     getTasks: () => apiClient.get('/quick-actions'),
-  },
-
-  // Telegram Integration
-  telegram: {
-    startLink: () => apiClient.post('/telegram/link/start', {}),
-    getLinkStatus: () => apiClient.get('/telegram/link/status'),
-    disconnect: () => apiClient.delete('/telegram/link'),
-    registerWebhook: (webhookBaseUrl?: string) =>
-      apiClient.post('/telegram/webhook/register', webhookBaseUrl ? { webhookBaseUrl } : {}),
   },
 
   // Developer Dashboard

@@ -8,7 +8,6 @@
 import { query, pool } from '../config/database';
 import { userRepository } from '../database/repositories';
 import bcrypt from 'bcrypt';
-import { notifyParticipantsAdded } from './telegram/TelegramNotifications';
 
 export interface ParticipantObject {
   id: string;
@@ -31,11 +30,9 @@ export async function processParticipants(
   eventId: string,
   participants?: ParticipantObject[],
   participantIds?: string[],
-  client?: any,
-  options?: { notify?: boolean }
+  client?: any
 ): Promise<string[]> {
   const queryFn = client ? client.query.bind(client) : query;
-  const notify = options?.notify ?? true;
   const addedParticipantIds: string[] = [];
   const newlyInsertedIds: string[] = [];
 
@@ -73,10 +70,6 @@ export async function processParticipants(
         // Continue with next participant (best effort)
       }
     }
-  }
-
-  if (notify && newlyInsertedIds.length > 0) {
-    notifyParticipantsAdded(eventId, newlyInsertedIds);
   }
 
   return addedParticipantIds;

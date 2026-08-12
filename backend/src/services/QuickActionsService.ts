@@ -7,6 +7,8 @@
 
 import { query } from '../config/database';
 import { expenseRepository, eventRepository } from '../database/repositories';
+import { resolveExpenseBackend } from './expenseStore';
+import { fetchMidasExpenses } from './expenseStore/midasExpenseReader';
 
 export interface QuickActionTask {
   id: string;
@@ -29,6 +31,14 @@ export async function getUnpushedZohoExpenses(): Promise<{
   eventIds: string[];
   primaryEventId?: string;
 }> {
+  // Not stale — obsolete. This counts expenses awaiting a Zoho push *by Trade
+  // Show*, but under EXPENSE_BACKEND=midas Midas owns Zoho posting entirely and
+  // `zoho_expense_id` is a local-only column. There is nothing for the user to
+  // action here, so the quick action is suppressed rather than reimplemented.
+  if (resolveExpenseBackend() === 'midas') {
+    return { count: 0, eventIds: [] };
+  }
+
   // Get count and primary event (event with most unpushed expenses)
   const unpushedResult = await query(
     `SELECT COUNT(*) as count, 
@@ -77,6 +87,14 @@ export async function getUnpushedZohoExpenses(): Promise<{
  * Get reimbursement count
  */
 export async function getReimbursementCount(): Promise<number> {
+  if (resolveExpenseBackend() === 'midas') {
+    const expenses = await fetchMidasExpenses();
+    return expenses.filter(
+      (e) =>
+        e.reimbursementRequired &&
+        (e.reimbursementStatus === 'pending review' || e.reimbursementStatus === 'approved')
+    ).length;
+  }
   const result = await query(
     `SELECT COUNT(*) as count 
      FROM expenses 
@@ -124,6 +142,10 @@ export async function getEventsNearBudgetLimit(coordinatorId: string): Promise<A
  * Get user's pending expenses count
  */
 export async function getUserPendingExpensesCount(userId: string): Promise<number> {
+  if (resolveExpenseBackend() === 'midas') {
+    const expenses = await fetchMidasExpenses({ externalUserId: userId, status: 'pending' });
+    return expenses.length;
+  }
   const expenses = await expenseRepository.findWithFilters({
     userId,
     status: 'pending'
@@ -135,6 +157,10 @@ export async function getUserPendingExpensesCount(userId: string): Promise<numbe
  * Get user's expenses missing receipts count
  */
 export async function getUserMissingReceiptsCount(userId: string): Promise<number> {
+  if (resolveExpenseBackend() === 'midas') {
+    const expenses = await fetchMidasExpenses({ externalUserId: userId });
+    return expenses.filter((e) => !e.receiptUrl).length;
+  }
   const result = await query(
     `SELECT COUNT(*) as count 
      FROM expenses 
@@ -144,3 +170,15 @@ export async function getUserMissingReceiptsCount(userId: string): Promise<numbe
   return parseInt(result.rows[0].count, 10);
 }
 
+
+/**
+ * Count of expenses awaiting approval, across all users.
+ * Sourced from whichever store owns expenses — the local table is frozen at
+ * the migration cutover under EXPENSE_BACKEND=midas.
+ */
+export async function getPendingApprovalCount(): Promise<number> {
+  if (resolveExpenseBackend() === 'midas') {
+    return (await fetchMidasExpenses({ status: 'pending' })).length;
+  }
+  return expenseRepository.countByStatus('pending');
+}

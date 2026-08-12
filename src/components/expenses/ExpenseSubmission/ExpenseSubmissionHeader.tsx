@@ -11,6 +11,7 @@ interface ExpenseSubmissionHeaderProps {
   hasApprovalPermission: boolean;
   hasActiveFilters: boolean;
   pendingCount: number;
+  poweredByMidas?: boolean;
   onClearFilters: () => void;
   onShowPendingSync: () => void;
   onAddExpense: () => void;
@@ -20,6 +21,7 @@ export const ExpenseSubmissionHeader: React.FC<ExpenseSubmissionHeaderProps> = (
   hasApprovalPermission,
   hasActiveFilters,
   pendingCount,
+  poweredByMidas = false,
   onClearFilters,
   onShowPendingSync,
   onAddExpense
@@ -33,6 +35,11 @@ export const ExpenseSubmissionHeader: React.FC<ExpenseSubmissionHeaderProps> = (
         <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight text-stone-900">
           Expense Management
         </h1>
+        {poweredByMidas && (
+          <p className="mt-1 inline-flex items-center gap-1.5 rounded-md bg-stone-100 px-2 py-0.5 text-[11px] font-medium text-stone-600 ring-1 ring-inset ring-stone-200/80">
+            Powered by Midas
+          </p>
+        )}
         <p className="mt-0.5 text-sm text-stone-500">
           {hasApprovalPermission
             ? 'Review, approve, and manage expense submissions'

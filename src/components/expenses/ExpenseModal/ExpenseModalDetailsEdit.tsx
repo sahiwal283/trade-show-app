@@ -10,6 +10,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Edit2, Upload, Loader2, Receipt, X, AlertCircle, FileText } from 'lucide-react';
 import { isPdfReceiptUrl } from '../../../utils/fileValidation';
+import { usePicklists, formatCardUsed } from '../../../contexts/PicklistContext';
 import { ConfirmModal } from '../../common/ConfirmModal';
 import {
   buildZohoExpenseDescription,
@@ -40,8 +41,6 @@ interface ExpenseModalDetailsEditProps {
   formData: EditFormData;
   onChange: (updates: Partial<EditFormData>) => void;
   events: EventOption[];
-  uniqueCategories: string[];
-  uniqueCards: string[];
   onCancel: () => void;
   onSave: () => void;
   receiptUrl?: string;
@@ -54,8 +53,6 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
   formData,
   onChange,
   events,
-  uniqueCategories,
-  uniqueCards,
   onCancel: _onCancel,
   onSave: _onSave,
   receiptUrl,
@@ -63,6 +60,25 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
   zohoSubmitterName,
 }) => {
   const [showReplaceWarning, setShowReplaceWarning] = useState(false);
+
+  // Editing now offers the live lists rather than values scraped off existing
+  // expenses, so a newly added option is selectable immediately. The value
+  // already saved on this expense is kept in the list even if it has since been
+  // retired — otherwise opening an old expense would silently blank its
+  // category or card on the next save.
+  const { categories: picklistCategories, paymentMethods } = usePicklists();
+
+  const categoryChoices = useMemo(() => {
+    const names = picklistCategories.map((c) => c.name);
+    const current = formData.category;
+    return current && !names.includes(current) ? [current, ...names] : names;
+  }, [picklistCategories, formData.category]);
+
+  const cardChoices = useMemo(() => {
+    const labels = paymentMethods.map(formatCardUsed);
+    const current = formData.cardUsed;
+    return current && !labels.includes(current) ? [current, ...labels] : labels;
+  }, [paymentMethods, formData.cardUsed]);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -217,7 +233,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
             className="input-field"
           >
             <option value="">Select category</option>
-            {uniqueCategories.map((cat, idx) => (
+            {categoryChoices.map((cat, idx) => (
               <option key={idx} value={cat}>
                 {cat}
               </option>
@@ -245,7 +261,7 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
             className="input-field"
           >
             <option value="">Select card used</option>
-            {uniqueCards.map((card, idx) => (
+            {cardChoices.map((card, idx) => (
               <option key={idx} value={card}>
                 {card}
               </option>

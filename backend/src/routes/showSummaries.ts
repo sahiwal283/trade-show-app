@@ -13,6 +13,8 @@ import { query } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/errors';
 import { showKey, aliasKey, normalizeCompany } from '../utils/showNormalization';
+import { resolveExpenseBackend } from '../services/expenseStore';
+import { fetchMidasExpenses } from '../services/expenseStore/midasExpenseReader';
 
 // Normalization helpers moved to utils/showNormalization.ts (shared with the
 // CRM lead sync without services importing from a route module). Re-exported
@@ -22,16 +24,26 @@ export { showKey, aliasKey, normalizeCompany } from '../utils/showNormalization'
 const router = Router();
 router.use(authenticateToken);
 
-async function assembleRows() {
-  const imported = await query(
-      `SELECT show_name, show_key, year, company, category, amount::float, source
-       FROM show_summaries
-       ORDER BY year, show_key, company, category`
-    );
+type LiveRow = {
+  event_id: string;
+  show_name: string;
+  year: number;
+  company: string;
+  category: string;
+  amount: number;
+};
 
-    // Live shows: same aggregate computed from the expense register.
-    // Rejected expenses are excluded — they are not part of the investment.
-    const live = await query(
+/**
+ * Per-show/company/category totals from the expense register.
+ *
+ * Under EXPENSE_BACKEND=midas the expenses live in Midas, so they are paged in
+ * and grouped here; events stay local, so the join happens in memory. Midas Ext
+ * has no aggregate endpoint — see midasExpenseReader for why and the follow-up.
+ * Under the local backend this stays a single SQL GROUP BY.
+ */
+async function liveShowTotals(): Promise<{ rows: LiveRow[] }> {
+  if (resolveExpenseBackend() !== 'midas') {
+    return query(
       `SELECT e.id AS event_id,
               e.name AS show_name,
               EXTRACT(YEAR FROM e.show_start_date)::int AS year,
@@ -43,6 +55,63 @@ async function assembleRows() {
        WHERE ex.status != 'rejected'
        GROUP BY e.id, e.name, year, company, ex.category`
     );
+  }
+
+  const [expenses, events] = await Promise.all([
+    fetchMidasExpenses(),
+    query(`SELECT id, name, show_start_date FROM events`),
+  ]);
+
+  const eventById = new Map<string, { name: string; year: number }>(
+    (events.rows as Array<{ id: string; name: string; show_start_date: string | null }>).map((e) => [
+      e.id,
+      {
+        name: e.name,
+        year: e.show_start_date ? new Date(e.show_start_date).getUTCFullYear() : 0,
+      },
+    ])
+  );
+
+  // Same grouping key as the SQL above: event, company, category.
+  const totals = new Map<string, LiveRow>();
+  for (const ex of expenses) {
+    if (ex.status === 'rejected') continue;
+    if (!ex.tradeShowId) continue;
+    const event = eventById.get(ex.tradeShowId);
+    // An expense whose event no longer exists locally would have been dropped
+    // by the SQL inner join too, so skipping matches the previous behaviour.
+    if (!event) continue;
+
+    const company = ex.zohoEntity && ex.zohoEntity.trim() ? ex.zohoEntity : 'Unassigned';
+    const key = `${ex.tradeShowId}::${company}::${ex.category}`;
+    const existing = totals.get(key);
+    if (existing) {
+      existing.amount += ex.amount ?? 0;
+    } else {
+      totals.set(key, {
+        event_id: ex.tradeShowId,
+        show_name: event.name,
+        year: event.year,
+        company,
+        category: ex.category,
+        amount: ex.amount ?? 0,
+      });
+    }
+  }
+
+  return { rows: [...totals.values()] };
+}
+
+async function assembleRows() {
+  const imported = await query(
+      `SELECT show_name, show_key, year, company, category, amount::float, source
+       FROM show_summaries
+       ORDER BY year, show_key, company, category`
+    );
+
+    // Live shows: same aggregate computed from the expense register.
+    // Rejected expenses are excluded — they are not part of the investment.
+    const live = await liveShowTotals();
 
   const importedRows = imported.rows.map((r: any) => ({
     ...r,

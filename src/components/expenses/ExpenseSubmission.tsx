@@ -55,9 +55,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   const hasApprovalPermission = ['admin', 'accountant', 'developer'].includes(user.role);
   
   // Use custom hooks (enhanced with approval data when needed)
-  const { expenses, events, users, entityOptions, reload: reloadData } = useExpenses({ 
+  const { expenses, events, users, entityOptions, engine, reload: reloadData } = useExpenses({ 
     hasApprovalPermission 
   });
+  const reviewInMidas = engine.reviewInMidas;
+  const poweredByMidas = engine.poweredByMidas;
   const { pendingCount } = usePendingSync();
   const {
     dateFilter, setDateFilter,
@@ -730,6 +732,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         hasApprovalPermission={hasApprovalPermission}
         hasActiveFilters={hasActiveFilters}
         pendingCount={pendingCount}
+        poweredByMidas={poweredByMidas}
         onClearFilters={clearAllFilters}
         onShowPendingSync={() => setShowPendingSync(true)}
         onAddExpense={() => setShowReceiptUpload(true)}
@@ -758,6 +761,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
           events={events}
           users={users}
           hasApprovalPermission={hasApprovalPermission}
+          reviewInMidas={reviewInMidas}
           entityOptions={entityOptions}
           pushingExpenseId={pushingExpenseId}
           pushedExpenses={pushedExpenses}
@@ -845,8 +849,6 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                       startDate: e.startDate,
                       endDate: e.endDate,
                     }))}
-                    uniqueCategories={uniqueCategories}
-                    uniqueCards={uniqueCards}
                     onCancel={cancelInlineEdit}
                     onSave={saveInlineEdit}
                     receiptUrl={viewingExpense.receiptUrl}
@@ -864,12 +866,18 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
               <ExpenseModalStatusManagement
                 expense={viewingExpense}
                 hasApprovalPermission={hasApprovalPermission}
+                reviewInMidas={reviewInMidas}
                 entityOptions={entityOptions}
                 auditTrail={auditTrail}
-                onStatusChange={async (newStatus) => {
-                  await handleStatusChange(viewingExpense, newStatus);
-                }}
+                onStatusChange={
+                  reviewInMidas
+                    ? undefined
+                    : async (newStatus) => {
+                        await handleStatusChange(viewingExpense, newStatus);
+                      }
+                }
                 onReimbursementStatusChange={async (newStatus) => {
+                  if (reviewInMidas) return;
                   if (newStatus === 'paid') {
                     await handleMarkAsPaid(viewingExpense);
                   } else if (newStatus === 'approved' || newStatus === 'rejected') {
@@ -884,10 +892,11 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
                   }
                 }}
                 onEntityChange={async (newEntity) => {
+                  if (reviewInMidas) return;
                   await handleAssignEntity(viewingExpense, newEntity);
                 }}
                 onPushToZoho={
-                  hasApprovalPermission
+                  !reviewInMidas && hasApprovalPermission
                     ? async () => {
                         await handlePushToZoho(viewingExpense);
                       }

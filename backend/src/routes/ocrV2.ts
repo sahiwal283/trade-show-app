@@ -21,6 +21,8 @@ import {
   checkExternalOcrReady,
   runExternalReceiptOcrWithCleanup,
 } from '../services/ocr/receiptExternalOcr';
+import { getExpenseBackend, getMidasMode, getMidasClient } from '../services/midas';
+import { MidasApiError } from '../services/midas/MidasTypes';
 
 // External OCR Service configuration
 const EXTERNAL_OCR_URL = process.env.OCR_SERVICE_URL || 'http://192.168.1.195:8000';
@@ -77,6 +79,52 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
   console.log(`[OCR v2] Processing receipt: ${req.file.filename} (originalname: ${req.file.originalname}, mime: ${req.file.mimetype || 'none'}, isPdf: ${isPdf})`);
 
   try {
+    // When expenses are backed by Midas (or dual), OCR must go through Midas Ext —
+    // never call the OCR microservice directly from Trade Show.
+    const expenseBackend = getExpenseBackend();
+    const midasMode = getMidasMode();
+    const useMidasOcr =
+      (expenseBackend === 'midas' || expenseBackend === 'dual') &&
+      (midasMode === 'mock' || midasMode === 'live');
+
+    if (useMidasOcr) {
+      console.log(`[OCR v2] Using Midas Ext OCR (EXPENSE_BACKEND=${expenseBackend}, MIDAS_MODE=${midasMode})`);
+      const buf = fs.readFileSync(req.file.path);
+      const midas = await getMidasClient().processOcr(
+        buf,
+        req.file.originalname || req.file.filename,
+        req.file.mimetype || 'application/octet-stream'
+      );
+      const fields = {
+        merchant: midas.fields.merchant || { value: null, confidence: 0 },
+        amount: midas.fields.amount || { value: null, confidence: 0 },
+        date: midas.fields.date || { value: null, confidence: 0 },
+        category: midas.fields.category || { value: null, confidence: 0 },
+        cardLastFour: midas.fields.cardLastFour || { value: null, confidence: 0 },
+        location: midas.fields.location
+          ? { value: midas.fields.location.value, confidence: midas.fields.location.confidence }
+          : null,
+      };
+      const fieldWarnings = FieldWarningService.analyzeFields(
+        {
+          ...fields,
+          location: fields.location,
+          taxAmount: null,
+          tipAmount: null,
+        } as any,
+        midas.ocr?.text || ''
+      );
+      res.setHeader('X-OCR-Provider', midas.ocr?.provider || 'midas');
+      return res.json({
+        fields,
+        ocr: midas.ocr,
+        quality: midas.quality,
+        warnings: fieldWarnings,
+        categories: [],
+        receiptUrl: `/uploads/${req.file.filename}`,
+      });
+    }
+
     // Check if external OCR service is available
     const isHealthy = await checkExternalOcrReady();
     
@@ -86,7 +134,7 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     
     console.log('[OCR v2] Using external OCR service');
     
-    // Call external OCR service (shared pipeline with Telegram: prep + rule-based enrichment)
+    // Call external OCR service (prep + rule-based enrichment)
     const result = await runExternalReceiptOcrWithCleanup(req.file.path);
     
     // Analyze fields for potential issues
@@ -132,6 +180,11 @@ router.post('/process', upload.single('receipt'), asyncHandler(async (req: AuthR
     
   } catch (error: any) {
     console.error('[OCR v2] Processing error:', error.message, { originalname: req.file.originalname, mimetype: req.file.mimetype });
+
+    // Preserve Ext status/code (e.g. 400 OCR_INVALID_FILE) — do not remap to generic 500.
+    if (error instanceof MidasApiError) {
+      throw error;
+    }
     
     // Auth failures from the OCR service are a server misconfiguration
     // (missing/rotated X-Internal-Token) — never a user problem. Say so

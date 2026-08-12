@@ -23,6 +23,8 @@ interface ExpenseTableRowProps {
   event: TradeShow | undefined;
   userName: string;
   hasApprovalPermission: boolean;
+  /** When true, Zoho fast-path column is omitted (Midas owns review). */
+  reviewInMidas?: boolean;
   entityOptions: string[];
   pushingExpenseId: string | null;
   pushedExpenses: Set<string>;
@@ -46,6 +48,7 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
   event,
   userName,
   hasApprovalPermission,
+  reviewInMidas = false,
   entityOptions,
   pushingExpenseId,
   pushedExpenses,
@@ -194,9 +197,9 @@ export const ExpenseTableRow: React.FC<ExpenseTableRowProps> = ({
       </td>
 
       {/* Zoho fast path (approvers only): assign entity → push → pushed.
-          Clicks and key presses stay inside the cell so they never open
-          the row's detail modal. */}
-      {hasApprovalPermission && (
+          Omitted when Midas owns review. Clicks stay inside the cell so
+          they never open the row's detail modal. */}
+      {hasApprovalPermission && !reviewInMidas && (
         <td
           className="px-2 sm:px-3 lg:px-4 py-2 sm:py-2.5 whitespace-nowrap"
           onClick={(e) => e.stopPropagation()}

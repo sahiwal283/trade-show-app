@@ -24,6 +24,8 @@ type ExpenseStatus = 'pending' | 'approved' | 'rejected' | 'needs further review
 interface ExpenseModalStatusManagementProps {
   expense: Expense;
   hasApprovalPermission: boolean;
+  /** When true, local approve/entity/Zoho controls are read-only (Midas owns review) */
+  reviewInMidas?: boolean;
   entityOptions: string[];
   auditTrail: AuditEntry[];
   onStatusChange?: (newStatus: ExpenseStatus) => Promise<void>;
@@ -69,6 +71,7 @@ const EditWarning: React.FC<{ count: number; message: string }> = ({ count, mess
 export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagementProps> = ({
   expense,
   hasApprovalPermission,
+  reviewInMidas = false,
   entityOptions,
   auditTrail,
   onStatusChange,
@@ -80,14 +83,16 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
 }) => {
   const editCount = getEditCount(auditTrail);
   const hasBeenPushed = !!expense.zohoExpenseId || isPushed;
+  const canEditLocally = hasApprovalPermission && !reviewInMidas;
 
   return (
+    <div className="space-y-4">
     <div className="flex flex-wrap gap-6">
       {/* Status - Editable by admin/accountant, or read-only (auto-updates on entity/reimbursement/push) */}
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Status</p>
         <div className="flex items-center space-x-2">
-          {hasApprovalPermission && onStatusChange ? (
+          {canEditLocally && onStatusChange ? (
             <select
               value={expense.status}
               onChange={async (e) => {
@@ -116,7 +121,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
                   ? 'Needs Further Review'
                   : expense.status.charAt(0).toUpperCase() + expense.status.slice(1)}
               </span>
-              {hasApprovalPermission && <span className="text-xs text-stone-400 italic">(auto-updates)</span>}
+              {canEditLocally && <span className="text-xs text-stone-400 italic">(auto-updates)</span>}
             </>
           )}
         </div>
@@ -126,7 +131,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
       {expense.reimbursementRequired ? (
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Reimbursement</p>
-          {hasApprovalPermission ? (
+          {canEditLocally ? (
             <select
               value={expense.reimbursementStatus || 'pending review'}
               onChange={async (e) => {
@@ -176,7 +181,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
       {/* Entity */}
       <div>
         <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Entity</p>
-        {hasApprovalPermission ? (
+        {canEditLocally ? (
           <select
             value={expense.zohoEntity || ''}
             onChange={async (e) => {
@@ -219,7 +224,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
       </div>
 
       {/* Zoho Push Status */}
-      {hasApprovalPermission && expense.zohoEntity && (
+      {canEditLocally && expense.zohoEntity && (
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-2">Zoho Status</p>
           {hasBeenPushed ? (
@@ -265,6 +270,7 @@ export const ExpenseModalStatusManagement: React.FC<ExpenseModalStatusManagement
           )}
         </div>
       )}
+    </div>
     </div>
   );
 };

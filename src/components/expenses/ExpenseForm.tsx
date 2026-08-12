@@ -5,6 +5,7 @@ import { api } from '../../utils/api';
 import { formatForDateInput, getTodayLocalDateString } from '../../utils/dateUtils';
 import { filterActiveEvents, filterEventsByParticipation } from '../../utils/eventUtils';
 import { isAcceptableReceiptFile, PDF_PLACEHOLDER_IMAGE } from '../../utils/fileValidation';
+import { usePicklists, formatCardUsed } from '../../contexts/PicklistContext';
 import {
   buildZohoExpenseDescription,
   getZohoExpenseDescriptionValidationMessage,
@@ -20,12 +21,6 @@ interface ExpenseFormProps {
   isSaving?: boolean;
 }
 
-interface CardOption {
-  name: string;
-  lastFour: string;
-  entity?: string | null;
-}
-
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user, onSave, onCancel, isSaving = false }) => {
   // Filter events to only show those within 1 month + 1 day of their end date
   // AND where the user is a participant (or admin/accountant/developer)
@@ -34,21 +29,16 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
     return filterEventsByParticipation(timeFiltered, user);
   }, [events, user]);
   
-  const [cardOptions, setCardOptions] = useState<CardOption[]>([]);
-  const [categories, setCategories] = useState<string[]>([
-    'Booth / Marketing / Tools',
-    'Travel - Flight',
-    'Accommodation - Hotel',
-    'Transportation - Uber / Lyft / Others',
-    'Parking Fees',
-    'Rental - Car / U-haul',
-    'Meal and Entertainment',
-    'Gas / Fuel',
-    'Show Allowances - Per Diem',
-    'Model',
-    'Shipping Charges',
-    'Other'
-  ]);
+  // Categories and cards come from Midas (or app_settings pre-cutover) via the
+  // shared picklist context. No local defaults: a hardcoded list silently
+  // mis-maps any category Midas added that this build does not know about.
+  const {
+    categories: picklistCategories,
+    paymentMethods: cardOptions,
+    isStale: picklistsStale,
+    isUnavailable: picklistsUnavailable,
+  } = usePicklists();
+  const categories = picklistCategories.map((c) => c.name);
 
   const [formData, setFormData] = useState({
     tradeShowId: expense?.tradeShowId || '',
@@ -175,46 +165,6 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
     }
   };
 
-  useEffect(() => {
-    (async () => {
-      if (api.USE_SERVER) {
-        try {
-          const settings = await api.getSettings();
-          // Handle both old string format and new object format for backward compatibility
-          const cards = settings.cardOptions || [];
-          if (cards.length > 0 && typeof cards[0] === 'string') {
-            // Convert old string format to new object format
-            setCardOptions(cards.map((card: string) => ({ name: card, lastFour: '0000' })));
-          } else {
-            setCardOptions(cards);
-          }
-          // Handle both old format (string[]) and new format (CategoryOption[])
-          const cats = settings.categoryOptions || categories;
-          setCategories(cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name));
-        } catch {
-          setCardOptions([]);
-        }
-      } else {
-        const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
-        const cards = settings.cardOptions || [
-          { name: 'Corporate Amex', lastFour: '0000' },
-          { name: 'Corporate Visa', lastFour: '0000' },
-          { name: 'Personal Card (Reimbursement)', lastFour: '0000' },
-          { name: 'Company Debit', lastFour: '0000' },
-          { name: 'Cash', lastFour: '0000' }
-        ];
-        // Handle backward compatibility
-        if (cards.length > 0 && typeof cards[0] === 'string') {
-          setCardOptions(cards.map((card: string) => ({ name: card, lastFour: '0000' })));
-        } else {
-          setCardOptions(cards);
-        }
-        // Handle both old format (string[]) and new format (CategoryOption[])
-        const cats = settings.categoryOptions || categories;
-        setCategories(cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name));
-      }
-    })();
-  }, []);
   // Listen for OCR data from receipt upload
   useEffect(() => {
     const handlePopulateForm = (event: CustomEvent) => {
@@ -423,6 +373,12 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Non-blocking: the lists are real, just possibly behind. */}
+          {picklistsStale && !picklistsUnavailable && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Showing the last saved categories and cards — they may be out of date.
+            </div>
+          )}
           {/* Receipt Upload - First Field */}
           <div className="rounded-card border border-brand-200/70 bg-brand-50/50 p-4 sm:p-5 md:p-6">
             <label className="field-label mb-3 text-stone-900">
@@ -649,13 +605,13 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                 value={formData.cardUsed}
                 onChange={(e) => {
                   const cardValue = e.target.value;
-                  // Find the selected card and auto-select its entity
-                  const selectedCard = cardOptions.find(card => `${card.name} | ${card.lastFour}` === cardValue);
-                  setFormData({ 
-                    ...formData, 
+                  // Find the selected card and auto-select its company
+                  const selectedCard = cardOptions.find(card => formatCardUsed(card) === cardValue);
+                  setFormData({
+                    ...formData,
                     cardUsed: cardValue,
-                    // Auto-select entity if card has one, otherwise clear it (for personal cards)
-                    zohoEntity: selectedCard?.entity || ''
+                    // Auto-select company if card has one, otherwise clear it (for personal cards)
+                    zohoEntity: selectedCard?.company || ''
                   });
                 }}
                 className="input-field min-h-[44px]"
@@ -663,9 +619,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
               >
                 <option value="">Select card used</option>
                 {cardOptions.map((card, index) => {
-                  const cardValue = `${card.name} | ${card.lastFour}`;
+                  const cardValue = formatCardUsed(card);
                   return (
-                    <option key={index} value={cardValue}>{cardValue}</option>
+                    <option key={card.id ?? index} value={cardValue}>{cardValue}</option>
                   );
                 })}
               </select>
@@ -725,9 +681,17 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
             >
               Cancel
             </button>
+            {/* Saving with no category/card list would write an expense against
+                a guessed category. Blocked rather than silently mis-filed. */}
+            {picklistsUnavailable && (
+              <p className="w-full text-sm text-red-700 sm:order-last">
+                Categories and cards could not be loaded, so this expense can't be saved
+                yet. Reconnect and try again.
+              </p>
+            )}
             <button
               type="submit"
-              disabled={isSaving || !!zohoDescriptionValidationError}
+              disabled={isSaving || !!zohoDescriptionValidationError || picklistsUnavailable}
               className="btn-primary flex-1 px-8 py-3 sm:flex-initial"
             >
               {isSaving ? (

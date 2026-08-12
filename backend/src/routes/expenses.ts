@@ -22,10 +22,102 @@ import {
 } from '../utils/zohoExpenseDescription';
 import { expenseRepository, userRepository, eventRepository } from '../database/repositories';
 import { generateExpensePDF } from '../services/ExpensePDFService';
+import { getExpenseStore, resolveExpenseBackend } from '../services/expenseStore';
+import type { ExpenseActor, TsExpenseApi } from '../services/expenseStore';
+import { getMidasClient, getMidasMode } from '../services/midas';
 
 const router = Router();
 
 router.use(authenticateToken);
+
+/** Accountant SoT mutations live in Midas when EXPENSE_BACKEND=midas */
+/**
+ * Midas expense → the snake_case shape the PDF generator and other legacy
+ * consumers expect. Every field they read exists on the Midas record; only the
+ * naming differs, so this is a rename rather than a lossy conversion.
+ */
+function tsExpenseToDetailShape(e: TsExpenseApi): any {
+  return {
+    ...e,
+    card_used: e.cardUsed,
+    receipt_url: e.receiptUrl,
+    reimbursement_required: e.reimbursementRequired,
+    reimbursement_status: e.reimbursementStatus,
+    zoho_entity: e.zohoEntity,
+    zoho_expense_id: e.zohoExpenseId,
+    event_id: e.tradeShowId,
+    user_id: e.userId,
+    created_at: e.createdAt,
+    updated_at: e.updatedAt,
+  };
+}
+
+/**
+ * Persist duplicate warnings alongside the expense.
+ *
+ * `duplicate_check` is a column on the local `expenses` table. Under
+ * EXPENSE_BACKEND=midas the id here is a Midas id and that table is frozen at
+ * the migration cutover, so the write matches no row and silently does nothing.
+ * The warnings still belong in the response either way, so callers get them
+ * back regardless of where (or whether) they were stored.
+ */
+async function persistDuplicateCheck(
+  id: string,
+  duplicates: unknown[] | null
+): Promise<void> {
+  if (resolveExpenseBackend() === 'midas') return;
+  await expenseRepository.update(id, {
+    duplicate_check: duplicates && duplicates.length ? JSON.stringify(duplicates) : null,
+  } as any);
+}
+
+function rejectLocalReviewWhenMidasOwned(res: Response): boolean {
+  if (resolveExpenseBackend() !== 'midas') return false;
+  res.status(409).json({
+    error: 'Expense review and Zoho push are owned by Midas. Open this expense in Midas.',
+    code: 'MIDAS_OWNED',
+  });
+  return true;
+}
+
+async function buildExpenseActor(req: AuthRequest): Promise<ExpenseActor> {
+  const u = await userRepository.findById(req.user!.id);
+  return {
+    id: req.user!.id,
+    email: u?.email || `${req.user!.username}@local`,
+    name: u?.name || req.user!.username,
+    role: req.user!.role,
+    username: req.user!.username,
+  };
+}
+
+function loadReceiptFromUploadOrUrl(
+  file: { path: string; originalname?: string; filename: string; mimetype?: string } | undefined,
+  receiptUrl: string | undefined
+): { buffer: Buffer; filename: string; mime: string } | undefined {
+  if (file) {
+    return {
+      buffer: fs.readFileSync(file.path),
+      filename: file.originalname || file.filename,
+      mime: file.mimetype || 'application/octet-stream',
+    };
+  }
+  if (receiptUrl && typeof receiptUrl === 'string') {
+    let rel = receiptUrl;
+    if (rel.startsWith('/uploads/')) rel = rel.slice('/uploads/'.length);
+    else if (rel.startsWith('/api/uploads/')) rel = rel.slice('/api/uploads/'.length);
+    const uploadDir = process.env.UPLOAD_DIR || 'uploads';
+    const abs = path.isAbsolute(uploadDir) ? path.join(uploadDir, rel) : path.join(process.cwd(), uploadDir, rel);
+    if (fs.existsSync(abs)) {
+      return {
+        buffer: fs.readFileSync(abs),
+        filename: path.basename(rel),
+        mime: 'application/octet-stream',
+      };
+    }
+  }
+  return undefined;
+}
 
 /** Prefer full name for audit UI; falls back to username */
 async function auditActorDisplayName(userId: string, username: string): Promise<string> {
@@ -48,9 +140,6 @@ router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
   if (status) filters.status = status as string;
 
   // Server-side scoping: only reviewer roles may read other users' expenses.
-  // Previously the org-wide list was returned to ANY authenticated user and
-  // filtering happened client-side only — salespeople could read everyone's
-  // amounts/merchants/cards straight off the API.
   const canSeeAllExpenses =
     req.user &&
     ['admin', 'accountant', 'developer', 'coordinator'].includes(req.user.role);
@@ -58,17 +147,30 @@ router.get('/', asyncHandler(async (req: AuthRequest, res: Response) => {
     filters.userId = req.user!.id;
   }
 
-  // Get expenses with user/event details (optimized with JOINs - no N+1 queries!)
-  const expenses = await expenseService.getExpensesWithDetails(filters);
-  
-  console.log(`[Expenses:GET] Returning ${expenses.length} expenses`);
-  
-  // Normalize and return
-  const normalizedExpenses = expenses.map((expense: any) => ({
-    ...normalizeExpense(expense),
-    user_name: expense.user_name,
-    event_name: expense.event_name
-  }));
+  const backend = resolveExpenseBackend();
+  let normalizedExpenses: any[];
+
+  if (backend === 'midas' || backend === 'dual') {
+    const store = getExpenseStore();
+    const u = await userRepository.findById(req.user!.id);
+    const actor = {
+      id: req.user!.id,
+      email: u?.email || `${req.user!.username}@local`,
+      name: u?.name || req.user!.username,
+      role: req.user!.role,
+      username: req.user!.username,
+    };
+    normalizedExpenses = await store.list(filters, actor);
+    console.log(`[Expenses:GET] Returning ${normalizedExpenses.length} expenses via ${backend}`);
+  } else {
+    const expenses = await expenseService.getExpensesWithDetails(filters);
+    console.log(`[Expenses:GET] Returning ${expenses.length} expenses`);
+    normalizedExpenses = expenses.map((expense: any) => ({
+      ...normalizeExpense(expense),
+      user_name: expense.user_name,
+      event_name: expense.event_name
+    }));
+  }
   
   // Prevent browser caching to ensure fresh data
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -88,7 +190,20 @@ router.get('/:id/pdf', authorize('admin', 'accountant', 'coordinator', 'develope
   try {
     // Get expense with user/event details
     console.log(`[ExpensePDF] Fetching expense details for: ${id}`);
-    const expense = await expenseService.getExpenseByIdWithDetails(id);
+    // Midas owns expenses after cutover; the local table is frozen there, so
+    // reading it would 404 every expense created since.
+    const pdfBackend = resolveExpenseBackend();
+    let expense: any;
+    if (pdfBackend === 'midas' || pdfBackend === 'dual') {
+      const actor = await buildExpenseActor(req);
+      const fromStore = await getExpenseStore().getById(id, actor);
+      if (!fromStore) {
+        return res.status(404).json({ error: 'Expense not found' });
+      }
+      expense = tsExpenseToDetailShape(fromStore);
+    } else {
+      expense = await expenseService.getExpenseByIdWithDetails(id);
+    }
     console.log(`[ExpensePDF] Expense fetched successfully: ${expense.id}`);
     
     // Generate PDF
@@ -201,7 +316,12 @@ router.get(
   asyncHandler(async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
 
-    const expense = await expenseService.getExpenseById(id);
+    // Existence check must consult the owning store, not the frozen local table.
+    const auditBackend = resolveExpenseBackend();
+    const expense =
+      auditBackend === 'midas' || auditBackend === 'dual'
+        ? await getExpenseStore().getById(id, await buildExpenseActor(req))
+        : await expenseService.getExpenseById(id);
     if (!expense) {
       return res.status(404).json({ error: 'Expense not found' });
     }
@@ -215,13 +335,52 @@ router.get(
   })
 );
 
+
+// Expense engine metadata (must be before /:id)
+router.get('/engine', asyncHandler(async (_req: AuthRequest, res: Response) => {
+  const backend = resolveExpenseBackend();
+  res.json({
+    backend,
+    midasMode: getMidasMode(),
+    reviewInMidas: backend === 'midas',
+    poweredByMidas: backend === 'midas' || backend === 'dual',
+  });
+}));
+
+// Proxy Midas receipt bytes (must be before /:id)
+router.get(
+  '/midas-receipt/:midasExpenseId/:receiptId',
+  asyncHandler(async (req: AuthRequest, res: Response) => {
+    if (resolveExpenseBackend() === 'local' || getMidasMode() === 'disabled') {
+      return res.status(404).json({ error: 'Receipt not found' });
+    }
+    const { midasExpenseId, receiptId } = req.params;
+    const client = getMidasClient();
+    const buf = await client.getReceiptContent(midasExpenseId, receiptId);
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.send(buf);
+  })
+);
+
 // Get expense by ID
 router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  
+  const backend = resolveExpenseBackend();
+
+  if (backend === 'midas' || backend === 'dual') {
+    const store = getExpenseStore();
+    const actor = await buildExpenseActor(req);
+    const expense = await store.getById(id, actor);
+    if (!expense) {
+      return res.status(404).json({ error: 'Expense not found' });
+    }
+    return res.json(expense);
+  }
+
   // Get expense with user/event details (optimized with JOINs - no extra queries!)
   const expense = await expenseService.getExpenseByIdWithDetails(id);
-  
+
   res.json({
     ...normalizeExpense(expense),
     user_name: expense.user_name,
@@ -232,16 +391,49 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
 // Update expense receipt (must come before /:id route)
 router.put('/:id/receipt', upload.single('receipt'), asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
-  
-  try {
-    // Validate file was uploaded
-    if (!req.file) {
-      return res.status(400).json({ 
-        error: 'No file uploaded',
-        details: 'Please select a receipt file to upload.'
-      });
-    }
 
+  // Validate file was uploaded
+  if (!req.file) {
+    return res.status(400).json({
+      error: 'No file uploaded',
+      details: 'Please select a receipt file to upload.',
+    });
+  }
+
+  const backend = resolveExpenseBackend();
+  if (backend === 'midas' || backend === 'dual') {
+    try {
+      const store = getExpenseStore();
+      const actor = await buildExpenseActor(req);
+      const updated = await store.replaceReceipt(
+        id,
+        {
+          buffer: fs.readFileSync(req.file.path),
+          filename: req.file.originalname || req.file.filename,
+          mime: req.file.mimetype || 'application/octet-stream',
+        },
+        actor
+      );
+      return res.json({
+        ...updated,
+        message: 'Receipt updated successfully',
+      });
+    } catch (error: any) {
+      if (req.file && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+        } catch {
+          /* ignore */
+        }
+      }
+      if (error?.status === 404 || error?.message === 'Expense not found') {
+        return res.status(404).json({ error: 'Expense not found' });
+      }
+      throw error;
+    }
+  }
+
+  try {
     // Get expense to check authorization and get old receipt URL
     const expense = await expenseService.getExpenseById(id);
     
@@ -395,6 +587,38 @@ router.post('/', authorize('admin', 'coordinator', 'salesperson', 'accountant', 
     }
   }
 
+  const backend = resolveExpenseBackend();
+  if (backend === 'midas' || backend === 'dual') {
+    const actor = await buildExpenseActor(req);
+    let eventName = 'Trade Show Event';
+    if (event_id) {
+      const ev = await eventRepository.findById(event_id);
+      if (ev) eventName = ev.name;
+    }
+    const receipt = loadReceiptFromUploadOrUrl(req.file, receipt_url);
+    const store = getExpenseStore();
+    const created = await store.create(
+      {
+        eventId: event_id,
+        eventName,
+        merchant,
+        amount: parseFloat(amount),
+        date,
+        category,
+        description,
+        cardUsed: card_used,
+        location,
+        reimbursementRequired:
+          reimbursement_required === 'true' || reimbursement_required === true,
+        zohoEntity: zoho_entity || null,
+        receipt,
+      },
+      actor
+    );
+    console.log(`[Expenses:POST] Created via ${backend}: ${created.id}`);
+    return res.status(201).json(created);
+  }
+
   // Use uploaded receipt (OCR should be done via /api/ocr/v2/process before submission)
   if (req.file && !receipt_url) {
     receiptUrl = `/uploads/${req.file.filename}`;
@@ -455,9 +679,8 @@ router.post('/', authorize('admin', 'coordinator', 'salesperson', 'accountant', 
 
   // Update expense with duplicate warnings if found
   if (duplicates.length > 0) {
-    await expenseRepository.update(expense.id, {
-      duplicate_check: JSON.stringify(duplicates)
-    });
+    await persistDuplicateCheck(expense.id, duplicates);
+    (expense as any).duplicateCheck = duplicates;
     console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${expense.id}`);
   }
 
@@ -516,6 +739,47 @@ router.put('/:id', authorize('admin', 'coordinator', 'salesperson', 'accountant'
     if (participantCheck.rows.length === 0) {
       throw new ValidationError('You can only assign expenses to events where you are a participant');
     }
+  }
+
+  const backend = resolveExpenseBackend();
+  if (backend === 'midas' || backend === 'dual') {
+    const actor = await buildExpenseActor(req);
+    let eventName: string | undefined;
+    if (event_id) {
+      const ev = await eventRepository.findById(event_id);
+      if (ev) eventName = ev.name;
+    }
+    const receipt = req.file
+      ? {
+          buffer: fs.readFileSync(req.file.path),
+          filename: req.file.originalname || req.file.filename,
+          mime: req.file.mimetype || 'application/octet-stream',
+        }
+      : undefined;
+    const store = getExpenseStore();
+    const updated = await store.update(
+      id,
+      {
+        eventId: event_id,
+        eventName,
+        merchant,
+        amount: amount !== undefined && amount !== '' ? parseFloat(amount) : undefined,
+        date,
+        category,
+        description,
+        cardUsed: card_used,
+        location,
+        reimbursementRequired:
+          reimbursement_required !== undefined
+            ? reimbursement_required === 'true' || reimbursement_required === true
+            : undefined,
+        zohoEntity: zoho_entity,
+        receipt,
+      },
+      actor
+    );
+    console.log(`[Expenses:PUT] Updated via ${backend}: ${id}`);
+    return res.json(updated);
   }
 
   // Use uploaded receipt if provided
@@ -661,15 +925,11 @@ router.put('/:id', authorize('admin', 'coordinator', 'salesperson', 'accountant'
     if (hasDuplicateCheckColumn) {
       // Update expense with duplicate warnings (only if column exists)
       if (duplicates.length > 0) {
-        await expenseRepository.update(id, {
-          duplicate_check: JSON.stringify(duplicates)
-        });
+        await persistDuplicateCheck(id, duplicates);
         console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
         (expense as any).duplicate_check = duplicates;
       } else {
-        await expenseRepository.update(id, {
-          duplicate_check: null
-        });
+        await persistDuplicateCheck(id, null);
       }
     } else {
       // Column doesn't exist - just include in response without updating database
@@ -695,6 +955,7 @@ router.put('/:id', authorize('admin', 'coordinator', 'salesperson', 'accountant'
 // ========== STATUS & WORKFLOW ENDPOINTS ==========
 // Update expense status (pending/approved/rejected/needs further review)
 router.patch('/:id/status', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (rejectLocalReviewWhenMidasOwned(res)) return;
   const { id } = req.params;
   const { status } = req.body;
 
@@ -734,6 +995,7 @@ router.patch('/:id/status', authorize('admin', 'accountant', 'developer'), async
 
 // Approve/Reject expense (accountant/admin only) - LEGACY endpoint, kept for backwards compatibility
 router.patch('/:id/review', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (rejectLocalReviewWhenMidasOwned(res)) return;
   const { id } = req.params;
   const { status } = req.body;
 
@@ -766,6 +1028,7 @@ router.patch('/:id/review', authorize('admin', 'accountant', 'developer'), async
 
 // Assign Zoho entity (accountant only) - NO AUTO-PUSH
 router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (rejectLocalReviewWhenMidasOwned(res)) return;
   const { id } = req.params;
   const { zoho_entity } = req.body;
 
@@ -814,15 +1077,11 @@ router.patch('/:id/entity', authorize('admin', 'accountant', 'developer'), async
     if (hasDuplicateCheckColumn) {
       // Update expense with duplicate warnings (only if column exists)
       if (duplicates.length > 0) {
-        await expenseRepository.update(id, {
-          duplicate_check: JSON.stringify(duplicates)
-        });
+        await persistDuplicateCheck(id, duplicates);
         console.log(`[DuplicateCheck] Found ${duplicates.length} potential duplicate(s) for expense #${id}`);
         (expense as any).duplicate_check = duplicates;
       } else {
-        await expenseRepository.update(id, {
-          duplicate_check: null
-        });
+        await persistDuplicateCheck(id, null);
       }
     } else {
       // Column doesn't exist - just include in response without updating database
@@ -854,6 +1113,7 @@ const zohoPushGuard = new InFlightGuard();
 
 // Manual push to Zoho Books (accountant/admin only)
 router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (rejectLocalReviewWhenMidasOwned(res)) return;
   const { id } = req.params;
 
   if (!zohoPushGuard.tryAcquire(id)) {
@@ -1037,6 +1297,7 @@ router.post('/:id/push-to-zoho', authorize('admin', 'accountant', 'developer'), 
 
 // Reimbursement approval (accountant only)
 router.patch('/:id/reimbursement', authorize('admin', 'accountant', 'developer'), asyncHandler(async (req: AuthRequest, res: Response) => {
+  if (rejectLocalReviewWhenMidasOwned(res)) return;
   const { id } = req.params;
   const { reimbursement_status } = req.body;
 
@@ -1072,6 +1333,14 @@ router.patch('/:id/reimbursement', authorize('admin', 'accountant', 'developer')
 // Delete expense
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
   const { id } = req.params;
+  const backend = resolveExpenseBackend();
+
+  if (backend === 'midas' || backend === 'dual') {
+    const store = getExpenseStore();
+    const actor = await buildExpenseActor(req);
+    await store.delete(id, actor);
+    return res.json({ message: 'Expense deleted successfully' });
+  }
 
   // Get expense first to check receipt file
   const expense = await expenseService.getExpenseById(id);

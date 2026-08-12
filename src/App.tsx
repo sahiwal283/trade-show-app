@@ -17,6 +17,7 @@ import { InstallPrompt } from './components/layout/InstallPrompt';
 import { InactivityWarning } from './components/common/InactivityWarning';
 import { NotificationBanner, useNotifications } from './components/common/NotificationBanner';
 import { SyncStatusBar } from './components/common/SyncStatusBar';
+import { PicklistProvider } from './contexts/PicklistContext';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { useAuth } from './hooks/useAuth';
 import { sessionManager } from './utils/sessionManager';
@@ -91,6 +92,9 @@ export interface Expense {
   // Pre-fetched from backend JOINs (when available)
   user_name?: string;
   event_name?: string;
+  /** Deep link into Midas when EXPENSE_BACKEND=midas|dual */
+  midasUrl?: string;
+  midasExpenseId?: string;
 }
 
 function App() {
@@ -148,6 +152,16 @@ function App() {
       sessionExpiredRef.current = false;
     }
   }, [user]);
+
+  // Accountants do not use Events/Checklist — bounce deep links to dashboard.
+  useEffect(() => {
+    if (
+      user?.role === 'accountant' &&
+      (currentPage === 'events' || currentPage === 'checklist')
+    ) {
+      setCurrentPage('dashboard');
+    }
+  }, [user, currentPage]);
 
   // Initialize session manager
   useEffect(() => {
@@ -344,7 +358,13 @@ function App() {
   }
 
   const handlePageChange = (page: string) => {
-    setCurrentPage(page);
+    // Accountants stay on expenses/reports — Events/Checklist redirect to dashboard
+    const blockedForAccountant = page === 'events' || page === 'checklist';
+    if (user.role === 'accountant' && blockedForAccountant) {
+      setCurrentPage('dashboard');
+    } else {
+      setCurrentPage(page);
+    }
     setMobileMenuOpen(false); // Close mobile menu after navigation
   };
 
@@ -357,6 +377,9 @@ function App() {
   };
 
   return (
+    // Wraps only the authenticated tree — picklists need a token, so mounting
+    // this above the login screen would just produce a guaranteed 401.
+    <PicklistProvider>
     <div className="min-h-screen bg-stone-50 flex">
       {/* Sync Status Bar */}
       <SyncStatusBar position="top" />
@@ -394,9 +417,13 @@ function App() {
             {/* key remounts the wrapper per view so every navigation replays
                 the ease-in — the app feels alive instead of snapping */}
             <div key={currentPage} className="animate-page-in">
-              {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={setCurrentPage} />}
-              {currentPage === 'events' && <EventSetup user={user} onPageChange={handlePageChange} />}
-              {currentPage === 'checklist' && <TradeShowChecklist user={user} />}
+              {currentPage === 'dashboard' && <Dashboard user={user} onPageChange={handlePageChange} />}
+              {currentPage === 'events' && user.role !== 'accountant' && (
+                <EventSetup user={user} onPageChange={handlePageChange} />
+              )}
+              {currentPage === 'checklist' && user.role !== 'accountant' && (
+                <TradeShowChecklist user={user} />
+              )}
               {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
               {/* Legacy page id: Account now lives inside Settings — keep old links landing on the Account tab */}
               {currentPage === 'account' && <AdminSettings user={user} initialTab="account" />}
@@ -434,6 +461,7 @@ function App() {
         timeRemaining={timeRemaining}
       />
     </div>
+    </PicklistProvider>
   );
 }
 

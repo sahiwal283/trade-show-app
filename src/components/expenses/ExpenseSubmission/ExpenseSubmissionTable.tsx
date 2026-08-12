@@ -18,6 +18,7 @@ interface ExpenseSubmissionTableProps {
   events: TradeShow[];
   users: User[];
   hasApprovalPermission: boolean;
+  reviewInMidas?: boolean;
   entityOptions: string[];
   pushingExpenseId: string | null;
   pushedExpenses: Set<string>;
@@ -99,6 +100,7 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
     events,
     users,
     hasApprovalPermission,
+    reviewInMidas = false,
     entityOptions,
     showFilters,
     setShowFilters,
@@ -271,7 +273,7 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
       />
 
       {/* Bulk action bar */}
-      {hasApprovalPermission && selectedIds.size > 0 && (
+      {hasApprovalPermission && !reviewInMidas && selectedIds.size > 0 && (
         <div className="flex flex-wrap items-center gap-2 border-b border-brand-100 bg-brand-50/60 px-3 py-2">
           <span className="text-xs font-semibold text-brand-800">
             {selectedIds.size} selected
@@ -320,15 +322,16 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
           events={events}
           users={users}
           hasApprovalPermission={hasApprovalPermission}
+          reviewInMidas={reviewInMidas}
           onViewExpense={props.onViewExpense}
         />
       </div>
 
-      <div className={`hidden overflow-x-auto lg:block ${hasApprovalPermission ? 'table-sticky-2' : 'table-sticky-first'}`}>
+      <div className={`hidden overflow-x-auto lg:block ${hasApprovalPermission && !reviewInMidas ? 'table-sticky-2' : 'table-sticky-first'}`}>
         <table className="w-full min-w-max">
           <thead className="bg-stone-50/80">
             <tr>
-              {hasApprovalPermission && (
+              {hasApprovalPermission && !reviewInMidas && (
                 <th className="w-10 px-2 py-2.5 text-center sm:px-3 sm:py-3">
                   <input
                     type="checkbox"
@@ -349,7 +352,9 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
               <SortableTh label="Amount" primaryKey="amount-highest" secondaryKey="amount-lowest" sortBy={sortBy} setSortBy={setSortBy} align="right" />
               <th className={`${thBase} text-left`}>Status</th>
               <th className={`${thBase} text-left`}>Receipt</th>
-              {hasApprovalPermission && <th className={`${thBase} text-left`}>Zoho</th>}
+              {hasApprovalPermission && !reviewInMidas && (
+                <th className={`${thBase} text-left`}>Zoho</th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-stone-100">
@@ -364,6 +369,7 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
                   event={event}
                   userName={userName}
                   hasApprovalPermission={hasApprovalPermission}
+                  reviewInMidas={reviewInMidas}
                   entityOptions={entityOptions}
                   pushingExpenseId={props.pushingExpenseId}
                   pushedExpenses={props.pushedExpenses}
@@ -371,7 +377,7 @@ export const ExpenseSubmissionTable: React.FC<ExpenseSubmissionTableProps> = (pr
                   onPushToZoho={props.onPushToZoho}
                   onViewExpense={props.onViewExpense}
                   isSelected={selectedIds.has(expense.id)}
-                  onToggleSelect={hasApprovalPermission ? toggleSelect : undefined}
+                  onToggleSelect={hasApprovalPermission && !reviewInMidas ? toggleSelect : undefined}
                 />
               );
             })}

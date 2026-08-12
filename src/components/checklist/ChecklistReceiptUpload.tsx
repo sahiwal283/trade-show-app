@@ -6,6 +6,7 @@ import { AppError } from '../../types/types';
 import { isAcceptableReceiptFile } from '../../utils/fileValidation';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { getZohoExpenseDescriptionValidationMessage } from '../../utils/zohoExpenseDescription';
+import { usePicklists } from '../../contexts/PicklistContext';
 
 export interface ParsedReservation {
   confirmationNumber: string | null;
@@ -31,7 +32,15 @@ interface ChecklistReceiptUploadProps {
   onExpenseCreated: (extracted: ExtractedReceipt) => void;
 }
 
-const SECTION_CATEGORIES = {
+/**
+ * Preferred category per checklist section.
+ *
+ * A convenience default, not a vocabulary — Midas owns the category list. Each
+ * value is checked against the live picklist before use, so if a category is
+ * renamed or retired in Midas the upload falls back to no preselection rather
+ * than sending a name Midas would have to resolve away.
+ */
+const SECTION_CATEGORY_PREFERENCE = {
   booth: 'Booth / Marketing / Tools',
   electricity: 'Booth / Marketing / Tools',
   flight: 'Travel - Flight',
@@ -52,7 +61,13 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
   const [processing, setProcessing] = useState(false);
   const [_ocrData, setOcrData] = useState<any>(null); // Reserved for future use (e.g., OCR correction tracking)
   const [reservation, setReservation] = useState<ParsedReservation | null>(null);
-  const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string; entity?: string | null}>>([]);
+  const { paymentMethods, categories: picklistCategories } = usePicklists();
+
+  // Only offer the section's preferred category if Midas still serves it.
+  const sectionCategory = React.useMemo(() => {
+    const preferred = SECTION_CATEGORY_PREFERENCE[section];
+    return picklistCategories.some((c) => c.name === preferred) ? preferred : null;
+  }, [picklistCategories, section]);
   const [formData, setFormData] = useState({
     merchant: '',
     amount: '',
@@ -86,20 +101,17 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
     handleFileSelect(file);
   };
 
-  // Load card options
-  React.useEffect(() => {
-    (async () => {
-      if (api.USE_SERVER) {
-        try {
-          const settings = await api.getSettings() as { cardOptions?: Array<{name: string; lastFour: string; entity?: string | null}> };
-          setCardOptions(settings.cardOptions || []);
-        } catch (error) {
-          console.error('[ChecklistReceiptUpload] Failed to load card options:', error);
-          setCardOptions([]);
-        }
-      }
-    })();
-  }, []);
+  // Card options come from the shared picklist context (Midas is SoR after
+  // cutover), mapped to this component's existing {name, lastFour, entity} shape.
+  const cardOptions = React.useMemo(
+    () =>
+      paymentMethods.map((pm) => ({
+        name: pm.label,
+        lastFour: pm.lastFour,
+        entity: pm.company,
+      })),
+    [paymentMethods]
+  );
 
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file);
@@ -188,7 +200,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
         receipt_url?: string;
       } = {
         event_id: event.id,
-        category: SECTION_CATEGORIES[section],
+        category: sectionCategory ?? '',
         merchant: formData.merchant,
         amount: parseFloat(formData.amount),
         date: formData.date,
@@ -411,9 +423,13 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
               {/* Auto-categorized Notice */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-900">
-                  <strong>Category:</strong> {SECTION_CATEGORIES[section]}
+                  <strong>Category:</strong> {sectionCategory ?? 'Not set'}
                   <br />
-                  <span className="text-xs text-blue-700">Auto-assigned based on checklist section</span>
+                  <span className="text-xs text-blue-700">
+                    {sectionCategory
+                      ? 'Auto-assigned based on checklist section'
+                      : 'This section\u2019s usual category is no longer available in Midas \u2014 set it after upload'}
+                  </span>
                 </p>
               </div>
 

@@ -1,12 +1,13 @@
 import { Router } from 'express';
 import { authenticate, AuthRequest } from '../middleware/auth';
-import { userRepository, expenseRepository } from '../database/repositories';
+import { userRepository } from '../database/repositories';
 import {
   getUnpushedZohoExpenses,
   getReimbursementCount,
   getEventsNearBudgetLimit,
   getUserPendingExpensesCount,
-  getUserMissingReceiptsCount
+  getUserMissingReceiptsCount,
+  getPendingApprovalCount
 } from '../services/QuickActionsService';
 
 const router = Router();
@@ -44,7 +45,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
       }
 
       // 2. Expenses pending approval
-      const pendingExpensesCount = await expenseRepository.countByStatus('pending');
+      const pendingExpensesCount = await getPendingApprovalCount();
       if (pendingExpensesCount > 0) {
         tasks.push({
           id: 'pending-expenses',
@@ -84,7 +85,7 @@ router.get('/', authenticate, async (req: AuthRequest, res) => {
     // ACCOUNTANT TASKS
     if (userRole === 'accountant') {
       // 1. Expenses pending approval
-      const pendingExpensesCount = await expenseRepository.countByStatus('pending');
+      const pendingExpensesCount = await getPendingApprovalCount();
       if (pendingExpensesCount > 0) {
         tasks.push({
           id: 'pending-expenses',

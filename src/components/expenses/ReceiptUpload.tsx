@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CheckCircle, PenLine } from 'lucide-react';
-import { api } from '../../utils/api';
 import { ReceiptData } from '../../types/types';
 import { TradeShow, User } from '../../App';
 import { filterActiveEvents, filterEventsByParticipation } from '../../utils/eventUtils';
@@ -13,6 +12,7 @@ import {
   FullImageModal,
 } from './ReceiptUpload/index';
 import { useReceiptOcr } from './ReceiptUpload/hooks/useReceiptOcr';
+import { usePicklists } from '../../contexts/PicklistContext';
 import { isAcceptableReceiptFile, isPdfFile, PDF_PLACEHOLDER_IMAGE } from '../../utils/fileValidation';
 import {
   buildZohoExpenseDescription,
@@ -43,8 +43,11 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
   const [selectedCard, setSelectedCard] = useState('');
   const [selectedEntity, setSelectedEntity] = useState('');
   const [description, setDescription] = useState('');
-  const [cardOptions, setCardOptions] = useState<Array<{name: string; lastFour: string; entity?: string | null}>>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const {
+    categories: picklistCategories,
+    paymentMethods,
+    isUnavailable: picklistsUnavailable,
+  } = usePicklists();
   
   // Filter events
   const activeEvents = filterActiveEvents(events);
@@ -91,47 +94,22 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
     getFieldWarnings
   } = useReceiptOcr();
   
-  // Load card options and categories
-  useEffect(() => {
-    (async () => {
-      const defaultCategories = [
-        'Booth / Marketing / Tools',
-        'Travel - Flight',
-        'Accommodation - Hotel',
-        'Transportation - Uber / Lyft / Others',
-        'Parking Fees',
-        'Rental - Car / U-haul',
-        'Meal and Entertainment',
-        'Gas / Fuel',
-        'Show Allowances - Per Diem',
-        'Model',
-        'Shipping Charges',
-        'Other'
-      ];
-      
-      if (api.USE_SERVER) {
-        try {
-          const settings = await api.getSettings();
-          setCardOptions(settings.cardOptions || []);
-          // Handle both old format (string[]) and new format (CategoryOption[])
-          const cats = settings.categoryOptions || defaultCategories;
-          const categoryNames = cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name);
-          setCategories(categoryNames);
-          console.log('[ReceiptUpload] Loaded categories:', categoryNames.length);
-        } catch (error) {
-          console.error('[ReceiptUpload] Failed to load settings:', error);
-          setCardOptions([]);
-          setCategories(defaultCategories);
-        }
-      } else {
-        const settings = JSON.parse(localStorage.getItem('app_settings') || '{}');
-        setCardOptions(settings.cardOptions || []);
-        // Handle both old format (string[]) and new format (CategoryOption[])
-        const cats = settings.categoryOptions || defaultCategories;
-        setCategories(cats.map((cat: any) => typeof cat === 'string' ? cat : cat.name));
-      }
-    })();
-  }, []);
+  // Card options and categories come from the shared picklist context (Midas is
+  // SoR after cutover). Mapped to this component's existing {name, lastFour,
+  // entity} shape so the OCR hook and results form are unaffected.
+  const cardOptions = useMemo(
+    () =>
+      paymentMethods.map((pm) => ({
+        name: pm.label,
+        lastFour: pm.lastFour,
+        entity: pm.company,
+      })),
+    [paymentMethods]
+  );
+  const categories = useMemo(
+    () => picklistCategories.map((c) => c.name),
+    [picklistCategories]
+  );
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -350,6 +328,14 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               {receiptZohoDescriptionError && (
                 <p className="text-sm text-red-700 text-right">{receiptZohoDescriptionError}</p>
               )}
+              {/* No category/card list means any saved expense would be filed
+                  against a guessed category. Blocked until the lists load. */}
+              {picklistsUnavailable && (
+                <p className="text-sm text-red-700 text-right">
+                  Categories and cards could not be loaded, so this expense can't be
+                  saved yet. Reconnect and try again.
+                </p>
+              )}
               <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
               <button
                 onClick={handleReset}
@@ -361,7 +347,7 @@ export const ReceiptUpload: React.FC<ReceiptUploadProps> = ({ onReceiptProcessed
               {ocrResults && (
                 <button
                   onClick={handleConfirm}
-                  disabled={isSaving || !!receiptZohoDescriptionError}
+                  disabled={isSaving || !!receiptZohoDescriptionError || picklistsUnavailable}
                   className="btn-primary w-full px-8 py-3 sm:w-auto"
                 >
                   {isSaving ? (
