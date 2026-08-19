@@ -11,6 +11,7 @@
     "update-version": "node scripts/update-version.js",
     "migrate": "ts-node src/database/migrate.ts",
     "migrate:expenses:midas": "ts-node src/scripts/migrateExpensesToMidas.ts",
+    "link:authentik": "ts-node src/scripts/linkAuthentikUsers.ts",
     "seed": "ts-node src/database/seed.ts",
     "test": "vitest",
     "test:integration": "vitest run tests/integration",
