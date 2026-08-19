@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parsePairs, planLink } from '../../src/scripts/linkAuthentikUsers';
+import { parsePairs, planLink, sanitizeAxiosError } from '../../src/scripts/linkAuthentikUsers';
+import { AxiosError } from 'axios';
 
 describe('parsePairs', () => {
   it('parses one- and two-column lines, skipping comments and blanks', () => {
@@ -42,5 +43,39 @@ describe('planLink', () => {
 
   it('conflict when linked to a different sub', () => {
     expect(planLink({ ...appUser, authentik_sub: 'other' }, [ak], pair).action).toBe('conflict');
+  });
+});
+
+describe('sanitizeAxiosError', () => {
+  it('sanitizes AxiosError to exclude Bearer token', () => {
+    const axiosError = new AxiosError('Request failed', '401', {
+      method: 'get',
+      url: 'https://auth.example.com/api/v3/core/users/',
+    });
+    axiosError.response = {
+      status: 401,
+      data: { detail: 'Unauthorized' },
+      headers: { 'authorization': 'Bearer secret_token_12345' },
+      statusText: 'Unauthorized',
+      config: axiosError.config,
+    };
+    const sanitized = sanitizeAxiosError(axiosError);
+    const message = sanitized.message;
+    expect(message).toContain('Authentik API');
+    expect(message).toContain('GET');
+    expect(message).toContain('401');
+    expect(message).not.toContain('Bearer');
+    expect(message).not.toContain('secret_token');
+  });
+
+  it('sanitizes regular Error objects', () => {
+    const error = new Error('Connection timeout');
+    const sanitized = sanitizeAxiosError(error);
+    expect(sanitized.message).toBe('Connection timeout');
+  });
+
+  it('sanitizes non-Error objects', () => {
+    const sanitized = sanitizeAxiosError('some string error');
+    expect(sanitized.message).toBe('some string error');
   });
 });

@@ -83,17 +83,30 @@ async function findAppUser(identifier: string): Promise<AppUserRow | null> {
   return result.rows[0] || null;
 }
 
+export function sanitizeAxiosError(error: unknown): Error {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status ?? 'network error';
+    const detail = error.response?.data?.detail || error.message;
+    return new Error(`Authentik API GET /api/v3/core/users/ failed: ${status} ${detail}`);
+  }
+  return error instanceof Error ? error : new Error(String(error));
+}
+
 async function searchAuthentik(baseUrl: string, token: string, term: string): Promise<AkUser[]> {
-  const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/v3/core/users/`, {
-    params: { search: term },
-    headers: { Authorization: `Bearer ${token}` },
-    timeout: 15000,
-  });
-  return (response.data?.results || []).map((u: any) => ({
-    uuid: u.uuid,
-    username: u.username,
-    email: u.email || '',
-  }));
+  try {
+    const response = await axios.get(`${baseUrl.replace(/\/$/, '')}/api/v3/core/users/`, {
+      params: { search: term },
+      headers: { Authorization: `Bearer ${token}` },
+      timeout: 15000,
+    });
+    return (response.data?.results || []).map((u: any) => ({
+      uuid: u.uuid,
+      username: u.username,
+      email: u.email || '',
+    }));
+  } catch (error) {
+    throw sanitizeAxiosError(error);
+  }
 }
 
 async function main(): Promise<void> {
@@ -136,7 +149,7 @@ async function main(): Promise<void> {
 
 if (require.main === module) {
   main().catch((error) => {
-    console.error('link:authentik failed:', error);
+    console.error('link:authentik failed:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   });
 }
