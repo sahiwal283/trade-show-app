@@ -3,7 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database';
 import { createSession, deleteSession } from '../middleware/sessionTracker';
-import { AuthRequest, getToken, tryVerifyPlatformJwt } from '../middleware/auth';
+import { AuthRequest, getToken, tryVerifyPlatformJwt, authenticateToken } from '../middleware/auth';
 import { logAuth } from '../utils/auditLogger';
 import { userRepository } from '../database/repositories';
 
@@ -52,6 +52,29 @@ router.get('/platform/session', async (req, res) => {
     },
   });
 });
+
+/**
+ * GET /api/auth/me
+ * Return the authenticated user's fresh profile. Lets the SPA hydrate its
+ * user object from a bare JWT (used by the SSO #sso_token bootstrap).
+ */
+export async function handleMe(req: AuthRequest, res: import('express').Response): Promise<void> {
+  try {
+    const result = await query(
+      'SELECT id, username, name, email, role FROM users WHERE id = $1',
+      [req.user!.id]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    res.json({ user: result.rows[0] });
+  } catch (error) {
+    console.error('[Auth] /me error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+router.get('/me', authenticateToken, handleMe);
 
 router.post('/login', async (req, res) => {
   const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
