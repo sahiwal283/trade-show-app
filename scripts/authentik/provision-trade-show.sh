@@ -96,10 +96,19 @@ fi
 echo "OK application slug=trade-show (issuer $ISSUER)"
 
 echo "=== 5/6 Write env to containers (sandbox 2600 + prod 2220) ==="
+# The service is started by systemd with EnvironmentFile=/etc/expenseapp/backend.env
+# (confirmed on both 2600 and 2220 via `systemctl cat trade-show-app-backend`).
+# /opt/trade-show-app/backend/.env sits in the backend's WorkingDirectory and
+# looks plausible but is NOT loaded by the running service — writing SSO vars
+# there only is a silent no-op. Prefer the authoritative file; fall back to
+# the WorkingDirectory .env only if the authoritative one doesn't exist (e.g.
+# a container that isn't set up with the /etc/expenseapp layout at all).
 write_env() { # ct redirect_uri
   local ct=$1 redirect=$2
   ssh "$PROXMOX" "pct exec $ct -- bash -lc '
-    ENV=/opt/trade-show-app/backend/.env
+    AUTHORITATIVE=/etc/expenseapp/backend.env
+    FALLBACK=/opt/trade-show-app/backend/.env
+    if [ -f \"\$AUTHORITATIVE\" ]; then ENV=\"\$AUTHORITATIVE\"; else ENV=\"\$FALLBACK\"; fi
     touch \$ENV
     sed -i \"/^AUTHENTIK_ISSUER=/d;/^AUTHENTIK_CLIENT_ID=/d;/^AUTHENTIK_CLIENT_SECRET=/d;/^OIDC_REDIRECT_URI=/d\" \$ENV
     cat >> \$ENV <<EOF
@@ -108,14 +117,17 @@ AUTHENTIK_CLIENT_ID=$CLIENT_ID
 AUTHENTIK_CLIENT_SECRET=$CLIENT_SECRET
 OIDC_REDIRECT_URI=$redirect
 EOF
+    echo \"wrote to \$ENV\"
   '"
 }
 write_env 2600 "$SANDBOX_REDIRECT"
 write_env 2220 "$PROD_REDIRECT"
 
-echo "--- Ensuring FRONTEND_URL on sandbox (CT 2600) only ---"
+echo "--- Ensuring FRONTEND_URL on sandbox (CT 2600) authoritative file only ---"
 ssh "$PROXMOX" "pct exec 2600 -- bash -lc '
-  ENV=/opt/trade-show-app/backend/.env
+  AUTHORITATIVE=/etc/expenseapp/backend.env
+  FALLBACK=/opt/trade-show-app/backend/.env
+  if [ -f \"\$AUTHORITATIVE\" ]; then ENV=\"\$AUTHORITATIVE\"; else ENV=\"\$FALLBACK\"; fi
   grep -q \"^FRONTEND_URL=\" \$ENV || echo \"FRONTEND_URL=http://192.168.1.144\" >> \$ENV
 '"
 
