@@ -38,6 +38,7 @@ ssh root@$PROXMOX_IP "
   pct exec $PRODUCTION_BACKEND_CT -- bash -c '
     cd $BACKEND_PATH || exit 1
     tar -xzf /tmp/backend-deploy.tar.gz
+    npm ci --omit=dev
     systemctl restart trade-show-app-backend
     sleep 3
     systemctl is-active trade-show-app-backend
