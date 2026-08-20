@@ -216,6 +216,14 @@ echo "$ME" | grep -q "\"username\":\"$TEST_USER\"" && echo "✓ SSO JWT works ag
 echo "=== 5. Password login regression ==="
 PW_RESULT=$(curl -sf -X POST -H 'Content-Type: application/json' \
   -d "{\"username\":\"$PW_USER\",\"password\":\"$PW_PASS\"}" "$APP/api/auth/login") || fail "password login request failed"
-echo "$PW_RESULT" | grep -q '"token"' && echo "✓ password login still works" || fail "password login broken: $PW_RESULT"
+PW_TOKEN=$(echo "$PW_RESULT" | python3 -c "import json,sys
+try:
+    print(json.load(sys.stdin).get('token',''))
+except Exception:
+    print('')")
+case "$PW_TOKEN" in
+  eyJ*.*.*) echo "✓ password login still works" ;;
+  *) fail "password login regression: no valid JWT in response: $PW_RESULT" ;;
+esac
 
 echo "ALL CHECKS PASSED"
