@@ -34,16 +34,18 @@ scp "$PACKAGE_NAME" root@$PROXMOX_IP:/tmp/backend-deploy.tar.gz
 
 echo "🚀 Deploying to production container $PRODUCTION_BACKEND_CT..."
 ssh root@$PROXMOX_IP "
+  set -e
   pct push $PRODUCTION_BACKEND_CT /tmp/backend-deploy.tar.gz /tmp/backend-deploy.tar.gz
   pct exec $PRODUCTION_BACKEND_CT -- bash -c '
-    cd $BACKEND_PATH || exit 1
+    set -e
+    cd $BACKEND_PATH
     tar -xzf /tmp/backend-deploy.tar.gz
     npm ci --omit=dev
     systemctl restart trade-show-app-backend
     sleep 3
     systemctl is-active trade-show-app-backend
   '
-"
+" || { echo "❌ Remote deploy block failed"; exit 1; }
 
 echo "🔍 Verifying..."
 DEPLOYED_VERSION=$(ssh root@$PROXMOX_IP "pct exec $PRODUCTION_BACKEND_CT -- curl -s http://localhost:3000/api/health 2>/dev/null | grep -o '\"version\":\"[^\"]*\"' | cut -d'\"' -f4" || true)
@@ -51,6 +53,8 @@ if [ "$DEPLOYED_VERSION" = "$VERSION" ]; then
   echo "✅ Backend deployed. Version: $DEPLOYED_VERSION"
 else
   echo "⚠️  Health check version: ${DEPLOYED_VERSION:-none} (expected $VERSION)"
+  cd ..
+  exit 1
 fi
 cd ..
 echo "Done."
