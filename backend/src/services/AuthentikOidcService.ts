@@ -143,7 +143,12 @@ export async function resolveSsoUser(claims: SsoClaims): Promise<SsoResolution> 
       console.log(`[OIDC] auto-provisioned pending user "${username}" (${email})`);
       return { status: 'pending' };
     } catch (error: any) {
-      if (error?.code === '23505') continue; // username taken → retry with suffix
+      // Only retry on the username uniqueness constraint; some drivers omit
+      // `constraint` on the error, in which case keep retrying as before to
+      // avoid regressing. Any other named constraint (e.g. email) rethrows.
+      if (error?.code === '23505' && (error?.constraint === undefined || error?.constraint === 'users_username_key')) {
+        continue;
+      }
       throw error;
     }
   }

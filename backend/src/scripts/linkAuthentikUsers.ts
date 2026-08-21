@@ -1,14 +1,26 @@
 /**
  * Pre-link app accounts to Authentik identities (spec §4).
  *
- * Usage (on the backend container, from /opt/trade-show-app/backend or repo backend/):
+ * Usage — dev (ts-node, from repo backend/):
  *   AUTHENTIK_API_URL=https://auth.booute.duckdns.org \
  *   AUTHENTIK_API_TOKEN=<token> \
  *   npm run link:authentik -- --file pairs.csv [--apply]
  *
+ * Usage — prod (compiled output; ts-node is a devDependency and is NOT
+ * installed on prod, which runs `npm ci --omit=dev`). This requires a build
+ * that shipped dist/scripts (i.e. `npm run build` ran and dist/ was deployed):
+ *   AUTHENTIK_API_URL=https://auth.booute.duckdns.org \
+ *   AUTHENTIK_API_TOKEN=<token> \
+ *   npm run link:authentik:prod -- --file pairs.csv [--apply]
+ * (equivalent to: node dist/scripts/linkAuthentikUsers.js --file pairs.csv [--apply])
+ *
  * pairs.csv: one entry per line, `app_identifier[,authentik_identifier]`
  * (username or email on either side; second column defaults to the first).
  * DRY-RUN by default — prints the plan; writes only with --apply.
+ *
+ * Exit codes: 0 = clean run (nothing needs attention), 2 = usage error,
+ * 3 = run completed but one or more entries need attention (conflict /
+ * ambiguous / not_found), 1 = unexpected failure.
  */
 import fs from 'fs';
 import axios from 'axios';
@@ -109,7 +121,7 @@ async function searchAuthentik(baseUrl: string, token: string, term: string): Pr
   }
 }
 
-async function main(): Promise<void> {
+async function main(): Promise<number> {
   const args = process.argv.slice(2);
   const apply = args.includes('--apply');
   const fileIndex = args.indexOf('--file');
@@ -143,13 +155,21 @@ async function main(): Promise<void> {
     if (plan.action === 'conflict' || plan.action === 'ambiguous' || plan.action === 'not_found') problems++;
   }
 
-  console.log(`\nDone. ${apply ? `${linked} linked.` : 'Dry-run only — rerun with --apply to write.'} ${problems} entries need attention.`);
+  console.log(
+    `\nDone. ${apply ? `${linked} linked.` : 'Dry-run only — rerun with --apply to write.'} ${problems} entries need attention.` +
+      (problems > 0 ? ' Exiting with code 3.' : '')
+  );
   await pool.end();
+  return problems;
 }
 
 if (require.main === module) {
-  main().catch((error) => {
-    console.error('link:authentik failed:', error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  });
+  main()
+    .then((problems) => {
+      if (problems > 0) process.exit(3);
+    })
+    .catch((error) => {
+      console.error('link:authentik failed:', error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    });
 }

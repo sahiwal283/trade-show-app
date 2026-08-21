@@ -118,6 +118,26 @@ describe('resolveSsoUser', () => {
     expect(repo.createSsoUser.mock.calls[1][0].username).toBe('jane2');
   });
 
+  it('23505 on a different constraint (e.g. email) rethrows instead of retrying', async () => {
+    repo.findByAuthentikSub.mockResolvedValue(null);
+    repo.findByEmailCiWithSso.mockResolvedValue(null);
+    repo.createSsoUser.mockRejectedValueOnce(
+      Object.assign(new Error('dup email'), { code: '23505', constraint: 'users_email_key' })
+    );
+    await expect(resolveSsoUser(CLAIMS)).rejects.toThrow('dup email');
+    expect(repo.createSsoUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('23505 with no constraint reported keeps retrying (driver omitted it)', async () => {
+    repo.findByAuthentikSub.mockResolvedValue(null);
+    repo.findByEmailCiWithSso.mockResolvedValue(null);
+    repo.createSsoUser
+      .mockRejectedValueOnce(Object.assign(new Error('dup'), { code: '23505' }))
+      .mockResolvedValueOnce({ id: 'u5', username: 'jane2', name: 'Jane Doe', email: 'jane@x.com', role: 'pending' });
+    expect(await resolveSsoUser(CLAIMS)).toEqual({ status: 'pending' });
+    expect(repo.createSsoUser.mock.calls[1][0].username).toBe('jane2');
+  });
+
   it('no email claim → missing_email (cannot link or provision)', async () => {
     repo.findByAuthentikSub.mockResolvedValue(null);
     expect(await resolveSsoUser({ sub: 'ak-uuid-9' })).toEqual({ status: 'missing_email' });
