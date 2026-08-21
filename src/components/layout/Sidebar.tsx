@@ -8,9 +8,13 @@ import {
   Settings,
   X,
   CheckSquare,
-  Code
+  Code,
+  Heart
 } from 'lucide-react';
 import { User, UserRole } from '../../App';
+import packageJson from '../../../package.json';
+
+const APP_VERSION = packageJson.version;
 
 interface SidebarProps {
   user: User;
@@ -116,6 +120,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </nav>
   );
 
+  // Bottom-of-nav credit + running version (collapsed rail only fits the version)
+  const sidebarFooter = (isCollapsed: boolean) => (
+    <div className="px-3 py-3 text-center">
+      {!isCollapsed && (
+        <p className="text-[11px] text-stone-400">
+          Made with{' '}
+          <Heart aria-label="love" className="inline h-3 w-3 -mt-0.5 fill-red-500 text-red-500" /> by
+          your Haute tech team
+        </p>
+      )}
+      <p className="mt-1 text-[11px] font-medium tracking-wide text-stone-400">v{APP_VERSION}</p>
+    </div>
+  );
+
   const userChip = (
     <div className="rounded-card border border-stone-200/80 bg-gradient-to-br from-brand-50/70 to-accent-50/70 p-3 shadow-elevation-1">
       <div className="flex items-center gap-3">
@@ -164,7 +182,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {renderNav(collapsed)}
         </div>
 
-
+        {sidebarFooter(collapsed)}
       </div>
 
       {/* Mobile Sidebar (slide-out) */}
@@ -185,6 +203,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex-1 overflow-y-auto">
           {renderNav(false)}
         </div>
+
+        {sidebarFooter(false)}
 
         <div className="p-3 border-t border-stone-100">
           {userChip}
