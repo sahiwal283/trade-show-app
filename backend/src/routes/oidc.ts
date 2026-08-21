@@ -98,8 +98,8 @@ export async function finishCallback(req: AuthRequest, res: Response, claims: Ss
   res.redirect(`${frontendUrl()}/#sso_token=${encodeURIComponent(token)}`);
 }
 
-/** GET /api/auth/oidc/callback — finish the flow. */
-router.get('/callback', async (req: AuthRequest, res: Response) => {
+/** GET /api/auth/oidc/callback — finish the flow. Exported for tests. */
+export async function handleCallback(req: AuthRequest, res: Response): Promise<void> {
   if (!isOidcConfigured()) return redirectWithError(res, 'not_configured');
   const txn = decodeTxnCookie(getCookieValue(req, OIDC_TXN_COOKIE));
   // Clear the txn cookie regardless of outcome.
@@ -130,6 +130,7 @@ router.get('/callback', async (req: AuthRequest, res: Response) => {
     console.error('[OIDC] callback failed:', error);
     redirectWithError(res, 'retry');
   }
-});
+}
+router.get('/callback', handleCallback);
 
 export default router;

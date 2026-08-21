@@ -19,7 +19,7 @@ vi.mock('../../src/utils/auditLogger', () => ({ logAuth: vi.fn().mockResolvedVal
 import jwt from 'jsonwebtoken';
 import { isOidcConfigured, resolveSsoUser, encodeTxnCookie, OIDC_TXN_COOKIE } from '../../src/services/AuthentikOidcService';
 import { createSession } from '../../src/middleware/sessionTracker';
-import { handleStatus, finishCallback } from '../../src/routes/oidc';
+import { handleStatus, finishCallback, handleCallback } from '../../src/routes/oidc';
 
 function mockRes() {
   return {
@@ -81,9 +81,38 @@ describe('finishCallback (post-token-exchange logic)', () => {
   });
 });
 
-describe('txn cookie guard', () => {
-  it('decode of a forged/absent cookie yields null → callback route redirects sso_error=retry (covered by service codec tests + route wiring below)', () => {
-    expect(encodeTxnCookie({ v: 'a', s: 'b', n: 'c' })).toBeTypeOf('string');
-    expect(OIDC_TXN_COOKIE).toBe('oidc_txn');
+describe('handleCallback guard paths', () => {
+  const baseReq: any = {
+    headers: {},
+    ip: '1.2.3.4',
+    socket: { remoteAddress: '1.2.3.4' },
+    originalUrl: '/api/auth/oidc/callback',
+  };
+
+  it('not_configured: isOidcConfigured false → redirects sso_error=not_configured', async () => {
+    (isOidcConfigured as any).mockReturnValue(false);
+    const res = mockRes();
+    await handleCallback({ ...baseReq }, res);
+    expect(res.redirect).toHaveBeenCalledWith('https://app.example/#sso_error=not_configured');
+  });
+
+  it('missing txn cookie: no cookie header → redirects sso_error=retry and clears oidc_txn cookie', async () => {
+    (isOidcConfigured as any).mockReturnValue(true);
+    const res = mockRes();
+    await handleCallback({ ...baseReq, headers: {} }, res);
+    expect(res.redirect).toHaveBeenCalledWith('https://app.example/#sso_error=retry');
+    const setCookieCalls = res.setHeader.mock.calls.filter((call: any[]) => call[0] === 'Set-Cookie');
+    expect(setCookieCalls.length).toBeGreaterThan(0);
+    expect(setCookieCalls.some((call: any[]) => String(call[1]).includes('oidc_txn=;'))).toBe(true);
+  });
+
+  it('forged txn cookie: garbage cookie value → redirects sso_error=retry and clears oidc_txn cookie', async () => {
+    (isOidcConfigured as any).mockReturnValue(true);
+    const res = mockRes();
+    await handleCallback({ ...baseReq, headers: { cookie: `${OIDC_TXN_COOKIE}=not-valid-base64-json` } }, res);
+    expect(res.redirect).toHaveBeenCalledWith('https://app.example/#sso_error=retry');
+    const setCookieCalls = res.setHeader.mock.calls.filter((call: any[]) => call[0] === 'Set-Cookie');
+    expect(setCookieCalls.length).toBeGreaterThan(0);
+    expect(setCookieCalls.some((call: any[]) => String(call[1]).includes('oidc_txn=;'))).toBe(true);
   });
 });
