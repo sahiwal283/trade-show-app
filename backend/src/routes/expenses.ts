@@ -91,7 +91,20 @@ async function buildExpenseActor(req: AuthRequest): Promise<ExpenseActor> {
   };
 }
 
-function loadReceiptFromUploadOrUrl(
+// Midas validates receipt mime types and rejects application/octet-stream,
+// so the receipt_url branch must derive a real mime from the extension.
+const RECEIPT_MIME_BY_EXT: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.heic': 'image/heic',
+  '.heif': 'image/heif',
+  '.pdf': 'application/pdf',
+};
+
+export function loadReceiptFromUploadOrUrl(
   file: { path: string; originalname?: string; filename: string; mimetype?: string } | undefined,
   receiptUrl: string | undefined
 ): { buffer: Buffer; filename: string; mime: string } | undefined {
@@ -112,7 +125,7 @@ function loadReceiptFromUploadOrUrl(
       return {
         buffer: fs.readFileSync(abs),
         filename: path.basename(rel),
-        mime: 'application/octet-stream',
+        mime: RECEIPT_MIME_BY_EXT[path.extname(rel).toLowerCase()] || 'application/octet-stream',
       };
     }
   }

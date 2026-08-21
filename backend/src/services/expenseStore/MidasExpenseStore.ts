@@ -122,12 +122,30 @@ export class MidasExpenseStore implements ExpenseStore {
     );
 
     if (input.receipt) {
-      await client.uploadReceipt(
-        created.expense.id,
-        input.receipt.buffer,
-        input.receipt.filename,
-        input.receipt.mime
-      );
+      try {
+        await client.uploadReceipt(
+          created.expense.id,
+          input.receipt.buffer,
+          input.receipt.filename,
+          input.receipt.mime
+        );
+      } catch (uploadError) {
+        // Compensate: a create whose receipt Midas rejected must not leave a
+        // receipt-less orphan behind in the review queue.
+        try {
+          await client.deleteExpense(created.expense.id, {
+            email: actor.email,
+            externalUserId: actor.id,
+            name: actor.name,
+          });
+        } catch (cleanupError) {
+          console.error(
+            `[MidasExpenseStore] receipt upload failed AND orphan cleanup failed for ${created.expense.id}:`,
+            cleanupError
+          );
+        }
+        throw uploadError;
+      }
       const refreshed = await client.getExpense(created.expense.id);
       return withWarnings(midasDtoToTsExpense(refreshed), created.warnings);
     }
