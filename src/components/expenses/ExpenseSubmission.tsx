@@ -52,8 +52,10 @@ interface ExpenseSubmissionProps {
 }
 
 export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) => {
-  // Check if user has approval permissions
-  const hasApprovalPermission = ['admin', 'accountant', 'developer'].includes(user.role);
+  // Expense review moved to Midas: this page is a personal submit-and-track
+  // view for every role, so nobody gets the all-expenses view or the
+  // approval/entity-assignment UI here anymore.
+  const hasApprovalPermission = false;
   
   // Use custom hooks (enhanced with approval data when needed)
   const { expenses, events, users, entityOptions, engine, reload: reloadData } = useExpenses({ 
@@ -681,9 +683,7 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
   // the full expense list each time re-renders every table row.
   const finalFilteredExpenses = useMemo(
     () => filteredExpenses.filter(expense => {
-      // User permission filter:
-      // - Users with approval permission see ALL expenses
-      // - Regular users see only their own expenses
+      // Everyone sees only their own expenses (review lives in Midas).
       return hasApprovalPermission || expense.userId === user.id;
     }),
     [filteredExpenses, hasApprovalPermission, user.id]
