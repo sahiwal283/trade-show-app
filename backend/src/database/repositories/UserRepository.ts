@@ -200,6 +200,79 @@ export class UserRepository extends BaseRepository<User> {
     const result = await this.executeQuery<{ exists: boolean }>(query, params);
     return result.rows[0].exists;
   }
+
+  /**
+   * Find user by Authentik OIDC subject (user UUID).
+   */
+  async findByAuthentikSub(sub: string): Promise<(UserWithoutPassword & { authentik_sub: string }) | null> {
+    const result = await this.executeQuery<UserWithoutPassword & { authentik_sub: string }>(
+      `SELECT id, username, name, email, role, authentik_sub, created_at, updated_at
+       FROM ${this.tableName}
+       WHERE authentik_sub = $1
+       LIMIT 1`,
+      [sub]
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Find user by email, case-insensitive, including SSO link state.
+   */
+  async findByEmailCiWithSso(email: string): Promise<(UserWithoutPassword & { authentik_sub: string | null }) | null> {
+    const result = await this.executeQuery<UserWithoutPassword & { authentik_sub: string | null }>(
+      `SELECT id, username, name, email, role, authentik_sub, created_at, updated_at
+       FROM ${this.tableName}
+       WHERE LOWER(TRIM(email)) = LOWER($1)
+       LIMIT 1`,
+      [typeof email === 'string' ? email.trim() : '']
+    );
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Link an Authentik identity to an existing account.
+   */
+  async linkAuthentikSub(id: string, sub: string): Promise<void> {
+    await this.executeQuery(
+      `UPDATE ${this.tableName}
+       SET authentik_sub = $1, sso_linked_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2`,
+      [sub, id]
+    );
+  }
+
+  /**
+   * Bookkeeping: record an SSO login.
+   */
+  async updateLastSsoLogin(id: string): Promise<void> {
+    await this.executeQuery(
+      `UPDATE ${this.tableName}
+       SET last_sso_login = CURRENT_TIMESTAMP
+       WHERE id = $1`,
+      [id]
+    );
+  }
+
+  /**
+   * Auto-provision a user from an Authentik login. Always role 'pending';
+   * password is a random unusable bcrypt hash (schema requires NOT NULL).
+   */
+  async createSsoUser(data: {
+    username: string;
+    name: string;
+    email: string;
+    password: string;
+    authentikSub: string;
+  }): Promise<UserWithoutPassword> {
+    const result = await this.executeQuery<User>(
+      `INSERT INTO ${this.tableName}
+         (username, name, email, password, role, authentik_sub, sso_linked_at, registration_date)
+       VALUES ($1, $2, $3, $4, 'pending', $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+       RETURNING id, username, name, email, role, created_at, updated_at`,
+      [data.username, data.name, data.email, data.password, data.authentikSub]
+    );
+    return result.rows[0];
+  }
 }
 
 // Export singleton instance

@@ -30,6 +30,27 @@ export const useAuth = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // SSO callback handoff: the backend redirects to /#sso_token=<jwt>.
+      // Consume it before anything else and scrub the hash so it never
+      // lingers in the address bar or history.
+      const ssoMatch = window.location.hash.match(/[#&]sso_token=([^&]+)/);
+      if (ssoMatch) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        TokenManager.setToken(decodeURIComponent(ssoMatch[1]));
+        try {
+          const me = await apiClient.get<{ user: User }>('/auth/me');
+          if (!cancelled && me?.user) {
+            setUser(me.user);
+            localStorage.setItem('tradeshow_current_user', JSON.stringify(me.user));
+          }
+        } catch (error) {
+          console.error('[useAuth] SSO token bootstrap failed:', error);
+          TokenManager.removeToken();
+        } finally {
+          if (!cancelled) setBootstrapDone(true);
+        }
+        return;
+      }
       try {
         const data = await apiClient.get<PlatformSessionResponse>('/auth/platform/session', {
           skipAuth: true,

@@ -1,6 +1,6 @@
 {
   "name": "trade-show-app-backend",
-  "version": "2.15.1",
+  "version": "2.16.1",
   "description": "Trade Show Expense Management Backend",
   "main": "dist/server.js",
   "scripts": {
@@ -11,6 +11,8 @@
     "update-version": "node scripts/update-version.js",
     "migrate": "ts-node src/database/migrate.ts",
     "migrate:expenses:midas": "ts-node src/scripts/migrateExpensesToMidas.ts",
+    "link:authentik": "ts-node src/scripts/linkAuthentikUsers.ts",
+    "link:authentik:prod": "node dist/scripts/linkAuthentikUsers.js",
     "seed": "ts-node src/database/seed.ts",
     "test": "vitest",
     "test:integration": "vitest run tests/integration",
@@ -31,6 +33,7 @@
     "form-data": "^4.0.4",
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
+    "openid-client": "^6.8.6",
     "pdfkit": "^0.17.2",
     "pg": "^8.11.3",
     "uuid": "^9.0.1",

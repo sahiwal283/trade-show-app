@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { User, Key, ArrowRight, AlertCircle, UserPlus } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { User, Key, ArrowRight, AlertCircle, UserPlus, Shield } from 'lucide-react';
+import { apiClient } from '../../utils/apiClient';
+import { API_CONFIG } from '../../constants/appConstants';
 import { RegistrationForm } from './RegistrationForm';
 
 interface LoginFormProps {
@@ -12,6 +14,46 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showRegistration, setShowRegistration] = useState(false);
+
+  const [ssoEnabled, setSsoEnabled] = useState(false);
+  // Read (and scrub) an sso_error code left in the hash by the OIDC callback.
+  const [ssoError] = useState(() => {
+    const match = window.location.hash.match(/[#&]sso_error=([^&]+)/);
+    if (!match) return '';
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    return decodeURIComponent(match[1]);
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .get<{ enabled: boolean }>('/auth/oidc/status', { skipAuth: true } as RequestInit)
+      .then((data) => {
+        if (!cancelled) setSsoEnabled(Boolean(data?.enabled));
+      })
+      .catch(() => {
+        /* status probe failing just hides the button */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const SSO_ERROR_MESSAGES: Record<string, string> = {
+    pending:
+      'Your account was created and is awaiting administrator approval. You can sign in once a role is assigned.',
+    not_configured: 'Single sign-on is not available right now. Please use your username and password.',
+    idp_unreachable: 'Single sign-on is temporarily unavailable. Please use your username and password.',
+    retry: 'Your sign-in attempt expired. Please try again.',
+    identity_conflict:
+      'This email is already linked to a different SSO identity. Please contact an administrator.',
+    missing_email: 'Your SSO account has no email address. Please contact an administrator.',
+  };
+  const ssoErrorMessage = ssoError ? SSO_ERROR_MESSAGES[ssoError] || 'Single sign-on failed. Please try again.' : '';
+
+  const handleSsoLogin = () => {
+    window.location.href = `${API_CONFIG.BASE_URL}/auth/oidc/login`;
+  };
 
   // Detect environment based on hostname
   const isProduction = window.location.hostname.includes('duckdns.org') || 
@@ -111,6 +153,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
             <p className="text-sm text-stone-500 mt-2">Sign in to TradeShow Expense Manager</p>
           </div>
 
+          {ssoErrorMessage && (
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-3.5" role="alert">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="mt-0.5 w-5 h-5 shrink-0 text-amber-500" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">Single sign-on</p>
+                  <p className="text-sm text-amber-700 mt-0.5">{ssoErrorMessage}</p>
+                </div>
+              </div>
+            </div>
+          )}
           {error && (
             <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-3.5" role="alert">
               <div className="flex items-start gap-2.5">
@@ -121,6 +174,27 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
                 </div>
               </div>
             </div>
+          )}
+          {ssoEnabled && (
+            <>
+              <button
+                type="button"
+                onClick={handleSsoLogin}
+                className="btn-primary w-full py-3 text-base group mb-6"
+              >
+                <Shield className="w-5 h-5" />
+                Sign in with Authentik
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <div className="relative mb-5">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-stone-200"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-3 bg-white text-stone-500">or sign in with password</span>
+                </div>
+              </div>
+            </>
           )}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>

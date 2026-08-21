@@ -5,6 +5,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { initializeUploadDirectories } from './config/upload';
 import authRoutes from './routes/auth';
+import oidcRoutes from './routes/oidc';
 import userRoutes from './routes/users';
 import roleRoutes from './routes/roles';
 import eventRoutes from './routes/events';
@@ -78,6 +79,7 @@ app.use('/api/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
 
 // Routes - Auth routes FIRST (no authentication required)
 app.use('/api/auth', authRoutes);
+app.use('/api/auth/oidc', oidcRoutes);
 
 // Authenticated routes with session tracking
 // Session tracking updates last_activity on every API request for real-time monitoring
