@@ -49,10 +49,14 @@ interface CategoryOptionsSectionProps {
 const UnmappedCategoryNotice: React.FC<{ categoryOptions: CategoryOption[] }> = ({
   categoryOptions,
 }) => {
-  const { categories, source } = usePicklists();
+  const { categories, source, zohoPostingOwner } = usePicklists();
 
-  // Only a concern once the dropdown stops being fed by this very table.
+  // Only a concern once the dropdown stops being fed by this very table...
   if (source !== 'midas') return null;
+  // ...and only while Trade Show is the one posting to Zoho. Under
+  // EXPENSE_BACKEND=midas, Midas posts and reads its own mapping, so gaps here
+  // change nothing and reporting them would send an accountant chasing ghosts.
+  if (zohoPostingOwner !== 'trade-show') return null;
 
   const unmapped = findUnmappedCategories(
     categories.map((c) => c.name),

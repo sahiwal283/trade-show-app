@@ -322,3 +322,33 @@ describe('getPicklists — PICKLIST_SOURCE overrides the expense backend', () =>
     expect(result.categories).toHaveLength(2);
   });
 });
+
+describe('getPicklists — who posts to Zoho', () => {
+  it('reports trade-show when expenses are stored and posted locally', async () => {
+    process.env.EXPENSE_BACKEND = 'local';
+    mockedQuery.mockResolvedValue({ rows: [], rowCount: 0 } as never);
+
+    expect((await getPicklists()).zohoPostingOwner).toBe('trade-show');
+  });
+
+  it('reports midas when the expense backend is Midas', async () => {
+    // Midas owns Zoho posting entirely on this path, so Trade Show's
+    // app_settings category→account table is no longer consulted and must not
+    // be reported as a gap.
+    process.env.EXPENSE_BACKEND = 'midas';
+    midasResolves();
+
+    expect((await getPicklists()).zohoPostingOwner).toBe('midas');
+  });
+
+  it('reports trade-show when only the picklists are sourced from Midas', async () => {
+    process.env.EXPENSE_BACKEND = 'local';
+    process.env.PICKLIST_SOURCE = 'midas';
+    midasResolves();
+
+    const result = await getPicklists();
+
+    expect(result.source).toBe('midas');
+    expect(result.zohoPostingOwner).toBe('trade-show');
+  });
+});

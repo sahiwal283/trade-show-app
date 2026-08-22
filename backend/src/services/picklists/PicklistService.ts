@@ -44,6 +44,13 @@ export type Picklists = {
   paymentMethods: PicklistPaymentMethod[];
   companies: PicklistCompany[];
   source: 'midas' | 'settings';
+  /**
+   * Who posts these expenses to Zoho Books. Under EXPENSE_BACKEND=midas that
+   * is Midas, and Trade Show's app_settings category→account table is dead
+   * weight; the admin UI uses this to avoid warning about a table nothing
+   * reads.
+   */
+  zohoPostingOwner: 'trade-show' | 'midas';
   stale: boolean;
   fetchedAt: string;
 };
@@ -102,6 +109,7 @@ async function fetchFromMidas(): Promise<Picklists> {
     paymentMethods: paymentMethods.map(mapPaymentMethod),
     companies: companies.map(mapCompany).sort((a, b) => a.sortOrder - b.sortOrder),
     source: 'midas',
+    zohoPostingOwner: zohoPostingOwner(),
     stale: false,
     fetchedAt: nowIso(),
   };
@@ -151,9 +159,14 @@ async function fetchFromSettings(): Promise<Picklists> {
       .map((name: string, i: number) => ({ name, zohoEnabled: true, sortOrder: i + 1 })),
 
     source: 'settings',
+    zohoPostingOwner: zohoPostingOwner(),
     stale: false,
     fetchedAt: nowIso(),
   };
+}
+
+function zohoPostingOwner(): 'trade-show' | 'midas' {
+  return getExpenseBackend() === 'midas' ? 'midas' : 'trade-show';
 }
 
 function sourceIsMidas(): boolean {
