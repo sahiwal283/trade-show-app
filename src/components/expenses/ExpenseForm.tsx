@@ -6,6 +6,8 @@ import { formatForDateInput, getTodayLocalDateString } from '../../utils/dateUti
 import { filterActiveEvents, filterEventsByParticipation } from '../../utils/eventUtils';
 import { isAcceptableReceiptFile, PDF_PLACEHOLDER_IMAGE } from '../../utils/fileValidation';
 import { usePicklists, formatCardUsed } from '../../contexts/PicklistContext';
+import { SearchableSelect } from '../common/SearchableSelect';
+import { toCardOptions, toCategoryOptions } from '../../utils/picklistOptions';
 import {
   buildZohoExpenseDescription,
   getZohoExpenseDescriptionValidationMessage,
@@ -38,7 +40,11 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
     isStale: picklistsStale,
     isUnavailable: picklistsUnavailable,
   } = usePicklists();
-  const categories = picklistCategories.map((c) => c.name);
+  const categorySelectOptions = useMemo(
+    () => toCategoryOptions(picklistCategories),
+    [picklistCategories]
+  );
+  const cardSelectOptions = useMemo(() => toCardOptions(cardOptions), [cardOptions]);
 
   const [formData, setFormData] = useState({
     tradeShowId: expense?.tradeShowId || '',
@@ -571,17 +577,14 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
               <label className="field-label">
                 Category *
               </label>
-              <select
+              <SearchableSelect
+                id="expense-category"
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="input-field min-h-[44px]"
+                onChange={(category) => setFormData({ ...formData, category })}
+                options={categorySelectOptions}
+                placeholder="Select category"
                 required
-              >
-                <option value="">Select category</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+              />
             </div>
 
             <div>
@@ -601,10 +604,10 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
               <label className="field-label">
                 Card Used *
               </label>
-              <select
+              <SearchableSelect
+                id="expense-card-used"
                 value={formData.cardUsed}
-                onChange={(e) => {
-                  const cardValue = e.target.value;
+                onChange={(cardValue) => {
                   // Find the selected card and auto-select its company
                   const selectedCard = cardOptions.find(card => formatCardUsed(card) === cardValue);
                   setFormData({
@@ -614,17 +617,10 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ expense, events, user,
                     zohoEntity: selectedCard?.company || ''
                   });
                 }}
-                className="input-field min-h-[44px]"
+                options={cardSelectOptions}
+                placeholder="Select card used"
                 required
-              >
-                <option value="">Select card used</option>
-                {cardOptions.map((card, index) => {
-                  const cardValue = formatCardUsed(card);
-                  return (
-                    <option key={card.id ?? index} value={cardValue}>{cardValue}</option>
-                  );
-                })}
-              </select>
+              />
               <p className="text-xs text-stone-500 mt-2 italic">
                 Note: Last 4 digits may differ when using Apple Pay.
               </p>

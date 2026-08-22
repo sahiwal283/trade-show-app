@@ -49,6 +49,11 @@ export interface PicklistState {
   paymentMethods: PicklistPaymentMethod[];
   companies: PicklistCompany[];
   source: 'midas' | 'settings' | null;
+  /**
+   * Who posts these expenses to Zoho Books. When Midas owns posting, Trade
+   * Show's own category→account mapping table is never consulted.
+   */
+  zohoPostingOwner: 'trade-show' | 'midas' | null;
   /** Serving data that may be behind — from the local cache or a degraded server. */
   isStale: boolean;
   /** No usable data at all. Expense submission must be blocked. */
@@ -62,6 +67,7 @@ const EMPTY: Omit<PicklistState, 'refresh'> = {
   paymentMethods: [],
   companies: [],
   source: null,
+  zohoPostingOwner: null,
   isStale: false,
   isUnavailable: false,
   isLoading: true,
@@ -90,6 +96,7 @@ export const PicklistProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       paymentMethods: Array.isArray(data?.paymentMethods) ? data.paymentMethods : [],
       companies: Array.isArray(data?.companies) ? data.companies : [],
       source: data?.source ?? null,
+      zohoPostingOwner: data?.zohoPostingOwner ?? null,
       // A server that fell back to its own cache reports stale itself.
       isStale: stale || Boolean(data?.stale),
       isUnavailable: false,

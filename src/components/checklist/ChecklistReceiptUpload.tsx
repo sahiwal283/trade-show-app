@@ -6,7 +6,9 @@ import { AppError } from '../../types/types';
 import { isAcceptableReceiptFile } from '../../utils/fileValidation';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { getZohoExpenseDescriptionValidationMessage } from '../../utils/zohoExpenseDescription';
-import { usePicklists } from '../../contexts/PicklistContext';
+import { usePicklists, formatCardUsed } from '../../contexts/PicklistContext';
+import { SearchableSelect } from '../common/SearchableSelect';
+import { toLegacyCardOptions } from '../../utils/picklistOptions';
 
 export interface ParsedReservation {
   confirmationNumber: string | null;
@@ -112,6 +114,7 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
       })),
     [paymentMethods]
   );
+  const cardSelectOptions = React.useMemo(() => toLegacyCardOptions(cardOptions), [cardOptions]);
 
   const handleFileSelect = async (file: File) => {
     setSelectedFile(file);
@@ -151,7 +154,9 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
         merchant: bestMerchant || prev.merchant,
         amount: fields.amount?.value?.toString() || prev.amount,
         date: fields.date?.value || prev.date,
-        cardUsed: matchedCard ? `${matchedCard.name} (...${matchedCard.lastFour})` : prev.cardUsed,
+        cardUsed: matchedCard
+          ? formatCardUsed({ label: matchedCard.name, lastFour: matchedCard.lastFour })
+          : prev.cardUsed,
         zohoEntity: matchedCard?.entity || prev.zohoEntity,
         receiptUrl: ocrResponse.receiptUrl || prev.receiptUrl // Store receipt URL from OCR
       }));
@@ -384,26 +389,23 @@ export const ChecklistReceiptUpload: React.FC<ChecklistReceiptUploadProps> = ({
                   <label className="block text-sm font-medium text-stone-700 mb-1">
                     Card Used
                   </label>
-                  <select
+                  <SearchableSelect
+                    id="checklist-card-used"
                     value={formData.cardUsed}
-                    onChange={(e) => {
-                      const cardValue = e.target.value;
-                      const selectedCardOption = cardOptions.find(card => `${card.name} (...${card.lastFour})` === cardValue);
-                      setFormData({ 
-                        ...formData, 
+                    onChange={(cardValue) => {
+                      const selectedCardOption = cardOptions.find(
+                        (card) =>
+                          formatCardUsed({ label: card.name, lastFour: card.lastFour }) === cardValue
+                      );
+                      setFormData({
+                        ...formData,
                         cardUsed: cardValue,
                         zohoEntity: selectedCardOption?.entity || ''
                       });
                     }}
-                    className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500"
-                  >
-                    <option value="">Select card...</option>
-                    {cardOptions.map((card, idx) => (
-                      <option key={idx} value={`${card.name} (...${card.lastFour})`}>
-                        {card.name} (...{card.lastFour})
-                      </option>
-                    ))}
-                  </select>
+                    options={cardSelectOptions}
+                    placeholder="Select card..."
+                  />
                 </div>
 
                 <div className="md:col-span-2">

@@ -11,6 +11,9 @@ import { TradeShow, User } from '../../../App';
 import { api } from '../../../utils/api';
 import { getTodayLocalDateString } from '../../../utils/dateUtils';
 import { filterEventsByParticipation } from '../../../utils/eventUtils';
+import { formatCardUsed } from '../../../contexts/PicklistContext';
+import { SearchableSelect } from '../../common/SearchableSelect';
+import { toCategoryOptions, toLegacyCardOptions } from '../../../utils/picklistOptions';
 
 // Confidence tint used beside field labels: accent = trustworthy,
 // amber = double-check, orange = likely wrong.
@@ -68,6 +71,9 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
   onEventCreated
 }) => {
   const [showQuickCreate, setShowQuickCreate] = useState(false);
+
+  const categorySelectOptions = useMemo(() => toCategoryOptions(categories), [categories]);
+  const cardSelectOptions = useMemo(() => toLegacyCardOptions(cardOptions), [cardOptions]);
   const [quickEventName, setQuickEventName] = useState('');
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -249,25 +255,17 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
                 </span>
               )}
             </label>
-            <select
+            <SearchableSelect
+              id="ocr-category"
               value={ocrResults.category || ''}
-              onChange={(e) => {
-                console.log('[ReceiptUpload] Category changed to:', e.target.value);
-                setOcrResults({ ...ocrResults, category: e.target.value });
+              onChange={(category) => {
+                console.log('[ReceiptUpload] Category changed to:', category);
+                setOcrResults({ ...ocrResults, category });
               }}
-              className="input-field"
-            >
-              <option value="">Select category...</option>
-              {categories.length > 0 ? (
-                categories.map((cat, idx) => (
-                  <option key={idx} value={cat}>
-                    {cat}
-                  </option>
-                ))
-              ) : (
-                <option disabled>Loading categories...</option>
-              )}
-            </select>
+              options={categorySelectOptions}
+              placeholder="Select category..."
+              emptyMessage={categories.length === 0 ? 'Loading categories…' : 'No matches'}
+            />
           </div>
         </div>
       </div>
@@ -384,23 +382,21 @@ export const OcrResultsForm: React.FC<OcrResultsFormProps> = ({
               </span>
             )}
           </label>
-          <select
+          <SearchableSelect
+            id="ocr-card-used"
             value={selectedCard}
-            onChange={(e) => {
-              const cardValue = e.target.value;
-              const selectedCardOption = cardOptions.find(card => `${card.name} (...${card.lastFour})` === cardValue);
+            onChange={(cardValue) => {
+              const selectedCardOption = cardOptions.find(
+                (card) => formatCardUsed({ label: card.name, lastFour: card.lastFour }) === cardValue
+              );
               setSelectedCard(cardValue);
               setSelectedEntity(selectedCardOption?.entity || '');
             }}
-            className="input-field max-w-sm py-2.5 sm:py-1.5"
-          >
-            <option value="">Select card...</option>
-            {cardOptions.map((card, idx) => (
-              <option key={idx} value={`${card.name} (...${card.lastFour})`}>
-                {card.name} (...{card.lastFour})
-              </option>
-            ))}
-          </select>
+            options={cardSelectOptions}
+            placeholder="Select card..."
+            className="max-w-sm"
+            emptyMessage={cardOptions.length === 0 ? 'Loading cards…' : 'No matches'}
+          />
         </div>
       </div>
 

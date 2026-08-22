@@ -13,6 +13,7 @@ import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
 import { query } from '../config/database';
+import { resolveExpenseAccountId } from './zoho/expenseAccountMapping';
 import { buildZohoExpenseDescription } from '../utils/zohoExpenseDescription';
 
 // ========== CONFIGURATION ==========
@@ -249,25 +250,19 @@ class ZohoIntegrationClient {
    * Find expense account ID from category name for a specific brand
    */
   private findExpenseAccountId(category: string, settings: ZohoSettings, brand: string): string {
-    if (category && settings.categoryOptions.length > 0) {
-      const matchedCategory = settings.categoryOptions.find(
-        cat => cat.name.toLowerCase() === category.toLowerCase()
-      );
-      
-      // Get brand-specific account ID
-      const brandKey = brand as 'haute_brands' | 'boomin_brands' | 'nirvana_kulture';
-      const accountId = matchedCategory?.zohoExpenseAccountIds?.[brandKey];
-      
-      if (accountId) {
-        console.log(`[ZohoClient] Found expense account ID for category "${category}" (${brand}): ${accountId}`);
-        return accountId;
-      }
+    const defaultAccountId = DEFAULT_BRAND_ACCOUNT_IDS[brand]?.expenseAccountId || '';
+    const { accountId, mapped } = resolveExpenseAccountId(
+      category,
+      settings.categoryOptions,
+      brand,
+      defaultAccountId
+    );
+
+    if (mapped) {
+      console.log(`[ZohoClient] Found expense account ID for category "${category}" (${brand}): ${accountId}`);
     }
-    
-    // Fallback to brand default
-    const defaultAccounts = DEFAULT_BRAND_ACCOUNT_IDS[brand];
-    console.log(`[ZohoClient] Using default expense account ID for ${brand}`);
-    return defaultAccounts?.expenseAccountId || '';
+
+    return accountId;
   }
 
   /**
