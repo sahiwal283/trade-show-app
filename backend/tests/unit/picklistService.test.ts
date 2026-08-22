@@ -26,6 +26,10 @@ vi.mock('../../src/services/midas', async () => {
   return {
     ...actual,
     getExpenseBackend: () => (process.env.EXPENSE_BACKEND || 'local').toLowerCase(),
+    getPicklistSource: () => {
+      const v = (process.env.PICKLIST_SOURCE || 'auto').toLowerCase();
+      return v === 'midas' || v === 'settings' ? v : 'auto';
+    },
     getMidasClient: () => ({ listCategories, listPaymentMethods, listCompanies }),
   };
 });
@@ -86,6 +90,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   delete process.env.EXPENSE_BACKEND;
+  delete process.env.PICKLIST_SOURCE;
 });
 
 describe('getPicklists — Midas backend', () => {
@@ -252,5 +257,68 @@ describe('getPicklists — settings backend (production, pre-cutover)', () => {
     const result = await getPicklists();
     expect(result.categories).toEqual([]);
     expect(result.companies).toEqual([]);
+  });
+});
+
+describe('getPicklists — PICKLIST_SOURCE overrides the expense backend', () => {
+  it('reads Midas on a local expense backend when PICKLIST_SOURCE=midas', async () => {
+    // The production case: expenses still stored locally, picklists from Midas.
+    process.env.EXPENSE_BACKEND = 'local';
+    process.env.PICKLIST_SOURCE = 'midas';
+    midasResolves();
+
+    const result = await getPicklists();
+
+    expect(result.source).toBe('midas');
+    expect(result.categories.map((c) => c.name)).toContain('Stationaries');
+    expect(mockedQuery).not.toHaveBeenCalled();
+  });
+
+  it('reads app_settings on a Midas expense backend when PICKLIST_SOURCE=settings', async () => {
+    process.env.EXPENSE_BACKEND = 'midas';
+    process.env.PICKLIST_SOURCE = 'settings';
+    mockedQuery.mockResolvedValue({
+      rows: [{ key: 'categoryOptions', value: [{ name: 'Parking Fees' }] }],
+      rowCount: 1,
+    } as never);
+
+    const result = await getPicklists();
+
+    expect(result.source).toBe('settings');
+    expect(listCategories).not.toHaveBeenCalled();
+  });
+
+  it('auto still means Midas when the expense backend is Midas', async () => {
+    process.env.EXPENSE_BACKEND = 'midas';
+    process.env.PICKLIST_SOURCE = 'auto';
+    midasResolves();
+
+    expect((await getPicklists()).source).toBe('midas');
+  });
+
+  it('auto still means settings when the expense backend is local', async () => {
+    process.env.EXPENSE_BACKEND = 'local';
+    process.env.PICKLIST_SOURCE = 'auto';
+    mockedQuery.mockResolvedValue({ rows: [], rowCount: 0 } as never);
+
+    expect((await getPicklists()).source).toBe('settings');
+    expect(listCategories).not.toHaveBeenCalled();
+  });
+
+  it('caches and serves stale on the PICKLIST_SOURCE=midas path too', async () => {
+    // The cache lives on the Midas branch, so reaching it via the override
+    // must get the same stale-rather-than-fail protection.
+    vi.useFakeTimers();
+    process.env.EXPENSE_BACKEND = 'local';
+    process.env.PICKLIST_SOURCE = 'midas';
+    midasResolves();
+    await getPicklists();
+
+    listCategories.mockRejectedValue(new Error('ECONNREFUSED'));
+    vi.advanceTimersByTime(61_000);
+    const result = await getPicklists();
+
+    expect(result.stale).toBe(true);
+    expect(result.categories).toHaveLength(2);
   });
 });

@@ -23,6 +23,23 @@ export function getExpenseBackend(): 'local' | 'dual' | 'midas' {
   return 'local';
 }
 
+export type PicklistSource = 'auto' | 'midas' | 'settings';
+
+/**
+ * Where the expense entry picklists come from, independent of where expenses
+ * are stored. Production runs EXPENSE_BACKEND=local but still wants Midas's
+ * real category and card lists, which `auto` cannot express.
+ *
+ * `auto` (the default) keeps the original coupling: Midas iff the expense
+ * backend is Midas. An unrecognised value resolves to `auto` rather than
+ * guessing — a typo must not silently swap the source of accounting data.
+ */
+export function getPicklistSource(): PicklistSource {
+  const v = (process.env.PICKLIST_SOURCE || 'auto').toLowerCase();
+  if (v === 'midas' || v === 'settings' || v === 'auto') return v;
+  return 'auto';
+}
+
 export function createMidasClient(): AnyMidasClient {
   const mode = getMidasMode();
   if (mode === 'disabled') {

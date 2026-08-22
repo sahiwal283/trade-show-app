@@ -5,7 +5,9 @@
  */
 
 import React from 'react';
-import { Tag, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
+import { Tag, Plus, Pencil, Trash2, Check, X, AlertTriangle } from 'lucide-react';
+import { usePicklists } from '../../../contexts/PicklistContext';
+import { findUnmappedCategories } from '../../../utils/categoryMapping';
 
 interface CategoryOption {
   name: string;
@@ -42,6 +44,50 @@ interface CategoryOptionsSectionProps {
   onCancelEdit: () => void;
   onSaveEdit: (index: number) => void;
 }
+
+/* Categories offered by the live picklist that this table cannot book to. */
+const UnmappedCategoryNotice: React.FC<{ categoryOptions: CategoryOption[] }> = ({
+  categoryOptions,
+}) => {
+  const { categories, source } = usePicklists();
+
+  // Only a concern once the dropdown stops being fed by this very table.
+  if (source !== 'midas') return null;
+
+  const unmapped = findUnmappedCategories(
+    categories.map((c) => c.name),
+    categoryOptions
+  );
+  if (unmapped.length === 0) return null;
+
+  return (
+    <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 sm:px-5">
+      <div className="flex gap-2">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-amber-900">
+            {unmapped.length} {unmapped.length === 1 ? 'category has' : 'categories have'} no Zoho
+            account ID
+          </p>
+          <p className="mt-0.5 text-xs text-amber-800">
+            These are selectable on expenses but will book to the brand default account until an ID
+            is added below.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {unmapped.map((name) => (
+              <span
+                key={name}
+                className="chip bg-white px-2 py-0.5 text-[11px] text-amber-900 ring-amber-200"
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 /* Row actions: always visible on touch devices; revealed on hover/focus
    when a hover-capable pointer is present. */
@@ -97,6 +143,8 @@ export const CategoryOptionsSection: React.FC<CategoryOptionsSectionProps> = ({
       </div>
 
       {/* Add form */}
+      <UnmappedCategoryNotice categoryOptions={categoryOptions} />
+
       <div className="border-b border-stone-100 bg-stone-50/60 px-4 py-4 sm:px-5">
         <p className="micro-label">Add a category</p>
         <div className="mt-3 space-y-3">

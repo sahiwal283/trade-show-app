@@ -11,6 +11,8 @@ import React, { useState, useRef, useMemo } from 'react';
 import { Edit2, Upload, Loader2, Receipt, X, AlertCircle, FileText } from 'lucide-react';
 import { isPdfReceiptUrl } from '../../../utils/fileValidation';
 import { usePicklists, formatCardUsed } from '../../../contexts/PicklistContext';
+import { SearchableSelect } from '../../common/SearchableSelect';
+import { toCategoryOptions } from '../../../utils/picklistOptions';
 import { ConfirmModal } from '../../common/ConfirmModal';
 import {
   buildZohoExpenseDescription,
@@ -79,6 +81,14 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
     const current = formData.cardUsed;
     return current && !labels.includes(current) ? [current, ...labels] : labels;
   }, [paymentMethods, formData.cardUsed]);
+
+  const categorySelectOptions = useMemo(() => toCategoryOptions(categoryChoices), [categoryChoices]);
+  // The label already carries the last four, so it is searchable as-is.
+  const cardSelectOptions = useMemo(
+    () => cardChoices.map((card) => ({ value: card, label: card })),
+    [cardChoices]
+  );
+
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -227,18 +237,13 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
         {/* Category */}
         <div>
           <label className="field-label">Category *</label>
-          <select
+          <SearchableSelect
+            id="modal-edit-category"
             value={formData.category || ''}
-            onChange={(e) => onChange({ category: e.target.value })}
-            className="input-field"
-          >
-            <option value="">Select category</option>
-            {categoryChoices.map((cat, idx) => (
-              <option key={idx} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+            onChange={(category) => onChange({ category })}
+            options={categorySelectOptions}
+            placeholder="Select category"
+          />
         </div>
 
         {/* Merchant */}
@@ -255,18 +260,13 @@ export const ExpenseModalDetailsEdit: React.FC<ExpenseModalDetailsEditProps> = (
         {/* Card Used */}
         <div>
           <label className="field-label">Card Used *</label>
-          <select
+          <SearchableSelect
+            id="modal-edit-card-used"
             value={formData.cardUsed || ''}
-            onChange={(e) => onChange({ cardUsed: e.target.value })}
-            className="input-field"
-          >
-            <option value="">Select card used</option>
-            {cardChoices.map((card, idx) => (
-              <option key={idx} value={card}>
-                {card}
-              </option>
-            ))}
-          </select>
+            onChange={(cardUsed) => onChange({ cardUsed })}
+            options={cardSelectOptions}
+            placeholder="Select card used"
+          />
         </div>
 
         {/* Location */}

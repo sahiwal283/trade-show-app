@@ -2,16 +2,17 @@
  * Single source for the three option lists the expense UI needs:
  * categories, payment methods (cards), and companies (formerly "entities").
  *
- * Under EXPENSE_BACKEND=midas these come from Midas, which is system of record.
- * Otherwise they come from `app_settings`, so one build serves both a cut-over
- * sandbox and a not-yet-cut-over production.
+ * PICKLIST_SOURCE decides where they come from. Its default, `auto`, means
+ * Midas iff EXPENSE_BACKEND=midas; `midas` and `settings` force the choice.
+ * The override exists because production wants Midas's real lists while its
+ * expenses are still stored locally — a state `auto` cannot express.
  *
  * The Midas API key never leaves the server — the browser talks to this service,
  * never to Midas directly.
  */
 
 import { query } from '../../config/database';
-import { getExpenseBackend, getMidasClient, paymentMethodCompany } from '../midas';
+import { getExpenseBackend, getMidasClient, getPicklistSource, paymentMethodCompany } from '../midas';
 import type { MidasCompany, MidasPaymentMethod } from '../midas';
 
 /** Matches the TTL paymentMethodMap already uses for its own catalog cache. */
@@ -155,6 +156,13 @@ async function fetchFromSettings(): Promise<Picklists> {
   };
 }
 
+function sourceIsMidas(): boolean {
+  const source = getPicklistSource();
+  if (source === 'midas') return true;
+  if (source === 'settings') return false;
+  return getExpenseBackend() === 'midas';
+}
+
 /**
  * Current picklists.
  *
@@ -164,7 +172,7 @@ async function fetchFromSettings(): Promise<Picklists> {
  * to serve it throws, and the caller blocks submission.
  */
 export async function getPicklists(): Promise<Picklists> {
-  if (getExpenseBackend() !== 'midas') {
+  if (!sourceIsMidas()) {
     return fetchFromSettings();
   }
 
