@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { CreditCard as Edit2, Trash2, Mail, UserCheck, UserX, AlertTriangle } from 'lucide-react';
+import { CreditCard as Edit2, Mail, UserCheck, UserX, UserPlus, AlertTriangle } from 'lucide-react';
 import { User } from '../../../App';
 
 interface Role {
@@ -23,7 +23,7 @@ interface UserManagementTableProps {
   getRoleColor: (roleName: string) => string;
   getRoleLabel: (roleName: string) => string;
   onEditUser: (user: User) => void;
-  onDeleteUser: (userId: string) => Promise<void>;
+  onSetUserActive: (user: User, isActive: boolean) => Promise<void>;
   onInviteUser: (userId: string) => void;
   onActivateUser: (user: User) => void;
   onRejectUser: (user: User) => void;
@@ -36,7 +36,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
   getRoleColor,
   getRoleLabel,
   onEditUser,
-  onDeleteUser,
+  onSetUserActive,
   onInviteUser,
   onActivateUser,
   onRejectUser
@@ -55,7 +55,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
           </thead>
           <tbody className="divide-y divide-stone-200">
             {users.map((user) => (
-              <tr key={user.id} className="hover:bg-stone-50">
+              <tr key={user.id} className={`hover:bg-stone-50 ${user.is_active === false ? 'bg-stone-50/60 opacity-60' : ''}`}>
                 <td className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
                   <div className="flex items-center space-x-3">
                     <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
@@ -81,7 +81,12 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                   )}
                 </td>
                 <td className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
-                  {isPendingUser(user) ? (
+                  {user.is_active === false ? (
+                    <div className="flex items-center">
+                      <UserX className="w-4 h-4 text-stone-500 mr-2" />
+                      <span className="text-sm text-stone-500 font-medium">Inactive</span>
+                    </div>
+                  ) : isPendingUser(user) ? (
                     <div className="flex items-center">
                       <AlertTriangle className="w-4 h-4 text-yellow-600 mr-2" />
                       <span className="text-sm text-yellow-600 font-medium">Awaiting Activation</span>
@@ -116,28 +121,42 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
                       </>
                     ) : (
                       <>
-                        <button
-                          onClick={() => onInviteUser(user.id)}
-                          className="btn-ghost p-2"
-                          title="Send Invitation"
-                        >
-                          <Mail className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onEditUser(user)}
-                          className="btn-ghost p-2"
-                          title="Edit User"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => onDeleteUser(user.id)}
-                          disabled={user.id === currentUserId || user.username === 'admin'}
-                          className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={user.username === 'admin' ? 'Cannot delete system admin' : user.id === currentUserId ? 'Cannot delete yourself' : 'Delete User'}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {user.is_active !== false && (
+                          <>
+                            <button
+                              onClick={() => onInviteUser(user.id)}
+                              className="btn-ghost p-2"
+                              title="Send Invitation"
+                            >
+                              <Mail className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => onEditUser(user)}
+                              className="btn-ghost p-2"
+                              title="Edit User"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                        {user.is_active === false ? (
+                          <button
+                            onClick={() => onSetUserActive(user, true)}
+                            className="btn-ghost p-2 hover:text-emerald-600 hover:bg-emerald-50"
+                            title="Reactivate User"
+                          >
+                            <UserPlus className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => onSetUserActive(user, false)}
+                            disabled={user.id === currentUserId || user.username === 'admin'}
+                            className="btn-ghost p-2 hover:text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={user.username === 'admin' ? 'Cannot deactivate system admin' : user.id === currentUserId ? 'Cannot deactivate yourself' : 'Deactivate User'}
+                          >
+                            <UserX className="w-4 h-4" />
+                          </button>
+                        )}
                       </>
                     )}
                   </div>

@@ -48,6 +48,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
     identity_conflict:
       'This email is already linked to a different SSO identity. Please contact an administrator.',
     missing_email: 'Your SSO account has no email address. Please contact an administrator.',
+    deactivated: 'This account has been deactivated. Please contact an administrator.',
   };
   const ssoErrorMessage = ssoError ? SSO_ERROR_MESSAGES[ssoError] || 'Single sign-on failed. Please try again.' : '';
 

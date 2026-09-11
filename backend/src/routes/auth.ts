@@ -42,6 +42,12 @@ router.get('/platform/session', async (req, res) => {
       message: 'No local account linked. Please sign in with your app credentials to link your account.',
     });
   }
+  if (localUser.is_active === false) {
+    return res.status(403).json({
+      detail: 'account_deactivated',
+      message: 'This account has been deactivated. Please contact an administrator.',
+    });
+  }
   res.json({
     user: {
       id: localUser.id,
@@ -108,7 +114,7 @@ router.post('/login', async (req, res) => {
     // email into the login field; desktop may save the username. Same generic error if no match.
     console.log(`[Auth:Login] Request ${requestId} - Querying database for user (username or email)`);
     const result = await query(
-      `SELECT id, username, password, name, email, role FROM users
+      `SELECT id, username, password, name, email, role, is_active FROM users
        WHERE LOWER(TRIM(username)) = LOWER($1)
           OR LOWER(TRIM(email)) = LOWER($1)
        LIMIT 1`,
@@ -144,6 +150,18 @@ router.post('/login', async (req, res) => {
         console.error(`[Auth:Login] Failed to log auth failure:`, err)
       );
       return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // Prevent login if the account has been deactivated. Checked after the
+    // password so a wrong password still reports generic invalid credentials.
+    if (user.is_active === false) {
+      await logAuth('login_failed', { username }, req.ip, 'Account deactivated').catch(err =>
+        console.error(`[Auth:Login] Failed to log auth failure:`, err)
+      );
+      return res.status(403).json({
+        error: 'Account deactivated',
+        message: 'This account has been deactivated. Please contact an administrator.'
+      });
     }
 
     // Prevent login if account is pending role assignment

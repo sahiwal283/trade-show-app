@@ -38,6 +38,8 @@ export interface User {
   role: UserRole;
   avatar?: string;
   registration_date?: string;
+  /** False = deactivated: cannot sign in, and not offered for new assignments. */
+  is_active?: boolean;
 }
 
 export interface TradeShow {

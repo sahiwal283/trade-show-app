@@ -18,6 +18,8 @@ interface UserManagementFiltersProps {
   setSearchTerm: (term: string) => void;
   filterRole: string;
   setFilterRole: (role: string) => void;
+  filterStatus: string;
+  setFilterStatus: (status: string) => void;
   roles: Role[];
 }
 
@@ -26,11 +28,13 @@ export const UserManagementFilters: React.FC<UserManagementFiltersProps> = ({
   setSearchTerm,
   filterRole,
   setFilterRole,
+  filterStatus,
+  setFilterStatus,
   roles
 }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-4 md:p-5 lg:p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-stone-400" />
           <input
@@ -51,6 +55,17 @@ export const UserManagementFilters: React.FC<UserManagementFiltersProps> = ({
           {roles.map(role => (
             <option key={role.id} value={role.name}>{role.label}</option>
           ))}
+        </select>
+
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+          aria-label="Filter by status"
+        >
+          <option value="all">All Statuses</option>
+          <option value="active">Active Only</option>
+          <option value="inactive">Inactive Only</option>
         </select>
       </div>
     </div>

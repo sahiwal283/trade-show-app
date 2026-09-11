@@ -81,6 +81,19 @@ describe('resolveSsoUser', () => {
     expect(await resolveSsoUser(CLAIMS)).toEqual({ status: 'pending' });
   });
 
+  it('sub match on a deactivated account → deactivated, no token path', async () => {
+    repo.findByAuthentikSub.mockResolvedValue({ id: 'rita-1', username: 'rita', name: 'Rita Dubb', email: 'rita@x.com', role: 'coordinator', is_active: false, authentik_sub: 'ak-uuid-1' });
+    expect(await resolveSsoUser(CLAIMS)).toEqual({ status: 'deactivated' });
+    expect(repo.updateLastSsoLogin).not.toHaveBeenCalled();
+  });
+
+  it('email match on a deactivated account → deactivated, and does not link the identity', async () => {
+    repo.findByAuthentikSub.mockResolvedValue(null);
+    repo.findByEmailCiWithSso.mockResolvedValue({ id: 'rita-1', username: 'rita', name: 'Rita Dubb', email: 'jane@x.com', role: 'coordinator', is_active: false, authentik_sub: null });
+    expect(await resolveSsoUser(CLAIMS)).toEqual({ status: 'deactivated' });
+    expect(repo.linkAuthentikSub).not.toHaveBeenCalled();
+  });
+
   it('email match on unlinked account → links and returns ok', async () => {
     repo.findByAuthentikSub.mockResolvedValue(null);
     repo.findByEmailCiWithSso.mockResolvedValue({ id: 'u2', username: 'jane', name: 'Jane', email: 'jane@x.com', role: 'coordinator', authentik_sub: null });

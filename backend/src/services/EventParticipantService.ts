@@ -24,17 +24,34 @@ export interface ParticipantObject {
  * @param participants - Array of participant objects (full format)
  * @param participantIds - Array of user IDs (legacy format)
  * @param client - Optional database client for transaction support
+ * @param grandfatheredIds - User IDs already on the event before this call.
+ *   The event update path deletes every participant row and re-inserts them,
+ *   so without this a deactivated user would be silently dropped from events
+ *   they already belong to the first time anyone edits one. Deactivation
+ *   blocks NEW assignments only; existing history is left alone.
  * @returns Array of successfully added participant IDs
  */
 export async function processParticipants(
   eventId: string,
   participants?: ParticipantObject[],
   participantIds?: string[],
-  client?: any
+  client?: any,
+  grandfatheredIds?: Set<string>
 ): Promise<string[]> {
   const queryFn = client ? client.query.bind(client) : query;
   const addedParticipantIds: string[] = [];
   const newlyInsertedIds: string[] = [];
+
+  const isAssignable = async (userId: string): Promise<boolean> => {
+    if (grandfatheredIds?.has(userId)) return true;
+    const active = await isUserActive(userId, queryFn);
+    if (!active) {
+      console.warn(
+        `[EventParticipantService] ⚠️ Refused to add deactivated user ${userId} to event ${eventId}`
+      );
+    }
+    return active;
+  };
 
   // Handle full participant objects (new format)
   if (participants && Array.isArray(participants)) {
@@ -43,7 +60,7 @@ export async function processParticipants(
     for (const participant of participants) {
       try {
         const userId = await ensureParticipantUser(participant, client);
-        if (userId) {
+        if (userId && (await isAssignable(userId))) {
           const inserted = await addParticipantToEvent(eventId, userId, queryFn);
           addedParticipantIds.push(userId);
           if (inserted) newlyInsertedIds.push(userId);
@@ -61,6 +78,7 @@ export async function processParticipants(
     
     for (const userId of participantIds) {
       try {
+        if (!(await isAssignable(userId))) continue;
         const inserted = await addParticipantToEvent(eventId, userId, queryFn);
         addedParticipantIds.push(userId);
         if (inserted) newlyInsertedIds.push(userId);
@@ -73,6 +91,15 @@ export async function processParticipants(
   }
 
   return addedParticipantIds;
+}
+
+/**
+ * Whether a user may be newly assigned to work. Unknown ids read as inactive;
+ * the insert would fail its foreign key anyway.
+ */
+async function isUserActive(userId: string, queryFn: typeof query): Promise<boolean> {
+  const result = await queryFn('SELECT is_active FROM users WHERE id = $1', [userId]);
+  return (result.rows as Array<{ is_active: boolean }>)[0]?.is_active === true;
 }
 
 /**

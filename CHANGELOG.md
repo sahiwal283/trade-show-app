@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.22.0] - 2026-09-11 - User deactivation
+
+### Added
+- `users.is_active` and `PATCH /api/users/:id/active` (admin/developer). Deactivating blocks authentication, hides the account from assignment pickers, and is reversible; historical expenses, events and reports still resolve the person's name. Every change is written to `audit_logs`.
+- Status filter (All / Active / Inactive) on the admin user list; deactivated rows stay listed with an "Inactive" badge rather than disappearing.
+
+### Changed
+- The admin user table's hard-delete button is replaced by a deactivate/reactivate toggle. `DELETE /api/users/:id` still exists on the API and still backs the reject-pending-registration flow, but has no general UI entry point — deleting a user orphans every expense they filed in Midas (joined on `users.id` with no foreign key) and cascades away their event participation and OCR corrections.
+- Deactivation takes effect on the next request rather than when the 12-hour JWT expires: `authenticateToken` re-checks `is_active` per request. Login, platform SSO and Authentik SSO all refuse deactivated accounts with `account_deactivated`.
+- `processParticipants` refuses to assign a deactivated user to an event, but grandfathers anyone already on it — the event update path deletes and re-inserts every participant row, so without that an edit would silently drop deactivated members from events they already belong to.
+- The event participant label is now associated with its input (`htmlFor`), which it never was.
+
+### Requires
+- Migration `040_add_users_is_active.sql` (auto-applies at backend startup). No env changes.
+
 ## [2.21.0] - 2026-09-11 - Searchable participant picker
 
 ### Changed

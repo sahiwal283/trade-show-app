@@ -68,11 +68,13 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   onResetForm
 }) => {
   // Built before the early return so the hook order stays stable across renders.
-  // Email is in the label already, so `searchText` only needs to cover it for
-  // the case where a future label drops it.
+  // Deactivated users are excluded: this is an assignment picker, and the
+  // backend refuses them anyway. Email is in the label already, so `searchText`
+  // only needs to cover it for the case where a future label drops it.
   const selectableUserOptions: SearchableSelectOption[] = React.useMemo(
     () =>
       allUsers
+        .filter(u => u.is_active !== false)
         .filter(u => !formData.participants.find(p => p.id === u.id))
         .map(u => ({
           value: u.id,
@@ -264,7 +266,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
             
             <div className="space-y-4">
               <div>
-                <label className="field-label">
+                <label className="field-label" htmlFor="event-participant-select">
                   Select from existing users
                 </label>
                 <div className="flex gap-3">

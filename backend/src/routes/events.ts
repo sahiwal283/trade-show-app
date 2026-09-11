@@ -149,8 +149,12 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
 
     // Update participants if provided
     if (participants || participant_ids) {
+      // Snapshot before the wipe: anyone already on the event stays eligible
+      // even if their account has since been deactivated, so editing an event
+      // never silently drops historical participants.
+      const existingIds = new Set(await getCurrentParticipantIds(id, client));
       await removeAllParticipants(id, client);
-      await processParticipants(id, participants, participant_ids, client);
+      await processParticipants(id, participants, participant_ids, client, existingIds);
     }
 
     // Commit transaction
@@ -192,7 +196,7 @@ router.post('/:id/participants', authorize('admin', 'coordinator', 'developer'),
     }
 
     const previousIds = new Set(await getCurrentParticipantIds(id));
-    const addedIds = await processParticipants(id, undefined, userIds);
+    const addedIds = await processParticipants(id, undefined, userIds, undefined, previousIds);
     const newlyAddedIds = addedIds.filter((uid) => !previousIds.has(uid));
 
     res.json({ added: newlyAddedIds });

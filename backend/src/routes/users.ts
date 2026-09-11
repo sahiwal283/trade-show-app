@@ -3,10 +3,10 @@
  * Handles user management operations (CRUD)
  */
 
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
-import { userRepository } from '../database/repositories';
+import { userRepository, auditLogRepository } from '../database/repositories';
 
 const router = Router();
 
@@ -101,6 +101,67 @@ router.put('/:id', authorize('admin', 'developer'), async (req: AuthRequest, res
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+/**
+ * Activate or deactivate a user (admin and developer).
+ *
+ * The reversible alternative to DELETE: expenses live in the Midas store keyed
+ * by this user's id with no foreign key back here, so a hard delete orphans
+ * every expense the person ever filed. Deactivating blocks authentication and
+ * hides them from assignment pickers while leaving all history intact.
+ */
+export const handleSetUserActive = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { is_active: isActive } = req.body;
+
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ error: 'is_active must be a boolean' });
+    }
+
+    const target = await userRepository.findById(id);
+    if (!target) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Same guards as delete: locking yourself out, or locking out the built-in
+    // admin, would leave nobody able to undo it.
+    if (!isActive && req.user?.id === id) {
+      return res.status(400).json({ error: 'You cannot deactivate your own account' });
+    }
+    if (!isActive && target.username === 'admin') {
+      return res.status(403).json({ error: 'Cannot deactivate the system admin user' });
+    }
+
+    const user = await userRepository.setActive(id, isActive);
+
+    await auditLogRepository.create({
+      userId: req.user?.id,
+      userName: req.user?.username,
+      userRole: req.user?.role,
+      action: isActive ? 'user_activated' : 'user_deactivated',
+      entityType: 'user',
+      entityId: id,
+      ipAddress: req.ip,
+      requestMethod: req.method,
+      requestPath: req.originalUrl,
+      changes: { is_active: isActive, target_username: target.username },
+    }).catch((error) => {
+      // Audit is bookkeeping; never fail the state change on it.
+      console.error('Failed to write user activation audit log:', error);
+    });
+
+    res.json(user);
+  } catch (error: any) {
+    if (error.message === 'User not found' || error.name === 'NotFoundError') {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    console.error('Error changing user active state:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+router.patch('/:id/active', authorize('admin', 'developer'), handleSetUserActive);
 
 // Delete user (admin and developer)
 router.delete('/:id', authorize('admin', 'developer'), async (req: AuthRequest, res) => {

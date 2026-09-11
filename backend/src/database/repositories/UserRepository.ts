@@ -14,6 +14,7 @@ export interface User {
   email: string;
   password?: string;
   role: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -31,7 +32,7 @@ export class UserRepository extends BaseRepository<User> {
   async findByUsernameSafe(username: string): Promise<UserWithoutPassword | null> {
     const normalized = typeof username === 'string' ? username.trim() : '';
     const result = await this.executeQuery<UserWithoutPassword>(
-      `SELECT id, username, name, email, role, created_at, updated_at 
+      `SELECT id, username, name, email, role, is_active, created_at, updated_at 
        FROM ${this.tableName} 
        WHERE LOWER(TRIM(username)) = LOWER($1)
           OR LOWER(TRIM(email)) = LOWER($1)
@@ -57,7 +58,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findByEmailSafe(email: string): Promise<UserWithoutPassword | null> {
     const result = await this.executeQuery<UserWithoutPassword>(
-      `SELECT id, username, name, email, role, created_at, updated_at 
+      `SELECT id, username, name, email, role, is_active, created_at, updated_at 
        FROM ${this.tableName} 
        WHERE email = $1`,
       [email]
@@ -70,7 +71,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findByRole(role: string): Promise<UserWithoutPassword[]> {
     const result = await this.executeQuery<UserWithoutPassword>(
-      `SELECT id, username, name, email, role, created_at, updated_at 
+      `SELECT id, username, name, email, role, is_active, created_at, updated_at 
        FROM ${this.tableName} 
        WHERE role = $1 
        ORDER BY name ASC`,
@@ -84,7 +85,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findAllSafe(): Promise<UserWithoutPassword[]> {
     const result = await this.executeQuery<UserWithoutPassword>(
-      `SELECT id, username, name, email, role, created_at, updated_at 
+      `SELECT id, username, name, email, role, is_active, created_at, updated_at 
        FROM ${this.tableName} 
        ORDER BY name ASC`
     );
@@ -104,7 +105,7 @@ export class UserRepository extends BaseRepository<User> {
     const result = await this.executeQuery<User>(
       `INSERT INTO ${this.tableName} (username, name, email, password, role)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, username, name, email, role, created_at, updated_at`,
+       RETURNING id, username, name, email, role, is_active, created_at, updated_at`,
       [data.username, data.name, data.email, data.password, data.role]
     );
     return result.rows[0];
@@ -145,7 +146,7 @@ export class UserRepository extends BaseRepository<User> {
       `UPDATE ${this.tableName} 
        SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
        WHERE id = $${paramIndex}
-       RETURNING id, username, name, email, role, created_at, updated_at`,
+       RETURNING id, username, name, email, role, is_active, created_at, updated_at`,
       values
     );
 
@@ -184,6 +185,42 @@ export class UserRepository extends BaseRepository<User> {
   }
 
   /**
+   * Activate or deactivate a user.
+   *
+   * Soft alternative to delete(): users.id is the join key for expenses that
+   * live in the Midas store with no foreign key back to this table, so a hard
+   * delete orphans them irreversibly. Callers are responsible for the
+   * self/system-admin guards.
+   */
+  async setActive(id: string, isActive: boolean): Promise<UserWithoutPassword> {
+    const result = await this.executeQuery<User>(
+      `UPDATE ${this.tableName}
+       SET is_active = $1, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $2
+       RETURNING id, username, name, email, role, is_active, created_at, updated_at`,
+      [isActive, id]
+    );
+
+    if (result.rows.length === 0) {
+      throw new NotFoundError('User', id);
+    }
+
+    return result.rows[0];
+  }
+
+  /**
+   * Whether the account may authenticate. Missing users read as inactive so a
+   * token for a deleted account is rejected rather than treated as valid.
+   */
+  async isActive(id: string): Promise<boolean> {
+    const result = await this.executeQuery<{ is_active: boolean }>(
+      `SELECT is_active FROM ${this.tableName} WHERE id = $1`,
+      [id]
+    );
+    return result.rows[0]?.is_active === true;
+  }
+
+  /**
    * Check if email exists
    */
   async emailExists(email: string, excludeUserId?: string): Promise<boolean> {
@@ -206,7 +243,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findByAuthentikSub(sub: string): Promise<(UserWithoutPassword & { authentik_sub: string }) | null> {
     const result = await this.executeQuery<UserWithoutPassword & { authentik_sub: string }>(
-      `SELECT id, username, name, email, role, authentik_sub, created_at, updated_at
+      `SELECT id, username, name, email, role, is_active, authentik_sub, created_at, updated_at
        FROM ${this.tableName}
        WHERE authentik_sub = $1
        LIMIT 1`,
@@ -220,7 +257,7 @@ export class UserRepository extends BaseRepository<User> {
    */
   async findByEmailCiWithSso(email: string): Promise<(UserWithoutPassword & { authentik_sub: string | null }) | null> {
     const result = await this.executeQuery<UserWithoutPassword & { authentik_sub: string | null }>(
-      `SELECT id, username, name, email, role, authentik_sub, created_at, updated_at
+      `SELECT id, username, name, email, role, is_active, authentik_sub, created_at, updated_at
        FROM ${this.tableName}
        WHERE LOWER(TRIM(email)) = LOWER($1)
        LIMIT 1`,
@@ -268,7 +305,7 @@ export class UserRepository extends BaseRepository<User> {
       `INSERT INTO ${this.tableName}
          (username, name, email, password, role, authentik_sub, sso_linked_at, registration_date)
        VALUES ($1, $2, $3, $4, 'pending', $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       RETURNING id, username, name, email, role, created_at, updated_at`,
+       RETURNING id, username, name, email, role, is_active, created_at, updated_at`,
       [data.username, data.name, data.email, data.password, data.authentikSub]
     );
     return result.rows[0];

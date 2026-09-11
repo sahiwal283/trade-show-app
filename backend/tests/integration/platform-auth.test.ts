@@ -8,9 +8,13 @@ import jwt from 'jsonwebtoken';
 import { Request, Response } from 'express';
 
 const mockFindByUsernameSafe = vi.fn();
+// authenticateToken re-checks is_active on every local-JWT request so that a
+// deactivation takes effect before the 12h token expires; default to active.
+const mockIsActive = vi.fn().mockResolvedValue(true);
 vi.mock('../../src/database/repositories', () => ({
   userRepository: {
     findByUsernameSafe: (...args: unknown[]) => mockFindByUsernameSafe(...args),
+    isActive: (...args: unknown[]) => mockIsActive(...args),
   },
 }));
 
@@ -236,6 +240,59 @@ describe('authenticateToken middleware', () => {
     expect(next).toHaveBeenCalled();
     expect(req.user).toEqual({ id: 'local-1', username: 'bob', role: 'admin' });
     expect(req.authSource).toBe('local');
+  });
+
+  it('rejects a still-valid local JWT once the account is deactivated', async () => {
+    const token = jwt.sign(
+      { id: 'rita-1', username: 'rita', role: 'coordinator' },
+      'test-local-secret',
+      { expiresIn: '1h' }
+    );
+    mockIsActive.mockResolvedValueOnce(false);
+    const req = mockRequest({ headers: { authorization: `Bearer ${token}` } });
+    const res = mockResponse();
+    const next = mockNext();
+    authenticateToken(req, res, next);
+    await flushAsync();
+    expect(mockIsActive).toHaveBeenCalledWith('rita-1');
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: 'account_deactivated' })
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('rejects a platform SSO token for a deactivated local account', async () => {
+    const token = jwt.sign(
+      {
+        user_id: 'p-2',
+        username: 'rita',
+        global_role: 'user',
+        assigned_apps: ['trade-show'],
+      },
+      'test-platform-secret',
+      { expiresIn: '1h' }
+    );
+    mockFindByUsernameSafe.mockResolvedValue({
+      id: 'rita-1',
+      username: 'rita',
+      name: 'Rita Dubb',
+      email: 'rita@cooliohcandy.com',
+      role: 'coordinator',
+      is_active: false,
+      created_at: '',
+      updated_at: '',
+    });
+    const req = mockRequest({ headers: { authorization: `Bearer ${token}` } });
+    const res = mockResponse();
+    const next = mockNext();
+    authenticateToken(req, res, next);
+    await flushAsync();
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({ detail: 'account_deactivated' })
+    );
+    expect(next).not.toHaveBeenCalled();
   });
 
   it('returns 401 for invalid local JWT when no platform token', async () => {

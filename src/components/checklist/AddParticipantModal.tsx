@@ -58,7 +58,7 @@ export const AddParticipantModal: React.FC<AddParticipantModalProps> = ({
   const candidates = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users
-      .filter(u => !existingIds.has(u.id) && u.role !== 'pending')
+      .filter(u => !existingIds.has(u.id) && u.role !== 'pending' && u.is_active !== false)
       .filter(u => !q || u.name.toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [users, existingIds, query]);

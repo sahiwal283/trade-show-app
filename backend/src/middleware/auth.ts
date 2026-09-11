@@ -123,6 +123,14 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
             });
             return;
           }
+          if (localUser.is_active === false) {
+            console.log(`[Auth:Middleware] Platform user "${platform.username}" is deactivated`);
+            res.status(403).json({
+              detail: 'account_deactivated',
+              message: 'This account has been deactivated. Please contact an administrator.',
+            });
+            return;
+          }
           req.user = {
             id: localUser.id,
             username: localUser.username,
@@ -141,6 +149,19 @@ export const authenticateToken = (req: AuthRequest, res: Response, next: NextFun
 
       // 2) Local JWT (existing behavior)
       const decoded = jwt.verify(token, JWT_SECRET) as LocalJwtPayload;
+
+      // Tokens live 12 hours, so a deactivated user would otherwise keep full
+      // access for the rest of the day. One primary-key lookup per request is
+      // cheaper than the api_requests INSERT this same pipeline already does.
+      if (!(await userRepository.isActive(decoded.id))) {
+        console.log(`[Auth:Middleware] Token belongs to deactivated or missing user ${decoded.id}`);
+        res.status(403).json({
+          detail: 'account_deactivated',
+          message: 'This account has been deactivated. Please contact an administrator.',
+        });
+        return;
+      }
+
       req.user = {
         id: decoded.id,
         username: decoded.username,

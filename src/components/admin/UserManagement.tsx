@@ -20,6 +20,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [showActivationModal, setShowActivationModal] = useState(false);
   const [activatingUser, setActivatingUser] = useState<User | null>(null);
   const [selectedRole, setSelectedRole] = useState<UserRole>('salesperson');
@@ -81,26 +82,39 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
     setShowForm(true);
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (userId === currentUser.id) {
-      alert("You cannot delete your own account!");
-      return;
+  /**
+   * Deactivation replaced the hard delete here. users.id is the join key for
+   * expenses stored in Midas, so deleting someone orphaned every expense they
+   * ever filed with no way back — see the Rita Dubb incident, Sept 11 2026.
+   */
+  const handleSetUserActive = async (user: User, isActive: boolean) => {
+    if (!isActive) {
+      if (user.id === currentUser.id) {
+        alert('You cannot deactivate your own account!');
+        return;
+      }
+      if (user.username === 'admin') {
+        alert('Cannot deactivate the system admin user!');
+        return;
+      }
+      const confirmed = window.confirm(
+        `Deactivate ${user.name}?\n\nThey will not be able to sign in and will not appear when assigning people to events. ` +
+          'Their existing expenses, events and history are kept, and you can reactivate them at any time.'
+      );
+      if (!confirmed) return;
     }
-    
-    // Prevent deleting the permanent "admin" user
-    const userToDelete = users.find(u => u.id === userId);
-    if (userToDelete && userToDelete.username === 'admin') {
-      alert("Cannot delete the system admin user!");
-      return;
-    }
-    
-    if (api.USE_SERVER) {
-      await api.deleteUser(userId);
+
+    try {
+      if (api.USE_SERVER) {
+        await api.setUserActive(user.id, isActive);
+      } else {
+        const updatedUsers = users.map(u => (u.id === user.id ? { ...u, is_active: isActive } : u));
+        localStorage.setItem('tradeshow_users', JSON.stringify(updatedUsers));
+      }
       await loadUsers();
-    } else {
-      const updatedUsers = users.filter(u => u.id !== userId);
-      localStorage.setItem('tradeshow_users', JSON.stringify(updatedUsers));
-      await loadUsers();
+    } catch (error) {
+      console.error('Failed to change user active state:', error);
+      alert(`Failed to ${isActive ? 'reactivate' : 'deactivate'} ${user.name}`);
     }
   };
 
@@ -167,8 +181,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.username.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = filterRole === 'all' || user.role === filterRole;
-    
-    return matchesSearch && matchesRole;
+    const isActive = user.is_active !== false;
+    const matchesStatus =
+      filterStatus === 'all' || (filterStatus === 'active' ? isActive : !isActive);
+
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   // Get role color from dynamic roles data
@@ -218,6 +235,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
         setSearchTerm={setSearchTerm}
         filterRole={filterRole}
         setFilterRole={setFilterRole}
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
         roles={roles}
       />
 
@@ -229,7 +248,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ user: currentUse
         getRoleColor={getRoleColor}
         getRoleLabel={getRoleLabel}
         onEditUser={handleEditUser}
-        onDeleteUser={handleDeleteUser}
+        onSetUserActive={handleSetUserActive}
         onInviteUser={handleInviteUser}
         onActivateUser={openActivationModal}
         onRejectUser={openRejectModal}

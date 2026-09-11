@@ -86,6 +86,7 @@ export type SsoResolution =
   | { status: 'ok'; user: { id: string; username: string; name: string; email: string; role: string } }
   | { status: 'pending' }
   | { status: 'identity_conflict' }
+  | { status: 'deactivated' }
   | { status: 'missing_email' };
 
 /**
@@ -94,11 +95,13 @@ export type SsoResolution =
  *  2. case-insensitive email match on an UNLINKED account → link, sign in
  *     (a different existing sub on that account → identity_conflict)
  *  3. no match → auto-provision as 'pending'
- * Users resolving to role 'pending' never get a token.
+ * Users resolving to role 'pending' never get a token, and neither do
+ * deactivated accounts — SSO must not be a way around the admin's off switch.
  */
 export async function resolveSsoUser(claims: SsoClaims): Promise<SsoResolution> {
   const bySub = await userRepository.findByAuthentikSub(claims.sub);
   if (bySub) {
+    if (bySub.is_active === false) return { status: 'deactivated' };
     if (bySub.role === 'pending') return { status: 'pending' };
     await userRepository.updateLastSsoLogin(bySub.id);
     return {
@@ -118,6 +121,7 @@ export async function resolveSsoUser(claims: SsoClaims): Promise<SsoResolution> 
       );
       return { status: 'identity_conflict' };
     }
+    if (byEmail.is_active === false) return { status: 'deactivated' };
     await userRepository.linkAuthentikSub(byEmail.id, claims.sub);
     if (byEmail.role === 'pending') return { status: 'pending' };
     await userRepository.updateLastSsoLogin(byEmail.id);

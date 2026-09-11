@@ -27,6 +27,8 @@ export const api = {
   createUser: (payload: Record<string, any>) => apiClient.post('/users', payload),
   updateUser: (id: string, payload: Record<string, any>) => apiClient.put(`/users/${id}`, payload),
   deleteUser: (id: string) => apiClient.delete(`/users/${id}`),
+  setUserActive: (id: string, isActive: boolean) =>
+    apiClient.patch(`/users/${id}/active`, { is_active: isActive }),
 
   // Roles
   getRoles: () => apiClient.get('/roles'),
