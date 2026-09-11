@@ -7,6 +7,7 @@
 import React from 'react';
 import { X, Plus, Trash2, Loader2 } from 'lucide-react';
 import { User, TradeShow } from '../../../App';
+import { SearchableSelect, SearchableSelectOption } from '../../common';
 
 interface EventFormData {
   name: string;
@@ -66,6 +67,20 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
   onRemoveParticipant,
   onResetForm
 }) => {
+  // Built before the early return so the hook order stays stable across renders.
+  // Email is in the label already, so `searchText` only needs to cover it for
+  // the case where a future label drops it.
+  const selectableUserOptions: SearchableSelectOption[] = React.useMemo(
+    () =>
+      allUsers
+        .filter(u => !formData.participants.find(p => p.id === u.id))
+        .map(u => ({
+          value: u.id,
+          label: `${u.name} (${u.email})`,
+          searchText: u.email,
+        })),
+    [allUsers, formData.participants]
+  );
 
   if (!showForm) return null;
 
@@ -253,20 +268,15 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
                   Select from existing users
                 </label>
                 <div className="flex gap-3">
-                  <select
+                  <SearchableSelect
+                    id="event-participant-select"
                     value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="input-field flex-1 px-4 py-3"
-                  >
-                    <option value="">Select a user...</option>
-                    {allUsers
-                      .filter(u => !formData.participants.find(p => p.id === u.id))
-                      .map(user => (
-                        <option key={user.id} value={user.id}>
-                          {user.name} ({user.email})
-                        </option>
-                      ))}
-                  </select>
+                    onChange={setSelectedUserId}
+                    options={selectableUserOptions}
+                    placeholder="Search users by name or email..."
+                    emptyMessage="No matching users"
+                    className="flex-1"
+                  />
                   <button
                     type="button"
                     onClick={onAddParticipant}

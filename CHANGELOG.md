@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.21.0] - 2026-09-11 - Searchable participant picker
+
+### Changed
+- The "Select from existing users" participant picker in the event create/edit form is now a type-to-filter combobox (the shared `SearchableSelect`) instead of a native `<select>`. Filters on name or email, with keyboard navigation. Users already added to the event stay filtered out of the list as before.
+
+### Requires
+- No migration, no env changes. Frontend-only.
+
 ## [2.20.1] - 2026-09-01 - Documentation and repo cleanup
 
 ### Changed
