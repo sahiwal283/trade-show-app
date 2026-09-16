@@ -118,6 +118,22 @@ export async function getCurrentParticipantIds(
 }
 
 /**
+ * Whether a user is on the roster for an event.
+ *
+ * Reads through getCurrentParticipantIds so there is exactly one place that
+ * knows how event membership is stored; callers that need to authorize a
+ * request (badge scans, checklists) must not grow their own copy of the query.
+ */
+export async function isEventParticipant(
+  eventId: string,
+  userId: string,
+  client?: any
+): Promise<boolean> {
+  const participantIds = await getCurrentParticipantIds(eventId, client);
+  return participantIds.includes(userId);
+}
+
+/**
  * Ensure participant user exists, create if needed
  * 
  * @param participant - Participant object with user details

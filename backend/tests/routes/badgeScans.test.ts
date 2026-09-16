@@ -51,7 +51,8 @@ describe('badge scan route handlers', () => {
       res
     );
     expect(badgeScanService.list).toHaveBeenCalledWith(
-      expect.objectContaining({ eventId: 'ev-1', entity: 'Haute Brands', crmStatus: 'failed' })
+      expect.objectContaining({ eventId: 'ev-1', entity: 'Haute Brands', crmStatus: 'failed' }),
+      expect.objectContaining({ id: 'user-1' })
     );
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ count: 1 }));
   });
@@ -60,14 +61,19 @@ describe('badge scan route handlers', () => {
     const res = mockRes();
     await handleListScans({ user: { id: 'user-1' }, query: { eventId: 'ev-1', entity: ['a', 'b'] } } as any, res);
     expect(badgeScanService.list).toHaveBeenCalledWith(
-      expect.objectContaining({ eventId: 'ev-1', entity: undefined })
+      expect.objectContaining({ eventId: 'ev-1', entity: undefined }),
+      expect.objectContaining({ id: 'user-1' })
     );
   });
 
   it('patches editable contact fields', async () => {
     const res = mockRes();
     await handlePatchScan({ user: { id: 'user-1' }, params: { id: 'scan-1' }, body: { email: 'x@y.com' } } as any, res);
-    expect(badgeScanService.update).toHaveBeenCalledWith('scan-1', expect.objectContaining({ email: 'x@y.com' }));
+    expect(badgeScanService.update).toHaveBeenCalledWith(
+      'scan-1',
+      expect.objectContaining({ email: 'x@y.com' }),
+      expect.objectContaining({ id: 'user-1' })
+    );
     expect(res.json).toHaveBeenCalled();
   });
 });
@@ -78,7 +84,10 @@ describe('badge scan retry', () => {
   it('requeues a failed scan for another CRM attempt', async () => {
     const res = mockRes();
     await handleRetryPush({ user: { id: 'u1' }, params: { id: 'scan-1' } } as any, res);
-    expect(badgeScanService.requeueForCrm).toHaveBeenCalledWith('scan-1');
+    expect(badgeScanService.requeueForCrm).toHaveBeenCalledWith(
+      'scan-1',
+      expect.objectContaining({ id: 'u1' })
+    );
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ crm_status: 'pending' }));
   });
 
@@ -87,5 +96,17 @@ describe('badge scan retry', () => {
     const res = mockRes();
     await handleGetScan({ user: { id: 'u1' }, params: { id: 'gone' } } as any, res);
     expect(res.status).toHaveBeenCalledWith(404);
+  });
+
+  it('forwards the authenticated caller so the service can scope by event', async () => {
+    // authorize(...SCAN_ROLES) only proves the caller may scan SOMETHING. The
+    // event-participation check lives in the service, so every handler must
+    // hand it the user; dropping this argument silently re-opens the hole.
+    const res = mockRes();
+    await handleGetScan({ user: { id: 'u1', role: 'salesperson' }, params: { id: 'scan-1' } } as any, res);
+    expect(badgeScanService.getById).toHaveBeenCalledWith(
+      'scan-1',
+      expect.objectContaining({ id: 'u1', role: 'salesperson' })
+    );
   });
 });

@@ -5,6 +5,11 @@
  * scans are event-scoped, and an unscoped list would hand any rep every lead
  * the company has ever collected.
  *
+ * authorize(...SCAN_ROLES) is a floor, not the whole rule. Holding a scanning
+ * role does not entitle you to every show's leads, so each read/write handler
+ * also passes the caller to BadgeScanService, which scopes access to events
+ * the user participates in (admins and developers excepted).
+ *
  * Handlers are exported by name so tests can call them with a mock req/res,
  * matching routes/auth.ts.
  */
@@ -43,12 +48,12 @@ export async function handleListScans(req: AuthRequest, res: Response): Promise<
     entity: asString(req.query.entity),
     crmStatus: asString(req.query.crmStatus),
     q: asString(req.query.q),
-  });
+  }, req.user!);
   res.json({ scans, count: scans.length });
 }
 
 export async function handlePatchScan(req: AuthRequest, res: Response): Promise<void> {
-  const scan = await badgeScanService.update(req.params.id, req.body);
+  const scan = await badgeScanService.update(req.params.id, req.body, req.user!);
   res.json(scan);
 }
 
@@ -58,7 +63,10 @@ export async function handleExportScans(req: AuthRequest, res: Response): Promis
     res.status(400).json({ error: 'eventId is required' });
     return;
   }
-  const scans = await badgeScanService.list({ eventId, entity: asString(req.query.entity) });
+  const scans = await badgeScanService.list(
+    { eventId, entity: asString(req.query.entity) },
+    req.user!
+  );
   const stamp = new Date().toISOString().slice(0, 10);
 
   if (asString(req.query.format) === 'xlsx') {
@@ -74,7 +82,7 @@ export async function handleExportScans(req: AuthRequest, res: Response): Promis
 }
 
 export async function handleGetScan(req: AuthRequest, res: Response): Promise<void> {
-  const scan = await badgeScanService.getById(req.params.id);
+  const scan = await badgeScanService.getById(req.params.id, req.user!);
   if (!scan) {
     res.status(404).json({ error: 'Badge scan not found' });
     return;
@@ -83,7 +91,7 @@ export async function handleGetScan(req: AuthRequest, res: Response): Promise<vo
 }
 
 export async function handleRetryPush(req: AuthRequest, res: Response): Promise<void> {
-  res.json(await badgeScanService.requeueForCrm(req.params.id));
+  res.json(await badgeScanService.requeueForCrm(req.params.id, req.user!));
 }
 
 router.post('/', authorize(...SCAN_ROLES), asyncHandler(handleCreateScan as any));
