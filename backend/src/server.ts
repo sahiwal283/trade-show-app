@@ -41,6 +41,7 @@ import { travelReminderService } from './services/TravelReminderService';
 import { expenseMessageScanner } from './services/ExpenseMessageScanner';
 import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { leadConversionService } from './services/LeadConversionService';
+import { badgeCrmPushService } from './services/badge/BadgeCrmPushService';
 import { runMigrations } from './database/migrate';
 
 dotenv.config();
@@ -232,6 +233,10 @@ const startServer = () => {
     // sync's startup pass; no-ops until the Books list actions are enabled
     // on the shared Zoho integration service
     leadConversionService.startScheduler();
+
+    // Badge scan → per-brand Zoho CRM push, with retry/backoff; idles until
+    // at least one brand has a CRM refresh token configured
+    badgeCrmPushService.start();
   });
 };
 
