@@ -326,6 +326,16 @@ class ZohoIntegrationClient {
   }
 
   /**
+   * Public entity -> brand resolution, for callers that route by brand rather
+   * than post expenses (badge scans choose a destination CRM this way).
+   * Returns null for companies with no Zoho destination — a real case
+   * (PicklistCompany.zohoEnabled is false for Summitt Labs), not an error.
+   */
+  public resolveBrand(entityName: string): string | null {
+    return this.entityToBrand(entityName);
+  }
+
+  /**
    * Format date for Zoho API
    */
   private formatDate(date: string | Date): string {
