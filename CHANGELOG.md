@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.23.0] - 2026-09-16 - Badge scanning
+
+### Added
+- Badge scanning: PDF417 attendee badges decode on-device via zxing-wasm in a
+  live camera viewfinder, no per-show scanner rental required
+- New Leads page with per-event lead capture, search, and CSV/Excel export
+- Every scan is attributed to the company the rep represents, which routes the
+  lead to that brand's Zoho CRM
+- Background push worker upserts scans into the Zoho CRM Tradeshows module per
+  brand, with retry and exponential backoff
+- New `badge_scans` table (migration 041)
+
+### Notes
+- Pushing to CRM requires a write-scoped (`ZohoCRM.modules.ALL`) refresh token
+  per brand. Without one, leads are still captured and exportable and stay
+  queued rather than failing.
+- Companies with no Zoho destination (`zohoEnabled: false`) capture leads
+  marked `skipped`, with the reason shown in the list and the export.
+
 ## [2.22.0] - 2026-09-11 - User deactivation
 
 ### Added

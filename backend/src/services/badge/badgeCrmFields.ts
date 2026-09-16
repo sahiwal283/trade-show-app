@@ -82,7 +82,7 @@ export async function getFieldMap(brand: string, accessToken: string): Promise<F
       [`crmFieldMap.${brand}`, JSON.stringify(map)]
     );
   } catch (error) {
-    console.warn(`[BadgeCrmFields] Could not persist field map for ${brand}`);
+    console.warn(`[BadgeCrmFields] Could not persist field map for ${brand}: ${(error as Error).message}`);
   }
 
   return map;

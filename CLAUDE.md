@@ -72,7 +72,7 @@ trade-show-app/
 ### Backend (`backend/src/`)
 
 - **`server.ts`** — Express app setup, middleware registration, route mounting
-- **`routes/`** — 20 route files, each mounted at `/api/<resource>`
+- **`routes/`** — 28 route files, each mounted at `/api/<resource>`
 - **`services/`** — Business logic; never import directly from routes into other routes
 - **`database/repositories/`** — Repository pattern over raw `pg` queries (no ORM)
 - **`database/migrations/`** — SQL files; tracked in `schema_migrations` table; auto-run on startup
@@ -83,6 +83,10 @@ Key service boundaries:
 - **`ocr/`** — Tesseract.js → optional Ollama LLM enhancement (when confidence < 0.70) → correction tracking
 - **`ExpenseService.ts`** — Owns expense status transitions via 3-rule automated approval logic
 - **`EventParticipantService.ts`** — Event-user relationship management
+- **`badge/`** — PDF417 badge scans. `BadgeScanService` owns validation and
+  server-side brand resolution; `BadgeCrmPushService` owns the per-brand CRM
+  push. The payload parser lives client-side in `src/utils/badge/` and is the
+  single source of truth for field extraction.
 
 ### Frontend (`src/`)
 

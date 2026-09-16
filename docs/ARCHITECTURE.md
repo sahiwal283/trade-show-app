@@ -1,6 +1,6 @@
 # Argo — Architecture
 
-**Last verified:** 2026-09-01
+**Last verified:** 2026-09-16
 
 ## 1. Overview
 
@@ -58,6 +58,7 @@ Key service boundaries (`backend/src/services/`):
 - **`AuthentikOidcService.ts`** — OIDC login against Authentik; env-gated (dormant unless all four `AUTHENTIK_*`/`OIDC_REDIRECT_URI` vars are set), which doubles as the rollback switch.
 - **`services/booth/`** (`BoothInventoryService.ts`, `BoothManifestService.ts`, `BoothMovementService.ts`, `BoothPackingService.ts`) — booth catalog, storage/manifest tracking, and the packing checklist, including idempotent replay of movement events keyed by a derived idempotency key.
 - **`PushService.ts`** — Web Push notifications (VAPID); reports disabled and no-ops silently when VAPID keys are absent, so push is optional infrastructure everywhere it's called.
+- **`services/badge/`** (`BadgeScanService.ts`, `BadgeCrmPushService.ts`, `badgeCrmConfig.ts`, `badgeCrmFields.ts`, `BadgeExportService.ts`) — PDF417 badge-scan validation, server-side brand resolution, and the per-brand Zoho CRM push worker; see §8.
 
 ### Expense submission under Midas
 
@@ -130,3 +131,45 @@ Two login paths: local password auth (JWT, stored in `localStorage`, injected by
 The authoritative env file in every deployed container is `/etc/expenseapp/backend.env` — not the repo's `backend/.env` or `env.example`, which are templates only.
 
 Migrations auto-run at startup (`backend/src/database/migrate.ts`). A Postgres `42501` (insufficient privilege) error during a migration is caught and skipped rather than failing startup, so a deploy can silently ship without a migration actually applying. After any deploy that ships a new migration, verify it landed by checking the `schema_migrations` table on the target database rather than trusting a clean startup log.
+
+## 8. Badge scanning
+
+Leads are captured by scanning a trade-show attendee's PDF417 badge in a live camera viewfinder (`src/components/leads/BadgeScanner.tsx`). Decoding runs entirely on-device via zxing-wasm — no per-scan vendor fee, no server round-trip, and it works offline. The raw barcode payload is handed to a client-side parser (`src/utils/badge/parseBadgePayload.ts`) that classifies each token by what it looks like (email shape, ZIP shape, name-like, etc.) rather than by position, because badge formats vary by show vendor. The parser never throws: a token it cannot classify is simply left unmapped, and the raw payload is always retained so a future parser version can re-derive fields from a scan without re-scanning the badge.
+
+```mermaid
+sequenceDiagram
+    participant U as User (rep)
+    participant Cam as BadgeScanner (zxing-wasm)
+    participant P as parseBadgePayload (client)
+    participant Queue as IndexedDB queue
+    participant API as POST /api/badge-scans
+    participant BSS as BadgeScanService
+    participant DB as badge_scans
+    participant Push as BadgeCrmPushService (worker)
+    participant CRM as Zoho CRM (per brand)
+
+    U->>Cam: Scan badge (company already selected)
+    Cam->>P: raw PDF417 payload
+    P-->>Cam: parsed fields (never throws)
+    Cam->>Queue: enqueue scan (offline-safe)
+    Queue->>API: replay on reconnect
+    API->>BSS: create(eventId, entity, rawPayload, fields)
+    BSS->>BSS: hash raw_payload server-side (dedupe key)
+    BSS->>BSS: resolve brand from entity (client's choice is not trusted)
+    BSS->>DB: insert (crm_status = pending, or 'skipped' if no Zoho destination)
+    DB-->>API: stored scan
+    API-->>U: lead appears in Leads list
+
+    loop every PUSH_INTERVAL_MS
+        Push->>DB: claim pending scans, group by brand
+        Push->>CRM: upsert batch with that brand's refresh token
+        CRM-->>Push: success, or transient/permanent failure
+        Push->>DB: record crm_status + reason (transient token failure does not consume a retry attempt)
+    end
+```
+
+Every scan is attributed to the company the rep represents at the moment of scanning; `BadgeScanService` resolves that company to a `brand` server-side — the client never chooses which Zoho CRM org receives a lead. A company with no Zoho destination (`zohoEnabled: false`) still yields a captured, exportable lead, stored with `crm_status = 'skipped'` rather than rejected. Scans dedupe on `(event_id, entity, payload_hash)`: the same badge scanned again for the same company at the same event is a no-op, but two brands sharing a booth can each legitimately capture the same attendee as two separate leads.
+
+`BadgeCrmPushService` runs as a background worker (not on the request path — scanning never blocks on Zoho) that claims eligible rows, groups them per brand, and upserts each batch into that brand's Zoho CRM Tradeshows module using that brand's own refresh token, retrying transient failures with backoff. CRM field API names are discovered per brand and cached (`badgeCrmFields.ts`) rather than hardcoded, since the Tradeshows module is a custom module whose field names vary by org. Pushed records are later pulled back into `crm_leads` by the existing nightly `ZohoCrmLeadsService` sync, so a scanned lead flows through the same revenue-attribution pipeline (`LeadConversionService`) as any other lead.
+
+Routes live at `/api/badge-scans` (list, create, get, patch, retry-push, export); export (`BadgeExportService`) produces CSV or XLSX with every captured field plus CRM status, so a show's leads are usable even when no CRM push ever succeeds. New table: `badge_scans` (migration `041_create_badge_scans.sql`), `raw_payload` never discarded.
