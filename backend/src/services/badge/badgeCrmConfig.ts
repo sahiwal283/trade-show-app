@@ -3,9 +3,21 @@
  *
  * Each brand pushes leads into its own CRM org, so credentials are per brand:
  * HAUTE_BRANDS_ZOHO_CRM_REFRESH_TOKEN and friends, matching the existing
- * <BRAND>_ZOHO_COMPANY_ID convention. The single ZOHO_CRM_REFRESH_TOKEN is
- * kept as a fallback so the existing read-only lead sync keeps working
- * unchanged while brands are onboarded one at a time.
+ * <BRAND>_ZOHO_COMPANY_ID convention.
+ *
+ * The refresh token deliberately has NO global fallback. A refresh token
+ * names a destination org, and the shared ZOHO_CRM_REFRESH_TOKEN already
+ * exists in production to gate the read-only lead sync
+ * (ZohoCrmLeadsService). Falling back to it would report every brand as
+ * configured and push all three brands' leads through one org's token:
+ * either read-only, stranding every lead as 'failed' after five attempts, or
+ * write-scoped for one org, silently filing Boomin Brands' and Nirvana
+ * Kulture's leads into Haute Brands' CRM. Until a brand's own token exists,
+ * that brand's scans stay 'pending' and the feature remains a local lead list
+ * with CSV/Excel export.
+ *
+ * Client id and secret DO still fall back to the shared values: they identify
+ * the OAuth application, not the destination org, so sharing them is correct.
  */
 
 const KNOWN_BRANDS = ['haute_brands', 'boomin_brands', 'nirvana_kulture'] as const;
@@ -24,8 +36,8 @@ export function getBrandCrmConfig(brand: string): BrandCrmConfig | null {
   if (!(KNOWN_BRANDS as readonly string[]).includes(brand)) return null;
 
   const prefix = envPrefix(brand);
-  const refreshToken =
-    process.env[`${prefix}_ZOHO_CRM_REFRESH_TOKEN`] || process.env.ZOHO_CRM_REFRESH_TOKEN;
+  // No global fallback: the token IS the destination org. See file header.
+  const refreshToken = process.env[`${prefix}_ZOHO_CRM_REFRESH_TOKEN`];
   const clientId =
     process.env[`${prefix}_ZOHO_CRM_CLIENT_ID`] ||
     process.env.ZOHO_CRM_CLIENT_ID ||

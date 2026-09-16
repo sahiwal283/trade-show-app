@@ -29,6 +29,8 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
   const [scanning, setScanning] = useState(false);
   const [pendingBadge, setPendingBadge] = useState<ScannedBadge | null>(null);
   const [selected, setSelected] = useState<BadgeScanRecord | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
 
   const { scans, error, reload, saveScan } = useBadgeScans(eventId || null, entity || null);
 
@@ -44,6 +46,22 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
 
   const selectedCompany = companies.find((c) => c.name === entity);
   const canScan = Boolean(eventId && entity);
+
+  // The export route is authenticated, so the download must carry the token;
+  // a plain link navigation 401s. See badgeApi.downloadExport.
+  const handleExport = async () => {
+    if (!eventId) return;
+    setExporting(true);
+    setExportError('');
+    try {
+      await badgeApi.downloadExport(eventId, 'xlsx');
+    } catch (err) {
+      console.error('[LeadsPage] Export failed:', err);
+      setExportError('Export failed - please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleSave = async (contact: Record<string, string>, notes: string, andScanNext: boolean) => {
     if (!pendingBadge) return;
@@ -114,17 +132,19 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
           <ScanLine className="h-5 w-5" />
           Scan badge
         </button>
-        <a
-          href={eventId ? badgeApi.exportUrl(eventId, 'xlsx') : undefined}
-          aria-disabled={!eventId}
-          className="flex items-center gap-2 rounded-lg border border-stone-300 px-4 py-3"
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={!eventId || exporting}
+          className="flex items-center gap-2 rounded-lg border border-stone-300 px-4 py-3 disabled:opacity-40"
         >
           <Download className="h-5 w-5" />
-          Export
-        </a>
+          {exporting ? 'Exporting...' : 'Export'}
+        </button>
       </div>
 
       {error && <p className="mt-3 text-sm text-amber-800">{error}</p>}
+      {exportError && <p className="mt-3 text-sm text-red-700">{exportError}</p>}
 
       <div className="mt-4">
         <LeadList scans={scans} onSelect={setSelected} />

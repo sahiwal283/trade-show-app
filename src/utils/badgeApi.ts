@@ -13,6 +13,7 @@
  */
 
 import { apiClient } from './apiClient';
+import { API_CONFIG, STORAGE_KEYS } from '../constants/appConstants';
 
 export interface BadgeScanRecord {
   id: string;
@@ -90,7 +91,44 @@ export const badgeApi = {
     return apiClient.post<BadgeScanRecord>(`/badge-scans/${id}/push`, {});
   },
 
+  /**
+   * Absolute URL of the export endpoint, API base path included.
+   *
+   * The bare `/badge-scans/...` path resolves against the SPA origin and is
+   * served the index document, not the API — every API call in this codebase
+   * goes through API_CONFIG.BASE_URL.
+   */
   exportUrl(eventId: string, format: 'csv' | 'xlsx' = 'csv'): string {
-    return `/badge-scans/export?eventId=${encodeURIComponent(eventId)}&format=${format}`;
+    return `${API_CONFIG.BASE_URL}/badge-scans/export?eventId=${encodeURIComponent(eventId)}&format=${format}`;
+  },
+
+  /**
+   * Download the lead export.
+   *
+   * This cannot be a plain <a href>: the export route is authenticated and a
+   * link navigation carries no Authorization header, so the server answers
+   * 401. Fetch with the token, then hand the blob to a programmatic download
+   * — the same pattern as reports/ShowComparison.tsx.
+   *
+   * Export is the whole fallback for companies with no CRM configured, which
+   * on day one is all of them, so it has to actually work.
+   */
+  async downloadExport(eventId: string, format: 'csv' | 'xlsx' = 'csv'): Promise<void> {
+    const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+    const response = await fetch(badgeApi.exportUrl(eventId, format), {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) throw new Error(`Export failed (${response.status})`);
+
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = `leads-${new Date().toISOString().slice(0, 10)}.${format}`;
+      link.click();
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
   },
 };

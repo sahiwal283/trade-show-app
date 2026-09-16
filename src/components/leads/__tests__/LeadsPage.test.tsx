@@ -6,7 +6,8 @@ vi.mock('../../../utils/badgeApi', () => ({
     listScans: vi.fn(async () => []),
     createScan: vi.fn(async () => ({ id: 'scan-1' })),
     updateScan: vi.fn(async () => ({ id: 'scan-1' })),
-    exportUrl: (eventId: string, format: string) => `/badge-scans/export?eventId=${eventId}&format=${format}`,
+    exportUrl: (eventId: string, format: string) => `/api/badge-scans/export?eventId=${eventId}&format=${format}`,
+    downloadExport: vi.fn(async () => undefined),
   },
 }));
 vi.mock('../../../contexts/PicklistContext', () => ({
@@ -62,5 +63,16 @@ describe('LeadsPage', () => {
     fireEvent.change(screen.getByLabelText(/event/i), { target: { value: 'ev-1' } });
     fireEvent.change(screen.getByLabelText(/company/i), { target: { value: 'Summitt Labs' } });
     expect(screen.getByText(/will not sync to zoho crm/i)).toBeInTheDocument();
+  });
+
+  it('exports through the authenticated download, not a bare link navigation', async () => {
+    // A plain <a href> carries no Authorization header and 401s. The button
+    // must call the api-client helper that fetches with the token.
+    const { badgeApi } = await import('../../../utils/badgeApi');
+    render(<LeadsPage user={user} />);
+    await waitFor(() => screen.getByLabelText(/event/i));
+    fireEvent.change(screen.getByLabelText(/event/i), { target: { value: 'ev-1' } });
+    fireEvent.click(screen.getByRole('button', { name: /export/i }));
+    await waitFor(() => expect(badgeApi.downloadExport).toHaveBeenCalledWith('ev-1', 'xlsx'));
   });
 });

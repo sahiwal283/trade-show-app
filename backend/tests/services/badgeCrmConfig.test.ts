@@ -1,9 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getBrandCrmConfig, isBrandCrmConfigured } from '../../src/services/badge/badgeCrmConfig';
+import {
+  getBrandCrmConfig,
+  isBrandCrmConfigured,
+  configuredBrands,
+} from '../../src/services/badge/badgeCrmConfig';
 
 const ENV_KEYS = [
   'HAUTE_BRANDS_ZOHO_CRM_REFRESH_TOKEN', 'HAUTE_BRANDS_ZOHO_CRM_MODULE',
-  'NIRVANA_KULTURE_ZOHO_CRM_REFRESH_TOKEN',
+  'NIRVANA_KULTURE_ZOHO_CRM_REFRESH_TOKEN', 'BOOMIN_BRANDS_ZOHO_CRM_REFRESH_TOKEN',
   'ZOHO_CRM_REFRESH_TOKEN', 'ZOHO_CRM_CLIENT_ID', 'ZOHO_CRM_CLIENT_SECRET',
   'ZOHO_CLIENT_ID', 'ZOHO_CLIENT_SECRET', 'ZOHO_CRM_TRADESHOWS_MODULE',
 ];
@@ -28,9 +32,29 @@ describe('badgeCrmConfig', () => {
     expect(getBrandCrmConfig('haute_brands')!.refreshToken).toBe('haute-token');
   });
 
-  it('falls back to the shared token so the existing read sync keeps working', () => {
+  it('never falls back to the shared token — that token names ONE org', () => {
+    // Production already sets ZOHO_CRM_REFRESH_TOKEN for the read-only lead
+    // sync. Honouring it here would report every brand as configured and push
+    // all three brands' leads through one org's token: read-only means every
+    // lead strands as 'failed'; write-scoped means Nirvana Kulture's leads are
+    // silently filed into Haute Brands' CRM.
     process.env.ZOHO_CRM_REFRESH_TOKEN = 'shared-token';
-    expect(getBrandCrmConfig('nirvana_kulture')!.refreshToken).toBe('shared-token');
+    expect(getBrandCrmConfig('nirvana_kulture')).toBeNull();
+    expect(isBrandCrmConfigured('nirvana_kulture')).toBe(false);
+  });
+
+  it('reports only brands with their own token, even with the global token set', () => {
+    process.env.ZOHO_CRM_REFRESH_TOKEN = 'shared-token';
+    process.env.HAUTE_BRANDS_ZOHO_CRM_REFRESH_TOKEN = 'haute-token';
+    expect(configuredBrands()).toEqual(['haute_brands']);
+  });
+
+  it('still shares the OAuth client id/secret, which identify the app not the org', () => {
+    // These are safe to share: the app registration is the same everywhere.
+    process.env.HAUTE_BRANDS_ZOHO_CRM_REFRESH_TOKEN = 'haute-token';
+    const config = getBrandCrmConfig('haute_brands')!;
+    expect(config.clientId).toBe('cid');
+    expect(config.clientSecret).toBe('csec');
   });
 
   it('reports a brand as unconfigured when no token exists anywhere', () => {
@@ -52,7 +76,8 @@ describe('badgeCrmConfig', () => {
   });
 
   it('never treats an unknown brand as configured', () => {
-    process.env.ZOHO_CRM_REFRESH_TOKEN = 'shared-token';
+    process.env.NOT_A_BRAND_ZOHO_CRM_REFRESH_TOKEN = 'token';
     expect(getBrandCrmConfig('not_a_brand')).toBeNull();
+    delete process.env.NOT_A_BRAND_ZOHO_CRM_REFRESH_TOKEN;
   });
 });
