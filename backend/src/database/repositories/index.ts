@@ -62,3 +62,6 @@ export type { EventBoothAssignment } from './EventBoothAssignmentRepository';
 export { boothAttachmentRepository, BoothAttachmentRepository } from './BoothAttachmentRepository';
 export type { BoothAttachment, AttachmentEntityType } from './BoothAttachmentRepository';
 
+export { badgeScanRepository, BadgeScanRepository } from './BadgeScanRepository';
+export type { BadgeScan, BadgeScanFilters, PushResult } from './BadgeScanRepository';
+
