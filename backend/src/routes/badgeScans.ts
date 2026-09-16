@@ -13,6 +13,7 @@ import express, { Response } from 'express';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/errors';
 import { badgeScanService } from '../services/badge/BadgeScanService';
+import { badgeExportService } from '../services/badge/BadgeExportService';
 import { SCAN_ROLES } from '../config/badgeScanRoles';
 
 const router = express.Router();
@@ -51,8 +52,30 @@ export async function handlePatchScan(req: AuthRequest, res: Response): Promise<
   res.json(scan);
 }
 
+export async function handleExportScans(req: AuthRequest, res: Response): Promise<void> {
+  const eventId = asString(req.query.eventId);
+  if (!eventId) {
+    res.status(400).json({ error: 'eventId is required' });
+    return;
+  }
+  const scans = await badgeScanService.list({ eventId, entity: asString(req.query.entity) });
+  const stamp = new Date().toISOString().slice(0, 10);
+
+  if (asString(req.query.format) === 'xlsx') {
+    const buffer = await badgeExportService.toXlsx(scans);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="leads-${stamp}.xlsx"`);
+    res.send(buffer);
+    return;
+  }
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="leads-${stamp}.csv"`);
+  res.send(badgeExportService.toCsv(scans));
+}
+
 router.post('/', authorize(...SCAN_ROLES), asyncHandler(handleCreateScan as any));
 router.get('/', authorize(...SCAN_ROLES), asyncHandler(handleListScans as any));
+router.get('/export', authorize(...SCAN_ROLES), asyncHandler(handleExportScans as any));
 router.patch('/:id', authorize(...SCAN_ROLES), asyncHandler(handlePatchScan as any));
 
 export default router;
