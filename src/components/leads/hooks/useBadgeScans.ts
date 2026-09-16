@@ -32,6 +32,21 @@ export function useBadgeScans(eventId: string | null, entity: string | null) {
 
   useEffect(() => { void reload(); }, [reload]);
 
+  // A queued scan shows an optimistic 'pending' row (below). Without this,
+  // nothing ever tells the list the queue actually flushed, so that row sits
+  // there — looking unsynced — long after the lead safely reached the CRM.
+  // `reload` only changes identity when eventId/entity change (its deps),
+  // and calling it here doesn't touch those, so this does not resubscribe
+  // on every sync or loop.
+  useEffect(() => {
+    const unsubscribe = syncManager.addEventListener((event) => {
+      if (event.type === 'sync-complete') {
+        void reload();
+      }
+    });
+    return unsubscribe;
+  }, [reload]);
+
   const saveScan = useCallback(async (input: Omit<CreateScanPayload, 'eventId' | 'entity'>) => {
     if (!eventId || !entity) return;
     const payload: CreateScanPayload = { ...input, eventId, entity };
