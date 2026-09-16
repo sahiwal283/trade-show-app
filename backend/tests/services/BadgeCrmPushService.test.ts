@@ -125,4 +125,20 @@ describe('BadgeCrmPushService.pushOnce', () => {
     expect(result.attempted).toBe(0);
     expect(badgeScanRepository.claimPendingByBrand).not.toHaveBeenCalled();
   });
+
+  it('leaves the batch pending without consuming a retry attempt when the token request itself fails', async () => {
+    // A transient Zoho auth outage is not a per-record rejection. Consuming a
+    // retry attempt here would strand the whole batch as 'failed' after
+    // roughly 5 outage-length push intervals, indistinguishable from a
+    // genuine rejection — mirror the unconfigured-brand path instead.
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockResolvedValueOnce([scan()]);
+    vi.mocked(axios.post).mockRejectedValueOnce(new Error('Zoho accounts service unavailable'));
+
+    const result = await badgeCrmPushService.pushOnce();
+
+    expect(badgeScanRepository.markPushResult).not.toHaveBeenCalled();
+    expect(result.failed).toBe(0);
+    expect(result.attempted).toBe(0);
+    expect(result.skippedBrands).toContain('haute_brands');
+  });
 });

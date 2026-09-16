@@ -80,22 +80,39 @@ export class BadgeCrmPushService {
 
       for (let i = 0; i < brandScans.length; i += ZOHO_MAX_RECORDS_PER_CALL) {
         const batch = brandScans.slice(i, i + ZOHO_MAX_RECORDS_PER_CALL);
-        summary.attempted += batch.length;
-        await this.pushBatch(config, batch, summary);
+        await this.pushBatch(brand, config, batch, summary);
       }
     }
 
     return summary;
   }
 
-  private async pushBatch(config: BrandCrmConfig, batch: BadgeScan[], summary: PushSummary): Promise<void> {
+  private async pushBatch(
+    brand: string,
+    config: BrandCrmConfig,
+    batch: BadgeScan[],
+    summary: PushSummary
+  ): Promise<void> {
     let accessToken: string;
     try {
       accessToken = await this.getAccessToken(config);
     } catch (error) {
-      await this.failBatch(batch, `Token refresh failed: ${(error as Error).message}`, summary);
+      // A failed token refresh is an infrastructure hiccup, not a rejected
+      // lead: it never reached Zoho's per-record validation. Treating it like
+      // a rejection would consume a retry attempt, and a transient outage
+      // spanning ~5 push intervals would permanently strand the whole batch
+      // as 'failed', indistinguishable from a genuine rejection. Leave the
+      // scans untouched in 'pending' — same precedent as the unconfigured-
+      // brand path — so the next pass reclaims them, and don't count them as
+      // attempted since no API call was ever made.
+      console.warn(
+        `[BadgeCrmPush] Zoho token refresh failed for ${brand}: ${(error as Error).message} — ${batch.length} scan(s) left pending`
+      );
+      if (!summary.skippedBrands.includes(brand)) summary.skippedBrands.push(brand);
       return;
     }
+
+    summary.attempted += batch.length;
 
     try {
       const response = await axios.post(
