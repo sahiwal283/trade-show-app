@@ -40,6 +40,21 @@ describe('BadgeScanRepository', () => {
       ).rejects.toThrow(/raw_payload/i);
       expect(dbQuery).not.toHaveBeenCalled();
     });
+
+    it('emits exactly one notes assignment when notes is in the payload', async () => {
+      // If the repository emits BOTH a generic 'notes = EXCLUDED.notes' and the
+      // COALESCE form, Postgres rejects with "multiple assignments to same column".
+      // This test would have caught the bug where notes was not filtered out.
+      vi.mocked(dbQuery).mockResolvedValue(ok([row({ notes: 'user note' })]));
+      await repo.upsert({
+        event_id: 'ev-1', entity: 'Haute Brands', raw_payload: 'RAW',
+        payload_hash: 'hash-1', notes: 'user note'
+      });
+      const sql = vi.mocked(dbQuery).mock.calls[0][0] as string;
+      expect(sql.match(/notes =/g)).toHaveLength(1);
+      expect(sql).toContain('notes = COALESCE(EXCLUDED.notes, badge_scans.notes)');
+      expect(sql).not.toContain('notes = EXCLUDED.notes');
+    });
   });
 
   describe('claimPendingByBrand', () => {

@@ -91,10 +91,11 @@ export class BadgeScanRepository extends BaseRepository<BadgeScan> {
     // Re-scanning a badge updates the decoded fields but must not erase a
     // human-authored note, so notes coalesce rather than overwrite.
     const updates = cols
-      .filter((c) => c !== 'event_id' && c !== 'entity' && c !== 'payload_hash' && c !== 'client_scan_id')
+      .filter((c) => c !== 'event_id' && c !== 'entity' && c !== 'payload_hash' && c !== 'client_scan_id' && c !== 'notes')
       .map((c) => `${c} = EXCLUDED.${c}`);
 
-    // Always preserve existing notes, even if not explicitly updated
+    // Always preserve existing notes, even if not explicitly updated.
+    // When no note is supplied, COALESCE(NULL, badge_scans.notes) preserves the existing one.
     updates.push('notes = COALESCE(EXCLUDED.notes, badge_scans.notes)');
     updates.push('updated_at = CURRENT_TIMESTAMP');
 
