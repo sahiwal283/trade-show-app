@@ -29,6 +29,8 @@ reviewable and editable before they are trusted.
 - Scan PDF417 badges with a phone camera from inside Argo, no per-show fee
 - Show the decoded contact immediately, editable on the spot
 - Persist scans as leads per event, exportable to CSV/Excel
+- Attribute every lead to the company/brand the rep is representing, which
+  determines which Zoho CRM receives it
 - Push scans into the Zoho CRM Tradeshows module, feeding the existing
   lead-conversion and revenue-attribution pipeline
 - Keep scanning usable when show-floor wifi is unreliable
@@ -50,9 +52,12 @@ reviewable and editable before they are trusted.
 | Storage | New `badge_scans` table | `crm_leads` is a read-only CRM mirror and must stay one |
 | CRM push | Backend queue, background worker, retry + backoff | Scanning never blocks on Zoho or on wifi |
 | Placement | New top-level "Leads" page | Booth staff need one tap mid-conversation |
+| Brand routing | Explicit per-session company pick, reusing the `entityOptions` picklist | The company owns the lead and selects the destination CRM; a wrong default silently misroutes it |
 
 ## Architecture
 
+    company/brand selected for the scanning session
+        |
     camera frame
         -> zxing-wasm readBarcodes(formats: ['PDF417'], tryHarder: true)
         -> raw payload string
@@ -60,7 +65,8 @@ reviewable and editable before they are trusted.
         -> { fields, confidence, parserVersion } + raw payload
         -> review sheet (editable)
         -> Dexie queue -> POST /api/badge-scans -> badge_scans
-        -> BadgeCrmPushService (interval worker)
+        -> BadgeCrmPushService (interval worker, grouped by brand)
+        -> that brand's CRM credentials
         -> POST /crm/v2/{module}/upsert -> crm_record_id
 
 Downstream, the pushed record is picked up by the existing nightly
@@ -78,6 +84,8 @@ present from day one because offline clients replay).
       id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       event_id          UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
       scanned_by        UUID REFERENCES users(id) ON DELETE SET NULL,
+      entity            VARCHAR(255) NOT NULL,
+      brand             VARCHAR(50) NOT NULL,
       client_scan_id    UUID UNIQUE,
       raw_payload       TEXT NOT NULL,
       payload_hash      TEXT NOT NULL,
@@ -108,10 +116,11 @@ present from day one because offline clients replay).
       scanned_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       created_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT badge_scans_event_payload_unique UNIQUE (event_id, payload_hash)
+      CONSTRAINT badge_scans_event_entity_payload_unique
+        UNIQUE (event_id, entity, payload_hash)
     );
     CREATE INDEX IF NOT EXISTS idx_badge_scans_event ON badge_scans(event_id);
-    CREATE INDEX IF NOT EXISTS idx_badge_scans_crm_status ON badge_scans(crm_status);
+    CREATE INDEX IF NOT EXISTS idx_badge_scans_crm_status ON badge_scans(crm_status, brand);
     CREATE INDEX IF NOT EXISTS idx_badge_scans_scanned_by ON badge_scans(scanned_by);
 
 Three load-bearing properties:
@@ -119,14 +128,38 @@ Three load-bearing properties:
 1. **`raw_payload` is never discarded.** Parsers improve; barcodes do not
    change. Any scan can be re-parsed later without re-scanning the badge.
 2. **Dedupe uses a plain (not partial) unique index,** so
-   `ON CONFLICT (event_id, payload_hash) DO UPDATE` works without repeating a
-   `WHERE` predicate. Re-scanning the same badge updates the row and preserves
-   existing notes rather than erroring at the booth.
+   `ON CONFLICT (event_id, entity, payload_hash) DO UPDATE` works without
+   repeating a `WHERE` predicate. Re-scanning the same badge updates the row
+   and preserves existing notes rather than erroring at the booth.
+   `entity` is part of the key deliberately: two brands sharing a booth may
+   both legitimately claim the same attendee, and those are two leads bound
+   for two different CRMs, not a duplicate.
 3. **`fields` JSONB retains every token,** mapped or not, as
    `{ index, value, mappedTo }`. Unrecognized vendor data is never lost.
 
 `payload_hash` is `sha256(raw_payload)`, computed client-side and re-verified
 server-side (never trusted from the client).
+
+## Brand routing
+
+The company a rep represents determines which Zoho CRM org receives the lead,
+so it is required data, not a nicety.
+
+- **`entity`** is the human-readable company name, chosen from the same
+  `entityOptions` picklist that expenses already use via `PicklistContext`
+  (served as `companies` by `PicklistService`). No new configuration surface.
+- **`brand`** is the normalized routing key, resolved **server-side** through
+  the existing `ENTITY_TO_BRAND` map in `zohoIntegrationClient`
+  (`haute_brands`, `boomin_brands`, `nirvana_kulture`). Storing both mirrors
+  how expenses carry `zohoEntity`, and keeps the routing decision auditable
+  after the fact.
+- An entity with no brand mapping is **rejected at the API with a 400**. A
+  lead that can never be routed must not be accepted silently and discovered
+  weeks later.
+- Each brand carries its own CRM credentials and module mapping. Scans for a
+  brand with no configured CRM stay `pending` with an explicit reason rather
+  than burning through five retry attempts against a token that does not
+  exist.
 
 ## Parser
 
@@ -172,7 +205,7 @@ corrections at the booth are the tuning data for the next parser version.
 New feature folder `src/components/leads/`, lazily imported in `App.tsx` like
 every other view:
 
-    LeadsPage.tsx          event selector, "Scan Badge" CTA, list, search, export
+    LeadsPage.tsx          event + company selectors, "Scan Badge" CTA, list, search, export
     BadgeScanner.tsx       fullscreen viewfinder modal
     ScanReviewSheet.tsx    editable fields + notes, "Save & scan next"
     LeadList.tsx / LeadRow.tsx / LeadDetailModal.tsx
@@ -196,6 +229,17 @@ review sheet.
   the existing lead rather than creating a twin.
 - *Camera denied* and *cannot lock* both route to manual entry. Neither is a
   dead end.
+- *The active company is always visible* as a chip in the viewfinder chrome
+  ("Scanning for — Haute Brands"), tappable to switch without leaving the
+  scanner. A rep working two brands at one booth must never have to guess
+  where the last twenty leads went.
+
+**Company selection.** The company is chosen once per scanning session and
+applies to every scan until changed. It must be picked explicitly before the
+first scan of a session — the last-used company per event is pre-highlighted
+for convenience but never silently applied, because an unnoticed default
+sends leads to the wrong CRM, which is worse than an extra tap. Manual entry
+and any future import path share the same required selector.
 
 **Offline.** `offlineDb` advances to `version(5)` adding a `badgeScans` table;
 a new `badgeScan` sync entity is registered with `syncManager.queueAction` and
@@ -221,7 +265,7 @@ Routes — `backend/src/routes/badgeScans.ts`, mounted at `/api/badge-scans`:
 | Method | Path | Purpose |
 |---|---|---|
 | POST | `/` | Create or upsert a scan; idempotent on `client_scan_id` |
-| GET | `/` | List by `eventId`, with search and `crm_status` filter |
+| GET | `/` | List by `eventId`, with search, company, and `crm_status` filters |
 | GET | `/:id` | Single scan detail |
 | PATCH | `/:id` | Edit parsed fields and notes |
 | POST | `/:id/push` | Manual CRM retry for a failed scan |
@@ -233,18 +277,20 @@ see all.
 
 Services:
 
-- `BadgeScanService` — validation, hash re-computation, upsert/dedupe. It
-  whitelists field names and lengths; the client's parsed output is untrusted
-  input.
+- `BadgeScanService` — validation, hash re-computation, brand resolution,
+  upsert/dedupe. It whitelists field names and lengths and rejects unmappable
+  entities; the client's parsed output is untrusted input.
 - `BadgeCrmPushService` — interval worker started from `server.ts` beside
   `travelReminderService.start()`, logging and idling when unconfigured.
 
 **Push worker loop:**
 
 1. Claim scans with `crm_status = 'pending'`, plus `'failed'` scans whose
-   backoff has elapsed and `crm_attempts < 5`
-2. Batch up to 100 per request to `POST /crm/v2/{module}/upsert`, with email
-   as the duplicate-check field, so a re-push never creates a CRM twin
+   backoff has elapsed and `crm_attempts < 5`, **grouped by `brand`**; brands
+   with no configured CRM are skipped with a logged reason
+2. Batch up to 100 per request per brand to `POST /crm/v2/{module}/upsert`,
+   using that brand's credentials, with email as the duplicate-check field, so
+   a re-push never creates a CRM twin
 3. Exponential backoff per scan; after 5 attempts `crm_status = 'failed'`
    sticks, with `crm_error` surfaced in the lead row behind a manual retry
 4. On success record `crm_record_id` and set `crm_status = 'synced'`
@@ -253,17 +299,24 @@ Services:
 
 Both are external to the code and block only the CRM push, not the scanner.
 
-1. **Write-scoped CRM token.** `ZohoCrmLeadsService` is read-only today (GET
-   only). Pushing requires a refresh token minted with `ZohoCRM.modules.ALL`.
-   Until it exists the worker idles and scans remain `pending` — the feature
-   still functions as a local lead list with CSV/Excel export, which already
-   replaces the rented scanner.
-2. **Real CRM field API names.** `ZohoCrmLeadsService` currently notes that
-   custom-module field names are "best-effort candidates until real field API
-   names are known". A one-time discovery call to
-   `GET /crm/v2/settings/fields?module={module}` caches the mapping in
-   `app_settings`; both the push and the existing sync read from it. This
-   retires the heuristic.
+1. **Write-scoped CRM token per brand.** `ZohoCrmLeadsService` is read-only
+   today (GET only) and single-tokened. Pushing requires a refresh token
+   minted with `ZohoCRM.modules.ALL` **for each brand that will receive
+   leads**, configured as `<BRAND>_ZOHO_CRM_REFRESH_TOKEN` (for example
+   `HAUTE_BRANDS_ZOHO_CRM_REFRESH_TOKEN`), following the existing
+   `<BRAND>_ZOHO_COMPANY_ID` convention. The current single
+   `ZOHO_CRM_REFRESH_TOKEN` remains as the fallback so today's read sync keeps
+   working unchanged. Until a brand's token exists, that brand's scans remain
+   `pending` — the feature still functions as a local lead list with
+   CSV/Excel export, which already replaces the rented scanner.
+2. **Real CRM field API names, per brand.** `ZohoCrmLeadsService` currently
+   notes that custom-module field names are "best-effort candidates until real
+   field API names are known". A one-time discovery call to
+   `GET /crm/v2/settings/fields?module={module}` per brand caches the mapping
+   in `app_settings` keyed by brand; both the push and the existing sync read
+   from it. This retires the heuristic. Brands may use different module names,
+   so the module is configurable per brand rather than one global
+   `ZOHO_CRM_TRADESHOWS_MODULE`.
 
 ## Testing
 
@@ -271,10 +324,14 @@ Both are external to the code and block only the CRM push, not the scanner.
   including the confirmed field set above; plus truncated, empty, and garbage
   payloads that must never throw and must always preserve `raw_payload`.
 - **Decoder hook** — `zxing-wasm` mocked; lock, no-lock, and camera-denied paths.
-- **Backend** — dedupe on `(event_id, payload_hash)`, `client_scan_id`
-  idempotency under replay, role authorization, export shape.
-- **Push service** — mocked axios: batching at 100, backoff progression,
-  upsert dedupe, sticky failure after 5 attempts, unconfigured idle path.
+- **Backend** — dedupe on `(event_id, entity, payload_hash)` including the
+  case where two brands scan the same badge and both rows must survive;
+  `client_scan_id` idempotency under replay; rejection of an unmappable
+  entity; role authorization; export shape.
+- **Push service** — mocked axios: grouping by brand with per-brand
+  credentials, batching at 100, backoff progression, upsert dedupe, sticky
+  failure after 5 attempts, and a brand with no configured CRM leaving its
+  scans `pending` without consuming attempts.
 - **Schema** — extend `tests/integration/database-schema.test.ts`.
 
 ## Deployment
