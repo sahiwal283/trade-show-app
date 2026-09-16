@@ -15,7 +15,7 @@ import { createHash } from 'crypto';
 import { badgeScanRepository, BadgeScan } from '../../database/repositories/BadgeScanRepository';
 import { zohoIntegrationClient } from '../zohoIntegrationClient';
 import { getPicklists } from '../picklists/PicklistService';
-import { ValidationError } from '../../utils/errors';
+import { ValidationError, NotFoundError } from '../../utils/errors';
 
 /** Contact fields a client may supply. Anything else is dropped. */
 const CONTACT_FIELDS = [
@@ -100,6 +100,25 @@ export class BadgeScanService {
 
   async update(id: string, patch: Partial<BadgeScan>): Promise<BadgeScan> {
     return badgeScanRepository.updateFields(id, patch);
+  }
+
+  async getById(id: string): Promise<BadgeScan | null> {
+    return badgeScanRepository.findById(id);
+  }
+
+  /**
+   * A 'skipped' scan is never requeued: it has no brand, so there is no CRM
+   * to push it to and a retry would spin forever.
+   */
+  async requeueForCrm(id: string): Promise<BadgeScan> {
+    const scan = await badgeScanRepository.findById(id);
+    if (!scan) throw new NotFoundError('Badge scan', id);
+    if (!scan.brand) {
+      throw new ValidationError(
+        `"${scan.entity}" has no Zoho CRM configured — this lead cannot be pushed, only exported`
+      );
+    }
+    return badgeScanRepository.requeue(id);
   }
 }
 

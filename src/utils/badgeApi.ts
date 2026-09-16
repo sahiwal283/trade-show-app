@@ -86,6 +86,10 @@ export const badgeApi = {
     return apiClient.patch<BadgeScanRecord>(`/badge-scans/${id}`, patch);
   },
 
+  async retryPush(id: string): Promise<BadgeScanRecord> {
+    return apiClient.post<BadgeScanRecord>(`/badge-scans/${id}/push`, {});
+  },
+
   exportUrl(eventId: string, format: 'csv' | 'xlsx' = 'csv'): string {
     return `/badge-scans/export?eventId=${encodeURIComponent(eventId)}&format=${format}`;
   },

@@ -6,10 +6,12 @@ vi.mock('../../src/services/badge/BadgeScanService', () => ({
     create: vi.fn(async (i: any, u: string) => ({ id: 'scan-1', ...i, scanned_by: u })),
     list: vi.fn(async () => [{ id: 'scan-1' }]),
     update: vi.fn(async (id: string, p: any) => ({ id, ...p })),
+    getById: vi.fn(async () => ({ id: 'scan-1' })),
+    requeueForCrm: vi.fn(async (id: string) => ({ id, crm_status: 'pending' })),
   },
 }));
 
-import { handleCreateScan, handleListScans, handlePatchScan } from '../../src/routes/badgeScans';
+import { handleCreateScan, handleListScans, handlePatchScan, handleGetScan, handleRetryPush } from '../../src/routes/badgeScans';
 import { badgeScanService } from '../../src/services/badge/BadgeScanService';
 
 function mockRes() {
@@ -67,5 +69,23 @@ describe('badge scan route handlers', () => {
     await handlePatchScan({ user: { id: 'user-1' }, params: { id: 'scan-1' }, body: { email: 'x@y.com' } } as any, res);
     expect(badgeScanService.update).toHaveBeenCalledWith('scan-1', expect.objectContaining({ email: 'x@y.com' }));
     expect(res.json).toHaveBeenCalled();
+  });
+});
+
+describe('badge scan retry', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('requeues a failed scan for another CRM attempt', async () => {
+    const res = mockRes();
+    await handleRetryPush({ user: { id: 'u1' }, params: { id: 'scan-1' } } as any, res);
+    expect(badgeScanService.requeueForCrm).toHaveBeenCalledWith('scan-1');
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ crm_status: 'pending' }));
+  });
+
+  it('404s on a scan that does not exist rather than returning an empty body', async () => {
+    vi.mocked(badgeScanService.getById).mockResolvedValueOnce(null as any);
+    const res = mockRes();
+    await handleGetScan({ user: { id: 'u1' }, params: { id: 'gone' } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(404);
   });
 });

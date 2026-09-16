@@ -14,6 +14,7 @@ import { badgeApi, BadgeScanRecord } from '../../utils/badgeApi';
 import { usePicklists } from '../../contexts/PicklistContext';
 import { BadgeScanner, ScannedBadge } from './BadgeScanner';
 import { ScanReviewSheet } from './ScanReviewSheet';
+import { LeadDetailModal } from './LeadDetailModal';
 import { LeadList } from './LeadList';
 import { useBadgeScans } from './hooks/useBadgeScans';
 import { generateUUID } from '../../utils/uuid';
@@ -27,9 +28,6 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
   const [entity, setEntity] = useState('');
   const [scanning, setScanning] = useState(false);
   const [pendingBadge, setPendingBadge] = useState<ScannedBadge | null>(null);
-  // Tracks the selected lead for a future detail/edit view (not in scope for
-  // this task); required now so LeadList's onSelect contract has a consumer.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selected, setSelected] = useState<BadgeScanRecord | null>(null);
 
   const { scans, error, reload, saveScan } = useBadgeScans(eventId || null, entity || null);
@@ -156,9 +154,30 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
         <ScanReviewSheet
           entity={entity}
           badge={pendingBadge}
-          duplicateOf={null}
+          duplicateOf={
+            pendingBadge
+              ? scans.find((s) => s.raw_payload === pendingBadge.rawPayload) ?? null
+              : null
+          }
           onSave={handleSave}
           onCancel={() => setPendingBadge(null)}
+        />
+      )}
+
+      {selected && (
+        <LeadDetailModal
+          scan={selected}
+          onSave={async (id, patch) => {
+            await badgeApi.updateScan(id, patch as any);
+            setSelected(null);
+            void reload();
+          }}
+          onRetry={async (id) => {
+            await badgeApi.retryPush(id);
+            setSelected(null);
+            void reload();
+          }}
+          onClose={() => setSelected(null)}
         />
       )}
     </div>

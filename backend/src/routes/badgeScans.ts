@@ -73,9 +73,24 @@ export async function handleExportScans(req: AuthRequest, res: Response): Promis
   res.send(badgeExportService.toCsv(scans));
 }
 
+export async function handleGetScan(req: AuthRequest, res: Response): Promise<void> {
+  const scan = await badgeScanService.getById(req.params.id);
+  if (!scan) {
+    res.status(404).json({ error: 'Badge scan not found' });
+    return;
+  }
+  res.json(scan);
+}
+
+export async function handleRetryPush(req: AuthRequest, res: Response): Promise<void> {
+  res.json(await badgeScanService.requeueForCrm(req.params.id));
+}
+
 router.post('/', authorize(...SCAN_ROLES), asyncHandler(handleCreateScan as any));
 router.get('/', authorize(...SCAN_ROLES), asyncHandler(handleListScans as any));
 router.get('/export', authorize(...SCAN_ROLES), asyncHandler(handleExportScans as any));
+router.get('/:id', authorize(...SCAN_ROLES), asyncHandler(handleGetScan as any));
+router.post('/:id/push', authorize(...SCAN_ROLES), asyncHandler(handleRetryPush as any));
 router.patch('/:id', authorize(...SCAN_ROLES), asyncHandler(handlePatchScan as any));
 
 export default router;

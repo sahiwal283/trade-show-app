@@ -187,6 +187,23 @@ export class BadgeScanRepository extends BaseRepository<BadgeScan> {
     return result.rows;
   }
 
+  /**
+   * Hand a scan back to the push worker. Attempts reset to zero: a human
+   * asking for a retry usually means the cause was fixed (a token minted, a
+   * field mapping corrected), so the old backoff is no longer meaningful.
+   */
+  async requeue(id: string): Promise<BadgeScan> {
+    const result = await this.executeQuery<BadgeScan>(
+      `UPDATE badge_scans
+          SET crm_status = 'pending', crm_error = NULL, crm_attempts = 0,
+              crm_last_attempt_at = NULL, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING *`,
+      [id]
+    );
+    return result.rows[0];
+  }
+
   async markPushResult(id: string, result: PushResult): Promise<void> {
     if (result.status === 'synced') {
       await this.executeQuery(
