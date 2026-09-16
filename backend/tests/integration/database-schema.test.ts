@@ -630,5 +630,44 @@ describe.skipIf(!schemaDbReady)('Database Schema Integration Tests', () => {
       }
     });
   });
+
+  describe.skipIf(!schemaDbReady)('badge_scans table', () => {
+    it('exists with the columns the repository selects', async () => {
+      const result = await testPool.query<ColumnInfo>(
+        `SELECT column_name, data_type, is_nullable
+           FROM information_schema.columns
+          WHERE table_name = 'badge_scans'`
+      );
+      const byName = new Map(result.rows.map((r) => [r.column_name, r]));
+      for (const col of [
+        'id', 'event_id', 'scanned_by', 'entity', 'brand', 'client_scan_id',
+        'raw_payload', 'payload_hash', 'crm_status', 'crm_attempts', 'fields',
+      ]) {
+        expect(byName.has(col), `missing column ${col}`).toBe(true);
+      }
+      // raw_payload is the one column the whole feature is built to never lose.
+      expect(byName.get('raw_payload')!.is_nullable).toBe('NO');
+      // brand is nullable on purpose: companies with no Zoho destination
+      // (zohoEnabled false, e.g. Summitt Labs) still capture leads.
+      expect(byName.get('brand')!.is_nullable).toBe('YES');
+    });
+
+    it('dedupes on (event_id, entity, payload_hash) with a NON-partial unique index', async () => {
+      const result = await testPool.query<{ indexdef: string }>(
+        `SELECT indexdef FROM pg_indexes
+          WHERE tablename = 'badge_scans'
+            AND indexname = 'badge_scans_event_entity_payload_unique'`
+      );
+      expect(result.rows).toHaveLength(1);
+      const def = result.rows[0].indexdef;
+      expect(def).toContain('UNIQUE');
+      expect(def).toContain('event_id');
+      expect(def).toContain('entity');
+      expect(def).toContain('payload_hash');
+      // A partial index would force every ON CONFLICT to repeat the WHERE
+      // predicate, and mocked pg tests never catch a missing one.
+      expect(def).not.toContain('WHERE');
+    });
+  });
 });
 
