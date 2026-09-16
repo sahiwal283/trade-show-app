@@ -31,6 +31,7 @@ import boothManifestRoutes from './routes/boothManifest';
 import boothAttachmentRoutes from './routes/boothAttachments';
 import userChecklistRoutes from './routes/userChecklist';
 import pushRoutes from './routes/push';
+import badgeScanRoutes from './routes/badgeScans';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
@@ -117,6 +118,7 @@ app.use('/api/booth-manifest', authenticateToken, sessionTracker, boothManifestR
 app.use('/api/booth-attachments', authenticateToken, sessionTracker, boothAttachmentRoutes);
 app.use('/api/user-checklist', authenticateToken, sessionTracker, userChecklistRoutes);
 app.use('/api/push', authenticateToken, sessionTracker, pushRoutes);
+app.use('/api/badge-scans', authenticateToken, sessionTracker, badgeScanRoutes);
 
 // Health check (with database connectivity test) - existing contract
 app.get('/api/health', async (req, res) => {
