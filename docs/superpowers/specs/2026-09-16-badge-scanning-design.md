@@ -85,7 +85,7 @@ present from day one because offline clients replay).
       event_id          UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
       scanned_by        UUID REFERENCES users(id) ON DELETE SET NULL,
       entity            VARCHAR(255) NOT NULL,
-      brand             VARCHAR(50) NOT NULL,
+      brand             VARCHAR(50),
       client_scan_id    UUID UNIQUE,
       raw_payload       TEXT NOT NULL,
       payload_hash      TEXT NOT NULL,
@@ -108,7 +108,7 @@ present from day one because offline clients replay).
       fields            JSONB,
       notes             TEXT,
       crm_status        VARCHAR(20) NOT NULL DEFAULT 'pending'
-                          CHECK (crm_status IN ('pending','synced','failed')),
+                          CHECK (crm_status IN ('pending','synced','failed','skipped')),
       crm_record_id     TEXT,
       crm_error         TEXT,
       crm_attempts      INTEGER NOT NULL DEFAULT 0,
@@ -153,9 +153,14 @@ so it is required data, not a nicety.
   (`haute_brands`, `boomin_brands`, `nirvana_kulture`). Storing both mirrors
   how expenses carry `zohoEntity`, and keeps the routing decision auditable
   after the fact.
-- An entity with no brand mapping is **rejected at the API with a 400**. A
-  lead that can never be routed must not be accepted silently and discovered
-  weeks later.
+- An entity with **no brand mapping is still accepted** and stored with
+  `brand = NULL` and `crm_status = 'skipped'`, carrying the reason in
+  `crm_error`. Some companies in the picklist are deliberately non-Zoho —
+  `PicklistCompany.zohoEnabled` is false for Summitt Labs today — and a rep
+  representing one still needs to capture the lead. Refusing the scan would
+  discard a real lead to protect a CRM push that was never possible. Skipped
+  scans appear in the list and the export with a visible "not synced to CRM"
+  reason, so the state is obvious rather than silent.
 - Each brand carries its own CRM credentials and module mapping. Scans for a
   brand with no configured CRM stay `pending` with an explicit reason rather
   than burning through five retry attempts against a token that does not
@@ -278,13 +283,16 @@ see all.
 Services:
 
 - `BadgeScanService` — validation, hash re-computation, brand resolution,
-  upsert/dedupe. It whitelists field names and lengths and rejects unmappable
-  entities; the client's parsed output is untrusted input.
+  upsert/dedupe. It whitelists field names and lengths, and marks scans whose
+  entity has no brand mapping as `skipped` rather than rejecting them; the
+  client's parsed output is untrusted input. The entity itself must still be a
+  known company from the picklist — an unrecognized company is a 400.
 - `BadgeCrmPushService` — interval worker started from `server.ts` beside
   `travelReminderService.start()`, logging and idling when unconfigured.
 
 **Push worker loop:**
 
+0. `skipped` scans are never claimed — they have no destination by design
 1. Claim scans with `crm_status = 'pending'`, plus `'failed'` scans whose
    backoff has elapsed and `crm_attempts < 5`, **grouped by `brand`**; brands
    with no configured CRM are skipped with a logged reason
@@ -326,8 +334,9 @@ Both are external to the code and block only the CRM push, not the scanner.
 - **Decoder hook** — `zxing-wasm` mocked; lock, no-lock, and camera-denied paths.
 - **Backend** — dedupe on `(event_id, entity, payload_hash)` including the
   case where two brands scan the same badge and both rows must survive;
-  `client_scan_id` idempotency under replay; rejection of an unmappable
-  entity; role authorization; export shape.
+  `client_scan_id` idempotency under replay; an unmapped-but-valid company
+  stored as `skipped` rather than rejected; an unrecognized company rejected
+  with a 400; role authorization; export shape.
 - **Push service** — mocked axios: grouping by brand with per-brand
   credentials, batching at 100, backoff progression, upsert dedupe, sticky
   failure after 5 attempts, and a brand with no configured CRM leaving its
