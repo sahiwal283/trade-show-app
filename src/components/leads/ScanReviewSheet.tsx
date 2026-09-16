@@ -8,7 +8,7 @@
  * record while that person is still standing in front of them.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertTriangle, Copy } from 'lucide-react';
 import { ScannedBadge } from './BadgeScanner';
 import { REVIEW_CONFIDENCE_THRESHOLD, BadgeField } from '../../utils/badge/parseBadgePayload';
@@ -45,6 +45,19 @@ export const ScanReviewSheet: React.FC<ScanReviewSheetProps> = ({
   );
   const [notes, setNotes] = useState('');
 
+  // Defensive reset: if this component is ever reused for a different badge
+  // without unmounting (today's LeadsPage always unmounts between scans, but
+  // a future render-cost optimisation could change that), the form must not
+  // keep showing the previous person's edited fields. Keying on
+  // `badge?.rawPayload` — rather than the badge object reference — means a
+  // re-render with an equivalent badge (same payload, new object identity)
+  // does not clobber in-progress edits the rep is mid-typing.
+  useEffect(() => {
+    setContact({ ...(badge?.parsed.fields ?? {}) } as Record<string, string>);
+    setNotes('');
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on payload identity only
+  }, [badge?.rawPayload]);
+
   if (!badge) return null;
 
   const lowConfidence = badge.parsed.confidence < REVIEW_CONFIDENCE_THRESHOLD;
@@ -57,7 +70,7 @@ export const ScanReviewSheet: React.FC<ScanReviewSheetProps> = ({
         </p>
 
         {duplicateOf && (
-          <div className="mt-3 flex gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="mt-3 flex gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="alert">
             <Copy className="h-4 w-4 shrink-0" />
             <span>
               Already scanned - {duplicateOf.first_name} {duplicateOf.last_name}. Saving
