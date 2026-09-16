@@ -12,6 +12,7 @@ import { networkMonitor } from './networkDetection';
 // undefined at runtime, so queued items could never replay.
 import { api } from './api';
 import { boothApi } from './boothApi';
+import { badgeApi } from './badgeApi';
 import { generateUUID } from './uuid';
 
 // ========== TYPE DEFINITIONS ==========
@@ -95,7 +96,7 @@ export class SyncManager {
    */
   public async queueAction(
     action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE',
-    entity: 'expense' | 'user' | 'event' | 'booth_movement' | 'booth_photo',
+    entity: 'expense' | 'user' | 'event' | 'booth_movement' | 'booth_photo' | 'badgeScan',
     data: any,
     localId?: string
   ): Promise<string> {
@@ -252,6 +253,9 @@ export class SyncManager {
           break;
         case 'booth_photo':
           remoteId = await this.syncBoothPhoto(item);
+          break;
+        case 'badgeScan':
+          remoteId = await this.syncBadgeScan(item);
           break;
         default:
           throw new Error(`Unknown entity type: ${item.entity}`);
@@ -413,6 +417,19 @@ export class SyncManager {
       default:
         throw new Error(`Unknown booth movement op: ${op}`);
     }
+  }
+
+  /**
+   * Replay a badge scan captured at the booth. The queue's idempotencyKey
+   * doubles as client_scan_id so a retried item returns the existing lead
+   * instead of creating a second one.
+   */
+  private async syncBadgeScan(item: SyncQueueItem): Promise<string> {
+    const scan = await badgeApi.createScan({
+      ...item.data,
+      clientScanId: item.idempotencyKey,
+    });
+    return scan.id;
   }
 
   /**

@@ -15,7 +15,7 @@ import { generateUUID } from './uuid';
 export interface SyncQueueItem {
   id: string;                 // UUID
   action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE';
-  entity: 'expense' | 'user' | 'event' | 'booth_movement' | 'booth_photo';
+  entity: 'expense' | 'user' | 'event' | 'booth_movement' | 'booth_photo' | 'badgeScan';
   data: any;                  // The actual payload
   localId?: string;           // Temporary UUID for new items
   remoteId?: string;          // Backend ID after successful sync
@@ -96,6 +96,21 @@ export interface PendingBoothPhoto {
   createdAt: number;
 }
 
+export interface PendingBadgeScan {
+  /** Client-generated id; also the server-side idempotency key on replay. */
+  id: string;
+  eventId: string;
+  entity: string;
+  rawPayload: string;
+  parserVersion: string;
+  parseConfidence: number;
+  fields: unknown;
+  contact: Record<string, string>;
+  notes?: string;
+  scannedAt: string;
+  createdAt: number;
+}
+
 // ========== DATABASE CLASS ==========
 
 export class OfflineDatabase extends Dexie {
@@ -109,6 +124,7 @@ export class OfflineDatabase extends Dexie {
   cachedExpenseMessages!: Table<CachedExpenseMessages, string>;
   cachedBoothInventory!: Table<{ key: string; data: any; cachedAt: number }, string>;
   pendingBoothPhotos!: Table<PendingBoothPhoto, string>;
+  pendingBadgeScans!: Table<PendingBadgeScan, string>;
 
   constructor() {
     super('ExpenseAppOfflineDB');
@@ -139,6 +155,12 @@ export class OfflineDatabase extends Dexie {
     this.version(4).stores({
       cachedBoothInventory: 'key',
       pendingBoothPhotos: 'id, createdAt'
+    });
+
+    // v5 adds badge scans captured at the booth. Dexie carries v1-v4 tables
+    // forward, so only the new store is declared here.
+    this.version(5).stores({
+      pendingBadgeScans: 'id, eventId, entity, createdAt'
     });
   }
 
