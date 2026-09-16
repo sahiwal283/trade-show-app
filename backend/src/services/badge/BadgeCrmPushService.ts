@@ -15,6 +15,7 @@
 import axios from 'axios';
 import { badgeScanRepository, BadgeScan } from '../../database/repositories/BadgeScanRepository';
 import { getBrandCrmConfig, configuredBrands, BrandCrmConfig } from './badgeCrmConfig';
+import { getFieldMap, FieldMap } from './badgeCrmFields';
 
 const ZOHO_ACCOUNTS_TOKEN_URL = 'https://accounts.zoho.com/oauth/v2/token';
 const ZOHO_API_DOMAIN = 'https://www.zohoapis.com';
@@ -114,14 +115,16 @@ export class BadgeCrmPushService {
 
     summary.attempted += batch.length;
 
+    const fieldMap = await getFieldMap(brand, accessToken);
+
     try {
       const response = await axios.post(
         `${ZOHO_API_DOMAIN}/crm/v2/${config.module}/upsert`,
         {
-          data: batch.map((scan) => this.toCrmRecord(scan)),
+          data: batch.map((scan) => this.toCrmRecord(scan, fieldMap)),
           // Email is the only field reliably unique per attendee. Without
           // this, every retry would create a new CRM record.
-          duplicate_check_fields: ['Email'],
+          duplicate_check_fields: [fieldMap.email],
         },
         { headers: { Authorization: `Zoho-oauthtoken ${accessToken}` } }
       );
@@ -175,26 +178,32 @@ export class BadgeCrmPushService {
 
   /**
    * Field API names are the known weak point: the Tradeshows module is a
-   * custom module and its field names are org-specific. These are the
-   * standard names; a brand whose module differs will surface
-   * MANDATORY_NOT_FOUND or INVALID_DATA on the row, visible in the UI, rather
-   * than failing silently.
+   * custom module and its field names are org-specific. `fields` is the
+   * per-brand map discovered by badgeCrmFields (falling back to the standard
+   * names when discovery is unavailable); a brand whose module still
+   * differs from both will surface MANDATORY_NOT_FOUND or INVALID_DATA on
+   * the row, visible in the UI, rather than failing silently.
    */
-  private toCrmRecord(scan: BadgeScan): Record<string, unknown> {
-    return {
-      Last_Name: scan.last_name || scan.company || 'Unknown',
-      First_Name: scan.first_name ?? undefined,
-      Email: scan.email ?? undefined,
-      Phone: scan.phone ?? undefined,
-      Company: scan.company ?? undefined,
-      Title: scan.title ?? undefined,
-      City: scan.city ?? undefined,
-      State: scan.state ?? undefined,
-      Zip_Code: scan.postal_code ?? undefined,
-      Country: scan.country ?? undefined,
-      Description: scan.notes ?? undefined,
-      Lead_Source: 'Trade Show Badge Scan',
+  private toCrmRecord(scan: BadgeScan, fields: FieldMap): Record<string, unknown> {
+    const record: Record<string, unknown> = {};
+    const set = (field: string, value: string | null | undefined) => {
+      if (value) record[fields[field]] = value;
     };
+    // Last name is mandatory in Zoho; fall back so a record is never rejected
+    // purely for lacking one.
+    record[fields.last_name] = scan.last_name || scan.company || 'Unknown';
+    set('first_name', scan.first_name);
+    set('email', scan.email);
+    set('phone', scan.phone);
+    set('company', scan.company);
+    set('title', scan.title);
+    set('city', scan.city);
+    set('state', scan.state);
+    set('postal_code', scan.postal_code);
+    set('country', scan.country);
+    set('notes', scan.notes);
+    record[fields.lead_source] = 'Trade Show Badge Scan';
+    return record;
   }
 }
 

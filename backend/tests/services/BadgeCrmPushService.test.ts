@@ -20,6 +20,7 @@ const upsertOk = (id = 'crm-1') => ({ data: { data: [{ code: 'SUCCESS', details:
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.mocked(axios.get).mockResolvedValue({ data: { fields: [] } } as any);
   process.env.ZOHO_CLIENT_ID = 'cid';
   process.env.ZOHO_CLIENT_SECRET = 'csec';
   process.env.HAUTE_BRANDS_ZOHO_CRM_REFRESH_TOKEN = 'haute-rt';
