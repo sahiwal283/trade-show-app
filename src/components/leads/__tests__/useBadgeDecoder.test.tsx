@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
 const readBarcodes = vi.fn(async () => []);
@@ -17,8 +17,26 @@ function mockCamera(overrides: Partial<MediaTrackCapabilities> = {}) {
   return { track, stream };
 }
 
+// The hook's start() only wires up a <video> element when one is already
+// attached to videoRef (the literal brief guard: `if (videoRef.current)`).
+// In real usage the consumer's rendered <video ref={videoRef}> mounts
+// before start() is ever called; a bare renderHook() never renders any
+// JSX, so tests that exercise the decode loop must attach a real <video>
+// to the ref themselves, exactly like a consuming component would.
+const attachedVideos: HTMLVideoElement[] = [];
+function attachVideo(videoRef: { current: HTMLVideoElement | null }) {
+  const video = document.createElement('video');
+  document.body.appendChild(video);
+  attachedVideos.push(video);
+  videoRef.current = video;
+}
+
 describe('useBadgeDecoder', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  afterEach(() => {
+    attachedVideos.splice(0).forEach((v) => v.remove());
+  });
 
   it('reports denied — not a generic error — when the user refuses the camera', async () => {
     // These need different UI: denied tells the user how to re-grant
@@ -53,6 +71,7 @@ describe('useBadgeDecoder', () => {
   it('only decodes PDF417, so a stray QR code on the badge cannot win', async () => {
     mockCamera();
     const { result } = renderHook(() => useBadgeDecoder({ onDecode: vi.fn() }));
+    attachVideo(result.current.videoRef);
     await act(async () => { await result.current.start(); });
     await waitFor(() => expect(readBarcodes).toHaveBeenCalled());
     expect(readBarcodes.mock.calls[0][1]).toMatchObject({ formats: ['PDF417'] });
@@ -63,6 +82,7 @@ describe('useBadgeDecoder', () => {
     readBarcodes.mockResolvedValue([{ text: 'RAW|PAYLOAD', format: 'PDF417', isValid: true }] as any);
     const onDecode = vi.fn();
     const { result } = renderHook(() => useBadgeDecoder({ onDecode }));
+    attachVideo(result.current.videoRef);
     await act(async () => { await result.current.start(); });
     await waitFor(() => expect(onDecode).toHaveBeenCalledWith('RAW|PAYLOAD'));
     expect(onDecode).toHaveBeenCalledTimes(1);

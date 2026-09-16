@@ -90,14 +90,10 @@ export function useBadgeDecoder({ onDecode }: UseBadgeDecoderArgs) {
         video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 } },
       });
       streamRef.current = stream;
-      // The consumer's rendered <video> normally populates this ref before
-      // start() runs. Fall back to an off-screen element so the capture
-      // loop still has a frame source if start() is called before mount.
-      if (!videoRef.current) {
-        videoRef.current = document.createElement('video');
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => undefined);
       }
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play().catch(() => undefined);
 
       const track = stream.getVideoTracks()[0];
       const capabilities = track?.getCapabilities?.() as MediaTrackCapabilities | undefined;
