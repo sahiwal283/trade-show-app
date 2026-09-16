@@ -96,21 +96,6 @@ export interface PendingBoothPhoto {
   createdAt: number;
 }
 
-export interface PendingBadgeScan {
-  /** Client-generated id; also the server-side idempotency key on replay. */
-  id: string;
-  eventId: string;
-  entity: string;
-  rawPayload: string;
-  parserVersion: string;
-  parseConfidence: number;
-  fields: unknown;
-  contact: Record<string, string>;
-  notes?: string;
-  scannedAt: string;
-  createdAt: number;
-}
-
 // ========== DATABASE CLASS ==========
 
 export class OfflineDatabase extends Dexie {
@@ -124,7 +109,6 @@ export class OfflineDatabase extends Dexie {
   cachedExpenseMessages!: Table<CachedExpenseMessages, string>;
   cachedBoothInventory!: Table<{ key: string; data: any; cachedAt: number }, string>;
   pendingBoothPhotos!: Table<PendingBoothPhoto, string>;
-  pendingBadgeScans!: Table<PendingBadgeScan, string>;
 
   constructor() {
     super('ExpenseAppOfflineDB');
@@ -157,11 +141,18 @@ export class OfflineDatabase extends Dexie {
       pendingBoothPhotos: 'id, createdAt'
     });
 
-    // v5 adds badge scans captured at the booth. Dexie carries v1-v4 tables
-    // forward, so only the new store is declared here.
-    this.version(5).stores({
-      pendingBadgeScans: 'id, eventId, entity, createdAt'
-    });
+    // v5 declared a `pendingBadgeScans` store that nothing ever read or wrote:
+    // the offline badge-scan path queues through `syncQueue` via
+    // syncManager.queueAction, like every other offline mutation. The store is
+    // gone, but the empty version block stays.
+    //
+    // Dexie version history must remain monotonic — renumbering or deleting
+    // this block would change the upgrade path for anyone whose IndexedDB
+    // already reached version 5, and Dexie would see the installed verno run
+    // ahead of the declared schema. An empty `.stores({})` is a no-op relative
+    // to v4, which is exactly what is wanted. Any orphan object store left on
+    // a device that ran v5 is inert and is simply no longer declared.
+    this.version(5).stores({});
   }
 
   // ========== PICKLIST CACHE ==========

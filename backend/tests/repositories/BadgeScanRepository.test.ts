@@ -86,4 +86,25 @@ describe('BadgeScanRepository', () => {
       expect(params).toEqual(['ev-1', 'Haute Brands']);
     });
   });
+
+  describe('markPushResult', () => {
+    it('spends one attempt on an ordinary failure, leaving room to retry', async () => {
+      vi.mocked(dbQuery).mockResolvedValue(ok([]));
+      await repo.markPushResult('scan-1', { status: 'failed', error: 'INVALID_DATA' });
+      const sql = vi.mocked(dbQuery).mock.calls[0][0] as string;
+      expect(sql).toContain('crm_attempts = crm_attempts + 1');
+    });
+
+    it('burns the whole attempt budget on a terminal failure so it never auto-retries', async () => {
+      // An emailless lead whose push outcome Zoho never confirmed: retrying
+      // is how you end up with two CRM records for one attendee. claimPending
+      // filters on crm_attempts < 5, so this row stops being reclaimed while
+      // the manual retry button (which resets attempts) still works.
+      vi.mocked(dbQuery).mockResolvedValue(ok([]));
+      await repo.markPushResult('scan-1', { status: 'failed', error: 'timeout', terminal: true });
+      const sql = vi.mocked(dbQuery).mock.calls[0][0] as string;
+      expect(sql).toContain('crm_attempts = 5');
+      expect(sql).not.toContain('crm_attempts + 1');
+    });
+  });
 });

@@ -57,6 +57,16 @@ export interface PushResult {
   status: 'synced' | 'failed';
   crmRecordId?: string;
   error?: string;
+  /**
+   * Stop auto-retry by burning the whole attempt budget at once.
+   *
+   * For an outcome Zoho never confirmed (a timeout mid-call) on a record that
+   * carries no dedupe key, retrying is how you get two CRM records for one
+   * attendee. Such a row is parked as 'failed' for a human to inspect; the
+   * manual retry button still works, because requeue() resets attempts to 0
+   * and that is a deliberate decision rather than a blind replay.
+   */
+  terminal?: boolean;
 }
 
 /** Columns a caller may write. Anything else in the payload is ignored. */
@@ -219,7 +229,7 @@ export class BadgeScanRepository extends BaseRepository<BadgeScan> {
     await this.executeQuery(
       `UPDATE badge_scans
           SET crm_status = 'failed', crm_error = $1,
-              crm_attempts = crm_attempts + 1,
+              crm_attempts = ${result.terminal ? MAX_CRM_ATTEMPTS : 'crm_attempts + 1'},
               crm_last_attempt_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
         WHERE id = $2`,
       [result.error ?? 'Unknown CRM error', id]

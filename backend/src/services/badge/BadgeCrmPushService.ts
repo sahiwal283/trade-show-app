@@ -34,6 +34,12 @@ export interface PushSummary {
 
 export class BadgeCrmPushService {
   private timer: NodeJS.Timeout | null = null;
+  /**
+   * A pass that runs longer than the 5-minute interval would otherwise be
+   * joined by the next one, and both would claim the same rows — pushing every
+   * one of them to Zoho twice.
+   */
+  private inFlight = false;
 
   start(): void {
     if (configuredBrands().length === 0) {
@@ -53,6 +59,19 @@ export class BadgeCrmPushService {
   async pushOnce(): Promise<PushSummary> {
     const summary: PushSummary = { attempted: 0, synced: 0, failed: 0, skippedBrands: [] };
 
+    if (this.inFlight) {
+      console.warn('[BadgeCrmPush] Previous pass still running — skipping this tick');
+      return summary;
+    }
+    this.inFlight = true;
+    try {
+      return await this.runPass(summary);
+    } finally {
+      this.inFlight = false;
+    }
+  }
+
+  private async runPass(summary: PushSummary): Promise<PushSummary> {
     if (configuredBrands().length === 0) return summary;
 
     const scans = await badgeScanRepository.claimPendingByBrand(CLAIM_LIMIT);
@@ -117,24 +136,65 @@ export class BadgeCrmPushService {
 
     const fieldMap = await getFieldMap(brand, accessToken);
 
+    // Dedupe is by email, and toCrmRecord omits email entirely when the scan
+    // has none — so an emailless record in an email-deduped upsert has no
+    // dedupe value at all and a re-push creates a CRM twin. Separate the two
+    // populations and be honest about each.
+    const withEmail = batch.filter((scan) => Boolean(scan.email));
+    const withoutEmail = batch.filter((scan) => !scan.email);
+
+    if (withEmail.length > 0) {
+      await this.pushGroup(config, accessToken, fieldMap, withEmail, true, summary);
+    }
+
+    if (withoutEmail.length > 0) {
+      console.warn(
+        `[BadgeCrmPush] ${withoutEmail.length} scan(s) for ${brand} have no email — ` +
+          'pushed without duplicate detection; an unconfirmed failure will not auto-retry ' +
+          `(scan ids: ${withoutEmail.map((s) => s.id).join(', ')})`
+      );
+      await this.pushGroup(config, accessToken, fieldMap, withoutEmail, false, summary);
+    }
+  }
+
+  /**
+   * One upsert call for one group of scans.
+   *
+   * `dedupeOnEmail` is true only when every record in the group actually
+   * carries an email. Claiming email dedupe over records that omit the field
+   * is the bug this split exists to prevent: Zoho has nothing to match on, so
+   * it inserts, and the next retry inserts again.
+   */
+  private async pushGroup(
+    config: BrandCrmConfig,
+    accessToken: string,
+    fieldMap: FieldMap,
+    group: BadgeScan[],
+    dedupeOnEmail: boolean,
+    summary: PushSummary
+  ): Promise<void> {
     try {
+      const body: Record<string, unknown> = {
+        data: group.map((scan) => this.toCrmRecord(scan, fieldMap)),
+      };
+      // Email is the only field reliably unique per attendee. Without this,
+      // every retry would create a new CRM record.
+      if (dedupeOnEmail) body.duplicate_check_fields = [fieldMap.email];
+
       const response = await axios.post(
         `${ZOHO_API_DOMAIN}/crm/v2/${config.module}/upsert`,
-        {
-          data: batch.map((scan) => this.toCrmRecord(scan, fieldMap)),
-          // Email is the only field reliably unique per attendee. Without
-          // this, every retry would create a new CRM record.
-          duplicate_check_fields: [fieldMap.email],
-        },
+        body,
         { headers: { Authorization: `Zoho-oauthtoken ${accessToken}` } }
       );
 
       const results: any[] = response.data?.data ?? [];
-      for (let i = 0; i < batch.length; i++) {
-        const scan = batch[i];
+      for (let i = 0; i < group.length; i++) {
+        const scan = group[i];
         const result = results[i];
         // Zoho answers 200 with per-record codes; a rejected record inside a
-        // successful response is still a failure and must retry.
+        // successful response is still a failure and must retry. A per-record
+        // rejection is definitive — nothing was created — so retrying is safe
+        // even without a dedupe key.
         if (result?.code === 'SUCCESS') {
           await badgeScanRepository.markPushResult(scan.id, {
             status: 'synced',
@@ -150,13 +210,29 @@ export class BadgeCrmPushService {
         }
       }
     } catch (error) {
-      await this.failBatch(batch, (error as Error).message, summary);
+      // The call threw: Zoho may or may not have committed. With an email we
+      // can retry safely because the upsert will match. Without one, a retry
+      // is how you get two records for one attendee, so park the row for a
+      // human instead.
+      await this.failBatch(group, (error as Error).message, summary, !dedupeOnEmail);
     }
   }
 
-  private async failBatch(batch: BadgeScan[], message: string, summary: PushSummary): Promise<void> {
+  private async failBatch(
+    batch: BadgeScan[],
+    message: string,
+    summary: PushSummary,
+    terminal = false
+  ): Promise<void> {
     for (const scan of batch) {
-      await badgeScanRepository.markPushResult(scan.id, { status: 'failed', error: message });
+      await badgeScanRepository.markPushResult(scan.id, {
+        status: 'failed',
+        error: terminal
+          ? `${message} — this lead has no email, so it cannot be de-duplicated in Zoho. ` +
+            'It may or may not have been created. Add an email and retry manually.'
+          : message,
+        terminal,
+      });
       summary.failed += 1;
     }
   }

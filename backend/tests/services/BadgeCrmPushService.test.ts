@@ -100,7 +100,7 @@ describe('BadgeCrmPushService.pushOnce', () => {
 
     expect(result.failed).toBe(1);
     expect(badgeScanRepository.markPushResult).toHaveBeenCalledWith('scan-1', {
-      status: 'failed', error: expect.stringContaining('INVALID_MODULE'),
+      status: 'failed', error: expect.stringContaining('INVALID_MODULE'), terminal: false,
     });
   });
 
@@ -141,5 +141,116 @@ describe('BadgeCrmPushService.pushOnce', () => {
     expect(result.failed).toBe(0);
     expect(result.attempted).toBe(0);
     expect(result.skippedBrands).toContain('haute_brands');
+  });
+
+  it('never runs two passes at once — overlapping passes push the same rows twice', async () => {
+    // The 5-minute setInterval had no guard, so a slow pass was joined by the
+    // next one and both claimed the same scans.
+    let release: () => void = () => undefined;
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve([]); })
+    );
+
+    const first = badgeCrmPushService.pushOnce();
+    const second = await badgeCrmPushService.pushOnce(); // must not claim
+
+    expect(second.attempted).toBe(0);
+    expect(badgeScanRepository.claimPendingByBrand).toHaveBeenCalledTimes(1);
+
+    release();
+    await first;
+
+    // The guard clears in a finally, so the next tick works normally.
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockResolvedValueOnce([]);
+    await badgeCrmPushService.pushOnce();
+    expect(badgeScanRepository.claimPendingByBrand).toHaveBeenCalledTimes(2);
+  });
+
+  it('clears the guard even when a pass throws', async () => {
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockRejectedValueOnce(new Error('db down'));
+    await expect(badgeCrmPushService.pushOnce()).rejects.toThrow('db down');
+
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockResolvedValueOnce([]);
+    await expect(badgeCrmPushService.pushOnce()).resolves.toMatchObject({ attempted: 0 });
+  });
+});
+
+describe('BadgeCrmPushService emailless leads', () => {
+  const noEmail = (over = {}) => scan({ id: 'ne-1', email: null, ...over });
+
+  it('does not claim email dedupe for a record that carries no email', async () => {
+    // duplicate_check_fields: ['Email'] over a record whose Email field is
+    // absent gives Zoho nothing to match on — it inserts, and the next push
+    // inserts again.
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockResolvedValueOnce([noEmail()]);
+    vi.mocked(axios.post).mockResolvedValueOnce(tokenOk() as any).mockResolvedValueOnce(upsertOk() as any);
+
+    await badgeCrmPushService.pushOnce();
+
+    const [, body] = vi.mocked(axios.post).mock.calls[1];
+    expect((body as any).duplicate_check_fields).toBeUndefined();
+    expect((body as any).data).toHaveLength(1);
+  });
+
+  it('splits a mixed batch so the emailed records keep their dedupe', async () => {
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockResolvedValueOnce([scan(), noEmail()]);
+    vi.mocked(axios.post)
+      .mockResolvedValueOnce(tokenOk() as any)
+      .mockResolvedValueOnce(upsertOk('crm-with') as any)
+      .mockResolvedValueOnce(upsertOk('crm-without') as any);
+
+    const result = await badgeCrmPushService.pushOnce();
+
+    const upserts = vi.mocked(axios.post).mock.calls.filter(([url]) => String(url).includes('/upsert'));
+    expect(upserts).toHaveLength(2);
+    expect((upserts[0][1] as any).duplicate_check_fields).toContain('Email');
+    expect((upserts[1][1] as any).duplicate_check_fields).toBeUndefined();
+    expect(result.synced).toBe(2);
+  });
+
+  it('parks an emailless lead instead of auto-retrying an unconfirmed failure', async () => {
+    // A timeout after Zoho committed is indistinguishable from one before it.
+    // With no dedupe key, an automatic retry creates a second CRM record, so
+    // the attempt budget is spent at once and a human decides.
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockResolvedValueOnce([noEmail()]);
+    vi.mocked(axios.post)
+      .mockResolvedValueOnce(tokenOk() as any)
+      .mockRejectedValueOnce(new Error('socket hang up'));
+
+    await badgeCrmPushService.pushOnce();
+
+    expect(badgeScanRepository.markPushResult).toHaveBeenCalledWith('ne-1', {
+      status: 'failed',
+      error: expect.stringContaining('cannot be de-duplicated'),
+      terminal: true,
+    });
+  });
+
+  it('still auto-retries an unconfirmed failure when the record has an email', async () => {
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockResolvedValueOnce([scan()]);
+    vi.mocked(axios.post)
+      .mockResolvedValueOnce(tokenOk() as any)
+      .mockRejectedValueOnce(new Error('socket hang up'));
+
+    await badgeCrmPushService.pushOnce();
+
+    expect(badgeScanRepository.markPushResult).toHaveBeenCalledWith('scan-1', {
+      status: 'failed', error: expect.stringContaining('socket hang up'), terminal: false,
+    });
+  });
+
+  it('retries an emailless lead normally when Zoho definitively rejected it', async () => {
+    // A per-record rejection means nothing was created, so a retry is safe.
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockResolvedValueOnce([noEmail()]);
+    vi.mocked(axios.post).mockResolvedValueOnce(tokenOk() as any).mockResolvedValueOnce({
+      data: { data: [{ code: 'MANDATORY_NOT_FOUND', message: 'required field missing' }] },
+    } as any);
+
+    await badgeCrmPushService.pushOnce();
+
+    expect(badgeScanRepository.markPushResult).toHaveBeenCalledWith('ne-1', {
+      status: 'failed',
+      error: expect.stringContaining('MANDATORY_NOT_FOUND'),
+    });
   });
 });
