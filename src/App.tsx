@@ -14,6 +14,7 @@ const AdminSettings = lazy(() => import('./components/admin/AdminSettings').then
 const DevDashboard = lazy(() => import('./components/developer/DevDashboard').then(m => ({ default: m.DevDashboard })));
 const Reports = lazy(() => import('./components/reports/Reports').then(m => ({ default: m.Reports })));
 const BoothsPage = lazy(() => import('./components/booths/BoothsPage').then(m => ({ default: m.BoothsPage })));
+const LeadsPage = lazy(() => import('./components/leads/LeadsPage').then(m => ({ default: m.LeadsPage })));
 import { InstallPrompt } from './components/layout/InstallPrompt';
 import { InactivityWarning } from './components/common/InactivityWarning';
 import { NotificationBanner, useNotifications } from './components/common/NotificationBanner';
@@ -368,7 +369,7 @@ function App() {
 
   const handlePageChange = (page: string) => {
     // Accountants stay on expenses/reports — Events/Checklist redirect to dashboard
-    const blockedForAccountant = page === 'events' || page === 'checklist' || page === 'booths';
+    const blockedForAccountant = page === 'events' || page === 'checklist' || page === 'booths' || page === 'leads';
     if (user.role === 'accountant' && blockedForAccountant) {
       setCurrentPage('dashboard');
     } else {
@@ -436,6 +437,9 @@ function App() {
               {currentPage === 'expenses' && <ExpenseSubmission user={user} />}
               {currentPage === 'booths' && ['admin', 'coordinator', 'developer'].includes(user.role) && (
                 <BoothsPage user={user} />
+              )}
+              {currentPage === 'leads' && ['admin', 'coordinator', 'salesperson', 'developer'].includes(user.role) && (
+                <LeadsPage user={user} />
               )}
               {/* Legacy page id: Account now lives inside Settings — keep old links landing on the Account tab */}
               {currentPage === 'account' && <AdminSettings user={user} initialTab="account" />}

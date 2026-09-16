@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { LayoutDashboard, Receipt, Calendar, CheckSquare, BarChart3, Menu, Camera } from 'lucide-react';
+import { LayoutDashboard, Receipt, Calendar, CheckSquare, BarChart3, Menu, Camera, ScanLine } from 'lucide-react';
 import { User } from '../../App';
 import { setPendingCapture } from '../../utils/pendingCapture';
 import { haptics } from '../../utils/haptics';
@@ -16,6 +16,7 @@ interface MobileNavProps {
 
 const EXPENSE_ROLES = ['admin', 'coordinator', 'salesperson', 'accountant', 'developer'];
 const REPORT_ROLES = ['admin', 'accountant', 'developer'];
+const LEAD_ROLES = ['admin', 'coordinator', 'salesperson', 'developer'];
 
 interface TabDef {
   id: string;
@@ -50,14 +51,15 @@ export const MobileNav: React.FC<MobileNavProps> = ({
     onQuickAdd();
   };
 
-  // Expenses is the app's core destination — it gets a permanent tab
-  // (Events lives in the drawer). Accountants/admins get Reports as the
-  // fourth tab; field staff get their Checklist.
+  // Leads is what floor staff actually do all day, so it outranks Checklist
+  // for the last tab; Checklist stays reachable from the drawer.
   const fourthTab: TabDef = REPORT_ROLES.includes(user.role)
     ? { id: 'reports', label: 'Reports', icon: BarChart3 }
-    : canSeeExpenses
-      ? { id: 'checklist', label: 'Checklist', icon: CheckSquare }
-      : { id: 'events', label: 'Events', icon: Calendar };
+    : LEAD_ROLES.includes(user.role)
+      ? { id: 'leads', label: 'Leads', icon: ScanLine }
+      : canSeeExpenses
+        ? { id: 'checklist', label: 'Checklist', icon: CheckSquare }
+        : { id: 'events', label: 'Events', icon: Calendar };
 
   const leftTabs: TabDef[] = [
     { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
