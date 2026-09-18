@@ -69,6 +69,7 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
       rawPayload: pendingBadge.rawPayload,
       parserVersion: pendingBadge.parsed.parserVersion,
       parseConfidence: pendingBadge.parsed.confidence,
+      barcodeFormat: pendingBadge.format,
       fields: pendingBadge.parsed.tokens,
       contact,
       notes,
@@ -163,6 +164,7 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
             // must get its own unique payload.
             setPendingBadge({
               rawPayload: `MANUAL_ENTRY:${generateUUID()}`,
+              format: 'Manual',
               parsed: { fields: {}, tokens: [], confidence: 0, parserVersion: 'manual' },
             });
           }}

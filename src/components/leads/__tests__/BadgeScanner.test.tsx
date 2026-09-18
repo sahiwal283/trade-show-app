@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
 const decoder = {
   state: 'scanning' as string,
@@ -11,10 +11,16 @@ const decoder = {
   torchOn: false,
   toggleTorch: vi.fn(),
 };
-let capturedOnDecode: ((p: string) => void) | null = null;
+let capturedOnDecode: ((p: string, format: string) => void) | null = null;
 
 vi.mock('../hooks/useBadgeDecoder', () => ({
   useBadgeDecoder: ({ onDecode }: any) => { capturedOnDecode = onDecode; return decoder; },
+}));
+
+const decodeBadgeImage = vi.fn(async (): Promise<{ text: string; format: string } | null> => null);
+vi.mock('../../../utils/badge/decodeBadge', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  decodeBadgeImage: (blob: Blob) => decodeBadgeImage(blob),
 }));
 
 import { BadgeScanner } from '../BadgeScanner';
@@ -45,10 +51,11 @@ describe('BadgeScanner', () => {
   it('passes the decoded payload up, already parsed', () => {
     const onCaptured = vi.fn();
     setup({ onCaptured });
-    capturedOnDecode!('124649-907|Shamsher|Jessani|sjessani@aol.com');
+    capturedOnDecode!('124649-907|Shamsher|Jessani|sjessani@aol.com', 'PDF417');
     expect(onCaptured).toHaveBeenCalledWith(
       expect.objectContaining({
         rawPayload: '124649-907|Shamsher|Jessani|sjessani@aol.com',
+        format: 'PDF417',
         parsed: expect.objectContaining({
           fields: expect.objectContaining({ email: 'sjessani@aol.com' }),
         }),
@@ -96,5 +103,41 @@ describe('BadgeScanner camera ownership', () => {
     expect(decoder.stop).not.toHaveBeenCalled();
     unmount();
     expect(decoder.stop).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('BadgeScanner symbologies and photo fallback', () => {
+  beforeEach(() => { vi.clearAllMocks(); decoder.state = 'scanning'; decoder.error = null; });
+
+  it('tells the rep which code types it reads, so a QR badge is not assumed unsupported', () => {
+    setup();
+    expect(screen.getByText(/PDF417.*QR/i)).toBeInTheDocument();
+  });
+
+  it('offers a photo fallback that works without the live-camera permission', async () => {
+    // A rep who tapped "Don't Allow" once is otherwise locked out until they
+    // dig through iOS settings. The photo picker never needs that grant.
+    decodeBadgeImage.mockResolvedValue({ text: 'MECARD:N:Doe,Jane;EMAIL:j@d.com;;', format: 'QRCode' });
+    const onCaptured = vi.fn();
+    setup({ onCaptured });
+    const input = screen.getByLabelText(/badge photo/i) as HTMLInputElement;
+    expect(input.getAttribute('capture')).toBe('environment');
+    const file = new File(['x'], 'badge.jpg', { type: 'image/jpeg' });
+    fireEvent.change(input, { target: { files: [file] } });
+    await waitFor(() => expect(onCaptured).toHaveBeenCalledWith(expect.objectContaining({
+      rawPayload: 'MECARD:N:Doe,Jane;EMAIL:j@d.com;;',
+      format: 'QRCode',
+    })));
+    expect(decoder.stop).toHaveBeenCalled();
+  });
+
+  it('says so when the photo has no readable code instead of silently doing nothing', async () => {
+    decodeBadgeImage.mockResolvedValue(null);
+    const onCaptured = vi.fn();
+    setup({ onCaptured });
+    const input = screen.getByLabelText(/badge photo/i);
+    fireEvent.change(input, { target: { files: [new File(['x'], 'b.jpg', { type: 'image/jpeg' })] } });
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/no barcode/i));
+    expect(onCaptured).not.toHaveBeenCalled();
   });
 });

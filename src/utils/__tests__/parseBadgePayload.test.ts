@@ -116,3 +116,104 @@ describe('parseBadgePayload — confidence', () => {
     expect(parseBadgePayload(PIPE).confidence).toBeLessThanOrEqual(1);
   });
 });
+
+// QR codes carry structured contact formats far more often than delimited
+// strings. Each is detected by content, so the symbology is irrelevant.
+const VCARD = [
+  'BEGIN:VCARD', 'VERSION:3.0',
+  'N:Jessani;Shamsher;;Mr.;', 'FN:Shamsher Jessani',
+  'ORG:Virginia Trade Association', 'TITLE:President',
+  'EMAIL;TYPE=INTERNET:sjessani@aol.com', 'TEL;TYPE=CELL:+1 804 555 0100',
+  'ADR;TYPE=WORK:;;123 Main St;Glen Allen;VA;23059;United States',
+  'END:VCARD',
+].join('\r\n');
+
+describe('parseBadgePayload — vCard', () => {
+  it('maps the structured fields of a vCard', () => {
+    const { fields, confidence } = parseBadgePayload(VCARD);
+    expect(fields.first_name).toBe('Shamsher');
+    expect(fields.last_name).toBe('Jessani');
+    expect(fields.salutation).toBe('Mr.');
+    expect(fields.company).toBe('Virginia Trade Association');
+    expect(fields.title).toBe('President');
+    expect(fields.email).toBe('sjessani@aol.com');
+    expect(fields.phone).toBe('+1 804 555 0100');
+    expect(fields.city).toBe('Glen Allen');
+    expect(fields.state).toBe('VA');
+    expect(fields.postal_code).toBe('23059');
+    expect(fields.country).toBe('United States');
+    expect(confidence).toBeGreaterThanOrEqual(0.8);
+  });
+
+  it('splits FN into first and last when N is absent', () => {
+    const { fields } = parseBadgePayload('BEGIN:VCARD\nFN:Ana Maria Ruiz\nEMAIL:ana@x.com\nEND:VCARD');
+    expect(fields.first_name).toBe('Ana Maria');
+    expect(fields.last_name).toBe('Ruiz');
+  });
+
+  it('keeps every vCard line as a token so nothing is lost', () => {
+    const { tokens } = parseBadgePayload(VCARD);
+    expect(tokens.map((t) => t.value)).toContain('TITLE:President');
+    expect(tokens.find((t) => t.value.startsWith('TITLE'))?.mappedTo).toBe('title');
+  });
+});
+
+describe('parseBadgePayload — MeCard', () => {
+  it('maps a MeCard, including its comma-ordered name and address', () => {
+    const raw = 'MECARD:N:Jessani,Shamsher;ORG:Virginia Trade Association;TEL:8045550100;EMAIL:sjessani@aol.com;ADR:,,123 Main St,Glen Allen,VA,23059,USA;;';
+    const { fields } = parseBadgePayload(raw);
+    expect(fields.first_name).toBe('Shamsher');
+    expect(fields.last_name).toBe('Jessani');
+    expect(fields.company).toBe('Virginia Trade Association');
+    expect(fields.phone).toBe('8045550100');
+    expect(fields.email).toBe('sjessani@aol.com');
+    expect(fields.city).toBe('Glen Allen');
+    expect(fields.state).toBe('VA');
+    expect(fields.postal_code).toBe('23059');
+  });
+});
+
+describe('parseBadgePayload — JSON', () => {
+  it('maps a JSON object through the same key aliases as keyed text', () => {
+    const raw = JSON.stringify({ firstName: 'Shamsher', lastName: 'Jessani', email: 'sjessani@aol.com', organization: 'Virginia Trade Association', jobTitle: 'President', zip: '23059' });
+    const { fields } = parseBadgePayload(raw);
+    expect(fields.first_name).toBe('Shamsher');
+    expect(fields.last_name).toBe('Jessani');
+    expect(fields.email).toBe('sjessani@aol.com');
+    expect(fields.company).toBe('Virginia Trade Association');
+    expect(fields.title).toBe('President');
+    expect(fields.postal_code).toBe('23059');
+  });
+
+  it('does not choke on JSON that is not an object', () => {
+    expect(() => parseBadgePayload('[1,2,3]')).not.toThrow();
+    expect(() => parseBadgePayload('{"a":')).not.toThrow();
+  });
+});
+
+describe('parseBadgePayload — URLs', () => {
+  it('pulls recognizable contact keys out of a URL query string', () => {
+    const raw = 'https://leads.example.com/capture?email=sjessani%40aol.com&first=Shamsher&last=Jessani&company=VTA';
+    const { fields } = parseBadgePayload(raw);
+    expect(fields.email).toBe('sjessani@aol.com');
+    expect(fields.first_name).toBe('Shamsher');
+    expect(fields.last_name).toBe('Jessani');
+    expect(fields.company).toBe('VTA');
+  });
+
+  it('treats an opaque profile URL as zero fields, not as a name', () => {
+    // Lead-retrieval vendors encode a profile URL in the badge QR. The
+    // positional pass would otherwise read the host as a company.
+    const raw = 'https://reg.example.com/attendee/8827364';
+    const { fields, tokens, confidence } = parseBadgePayload(raw);
+    expect(fields).toEqual({});
+    expect(confidence).toBe(0);
+    expect(tokens.map((t) => t.value)).toEqual([raw]);
+  });
+});
+
+describe('parseBadgePayload — version', () => {
+  it('reports v2 now that structured QR payloads are understood', () => {
+    expect(PARSER_VERSION).toBe('v2');
+  });
+});

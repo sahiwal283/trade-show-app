@@ -5,7 +5,7 @@ import { parseBadgePayload } from '../../../utils/badge/parseBadgePayload';
 
 const FULL = '124649-907|Shamsher|Jessani|Virginia Trade Association|Glen Allen|VA|23059-8006|United States|President|Mr.|sjessani@aol.com';
 const OTHER = '556677-1|Alex|Rivera|Rivera Consulting|Austin|TX|73301|United States|Manager|Ms.|arivera@example.com';
-const badge = (raw: string) => ({ rawPayload: raw, parsed: parseBadgePayload(raw) });
+const badge = (raw: string, format = 'PDF417') => ({ rawPayload: raw, format, parsed: parseBadgePayload(raw) });
 
 const setup = (props: any = {}) =>
   render(
@@ -139,5 +139,20 @@ describe('ScanReviewSheet', () => {
     );
 
     expect(screen.getByLabelText('Email')).toHaveValue('still-typing@example.com');
+  });
+});
+
+describe('ScanReviewSheet — unrecognized payloads', () => {
+  it('shows the raw scanned content when nothing could be mapped to a field', () => {
+    // A QR that is just a vendor profile URL yields zero fields. The rep
+    // needs to see what was scanned to know it worked and type the contact.
+    setup({ badge: badge('https://reg.example.com/attendee/8827364', 'QRCode') });
+    expect(screen.getByText('https://reg.example.com/attendee/8827364')).toBeInTheDocument();
+    expect(screen.getByText(/QR code/i)).toBeInTheDocument();
+  });
+
+  it('does not clutter a fully-mapped scan with the raw payload', () => {
+    setup({ badge: badge(FULL) });
+    expect(screen.queryByText(FULL)).not.toBeInTheDocument();
   });
 });

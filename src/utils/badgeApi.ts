@@ -51,6 +51,7 @@ export interface CreateScanPayload {
   scannedAt?: string;
   parserVersion?: string;
   parseConfidence?: number;
+  barcodeFormat?: string;
   fields?: unknown;
   notes?: string;
   contact?: Record<string, string>;

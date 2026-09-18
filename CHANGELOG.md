@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.24.0] - 2026-09-18 - Multi-format badge scanning
+
+### Added
+- Badge scanner reads QR, Data Matrix, Aztec, Code 128 and Code 39 alongside
+  PDF417. When a frame holds several codes the PDF417 wins, then 2D over 1D;
+  1D reads shorter than four characters are ignored as shelf labels.
+- Payload parser (v2) recognises vCard, MeCard, JSON and URL payloads by
+  content before the delimited pass, so a QR lead sheet maps straight to
+  contact fields. Opaque profile URLs yield zero fields and are shown raw on
+  the review sheet so the rep can type the contact in.
+- "Take photo" fallback on the scanner decodes a still from the camera
+  picker, which needs no browser camera grant.
+- Leads now record which symbology they came from (`barcode_format`);
+  manual entries record `Manual`.
+
+### Changed
+- Viewfinder target box is taller so a square code and a PDF417 strip both
+  frame correctly, with a caption listing the supported types.
+
 ## [2.23.1] - 2026-09-18 - Badge scanner camera fixes
 
 ### Fixed

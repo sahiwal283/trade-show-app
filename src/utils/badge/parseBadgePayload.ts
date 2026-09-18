@@ -1,9 +1,14 @@
 /**
  * Badge payload parser.
  *
- * Single source of truth for turning a PDF417 payload into contact fields.
- * It runs on the client so a scan shows real data instantly and offline; the
- * backend stores what it produces but never re-derives it.
+ * Single source of truth for turning a scanned payload into contact fields,
+ * whatever symbology carried it. It runs on the client so a scan shows real
+ * data instantly and offline; the backend stores what it produces but never
+ * re-derives it.
+ *
+ * Structured payloads (vCard, MeCard, JSON, URL) are recognised by content
+ * before the delimited/positional pass, because a vCard split on ';' or a
+ * URL read as a company name would look like a decode while being garbage.
  *
  * Two rules the implementation must keep:
  *   1. Never throw. A badge that fails to parse still becomes a lead, with
@@ -16,7 +21,7 @@ import {
   isSalutation, isTitle, isCompany, isNameLike, isShortCode, isMultiWord,
 } from './tokenClassifiers';
 
-export const PARSER_VERSION = 'v1';
+export const PARSER_VERSION = 'v2';
 
 export type BadgeField =
   | 'badge_id' | 'salutation' | 'first_name' | 'last_name' | 'title'
@@ -62,6 +67,145 @@ const KEY_ALIASES: Record<string, BadgeField> = {
   registration: 'badge_id', regid: 'badge_id', salutation: 'salutation',
   prefix: 'salutation', type: 'attendee_type',
 };
+
+type Fields = Partial<Record<BadgeField, string>>;
+
+interface Structured {
+  fields: Fields;
+  tokens: ParsedToken[];
+}
+
+const setIf = (fields: Fields, field: BadgeField, value: string | undefined) => {
+  const v = (value ?? '').trim();
+  if (v && !fields[field]) fields[field] = v;
+};
+
+/** "Ana Maria Ruiz" -> first "Ana Maria", last "Ruiz". */
+function splitFullName(fields: Fields, full: string | undefined) {
+  const parts = (full ?? '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return;
+  if (parts.length === 1) { setIf(fields, 'first_name', parts[0]); return; }
+  setIf(fields, 'last_name', parts[parts.length - 1]);
+  setIf(fields, 'first_name', parts.slice(0, -1).join(' '));
+}
+
+/** vCard ADR (';'-separated) or MeCard ADR (','-separated) components. */
+function applyAddress(fields: Fields, components: string[]) {
+  // pobox, extended, street, city, region, postal, country
+  const [, , , city, region, postal, country] = components.map((c) => c.trim());
+  setIf(fields, 'city', city);
+  setIf(fields, 'state', region);
+  setIf(fields, 'postal_code', postal);
+  setIf(fields, 'country', country);
+}
+
+function parseVCard(text: string): Structured | null {
+  if (!/^BEGIN:VCARD/im.test(text)) return null;
+  // Unfold continuation lines (a line starting with whitespace continues the previous one).
+  const lines = text.replace(/\r?\n[ \t]/g, '').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  const fields: Fields = {};
+  const tokens: ParsedToken[] = [];
+  let fullName: string | undefined;
+
+  lines.forEach((line, index) => {
+    const colon = line.indexOf(':');
+    if (colon === -1) { tokens.push({ index, value: line, mappedTo: null }); return; }
+    const key = line.slice(0, colon).split(';')[0].toUpperCase();
+    const value = line.slice(colon + 1).trim();
+    let mappedTo: BadgeField | null = null;
+    switch (key) {
+      case 'N': {
+        const [last, first, , prefix] = value.split(';');
+        setIf(fields, 'last_name', last);
+        setIf(fields, 'first_name', first);
+        setIf(fields, 'salutation', prefix);
+        mappedTo = 'last_name';
+        break;
+      }
+      case 'FN': fullName = value; mappedTo = 'first_name'; break;
+      case 'ORG': setIf(fields, 'company', value.split(';')[0]); mappedTo = 'company'; break;
+      case 'TITLE': setIf(fields, 'title', value); mappedTo = 'title'; break;
+      case 'EMAIL': setIf(fields, 'email', value); mappedTo = 'email'; break;
+      case 'TEL': setIf(fields, 'phone', value); mappedTo = 'phone'; break;
+      case 'ADR': applyAddress(fields, value.split(';')); mappedTo = 'city'; break;
+      default: break;
+    }
+    tokens.push({ index, value: line, mappedTo });
+  });
+
+  if (!fields.first_name && !fields.last_name) splitFullName(fields, fullName);
+  return { fields, tokens };
+}
+
+function parseMeCard(text: string): Structured | null {
+  if (!/^MECARD:/i.test(text)) return null;
+  const body = text.slice('MECARD:'.length);
+  // Split on unescaped ';'. Values may contain '\;'.
+  const pairs = body.split(/(?<!\\);/).map((p) => p.replace(/\\;/g, ';').trim()).filter(Boolean);
+  const fields: Fields = {};
+  const tokens: ParsedToken[] = [];
+
+  pairs.forEach((pair, index) => {
+    const colon = pair.indexOf(':');
+    const key = (colon === -1 ? pair : pair.slice(0, colon)).toUpperCase();
+    const value = colon === -1 ? '' : pair.slice(colon + 1).trim();
+    let mappedTo: BadgeField | null = null;
+    switch (key) {
+      case 'N': {
+        const [last, first] = value.split(',');
+        setIf(fields, 'last_name', last);
+        setIf(fields, 'first_name', first);
+        if (!first) { fields.last_name = undefined; splitFullName(fields, last); }
+        mappedTo = 'last_name';
+        break;
+      }
+      case 'ORG': setIf(fields, 'company', value); mappedTo = 'company'; break;
+      case 'TEL': setIf(fields, 'phone', value); mappedTo = 'phone'; break;
+      case 'EMAIL': setIf(fields, 'email', value); mappedTo = 'email'; break;
+      case 'ADR': applyAddress(fields, value.split(',')); mappedTo = 'city'; break;
+      default: break;
+    }
+    tokens.push({ index, value: pair, mappedTo });
+  });
+  return { fields, tokens };
+}
+
+function mapAliasedPairs(entries: Array<[string, string]>): Structured {
+  const fields: Fields = {};
+  const tokens: ParsedToken[] = [];
+  entries.forEach(([rawKey, rawValue], index) => {
+    const field = KEY_ALIASES[rawKey.toLowerCase().replace(/[^a-z]/g, '')] ?? null;
+    if (field) setIf(fields, field, rawValue);
+    tokens.push({ index, value: `${rawKey}: ${rawValue}`, mappedTo: field });
+  });
+  return { fields, tokens };
+}
+
+function parseJson(text: string): Structured | null {
+  if (!text.startsWith('{')) return null;
+  let obj: unknown;
+  try { obj = JSON.parse(text); } catch { return null; }
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return null;
+  const entries = Object.entries(obj as Record<string, unknown>)
+    .filter(([, v]) => typeof v === 'string' || typeof v === 'number')
+    .map(([k, v]) => [k, String(v)] as [string, string]);
+  return mapAliasedPairs(entries);
+}
+
+function parseUrl(text: string): Structured | null {
+  if (!/^https?:\/\/\S+$/i.test(text)) return null;
+  let url: URL;
+  try { url = new URL(text); } catch { return null; }
+  const entries = Array.from(url.searchParams.entries());
+  const mapped = mapAliasedPairs(entries);
+  if (Object.keys(mapped.fields).length > 0) return mapped;
+  // An opaque profile link: keep it whole so the rep sees what was scanned.
+  return { fields: {}, tokens: [{ index: 0, value: text, mappedTo: null }] };
+}
+
+function parseStructured(text: string): Structured | null {
+  return parseVCard(text) ?? parseMeCard(text) ?? parseJson(text) ?? parseUrl(text);
+}
 
 /**
  * Strip control bytes and the Unicode replacement character, but keep tab —
@@ -183,6 +327,16 @@ export function parseBadgePayload(raw: string): ParsedBadge {
   try {
     const text = normalize(raw);
     if (!text) return empty;
+
+    const structured = parseStructured(text);
+    if (structured) {
+      return {
+        fields: structured.fields,
+        tokens: structured.tokens,
+        confidence: scoreConfidence(structured.fields),
+        parserVersion: PARSER_VERSION,
+      };
+    }
 
     const rawTokens = splitTokens(text);
     if (rawTokens.length === 0) return empty;

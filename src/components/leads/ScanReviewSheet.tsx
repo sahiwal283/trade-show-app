@@ -13,6 +13,7 @@ import { AlertTriangle, Copy } from 'lucide-react';
 import { ScannedBadge } from './BadgeScanner';
 import { REVIEW_CONFIDENCE_THRESHOLD, BadgeField } from '../../utils/badge/parseBadgePayload';
 import { BadgeScanRecord } from '../../utils/badgeApi';
+import { formatLabel } from '../../utils/badge/decodeBadge';
 
 const EDITABLE_FIELDS: Array<{ key: BadgeField; label: string }> = [
   { key: 'first_name', label: 'First name' },
@@ -61,6 +62,10 @@ export const ScanReviewSheet: React.FC<ScanReviewSheetProps> = ({
   if (!badge) return null;
 
   const lowConfidence = badge.parsed.confidence < REVIEW_CONFIDENCE_THRESHOLD;
+  // A vendor profile URL or an opaque registration code maps to nothing. The
+  // rep needs to see that the scan worked and what it held before typing.
+  const nothingMapped =
+    badge.parsed.parserVersion !== 'manual' && Object.keys(badge.parsed.fields).length === 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center">
@@ -79,7 +84,14 @@ export const ScanReviewSheet: React.FC<ScanReviewSheetProps> = ({
           </div>
         )}
 
-        {lowConfidence && (
+        {nothingMapped ? (
+          <div className="mt-3 rounded-lg bg-stone-100 p-3 text-sm" role="status">
+            <span className="block text-stone-600">
+              Scanned a {formatLabel(badge.format)} but recognized no contact fields. Fill them in from the badge.
+            </span>
+            <code className="mt-1 block break-all text-stone-800">{badge.rawPayload}</code>
+          </div>
+        ) : lowConfidence && (
           <div className="mt-3 flex gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900" role="status">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>Low-confidence decode - check these fields before saving.</span>

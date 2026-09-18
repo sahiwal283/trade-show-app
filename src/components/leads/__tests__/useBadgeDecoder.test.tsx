@@ -68,13 +68,13 @@ describe('useBadgeDecoder', () => {
     expect(JSON.stringify(constraints)).toContain('environment');
   });
 
-  it('only decodes PDF417, so a stray QR code on the badge cannot win', async () => {
+  it('asks the decoder to try harder, since badges are read at booth distance', async () => {
     mockCamera();
     const { result } = renderHook(() => useBadgeDecoder({ onDecode: vi.fn() }));
     attachVideo(result.current.videoRef);
     await act(async () => { await result.current.start(); });
     await waitFor(() => expect(readBarcodes).toHaveBeenCalled());
-    expect(readBarcodes.mock.calls[0][1]).toMatchObject({ formats: ['PDF417'] });
+    expect((readBarcodes.mock.calls[0] as any)[1]).toMatchObject({ tryHarder: true });
   });
 
   it('hands the decoded payload to onDecode exactly once per lock', async () => {
@@ -84,7 +84,7 @@ describe('useBadgeDecoder', () => {
     const { result } = renderHook(() => useBadgeDecoder({ onDecode }));
     attachVideo(result.current.videoRef);
     await act(async () => { await result.current.start(); });
-    await waitFor(() => expect(onDecode).toHaveBeenCalledWith('RAW|PAYLOAD'));
+    await waitFor(() => expect(onDecode).toHaveBeenCalledWith('RAW|PAYLOAD', 'PDF417'));
     expect(onDecode).toHaveBeenCalledTimes(1);
   });
 
@@ -128,7 +128,7 @@ describe('useBadgeDecoder camera lifecycle', () => {
 
   it('delivers the payload to the latest onDecode, not the one from first render', async () => {
     mockCamera();
-    readBarcodes.mockResolvedValue([{ text: 'LATE|PAYLOAD' }] as any);
+    readBarcodes.mockResolvedValue([{ text: 'LATE|PAYLOAD', format: 'PDF417' }] as any);
     const stale = vi.fn();
     const fresh = vi.fn();
     const { result, rerender } = renderHook(
@@ -138,7 +138,7 @@ describe('useBadgeDecoder camera lifecycle', () => {
     attachVideo(result.current.videoRef);
     rerender({ cb: fresh });
     await act(async () => { await result.current.start(); });
-    await waitFor(() => expect(fresh).toHaveBeenCalledWith('LATE|PAYLOAD'));
+    await waitFor(() => expect(fresh).toHaveBeenCalledWith('LATE|PAYLOAD', 'PDF417'));
     expect(stale).not.toHaveBeenCalled();
   });
 
@@ -224,5 +224,44 @@ describe('useBadgeDecoder camera lifecycle', () => {
     await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
     await new Promise((r) => setTimeout(r, 50));
     expect(getUserMedia).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('useBadgeDecoder symbologies', () => {
+  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => { attachedVideos.splice(0).forEach((v) => v.remove()); });
+
+  it('scans QR and the other badge formats, not only PDF417', async () => {
+    mockCamera();
+    const { result } = renderHook(() => useBadgeDecoder({ onDecode: vi.fn() }));
+    attachVideo(result.current.videoRef);
+    await act(async () => { await result.current.start(); });
+    await waitFor(() => expect(readBarcodes).toHaveBeenCalled());
+    const formats: string[] = (readBarcodes.mock.calls[0] as any)[1].formats;
+    expect(formats).toEqual(expect.arrayContaining(['PDF417', 'QRCode', 'DataMatrix']));
+    act(() => { result.current.stop(); });
+  });
+
+  it('tells onDecode which symbology produced the payload', async () => {
+    mockCamera();
+    readBarcodes.mockResolvedValue([{ text: 'https://reg.example.com/a/1', format: 'QRCode', isValid: true }] as any);
+    const onDecode = vi.fn();
+    const { result } = renderHook(() => useBadgeDecoder({ onDecode }));
+    attachVideo(result.current.videoRef);
+    await act(async () => { await result.current.start(); });
+    await waitFor(() => expect(onDecode).toHaveBeenCalledWith('https://reg.example.com/a/1', 'QRCode'));
+  });
+
+  it('picks the PDF417 over a QR code decoded in the same frame', async () => {
+    mockCamera();
+    readBarcodes.mockResolvedValue([
+      { text: 'https://reg.example.com/a/1', format: 'QRCode', isValid: true },
+      { text: '1|Ann|Lee|Acme Inc|a@acme.com', format: 'PDF417', isValid: true },
+    ] as any);
+    const onDecode = vi.fn();
+    const { result } = renderHook(() => useBadgeDecoder({ onDecode }));
+    attachVideo(result.current.videoRef);
+    await act(async () => { await result.current.start(); });
+    await waitFor(() => expect(onDecode).toHaveBeenCalledWith('1|Ann|Lee|Acme Inc|a@acme.com', 'PDF417'));
   });
 });

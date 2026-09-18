@@ -23,7 +23,20 @@ vi.mock('../../../utils/api', () => ({
   api: { getEvents: vi.fn(async () => [{ id: 'ev-1', name: 'NACS Show 2026', status: 'active' }]) },
 }));
 vi.mock('../BadgeScanner', () => ({
-  BadgeScanner: ({ entity }: any) => <div data-testid="scanner">scanning for {entity}</div>,
+  BadgeScanner: ({ entity, onCaptured }: any) => (
+    <div data-testid="scanner">
+      scanning for {entity}
+      <button
+        onClick={() => onCaptured({
+          rawPayload: 'https://reg.example.com/attendee/1',
+          format: 'QRCode',
+          parsed: { fields: {}, tokens: [], confidence: 0, parserVersion: 'v2' },
+        })}
+      >
+        simulate capture
+      </button>
+    </div>
+  ),
 }));
 
 import { LeadsPage } from '../LeadsPage';
@@ -74,5 +87,23 @@ describe('LeadsPage', () => {
     fireEvent.change(screen.getByLabelText(/event/i), { target: { value: 'ev-1' } });
     fireEvent.click(screen.getByRole('button', { name: /export/i }));
     await waitFor(() => expect(badgeApi.downloadExport).toHaveBeenCalledWith('ev-1', 'xlsx'));
+  });
+});
+
+describe('LeadsPage — barcode format', () => {
+  it('records which symbology the lead came from', async () => {
+    // Without it every QR lead is stored as PDF417 (the column default), and
+    // the parser cannot be tuned per format from the data later.
+    const { badgeApi } = await import('../../../utils/badgeApi');
+    render(<LeadsPage user={user} />);
+    await waitFor(() => screen.getByLabelText(/company/i));
+    fireEvent.change(screen.getByLabelText(/event/i), { target: { value: 'ev-1' } });
+    fireEvent.change(screen.getByLabelText(/company/i), { target: { value: 'Haute Brands' } });
+    fireEvent.click(screen.getByRole('button', { name: /scan badge/i }));
+    fireEvent.click(screen.getByRole('button', { name: /simulate capture/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    await waitFor(() => expect(badgeApi.createScan).toHaveBeenCalledWith(
+      expect.objectContaining({ barcodeFormat: 'QRCode', rawPayload: 'https://reg.example.com/attendee/1' })
+    ));
   });
 });

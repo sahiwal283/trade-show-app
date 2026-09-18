@@ -5,9 +5,9 @@
  * costs nothing per badge. The loop is throttled rather than run per frame:
  * a phone held at a booth for an hour must not cook itself.
  *
- * Only PDF417 is requested. Badges often carry a second symbology, and
- * locking onto a QR code that encodes a URL would look like success while
- * producing no contact at all.
+ * Symbology selection lives in utils/badge/decodeBadge: several formats are
+ * requested, and when a frame yields more than one hit the PDF417 wins over
+ * a QR code, which on a badge is usually just a URL.
  *
  * Camera ownership rules, learned the hard way:
  *  - start() and stop() are referentially stable. The consumer passes an
@@ -23,6 +23,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { loadBadgeReader } from '../../../utils/badge/zxingReader';
+import { READER_OPTIONS, pickDecodeHit } from '../../../utils/badge/decodeBadge';
 
 export type DecoderState =
   | 'idle' | 'loading' | 'ready' | 'scanning' | 'denied' | 'unsupported' | 'error';
@@ -30,7 +31,7 @@ export type DecoderState =
 const DECODE_INTERVAL_MS = 125; // ~8fps
 
 interface UseBadgeDecoderArgs {
-  onDecode: (payload: string) => void;
+  onDecode: (payload: string, format: string) => void;
 }
 
 export function useBadgeDecoder({ onDecode }: UseBadgeDecoderArgs) {
@@ -92,15 +93,15 @@ export function useBadgeDecoder({ onDecode }: UseBadgeDecoderArgs) {
       const readBarcodes = await loadBadgeReader();
       const results = await readBarcodes(
         ctx.getImageData(0, 0, canvas.width, canvas.height),
-        { formats: ['PDF417'], tryHarder: true }
+        READER_OPTIONS
       );
-      const hit = results.find((r: { text?: string }) => r?.text);
+      const hit = pickDecodeHit(results);
       if (hit && !lockedRef.current) {
         // Latch immediately: the interval can fire again while this await
         // resolves, and a double-fire would create two leads for one badge.
         lockedRef.current = true;
         if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-        onDecodeRef.current(hit.text);
+        onDecodeRef.current(hit.text, hit.format);
       }
     } catch {
       // A single bad frame is not a failure; the next tick tries again.
