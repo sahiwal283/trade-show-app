@@ -35,7 +35,9 @@ export const BadgeScanner: React.FC<BadgeScannerProps> = ({
       },
     });
 
-  useEffect(() => { void start(); }, [start]);
+  // Symmetric start/stop so StrictMode's mount-unmount-mount and a real
+  // unmount both leave the camera released.
+  useEffect(() => { void start(); return stop; }, [start, stop]);
 
   const handleClose = () => { stop(); onClose(); };
 

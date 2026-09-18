@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
 const readBarcodes = vi.fn(async () => []);
-vi.mock('zxing-wasm/reader', () => ({ readBarcodes }));
+vi.mock('zxing-wasm/reader', () => ({ readBarcodes, prepareZXingModule: vi.fn() }));
 
 import { useBadgeDecoder } from '../hooks/useBadgeDecoder';
 
@@ -101,5 +101,128 @@ describe('useBadgeDecoder', () => {
     const { result } = renderHook(() => useBadgeDecoder({ onDecode: vi.fn() }));
     await act(async () => { await result.current.start(); });
     await waitFor(() => expect(result.current.torchAvailable).toBe(false));
+  });
+});
+
+describe('useBadgeDecoder camera lifecycle', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  afterEach(() => {
+    attachedVideos.splice(0).forEach((v) => v.remove());
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+  });
+
+  it('keeps start() stable when the consumer passes a fresh onDecode each render', () => {
+    // BadgeScanner passes an inline arrow. If start() changed identity with
+    // it, the consumer's mount effect would re-run every render and reopen
+    // the camera in a loop, leaking a live stream per iteration.
+    mockCamera();
+    const { result, rerender } = renderHook(
+      ({ cb }: { cb: (p: string) => void }) => useBadgeDecoder({ onDecode: cb }),
+      { initialProps: { cb: vi.fn() } }
+    );
+    const first = result.current.start;
+    rerender({ cb: vi.fn() });
+    expect(result.current.start).toBe(first);
+  });
+
+  it('delivers the payload to the latest onDecode, not the one from first render', async () => {
+    mockCamera();
+    readBarcodes.mockResolvedValue([{ text: 'LATE|PAYLOAD' }] as any);
+    const stale = vi.fn();
+    const fresh = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ cb }: { cb: (p: string) => void }) => useBadgeDecoder({ onDecode: cb }),
+      { initialProps: { cb: stale } }
+    );
+    attachVideo(result.current.videoRef);
+    rerender({ cb: fresh });
+    await act(async () => { await result.current.start(); });
+    await waitFor(() => expect(fresh).toHaveBeenCalledWith('LATE|PAYLOAD'));
+    expect(stale).not.toHaveBeenCalled();
+  });
+
+  it('releases a stream that arrives after stop() was already called', async () => {
+    // Unmount (or StrictMode's mount/unmount/mount) can run stop() while
+    // getUserMedia is still waiting on the permission prompt. That late
+    // stream must be stopped on arrival, or the camera LED stays lit forever.
+    let resolveStream: (s: unknown) => void = () => {};
+    const track = { stop: vi.fn(), getCapabilities: () => ({}), applyConstraints: vi.fn() };
+    const stream = { getTracks: () => [track], getVideoTracks: () => [track] };
+    (navigator as any).mediaDevices = {
+      getUserMedia: vi.fn(() => new Promise((r) => { resolveStream = r; })),
+    };
+    const { result } = renderHook(() => useBadgeDecoder({ onDecode: vi.fn() }));
+    attachVideo(result.current.videoRef);
+
+    let pending: Promise<void> = Promise.resolve();
+    act(() => { pending = result.current.start(); });
+    act(() => { result.current.stop(); });
+    await act(async () => { resolveStream(stream); await pending; });
+
+    expect(track.stop).toHaveBeenCalled();
+    expect(result.current.videoRef.current!.srcObject).toBeNull();
+    expect(result.current.state).toBe('idle');
+  });
+
+  it('detaches the stream from the <video> on stop so iOS drops the camera indicator', async () => {
+    const { stream } = mockCamera();
+    const { result } = renderHook(() => useBadgeDecoder({ onDecode: vi.fn() }));
+    attachVideo(result.current.videoRef);
+    await act(async () => { await result.current.start(); });
+    expect(result.current.videoRef.current!.srcObject).toBe(stream);
+    act(() => { result.current.stop(); });
+    expect(result.current.videoRef.current!.srcObject).toBeNull();
+  });
+
+  it('never runs two decode passes at once when a frame takes longer than the interval', async () => {
+    // tryHarder on a 1080p frame can take well over 125ms on a phone. Without
+    // an in-flight guard the interval stacks decodes and the UI freezes.
+    mockCamera();
+    readBarcodes.mockImplementation(() => new Promise(() => {}) as any);
+    const { result } = renderHook(() => useBadgeDecoder({ onDecode: vi.fn() }));
+    attachVideo(result.current.videoRef);
+    await act(async () => { await result.current.start(); });
+    await new Promise((r) => setTimeout(r, 450));
+    expect(readBarcodes).toHaveBeenCalledTimes(1);
+    act(() => { result.current.stop(); });
+  });
+
+  it('releases the camera when the app is backgrounded and reopens it on return', async () => {
+    // iOS kills the capture session when a PWA goes to the background and
+    // hands back a frozen or black <video>. Re-acquiring on return is the
+    // only way to get frames again.
+    const { track } = mockCamera();
+    const getUserMedia = vi.mocked((navigator as any).mediaDevices.getUserMedia);
+    const { result } = renderHook(() => useBadgeDecoder({ onDecode: vi.fn() }));
+    attachVideo(result.current.videoRef);
+    await act(async () => { await result.current.start(); });
+    expect(result.current.state).toBe('scanning');
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+    expect(track.stop).toHaveBeenCalled();
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
+    await waitFor(() => expect(getUserMedia).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.state).toBe('scanning'));
+    act(() => { result.current.stop(); });
+  });
+
+  it('does not reopen the camera on return if the user had already stopped it', async () => {
+    mockCamera();
+    const getUserMedia = vi.mocked((navigator as any).mediaDevices.getUserMedia);
+    const { result } = renderHook(() => useBadgeDecoder({ onDecode: vi.fn() }));
+    attachVideo(result.current.videoRef);
+    await act(async () => { await result.current.start(); });
+    act(() => { result.current.stop(); });
+
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
+    act(() => { document.dispatchEvent(new Event('visibilitychange')); });
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    await act(async () => { document.dispatchEvent(new Event('visibilitychange')); });
+    await new Promise((r) => setTimeout(r, 50));
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
   });
 });

@@ -86,3 +86,15 @@ describe('BadgeScanner', () => {
     expect(onClose).toHaveBeenCalled();
   });
 });
+
+describe('BadgeScanner camera ownership', () => {
+  beforeEach(() => { vi.clearAllMocks(); decoder.state = 'scanning'; decoder.error = null; });
+
+  it('starts the camera once on mount and stops it on unmount', () => {
+    const { unmount } = setup();
+    expect(decoder.start).toHaveBeenCalledTimes(1);
+    expect(decoder.stop).not.toHaveBeenCalled();
+    unmount();
+    expect(decoder.stop).toHaveBeenCalledTimes(1);
+  });
+});

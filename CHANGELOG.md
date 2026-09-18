@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.23.1] - 2026-09-18 - Badge scanner camera fixes
+
+### Fixed
+- Badge scanner reopened the camera on every render and leaked every stream
+  but the last, so the phone's camera indicator stayed lit after closing the
+  scanner and the viewfinder could go black while the camera kept recording.
+  `start`/`stop` are now stable, late-arriving streams are discarded, and
+  `stop` detaches the stream from the `<video>` (iOS keeps the indicator on
+  otherwise).
+- Decode passes no longer stack when a frame takes longer than the 125ms
+  interval.
+- Camera is released when the PWA goes to the background and re-acquired on
+  return; iOS otherwise hands back a frozen or black viewfinder.
+- zxing-wasm's decoder binary is now bundled and served from the app origin
+  instead of fetched from jsdelivr, so scanning works with no outside network.
+
 ## [2.23.0] - 2026-09-16 - Badge scanning
 
 ### Added
