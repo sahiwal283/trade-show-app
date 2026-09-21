@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.24.1] - 2026-09-21 - Argo favicon and Authentik launcher icon
+
+### Changed
+- Favicon redrawn as the in-app brand mark (brand-to-accent gradient tile
+  with the receipt glyph) and shipped at 16/32/48 px alongside the SVG.
+  PWA and Apple touch icons regenerated from the same master so the home
+  screen matches the tab icon.
+- Authentik "Argo" application now carries the same favicon as its launcher
+  icon and launches at argo.booute.duckdns.org. `scripts/authentik/set-app-icon.py`
+  applies the icon; the provisioning script keeps the new launch URL.
+
 ## [2.24.0] - 2026-09-18 - Multi-format badge scanning
 
 ### Added

@@ -127,7 +127,9 @@ CLIENT_SECRET=$(echo "$PROVIDER" | python3 -c "import json,sys; print(json.load(
 echo "OK provider pk=$PROVIDER_PK client_id=$CLIENT_ID"
 
 echo "=== 4/6 Create or update application 'trade-show' (display name Argo; slug untouched) ==="
-APP_BODY="{\"name\": \"Argo\", \"slug\": \"trade-show\", \"provider\": $PROVIDER_PK, \"meta_launch_url\": \"https://expapp.duckdns.org\"}"
+# The application icon (favicon.svg) is set separately by set-app-icon.py; APP_BODY
+# deliberately omits meta_icon so this PATCH never clears it.
+APP_BODY="{\"name\": \"Argo\", \"slug\": \"trade-show\", \"provider\": $PROVIDER_PK, \"meta_launch_url\": \"https://argo.booute.duckdns.org\"}"
 if AK GET "/core/applications/trade-show/" >/dev/null 2>&1; then
   AK PATCH "/core/applications/trade-show/" "$APP_BODY" >/dev/null
 else

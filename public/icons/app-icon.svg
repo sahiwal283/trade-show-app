@@ -1,51 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Argo">
   <defs>
-    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#10B981;stop-opacity:1" />
-    </linearGradient>
-    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#F0F9FF;stop-opacity:0.95" />
+    <linearGradient id="argo-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#10b981"/>
     </linearGradient>
   </defs>
-  
-  <!-- Background with rounded corners -->
-  <rect width="512" height="512" rx="115" ry="115" fill="url(#bgGrad)"/>
-  
-  <!-- Receipt icon -->
-  <g transform="translate(256, 256)">
-    <!-- Receipt paper -->
-    <rect x="-120" y="-140" width="240" height="280" rx="12" ry="12" fill="url(#iconGrad)" opacity="0.98"/>
-    
-    <!-- Receipt top zigzag -->
-    <path d="M -120,-140 L -100,-125 L -80,-140 L -60,-125 L -40,-140 L -20,-125 L 0,-140 L 20,-125 L 40,-140 L 60,-125 L 80,-140 L 100,-125 L 120,-140 L 120,-152 L -120,-152 Z" fill="url(#iconGrad)"/>
-    
-    <!-- Receipt bottom zigzag -->
-    <path d="M -120,140 L -100,125 L -80,140 L -60,125 L -40,140 L -20,125 L 0,140 L 20,125 L 40,140 L 60,125 L 80,140 L 100,125 L 120,140 L 120,152 L -120,152 Z" fill="url(#iconGrad)"/>
-    
-    <!-- Dollar sign -->
-    <g transform="translate(0, -20)">
-      <!-- Dollar vertical line top -->
-      <rect x="-8" y="-60" width="16" height="25" rx="3" ry="3" fill="#3B82F6" opacity="0.9"/>
-      <!-- Dollar S curve -->
-      <path d="M -35,-35 Q -35,-50 -15,-50 Q 5,-50 5,-35 Q 5,-20 -15,-20 Q -35,-20 -35,-5 Q -35,10 -15,10 Q 5,10 5,25 Q 5,40 -15,40 Q -35,40 -35,25" 
-            stroke="#10B981" stroke-width="20" fill="none" stroke-linecap="round" opacity="0.9"/>
-      <!-- Dollar vertical line bottom -->
-      <rect x="-8" y="35" width="16" height="25" rx="3" ry="3" fill="#3B82F6" opacity="0.9"/>
-    </g>
-    
-    <!-- Receipt lines -->
-    <rect x="-90" y="60" width="60" height="6" rx="3" ry="3" fill="#3B82F6" opacity="0.3"/>
-    <rect x="-90" y="75" width="80" height="6" rx="3" ry="3" fill="#3B82F6" opacity="0.3"/>
-    <rect x="-90" y="90" width="70" height="6" rx="3" ry="3" fill="#10B981" opacity="0.3"/>
-    <rect x="-90" y="105" width="50" height="6" rx="3" ry="3" fill="#3B82F6" opacity="0.3"/>
-    
-    <!-- Total line -->
-    <rect x="-90" y="118" width="180" height="3" rx="1.5" ry="1.5" fill="#10B981" opacity="0.4"/>
+  <!-- Full-bleed master for the PWA / home-screen PNGs (purpose "any maskable").
+       The glyph sits inside the maskable safe zone (inner 80%) so OS masks never clip it.
+       Same mark as favicon.svg and the in-app brand tile. -->
+  <rect width="512" height="512" fill="url(#argo-bg)"/>
+  <g transform="translate(128 128) scale(10.6667)" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/>
+    <path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/>
+    <path d="M12 17.5v-11"/>
   </g>
-  
-  <!-- Subtle shadow effect -->
-  <ellipse cx="256" cy="480" rx="180" ry="20" fill="#000000" opacity="0.1"/>
 </svg>
-
