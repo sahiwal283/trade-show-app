@@ -58,7 +58,7 @@ Key service boundaries (`backend/src/services/`):
 - **`AuthentikOidcService.ts`** — OIDC login against Authentik; env-gated (dormant unless all four `AUTHENTIK_*`/`OIDC_REDIRECT_URI` vars are set), which doubles as the rollback switch.
 - **`services/booth/`** (`BoothInventoryService.ts`, `BoothManifestService.ts`, `BoothMovementService.ts`, `BoothPackingService.ts`) — booth catalog, storage/manifest tracking, and the packing checklist, including idempotent replay of movement events keyed by a derived idempotency key.
 - **`PushService.ts`** — Web Push notifications (VAPID); reports disabled and no-ops silently when VAPID keys are absent, so push is optional infrastructure everywhere it's called.
-- **`services/badge/`** (`BadgeScanService.ts`, `BadgeCrmPushService.ts`, `badgeCrmConfig.ts`, `badgeCrmFields.ts`, `BadgeExportService.ts`) — PDF417 badge-scan validation, server-side brand resolution, and the per-brand Zoho CRM push worker; see §8.
+- **`services/badge/`** (`BadgeScanService.ts`, `BadgeCrmPushService.ts`, `badgeCrmConfig.ts`, `badgeCrmFields.ts`, `BadgeWebhookService.ts`, `badgeWebhookConfig.ts`, `BadgeExportService.ts`) — PDF417 badge-scan validation, server-side brand resolution, the per-brand Zoho CRM push worker, and the raw-payload partner webhook; see §8.
 
 ### Expense submission under Midas
 
@@ -147,6 +147,8 @@ sequenceDiagram
     participant DB as badge_scans
     participant Push as BadgeCrmPushService (worker)
     participant CRM as Zoho CRM (per brand)
+    participant Hook as BadgeWebhookService
+    participant NK as Nirvana Kulture CRM function
 
     U->>Cam: Scan badge (company already selected)
     Cam->>P: raw PDF417 payload
@@ -159,6 +161,9 @@ sequenceDiagram
     BSS->>DB: insert (crm_status = pending, or 'skipped' if no Zoho destination)
     DB-->>API: stored scan
     API-->>U: lead appears in Leads list
+    API-)Hook: deliver(scan) — off the request path
+    Hook->>NK: POST {"data": raw_payload} (Nirvana Kulture scans only)
+    Hook->>DB: webhook_status = delivered | failed (+ reason)
 
     loop every PUSH_INTERVAL_MS
         Push->>DB: claim pending scans, group by brand
@@ -166,10 +171,18 @@ sequenceDiagram
         CRM-->>Push: success, or transient/permanent failure
         Push->>DB: record crm_status + reason (transient token failure does not consume a retry attempt)
     end
+
+    loop every SWEEP_INTERVAL_MS
+        Hook->>DB: claim webhook rows still pending (past the immediate-attempt grace) or failed within backoff
+        Hook->>NK: retry POST
+        Hook->>DB: record webhook_status
+    end
 ```
 
 Every scan is attributed to the company the rep represents at the moment of scanning; `BadgeScanService` resolves that company to a `brand` server-side — the client never chooses which Zoho CRM org receives a lead. A company with no Zoho destination (`zohoEnabled: false`) still yields a captured, exportable lead, stored with `crm_status = 'skipped'` rather than rejected. Scans dedupe on `(event_id, entity, payload_hash)`: the same badge scanned again for the same company at the same event is a no-op, but two brands sharing a booth can each legitimately capture the same attendee as two separate leads.
 
 `BadgeCrmPushService` runs as a background worker (not on the request path — scanning never blocks on Zoho) that claims eligible rows, groups them per brand, and upserts each batch into that brand's Zoho CRM Tradeshows module using that brand's own refresh token, retrying transient failures with backoff. CRM field API names are discovered per brand and cached (`badgeCrmFields.ts`) rather than hardcoded, since the Tradeshows module is a custom module whose field names vary by org. Pushed records are later pulled back into `crm_leads` by the existing nightly `ZohoCrmLeadsService` sync, so a scanned lead flows through the same revenue-attribution pipeline (`LeadConversionService`) as any other lead.
 
-Routes live at `/api/badge-scans` (list, create, get, patch, retry-push, export); export (`BadgeExportService`) produces CSV or XLSX with every captured field plus CRM status, so a show's leads are usable even when no CRM push ever succeeds. New table: `badge_scans` (migration `041_create_badge_scans.sql`), `raw_payload` never discarded.
+Separately from the CRM upsert, `BadgeWebhookService` forwards each scan taken on behalf of a **webhook brand** — today only Nirvana Kulture, fixed in `badgeWebhookConfig.ts` — to that partner's own endpoint as the raw badge string, `{"data": "<raw_payload>"}`, with no reshaping: the partner runs its own transcription. The URL (a Zoho CRM function carrying the partner's API key in its query string) comes from `NIRVANA_KULTURE_SCAN_WEBHOOK_URL` and is never logged. The create route fires one attempt immediately after the row is stored, without holding the 201; a five-minute sweep retries rows that attempt could not settle, with backoff and a five-attempt cap. `webhook_status` is decided by brand at capture — `pending` for a webhook brand, `skipped` for everyone else — so other companies' attendee data never leaves the app, and the upsert never resets it, so a rescan or an offline replay cannot send a badge twice.
+
+Routes live at `/api/badge-scans` (list, create, get, patch, retry-push, export); export (`BadgeExportService`) produces CSV or XLSX with every captured field plus CRM status, so a show's leads are usable even when no CRM push ever succeeds. New table: `badge_scans` (migration `041_create_badge_scans.sql`), `raw_payload` never discarded; webhook bookkeeping columns added in `042_add_badge_scan_webhook_columns.sql`.

@@ -19,6 +19,7 @@ import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/errors';
 import { badgeScanService } from '../services/badge/BadgeScanService';
 import { badgeExportService } from '../services/badge/BadgeExportService';
+import { badgeWebhookService } from '../services/badge/BadgeWebhookService';
 import { SCAN_ROLES } from '../config/badgeScanRoles';
 
 const router = express.Router();
@@ -32,6 +33,10 @@ export async function handleCreateScan(req: AuthRequest, res: Response): Promise
   // scanned_by comes from the token, never from the body.
   const scan = await badgeScanService.create(req.body, req.user!.id);
   res.status(201).json(scan);
+  // Partner delivery is off the request path: the rep's scan is stored and
+  // acknowledged whether or not the partner is reachable. deliver() no-ops
+  // for non-webhook brands and for replays of already-delivered rows.
+  void badgeWebhookService.deliver(scan);
 }
 
 export async function handleListScans(req: AuthRequest, res: Response): Promise<void> {

@@ -41,6 +41,10 @@ export interface BadgeScan {
   crm_error: string | null;
   crm_attempts: number;
   crm_last_attempt_at: string | null;
+  webhook_status: 'pending' | 'delivered' | 'failed' | 'skipped';
+  webhook_error: string | null;
+  webhook_attempts: number;
+  webhook_last_attempt_at: string | null;
   scanned_at: string;
   created_at: string;
   updated_at: string;
@@ -69,6 +73,10 @@ export interface PushResult {
   terminal?: boolean;
 }
 
+export type WebhookResult =
+  | { status: 'delivered' }
+  | { status: 'failed'; error: string };
+
 /** Columns a caller may write. Anything else in the payload is ignored. */
 const WRITABLE = [
   'event_id', 'scanned_by', 'entity', 'brand', 'client_scan_id',
@@ -76,7 +84,7 @@ const WRITABLE = [
   'parse_confidence', 'badge_id', 'salutation', 'first_name', 'last_name',
   'title', 'company', 'email', 'phone', 'city', 'state', 'postal_code',
   'country', 'attendee_type', 'fields', 'notes', 'crm_status', 'crm_error',
-  'scanned_at',
+  'webhook_status', 'scanned_at',
 ] as const;
 
 /** Parsed contact columns a user may correct after the fact. */
@@ -87,6 +95,14 @@ const EDITABLE = [
 ] as const;
 
 const MAX_CRM_ATTEMPTS = 5;
+const MAX_WEBHOOK_ATTEMPTS = 5;
+/**
+ * A freshly stored scan is delivered straight from the create route; the
+ * sweep must not race that attempt and send the same scan twice, so a
+ * never-attempted row is only claimable once it is old enough for the
+ * immediate attempt to have settled or died with the process.
+ */
+const WEBHOOK_IMMEDIATE_GRACE = "interval '2 minutes'";
 
 export class BadgeScanRepository extends BaseRepository<BadgeScan> {
   protected tableName = 'badge_scans';
@@ -99,9 +115,11 @@ export class BadgeScanRepository extends BaseRepository<BadgeScan> {
     const params = cols.map((c) => data[c]);
 
     // Re-scanning a badge updates the decoded fields but must not erase a
-    // human-authored note, so notes coalesce rather than overwrite.
+    // human-authored note, so notes coalesce rather than overwrite. Nor does
+    // it reset webhook_status: the partner already received this badge, and
+    // a rescan is not a new lead.
     const updates = cols
-      .filter((c) => c !== 'event_id' && c !== 'entity' && c !== 'payload_hash' && c !== 'client_scan_id' && c !== 'notes')
+      .filter((c) => !['event_id', 'entity', 'payload_hash', 'client_scan_id', 'notes', 'webhook_status'].includes(c))
       .map((c) => `${c} = EXCLUDED.${c}`);
 
     // Always preserve existing notes, even if not explicitly updated.
@@ -233,6 +251,56 @@ export class BadgeScanRepository extends BaseRepository<BadgeScan> {
               crm_last_attempt_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
         WHERE id = $2`,
       [result.error ?? 'Unknown CRM error', id]
+    );
+  }
+
+  /**
+   * Scans owed to a partner webhook: never-attempted rows past the immediate
+   * attempt's grace, plus failed rows whose backoff has elapsed. 'skipped'
+   * rows are not targets by design and 'delivered' rows are done.
+   */
+  async claimPendingWebhook(limit: number): Promise<BadgeScan[]> {
+    const result = await this.executeQuery<BadgeScan>(
+      `SELECT * FROM badge_scans
+        WHERE brand IS NOT NULL
+          AND (
+            (
+              webhook_status = 'pending'
+              AND webhook_last_attempt_at IS NULL
+              AND created_at < now() - ${WEBHOOK_IMMEDIATE_GRACE}
+            )
+            OR (
+              webhook_status = 'failed'
+              AND webhook_attempts < ${MAX_WEBHOOK_ATTEMPTS}
+              AND webhook_last_attempt_at < now() - (interval '1 minute' * power(3, webhook_attempts))
+            )
+          )
+        ORDER BY scanned_at ASC
+        LIMIT $1`,
+      [limit]
+    );
+    return result.rows;
+  }
+
+  async markWebhookResult(id: string, result: WebhookResult): Promise<void> {
+    if (result.status === 'delivered') {
+      await this.executeQuery(
+        `UPDATE badge_scans
+            SET webhook_status = 'delivered', webhook_error = NULL,
+                webhook_attempts = webhook_attempts + 1,
+                webhook_last_attempt_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+          WHERE id = $1`,
+        [id]
+      );
+      return;
+    }
+    await this.executeQuery(
+      `UPDATE badge_scans
+          SET webhook_status = 'failed', webhook_error = $1,
+              webhook_attempts = webhook_attempts + 1,
+              webhook_last_attempt_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2`,
+      [result.error, id]
     );
   }
 }

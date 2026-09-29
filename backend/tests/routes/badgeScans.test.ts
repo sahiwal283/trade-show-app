@@ -110,3 +110,25 @@ describe('badge scan retry', () => {
     );
   });
 });
+
+describe('badge scan create → partner webhook', () => {
+  it('hands the stored scan to the webhook service without holding the response', async () => {
+    const { badgeWebhookService } = await import('../../src/services/badge/BadgeWebhookService');
+    let release!: () => void;
+    const deliver = vi
+      .spyOn(badgeWebhookService, 'deliver')
+      .mockReturnValue(new Promise<void>((resolve) => { release = resolve; }));
+    const res = mockRes();
+
+    await handleCreateScan(
+      { user: { id: 'user-1', role: 'salesperson' }, body: { eventId: 'ev-1', entity: 'Nirvana Kulture', rawPayload: 'RAW' } } as any,
+      res
+    );
+
+    // Response already sent while delivery is still in flight.
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(deliver).toHaveBeenCalledWith(expect.objectContaining({ id: 'scan-1', rawPayload: 'RAW' }));
+    release();
+    deliver.mockRestore();
+  });
+});

@@ -42,6 +42,7 @@ import { expenseMessageScanner } from './services/ExpenseMessageScanner';
 import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { leadConversionService } from './services/LeadConversionService';
 import { badgeCrmPushService } from './services/badge/BadgeCrmPushService';
+import { badgeWebhookService } from './services/badge/BadgeWebhookService';
 import { runMigrations } from './database/migrate';
 
 dotenv.config();
@@ -237,6 +238,10 @@ const startServer = () => {
     // Badge scan → per-brand Zoho CRM push, with retry/backoff; idles until
     // at least one brand has a CRM refresh token configured
     badgeCrmPushService.start();
+
+    // Badge scan → partner webhook retry sweep; idles until a brand has a
+    // <BRAND>_SCAN_WEBHOOK_URL configured
+    badgeWebhookService.start();
   });
 };
 

@@ -9,6 +9,8 @@
  *     to choose which CRM receives a lead
  *   - a company with no Zoho destination yields a captured, 'skipped' scan
  *     rather than a rejection
+ *   - webhook_status is decided by brand at capture: only a webhook brand's
+ *     scans are ever owed to a partner; everyone else's are 'skipped'
  *
  * It also owns who may SEE a scan. Role alone is not enough: every role in
  * SCAN_ROLES could otherwise read, edit and requeue any event's leads. Reads
@@ -23,6 +25,7 @@ import { getPicklists } from '../picklists/PicklistService';
 import { ValidationError, NotFoundError, AuthorizationError } from '../../utils/errors';
 import { isEventParticipant } from '../EventParticipantService';
 import { VIEW_ALL_ROLES } from '../../config/badgeScanRoles';
+import { isScanWebhookBrand } from './badgeWebhookConfig';
 
 /** Contact fields a client may supply. Anything else is dropped. */
 const CONTACT_FIELDS = [
@@ -140,6 +143,7 @@ export class BadgeScanService {
       crm_error: brand
         ? null
         : `No Zoho CRM is configured for "${known.name}" — lead captured locally and included in exports`,
+      webhook_status: isScanWebhookBrand(brand) ? 'pending' : 'skipped',
       ...contact,
     } as Partial<BadgeScan>);
   }

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.25.0] - 2026-09-29 - Nirvana Kulture scan webhook
+
+### Added
+- Every badge scanned on behalf of Nirvana Kulture is POSTed, unmodified, to
+  their Zoho CRM function as `{"data": "<raw badge string>"}` so their own
+  automations can transcribe it. Delivery runs off the request path
+  (`BadgeWebhookService`): attempted immediately after the scan is stored,
+  then retried with backoff by a five-minute sweep, with the outcome kept on
+  the row (`webhook_status`, `webhook_error`, `webhook_attempts`). Offline
+  replays and rescans never send a badge twice. Scans for any other company
+  are marked `skipped` and never leave the app.
+- Migration `042_add_badge_scan_webhook_columns.sql`; existing rows are
+  marked `skipped` rather than replayed at the partner.
+- Backend env: `NIRVANA_KULTURE_SCAN_WEBHOOK_URL` (carries the partner's API
+  key; unset means the feature idles and Nirvana scans wait as `pending`).
+
 ## [2.24.1] - 2026-09-21 - Argo favicon and Authentik launcher icon
 
 ### Changed
