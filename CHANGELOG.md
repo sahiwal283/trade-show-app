@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.26.0] - 2026-10-02 - Scanner email on the Nirvana Kulture webhook
+
+### Changed
+- For the 13-field pipe-delimited badge format, the webhook's `data` string
+  now carries the scanning rep's email as field 14
+  (`<raw badge>|<scanner email>`) so Nirvana's `scanNACS` function can assign
+  the Tradeshow record to the matching CRM user. The email is resolved from
+  the scan's `scanned_by` user at delivery time, trimmed and lowercased; a
+  missing user or an email containing `|` or whitespace yields an empty
+  field 14. The stored `raw_payload` is unchanged and other badge formats
+  pass through as before. A user-lookup failure takes the existing
+  failed/retry path rather than posting without the email.
+  Contributed by Nirvana Kulture (#2).
+
 ## [2.25.0] - 2026-09-29 - Nirvana Kulture scan webhook
 
 ### Added

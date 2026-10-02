@@ -2,8 +2,10 @@
  * Badge Scan -> partner webhook.
  *
  * Nirvana Kulture runs its own CRM automation and asked to receive every
- * scan taken on its behalf as-is: a POST of {"data": "<raw badge string>"}
- * to a Zoho CRM function URL. They parse it; we do not reshape it. This is
+ * scan taken on its behalf via a POST to a Zoho CRM function URL. For the
+ * 13-field pipe-delimited badge format, data is "<raw badge string>|<scanner email>".
+ * The original badge fields stay intact; other payload formats pass through unchanged.
+ * A missing scanner email produces an empty final field. This is
  * independent of the per-brand Zoho upsert in BadgeCrmPushService, which
  * keeps filing parsed leads exactly as before.
  *
@@ -20,6 +22,7 @@
 
 import axios from 'axios';
 import { badgeScanRepository, BadgeScan } from '../../database/repositories/BadgeScanRepository';
+import { userRepository } from '../../database/repositories/UserRepository';
 import { getScanWebhookUrl, configuredWebhookBrands } from './badgeWebhookConfig';
 
 const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
@@ -120,9 +123,21 @@ export class BadgeWebhookService {
 
     summary.attempted += 1;
     try {
+      let data = scan.raw_payload;
+      if (data.split('|').length === 13) {
+        // Resolve the authenticated scanner from the saved row for both
+        // immediate delivery and retries. Never change the stored raw badge.
+        const scanner = scan.scanned_by
+          ? await userRepository.findById(scan.scanned_by)
+          : null;
+        const email = (scanner?.email ?? '').trim().toLowerCase();
+        // Do not let an invalid profile value add extra fields or line breaks.
+        const scannerEmail = email.includes('@') && !/[|\s]/.test(email) ? email : '';
+        data = `${data}|${scannerEmail}`;
+      }
       const response = await axios.post(
         url,
-        { data: scan.raw_payload },
+        { data },
         { headers: { 'Content-Type': 'application/json' }, timeout: REQUEST_TIMEOUT_MS }
       );
       // Zoho functions answer 200 with a body code; anything but "success"
