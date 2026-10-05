@@ -135,9 +135,13 @@ export class BadgeWebhookService {
         const scannerEmail = email.includes('@') && !/[|\s]/.test(email) ? email : '';
         data = `${data}|${scannerEmail}`;
       }
+      // UPDATE: 10052026 - NOTES ADD TMM
       const response = await axios.post(
         url,
-        { data },
+        {
+          data,
+          notes: scan.notes ?? '',
+        },
         { headers: { 'Content-Type': 'application/json' }, timeout: REQUEST_TIMEOUT_MS }
       );
       // Zoho functions answer 200 with a body code; anything but "success"
