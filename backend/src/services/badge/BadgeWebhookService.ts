@@ -5,7 +5,9 @@
  * scan taken on its behalf via a POST to a Zoho CRM function URL. For the
  * 13-field pipe-delimited badge format, data is "<raw badge string>|<scanner email>".
  * The original badge fields stay intact; other payload formats pass through unchanged.
- * A missing scanner email produces an empty final field. This is
+ * A missing scanner email produces an empty final field. The rep's note rides
+ * alongside as "notes" (empty string when there is none), for every format,
+ * as it stood when the scan was delivered — later edits are not re-sent. This is
  * independent of the per-brand Zoho upsert in BadgeCrmPushService, which
  * keeps filing parsed leads exactly as before.
  *
@@ -135,13 +137,11 @@ export class BadgeWebhookService {
         const scannerEmail = email.includes('@') && !/[|\s]/.test(email) ? email : '';
         data = `${data}|${scannerEmail}`;
       }
-      // UPDATE: 10052026 - NOTES ADD TMM
+      // The rep's note travels beside the badge string, never inside it, so
+      // free text cannot shift the partner's field positions.
       const response = await axios.post(
         url,
-        {
-          data,
-          notes: scan.notes ?? '',
-        },
+        { data, notes: scan.notes ?? '' },
         { headers: { 'Content-Type': 'application/json' }, timeout: REQUEST_TIMEOUT_MS }
       );
       // Zoho functions answer 200 with a body code; anything but "success"

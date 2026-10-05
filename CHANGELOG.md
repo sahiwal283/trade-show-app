@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.27.0] - 2026-10-05 - Rep notes on the Nirvana Kulture webhook
+
+### Changed
+- The webhook body gains a second key, `notes`, carrying the note the rep
+  typed on the scan: `{"data": "...", "notes": "..."}`. It is sent for every
+  badge format and is an empty string when the scan has no note. `data` is
+  unchanged, including the field-14 scanner email. The note is sent as it
+  stood at delivery; a note edited or added after a scan was delivered is not
+  re-sent. Contributed by Nirvana Kulture (#3).
+
 ## [2.26.0] - 2026-10-02 - Scanner email on the Nirvana Kulture webhook
 
 ### Changed

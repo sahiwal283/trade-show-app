@@ -55,7 +55,7 @@ describe('BadgeWebhookService.deliver', () => {
     const row = scan({ raw_payload: BADGE, scanned_by: 'user-1' });
     await service.deliver(row);
     expect(userRepository.findById).toHaveBeenCalledWith('user-1');
-    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({ data: `${BADGE}|rep@example.com` });
+    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({ data: `${BADGE}|rep@example.com`, notes: '' });
     expect(row.raw_payload).toBe(BADGE);
   });
 
@@ -63,7 +63,7 @@ describe('BadgeWebhookService.deliver', () => {
     vi.mocked(userRepository.findById).mockResolvedValue(null);
     vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { code: 'success' } });
     await service.deliver(scan({ raw_payload: BADGE, scanned_by }));
-    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({ data: `${BADGE}|` });
+    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({ data: `${BADGE}|`, notes: '' });
     if (scanned_by === null) expect(userRepository.findById).not.toHaveBeenCalled();
   });
 
@@ -71,7 +71,7 @@ describe('BadgeWebhookService.deliver', () => {
     vi.mocked(userRepository.findById).mockResolvedValue({ email } as any);
     vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { code: 'success' } });
     await service.deliver(scan({ raw_payload: BADGE, scanned_by: 'user-1' }));
-    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({ data: `${BADGE}|` });
+    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({ data: `${BADGE}|`, notes: '' });
   });
 
   it('preserves blank badge fields and their positions', async () => {
@@ -96,7 +96,7 @@ describe('BadgeWebhookService.deliver', () => {
     vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { code: 'success' } });
     await service.deliver(scan({ raw_payload, scanned_by: 'user-1' }));
     expect(userRepository.findById).not.toHaveBeenCalled();
-    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({ data: raw_payload });
+    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({ data: raw_payload, notes: '' });
   });
 
   it('POSTs the raw payload as the JSON string field "data" and marks the row delivered', async () => {
@@ -107,11 +107,36 @@ describe('BadgeWebhookService.deliver', () => {
     expect(axios.post).toHaveBeenCalledTimes(1);
     const [url, body, options] = vi.mocked(axios.post).mock.calls[0];
     expect(url).toBe(URL);
-    // The receiver parses the badge itself: the body is exactly the raw
-    // barcode string under "data", never our parsed fields.
-    expect(body).toEqual({ data: 'A1B2C3\tJane\tDoe\tjane@example.com' });
+    // The receiver parses the badge itself: "data" is exactly the raw
+    // barcode string, never our parsed fields.
+    expect(body).toEqual({ data: 'A1B2C3\tJane\tDoe\tjane@example.com', notes: '' });
     expect(options?.headers).toMatchObject({ 'Content-Type': 'application/json' });
     expect(badgeScanRepository.markWebhookResult).toHaveBeenCalledWith('scan-1', { status: 'delivered' });
+  });
+
+  it('sends the rep\'s note verbatim under "notes", separate from the badge string', async () => {
+    vi.mocked(userRepository.findById).mockResolvedValue({ email: 'rep@example.com' } as any);
+    vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { code: 'success' } });
+    const notes = 'Wants 2 pallets | follow up\nafter the show';
+    await service.deliver(scan({ raw_payload: BADGE, scanned_by: 'user-1', notes }));
+    // A note may hold pipes or line breaks; it never touches the field count of "data".
+    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({ data: `${BADGE}|rep@example.com`, notes });
+  });
+
+  it.each([null, undefined])('sends an empty "notes" string when the scan has note %s', async (notes) => {
+    vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { code: 'success' } });
+    await service.deliver(scan({ notes }));
+    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({
+      data: 'A1B2C3\tJane\tDoe\tjane@example.com', notes: '',
+    });
+  });
+
+  it('sends notes for badge formats that get no scanner email', async () => {
+    vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { code: 'success' } });
+    await service.deliver(scan({ raw_payload: 'https://example.com/badge/123', notes: 'Met at booth' }));
+    expect(vi.mocked(axios.post).mock.calls[0][1]).toEqual({
+      data: 'https://example.com/badge/123', notes: 'Met at booth',
+    });
   });
 
   it('leaves a target brand\'s scan pending when its URL is not configured', async () => {
@@ -177,15 +202,15 @@ describe('BadgeWebhookService.deliver', () => {
 });
 
 describe('BadgeWebhookService.sweepOnce', () => {
-  it('includes scanner email on retries without appending twice', async () => {
+  it('includes scanner email and notes on retries without appending twice', async () => {
     vi.mocked(userRepository.findById).mockResolvedValue({ email: 'rep@example.com' } as any);
-    const row = scan({ raw_payload: BADGE, scanned_by: 'user-1', webhook_status: 'failed' });
+    const row = scan({ raw_payload: BADGE, scanned_by: 'user-1', webhook_status: 'failed', notes: 'Call Monday' });
     vi.mocked(badgeScanRepository.claimPendingWebhook).mockResolvedValue([row]);
     vi.mocked(axios.post).mockResolvedValue({ status: 200, data: { code: 'success' } });
     await service.sweepOnce();
     await service.sweepOnce();
     for (const call of vi.mocked(axios.post).mock.calls) {
-      expect(call[1]).toEqual({ data: `${BADGE}|rep@example.com` });
+      expect(call[1]).toEqual({ data: `${BADGE}|rep@example.com`, notes: 'Call Monday' });
     }
     expect(row.raw_payload).toBe(BADGE);
     vi.mocked(badgeScanRepository.claimPendingWebhook).mockResolvedValue([]);
