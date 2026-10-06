@@ -8,12 +8,13 @@
  * record while that person is still standing in front of them.
  */
 
-import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Copy } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { AlertTriangle, Camera, Copy } from 'lucide-react';
 import { ScannedBadge } from './BadgeScanner';
 import { REVIEW_CONFIDENCE_THRESHOLD, BadgeField } from '../../utils/badge/parseBadgePayload';
-import { BadgeScanRecord } from '../../utils/badgeApi';
+import { BadgeScanRecord, badgeApi } from '../../utils/badgeApi';
 import { formatLabel } from '../../utils/badge/decodeBadge';
+import { parseCardText } from '../../utils/badge/parseCardText';
 
 const EDITABLE_FIELDS: Array<{ key: BadgeField; label: string }> = [
   { key: 'first_name', label: 'First name' },
@@ -45,6 +46,48 @@ export const ScanReviewSheet: React.FC<ScanReviewSheetProps> = ({
     () => ({ ...(badge?.parsed.fields ?? {}) } as Record<string, string>)
   );
   const [notes, setNotes] = useState('');
+  const [cardStatus, setCardStatus] = useState<{ reading: boolean; message: string | null }>(
+    { reading: false, message: null }
+  );
+  const cardInput = useRef<HTMLInputElement>(null);
+  // Card OCR takes seconds and the rep keeps typing meanwhile: the merge must
+  // see the form as it is when the text comes back, not as it was at the tap.
+  const latestContact = useRef(contact);
+  latestContact.current = contact;
+  const latestPayload = useRef(badge?.rawPayload);
+  latestPayload.current = badge?.rawPayload;
+
+  /**
+   * A lead-retrieval badge gives a name and a company; the card gives the
+   * rest. Card values only ever fill fields that are still empty — the badge
+   * and the rep's own typing are the more trusted sources.
+   */
+  const readCard = async (photo: File) => {
+    const payloadAtStart = badge?.rawPayload;
+    setCardStatus({ reading: true, message: null });
+    try {
+      const fromCard = parseCardText(await badgeApi.readCard(photo));
+      if (latestPayload.current !== payloadAtStart) return; // a different lead is on screen now
+      const merged = { ...latestContact.current };
+      const added: string[] = [];
+      for (const { key, label } of EDITABLE_FIELDS) {
+        const value = fromCard[key];
+        if (!value || (merged[key] ?? '').trim()) continue;
+        merged[key] = value;
+        added.push(label.toLowerCase());
+      }
+      setContact(merged);
+      setCardStatus({
+        reading: false,
+        message: added.length > 0
+          ? `Added from the card: ${added.join(', ')}. Check them before saving.`
+          : 'Nothing new could be read from that card. Fill in the rest by hand.',
+      });
+    } catch {
+      if (latestPayload.current !== payloadAtStart) return;
+      setCardStatus({ reading: false, message: 'Could not read the card. Check your connection and try again, or type the details.' });
+    }
+  };
 
   // Defensive reset: if this component is ever reused for a different badge
   // without unmounting (today's LeadsPage always unmounts between scans, but
@@ -56,6 +99,7 @@ export const ScanReviewSheet: React.FC<ScanReviewSheetProps> = ({
   useEffect(() => {
     setContact({ ...(badge?.parsed.fields ?? {}) } as Record<string, string>);
     setNotes('');
+    setCardStatus({ reading: false, message: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally keyed on payload identity only
   }, [badge?.rawPayload]);
 
@@ -97,6 +141,34 @@ export const ScanReviewSheet: React.FC<ScanReviewSheetProps> = ({
             <span>Low-confidence decode - check these fields before saving.</span>
           </div>
         )}
+
+        <div className="mt-3">
+          <input
+            ref={cardInput}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            aria-label="Business card photo"
+            className="hidden"
+            onChange={(e) => {
+              const photo = e.target.files?.[0];
+              e.target.value = ''; // let the same photo be picked again after a failure
+              if (photo) void readCard(photo);
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => cardInput.current?.click()}
+            disabled={cardStatus.reading}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-stone-300 px-4 py-3 disabled:opacity-50"
+          >
+            <Camera className="h-4 w-4" />
+            {cardStatus.reading ? 'Reading card…' : 'Scan business card'}
+          </button>
+          {cardStatus.message && (
+            <p className="mt-1 text-sm text-stone-600" role="status">{cardStatus.message}</p>
+          )}
+        </div>
 
         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {EDITABLE_FIELDS.map(({ key, label }) => (

@@ -11,7 +11,12 @@ vi.mock('../../src/services/badge/BadgeScanService', () => ({
   },
 }));
 
-import { handleCreateScan, handleListScans, handlePatchScan, handleGetScan, handleRetryPush } from '../../src/routes/badgeScans';
+vi.mock('../../src/services/badge/BadgeCardOcrService', () => ({
+  readCardText: vi.fn(async () => 'Jordan Rivera\njordan@example.com'),
+}));
+
+import { handleCreateScan, handleListScans, handlePatchScan, handleGetScan, handleRetryPush, handleCardOcr } from '../../src/routes/badgeScans';
+import { readCardText } from '../../src/services/badge/BadgeCardOcrService';
 import { badgeScanService } from '../../src/services/badge/BadgeScanService';
 
 function mockRes() {
@@ -131,4 +136,21 @@ describe('badge scan create → partner webhook', () => {
     release();
     deliver.mockRestore();
   });
+
+  it('returns the OCR text of an uploaded business card', async () => {
+    const res = mockRes();
+    const file = { path: 'uploads/card-1.jpg', originalname: 'card.jpg', mimetype: 'image/jpeg' };
+    await handleCardOcr({ user: { id: 'user-1' }, file } as any, res);
+    expect(readCardText).toHaveBeenCalledWith(file);
+    expect(res.json).toHaveBeenCalledWith({ text: 'Jordan Rivera\njordan@example.com' });
+  });
+
+  it('rejects a card OCR request with no photo', async () => {
+    vi.mocked(readCardText).mockClear();
+    const res = mockRes();
+    await handleCardOcr({ user: { id: 'user-1' } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(readCardText).not.toHaveBeenCalled();
+  });
 });
+

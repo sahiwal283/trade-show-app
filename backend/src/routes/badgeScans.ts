@@ -20,6 +20,8 @@ import { asyncHandler } from '../utils/errors';
 import { badgeScanService } from '../services/badge/BadgeScanService';
 import { badgeExportService } from '../services/badge/BadgeExportService';
 import { badgeWebhookService } from '../services/badge/BadgeWebhookService';
+import { readCardText } from '../services/badge/BadgeCardOcrService';
+import { upload } from '../config/upload';
 import { SCAN_ROLES } from '../config/badgeScanRoles';
 
 const router = express.Router();
@@ -95,11 +97,24 @@ export async function handleGetScan(req: AuthRequest, res: Response): Promise<vo
   res.json(scan);
 }
 
+/**
+ * OCR a business card photo and hand back its text. The client parses it;
+ * nothing is stored and no scan row is touched, so there is no event to scope.
+ */
+export async function handleCardOcr(req: AuthRequest, res: Response): Promise<void> {
+  if (!req.file) {
+    res.status(400).json({ error: 'No card photo uploaded' });
+    return;
+  }
+  res.json({ text: await readCardText(req.file) });
+}
+
 export async function handleRetryPush(req: AuthRequest, res: Response): Promise<void> {
   res.json(await badgeScanService.requeueForCrm(req.params.id, req.user!));
 }
 
 router.post('/', authorize(...SCAN_ROLES), asyncHandler(handleCreateScan as any));
+router.post('/card-ocr', authorize(...SCAN_ROLES), upload.single('card'), asyncHandler(handleCardOcr as any));
 router.get('/', authorize(...SCAN_ROLES), asyncHandler(handleListScans as any));
 router.get('/export', authorize(...SCAN_ROLES), asyncHandler(handleExportScans as any));
 router.get('/:id', authorize(...SCAN_ROLES), asyncHandler(handleGetScan as any));

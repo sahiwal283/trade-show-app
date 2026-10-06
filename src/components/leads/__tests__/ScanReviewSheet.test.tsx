@@ -1,7 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ScanReviewSheet } from '../ScanReviewSheet';
 import { parseBadgePayload } from '../../../utils/badge/parseBadgePayload';
+import { badgeApi } from '../../../utils/badgeApi';
+
+vi.mock('../../../utils/badgeApi', () => ({ badgeApi: { readCard: vi.fn() } }));
 
 const FULL = '124649-907|Shamsher|Jessani|Virginia Trade Association|Glen Allen|VA|23059-8006|United States|President|Mr.|sjessani@aol.com';
 const OTHER = '556677-1|Alex|Rivera|Rivera Consulting|Austin|TX|73301|United States|Manager|Ms.|arivera@example.com';
@@ -154,5 +157,77 @@ describe('ScanReviewSheet — unrecognized payloads', () => {
   it('does not clutter a fully-mapped scan with the raw payload', () => {
     setup({ badge: badge(FULL) });
     expect(screen.queryByText(FULL)).not.toBeInTheDocument();
+  });
+});
+
+describe('ScanReviewSheet — business card', () => {
+  // Synthetic attendee, in the shape of a Maritz lead-retrieval link.
+  const LINK = 'HTTPS://L4E.US/AJ3/10042/RIVERA/JORDAN/EXAMPLE-LABS';
+  const CARD_TEXT = 'Example Labs Inc\nJordan Rivera\nVP Marketing\nM: 813-555-0199\njordan.rivera@example.com';
+  const photo = () => new File(['x'], 'card.jpg', { type: 'image/jpeg' });
+  const pickCard = () =>
+    fireEvent.change(screen.getByLabelText('Business card photo'), { target: { files: [photo()] } });
+
+  it('fills the email, phone and title a badge link does not carry', async () => {
+    vi.mocked(badgeApi.readCard).mockResolvedValue(CARD_TEXT);
+    setup({ badge: badge(LINK, 'QR_CODE') });
+    pickCard();
+    await waitFor(() => expect(screen.getByLabelText('Email')).toHaveValue('jordan.rivera@example.com'));
+    expect(screen.getByLabelText('Phone')).toHaveValue('813-555-0199');
+    expect(screen.getByLabelText('Title')).toHaveValue('VP Marketing');
+    expect(screen.getByText(/added from the card: title, email, phone/i)).toBeInTheDocument();
+  });
+
+  it('never overwrites what the badge or the rep already supplied', async () => {
+    vi.mocked(badgeApi.readCard).mockResolvedValue(CARD_TEXT);
+    setup({ badge: badge(LINK, 'QR_CODE') });
+    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'typed@example.com' } });
+    pickCard();
+    await waitFor(() => expect(screen.getByLabelText('Phone')).toHaveValue('813-555-0199'));
+    expect(screen.getByLabelText('Email')).toHaveValue('typed@example.com');
+    expect(screen.getByLabelText('First name')).toHaveValue('JORDAN');
+    expect(screen.getByLabelText('Organization')).toHaveValue('EXAMPLE LABS');
+  });
+
+  it('keeps what the rep typed while the card was being read', async () => {
+    let finish: (text: string) => void = () => {};
+    vi.mocked(badgeApi.readCard).mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+    setup({ badge: badge(LINK, 'QR_CODE') });
+    pickCard();
+    expect(screen.getByRole('button', { name: /reading card/i })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Phone'), { target: { value: '555-0000' } });
+    finish(CARD_TEXT);
+    await waitFor(() => expect(screen.getByLabelText('Email')).toHaveValue('jordan.rivera@example.com'));
+    expect(screen.getByLabelText('Phone')).toHaveValue('555-0000');
+  });
+
+  it('says so and keeps the form when the card cannot be read', async () => {
+    vi.mocked(badgeApi.readCard).mockRejectedValue(new Error('offline'));
+    setup({ badge: badge(LINK, 'QR_CODE') });
+    pickCard();
+    expect(await screen.findByText(/could not read the card/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('First name')).toHaveValue('JORDAN');
+    expect(screen.getByRole('button', { name: /scan business card/i })).toBeEnabled();
+  });
+
+  it('tells the rep when a readable photo held nothing new', async () => {
+    vi.mocked(badgeApi.readCard).mockResolvedValue('');
+    setup({ badge: badge(LINK, 'QR_CODE') });
+    pickCard();
+    expect(await screen.findByText(/nothing new could be read/i)).toBeInTheDocument();
+  });
+
+  it('sends the saved lead with the card details included', async () => {
+    vi.mocked(badgeApi.readCard).mockResolvedValue(CARD_TEXT);
+    const onSave = vi.fn();
+    setup({ badge: badge(LINK, 'QR_CODE'), onSave });
+    pickCard();
+    await waitFor(() => expect(screen.getByLabelText('Email')).toHaveValue('jordan.rivera@example.com'));
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ first_name: 'JORDAN', company: 'EXAMPLE LABS', email: 'jordan.rivera@example.com', phone: '813-555-0199' }),
+      '',
+      false
+    );
   });
 });

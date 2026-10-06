@@ -93,6 +93,15 @@ export const badgeApi = {
   },
 
   /**
+   * OCR a photo of a business card and return its raw text. The server keeps
+   * nothing; parseCardText turns the text into fields on this side.
+   */
+  async readCard(photo: File): Promise<string> {
+    const response = await apiClient.upload<{ text?: string }>('/badge-scans/card-ocr', {}, photo, 'card');
+    return response?.text ?? '';
+  },
+
+  /**
    * Absolute URL of the export endpoint, API base path included.
    *
    * The bare `/badge-scans/...` path resolves against the SPA origin and is

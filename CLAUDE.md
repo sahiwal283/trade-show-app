@@ -86,7 +86,10 @@ Key service boundaries:
 - **`badge/`** — PDF417 badge scans. `BadgeScanService` owns validation and
   server-side brand resolution; `BadgeCrmPushService` owns the per-brand CRM
   push. The payload parser lives client-side in `src/utils/badge/` and is the
-  single source of truth for field extraction.
+  single source of truth for field extraction. `BadgeCardOcrService` only
+  turns a business card photo into text (`POST /api/badge-scans/card-ocr`);
+  `parseCardText.ts` extracts the fields client-side and the photo is never
+  stored.
 
 ### Frontend (`src/`)
 

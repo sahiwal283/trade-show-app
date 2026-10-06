@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.28.0] - 2026-10-06 - Business card scan on the lead review sheet
+
+### Added
+- "Scan business card" on the lead review sheet. The rep photographs the
+  attendee's card and the email, phone, title and address are filled in. This
+  is the free replacement for paid lead retrieval at shows whose badge QR
+  carries only a name and company (see 2.27.1). Card values fill empty fields
+  only; they never overwrite what the badge or the rep supplied.
+- `POST /api/badge-scans/card-ocr` (multipart field `card`, scanning roles):
+  returns `{ text }`, the raw OCR text of the photo. OCR is reached the same
+  way receipts reach it (Midas Ext when Midas backs expenses, otherwise the
+  OCR service). The photo is deleted as soon as OCR returns or fails.
+- `src/utils/badge/parseCardText.ts`: client-side card text parser, beside
+  the badge parser.
+
+### Notes
+- Card scanning needs a connection. Offline, the attempt fails with a
+  message and the lead still saves with what the badge gave.
+
 ## [2.27.1] - 2026-10-06 - Read Maritz lead-retrieval badge links
 
 ### Fixed
