@@ -18,13 +18,19 @@ import { LeadDetailModal } from './LeadDetailModal';
 import { LeadList } from './LeadList';
 import { useBadgeScans } from './hooks/useBadgeScans';
 import { generateUUID } from '../../utils/uuid';
+import { SelectMenu, SelectMenuOption } from '../common/SelectMenu';
+import {
+  LeadEvent, LEAD_ENTRY_GRACE_DAYS, isOpenForLeads, leadEventPhase, leadEventStatus,
+  leadEventSummary, sortLeadEvents,
+} from './leadEvents';
 
 const LAST_COMPANY_KEY = 'argo.leads.lastCompany';
 
 export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a future lead-detail/edit view */) => {
   const { companies } = usePicklists();
-  const [events, setEvents] = useState<Array<{ id: string; name: string }>>([]);
+  const [events, setEvents] = useState<LeadEvent[]>([]);
   const [eventId, setEventId] = useState('');
+  const [showAllEvents, setShowAllEvents] = useState(false);
   const [entity, setEntity] = useState('');
   const [scanning, setScanning] = useState(false);
   const [pendingBadge, setPendingBadge] = useState<ScannedBadge | null>(null);
@@ -35,8 +41,35 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
   const { scans, error, reload, saveScan } = useBadgeScans(eventId || null, entity || null);
 
   useEffect(() => {
-    void api.getEvents().then((list: any[]) => setEvents(list ?? []));
+    void api.getEvents().then((list: LeadEvent[]) => {
+      const loaded = list ?? [];
+      setEvents(loaded);
+      // One show open for leads is the common case on the floor: pick it, so
+      // the rep's first tap is the company. The company is still never defaulted.
+      const open = loaded.filter((ev) => isOpenForLeads(leadEventPhase(ev)));
+      if (open.length === 1) setEventId((current) => current || open[0].id);
+    });
   }, []);
+
+  // Only shows that can still take leads are offered by default. The rest stay
+  // reachable behind "Show all events", because this page is also where an old
+  // show's leads are viewed and exported.
+  const sortedEvents = useMemo(() => sortLeadEvents(events), [events]);
+  const hiddenCount = sortedEvents.filter((ev) => !isOpenForLeads(leadEventPhase(ev))).length;
+  const eventOptions: SelectMenuOption[] = sortedEvents
+    .filter((ev) => showAllEvents || ev.id === eventId || isOpenForLeads(leadEventPhase(ev)))
+    .map((ev) => {
+      const phase = leadEventPhase(ev);
+      return {
+        value: ev.id,
+        label: ev.name,
+        description: leadEventSummary(ev) || undefined,
+        tag: leadEventStatus(ev) || undefined,
+        tagEmphasis: phase === 'live',
+      };
+    });
+  const selectedEvent = events.find((ev) => ev.id === eventId);
+  const eventClosed = selectedEvent ? leadEventPhase(selectedEvent) === 'closed' : false;
 
   // Pre-select the last company used, but only as a highlight in the dropdown
   // the rep still has to confirm - never as an applied default.
@@ -45,7 +78,7 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
   }, [eventId]);
 
   const selectedCompany = companies.find((c) => c.name === entity);
-  const canScan = Boolean(eventId && entity);
+  const canScan = Boolean(eventId && entity) && !eventClosed;
 
   // The export route is authenticated, so the download must carry the token;
   // a plain link navigation 401s. See badgeApi.downloadExport.
@@ -86,36 +119,52 @@ export const LeadsPage: React.FC<{ user: User }> = (/* user: reserved for a futu
       <h1 className="text-2xl font-semibold text-stone-900">Leads</h1>
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <label className="text-sm">
-          <span className="mb-1 block text-stone-600">Event</span>
-          <select
-            aria-label="Event"
+        <div className="text-sm">
+          <span id="leads-event-label" className="mb-1 block text-stone-600">Event</span>
+          <SelectMenu
+            id="leads-event"
+            labelledBy="leads-event-label"
             value={eventId}
-            onChange={(e) => setEventId(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
-          >
-            <option value="">Select an event</option>
-            {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name}</option>)}
-          </select>
-        </label>
+            onChange={setEventId}
+            options={eventOptions}
+            placeholder="Select an event"
+            emptyMessage="No shows are open for leads right now."
+          />
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              aria-pressed={showAllEvents}
+              onClick={() => setShowAllEvents((all) => !all)}
+              className="mt-1 min-h-[44px] cursor-pointer text-sm text-brand-700 underline-offset-2 hover:underline sm:min-h-0"
+            >
+              {showAllEvents ? 'Show open events only' : `Show all events (${hiddenCount} more)`}
+            </button>
+          )}
+        </div>
 
-        <label className="text-sm">
-          <span className="mb-1 block text-stone-600">Company you are representing</span>
-          <select
-            aria-label="Company"
+        <div className="text-sm">
+          <span id="leads-company-label" className="mb-1 block text-stone-600">Company you are representing</span>
+          <SelectMenu
+            id="leads-company"
+            labelledBy="leads-company-label"
             value={entity}
-            onChange={(e) => setEntity(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
-          >
-            <option value="">Select a company</option>
-            {companies.map((c) => (
-              <option key={c.name} value={c.name}>
-                {c.name}{c.name === lastUsed ? ' (last used)' : ''}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={setEntity}
+            options={companies.map((c) => ({
+              value: c.name,
+              label: c.name,
+              tag: c.name === lastUsed ? 'Last used' : undefined,
+            }))}
+            placeholder="Select a company"
+          />
+        </div>
       </div>
+
+      {eventClosed && (
+        <p className="mt-2 rounded-lg bg-stone-100 p-3 text-sm text-stone-700" role="status">
+          {selectedEvent?.name} is closed for new leads: it ended more than {LEAD_ENTRY_GRACE_DAYS} days
+          ago. Its leads can still be viewed, edited and exported.
+        </p>
+      )}
 
       {selectedCompany && !selectedCompany.zohoEnabled && (
         <p className="mt-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.29.0] - 2026-10-06 - Leads page: styled pickers, events limited to open shows
+
+### Changed
+- The Event and Company fields on the Leads page use a new styled picker
+  (`common/SelectMenu`) instead of the native select. Event rows show dates,
+  city and a status ("Live now", "Ended 7 days ago").
+- The event picker offers only shows open for lead entry: live, ended within
+  14 days, or starting within 14 days (`leads/leadEvents.ts`). Other events
+  sit behind "Show all events". A show that ended more than 14 days ago is
+  read-only: its leads can be viewed, edited and exported, but not scanned
+  into. When exactly one show is open it is pre-selected; the company never
+  is. The cutoff is enforced in the UI only. Frontend only.
+
 ## [2.28.0] - 2026-10-06 - Business card scan on the lead review sheet
 
 ### Added
