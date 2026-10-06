@@ -212,8 +212,61 @@ describe('parseBadgePayload — URLs', () => {
   });
 });
 
+describe('parseBadgePayload — Maritz lead-retrieval URLs', () => {
+  // The QR on a Maritz-registered show badge is a link that only Maritz's own
+  // scanners resolve. The path itself still carries
+  // show / badge id / last / first / company. Synthetic attendee.
+  const raw = 'HTTPS://L4E.US/AJ3/10042/RIVERA/JORDAN/EXAMPLE-LABS';
+
+  it('reads badge id, name and company out of the path', () => {
+    const { fields, confidence } = parseBadgePayload(raw);
+    expect(fields).toEqual({
+      badge_id: '10042',
+      last_name: 'RIVERA',
+      first_name: 'JORDAN',
+      company: 'EXAMPLE LABS',
+    });
+    expect(confidence).toBe(0.52);
+  });
+
+  it('keeps every path segment as a token, mapped or not', () => {
+    const { tokens } = parseBadgePayload(raw);
+    expect(tokens.map((t) => [t.value, t.mappedTo])).toEqual([
+      ['AJ3', null],
+      ['10042', 'badge_id'],
+      ['RIVERA', 'last_name'],
+      ['JORDAN', 'first_name'],
+      ['EXAMPLE-LABS', 'company'],
+    ]);
+  });
+
+  it('accepts a lowercase link and percent-encoded segments', () => {
+    const { fields } = parseBadgePayload('https://l4e.us/aj3/40112/O%27Neil/Mary-Ann/Corner-Store-Inc');
+    expect(fields.last_name).toBe("O'Neil");
+    expect(fields.first_name).toBe('Mary Ann');
+    expect(fields.company).toBe('Corner Store Inc');
+  });
+
+  it('still reads the person when the company segment is missing', () => {
+    const { fields } = parseBadgePayload('https://l4e.us/AJ3/10042/RIVERA/JORDAN');
+    expect(fields).toEqual({ badge_id: '10042', last_name: 'RIVERA', first_name: 'JORDAN' });
+  });
+
+  it('leaves an l4e.us link of another shape opaque', () => {
+    const other = 'https://l4e.us/AJ3/about';
+    const { fields, tokens } = parseBadgePayload(other);
+    expect(fields).toEqual({});
+    expect(tokens.map((t) => t.value)).toEqual([other]);
+  });
+
+  it('does not apply the layout to other hosts', () => {
+    const { fields } = parseBadgePayload('https://reg.example.com/AJ3/10042/RIVERA/JORDAN/EXAMPLE-LABS');
+    expect(fields).toEqual({});
+  });
+});
+
 describe('parseBadgePayload — version', () => {
-  it('reports v2 now that structured QR payloads are understood', () => {
-    expect(PARSER_VERSION).toBe('v2');
+  it('reports v3 now that Maritz lead-retrieval links are understood', () => {
+    expect(PARSER_VERSION).toBe('v3');
   });
 });

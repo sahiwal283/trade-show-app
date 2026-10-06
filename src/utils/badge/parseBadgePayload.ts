@@ -21,7 +21,7 @@ import {
   isSalutation, isTitle, isCompany, isNameLike, isShortCode, isMultiWord,
 } from './tokenClassifiers';
 
-export const PARSER_VERSION = 'v2';
+export const PARSER_VERSION = 'v3';
 
 export type BadgeField =
   | 'badge_id' | 'salutation' | 'first_name' | 'last_name' | 'title'
@@ -192,6 +192,32 @@ function parseJson(text: string): Structured | null {
   return mapAliasedPairs(entries);
 }
 
+const MARITZ_HOST = 'l4e.us';
+const MARITZ_PATH: Array<BadgeField | null> = [null, 'badge_id', 'last_name', 'first_name', 'company'];
+
+/**
+ * Maritz lead-retrieval link, e.g. https://l4e.us/AJ3/10042/RIVERA/JORDAN/EXAMPLE-LABS
+ * (show / badge id / last / first / company). The link itself only resolves
+ * inside Maritz's own scanners, but the path is readable: spaces arrive as
+ * hyphens. Email, phone and address are not in it.
+ */
+function parseMaritzUrl(url: URL): Structured | null {
+  if (url.hostname.toLowerCase() !== MARITZ_HOST) return null;
+  let segments: string[];
+  try {
+    segments = url.pathname.split('/').filter(Boolean).map((s) => decodeURIComponent(s));
+  } catch { return null; }
+  if (segments.length < 4 || segments.length > 5 || !/^\d+$/.test(segments[1])) return null;
+
+  const fields: Fields = {};
+  const tokens = segments.map((value, index) => {
+    const mappedTo = MARITZ_PATH[index];
+    if (mappedTo) setIf(fields, mappedTo, value.replace(/-+/g, ' '));
+    return { index, value, mappedTo };
+  });
+  return { fields, tokens };
+}
+
 function parseUrl(text: string): Structured | null {
   if (!/^https?:\/\/\S+$/i.test(text)) return null;
   let url: URL;
@@ -199,6 +225,8 @@ function parseUrl(text: string): Structured | null {
   const entries = Array.from(url.searchParams.entries());
   const mapped = mapAliasedPairs(entries);
   if (Object.keys(mapped.fields).length > 0) return mapped;
+  const maritz = parseMaritzUrl(url);
+  if (maritz) return maritz;
   // An opaque profile link: keep it whole so the rep sees what was scanned.
   return { fields: {}, tokens: [{ index: 0, value: text, mappedTo: null }] };
 }

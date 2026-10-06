@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.27.1] - 2026-10-06 - Read Maritz lead-retrieval badge links
+
+### Fixed
+- Badges at Maritz-registered shows (NACS Show 2026) carry a QR that is a
+  lead-retrieval link (`https://l4e.us/<show>/<badge id>/<last>/<first>/<company>`),
+  not contact data. The parser treated it as an opaque URL and the review
+  sheet opened empty. It now reads badge id, last name, first name and
+  company from the path (hyphens become spaces). Email, phone and address
+  are not in the link and still have to be entered by the rep. Parser
+  version is now `v3`. Frontend only.
+
 ## [2.27.0] - 2026-10-05 - Rep notes on the Nirvana Kulture webhook
 
 ### Changed
