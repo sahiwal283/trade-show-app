@@ -7,7 +7,7 @@
  * labeled with its done/total count. Only the active tab renders.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { parseLocalDate } from '../../utils/dateUtils';
@@ -161,7 +161,8 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
     if (tab === 'samples') return 'samples';
     return tab === 'my' ? 'user' : isPrivilegedUser ? 'admin' : 'user';
   });
-  const [canViewSamples, setCanViewSamples] = useState(false);
+  // null while getAccess() is pending, so UserChecklist never mounts before access is known.
+  const [canViewSamples, setCanViewSamples] = useState<boolean | null>(null);
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<ChecklistData | null>(null);
@@ -179,6 +180,32 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
       loadEvents();
     }
   }, [activeTab]);
+
+  // A deep link followed while the page is already open: pick the show and the tab.
+  const hashCtx = useRef({ events, canViewSamples });
+  hashCtx.current = { events, canViewSamples };
+  useEffect(() => {
+    const onHashChange = () => {
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const linkedId = params.get('event');
+      if (!linkedId) return;
+      const tab = params.get('tab');
+      const { events: loaded, canViewSamples: samplesAllowed } = hashCtx.current;
+      if (tab === 'my') {
+        setActiveTab('user');
+      } else if (tab === 'samples' && (isPrivilegedUser || samplesAllowed === true)) {
+        setActiveTab('samples');
+      }
+      if (loaded.some((e) => e.id === linkedId)) setSelectedEventId(linkedId);
+      // My Checklist (UserChecklist) consumes a tab=my hash itself; an unloaded
+      // event list is filled by loadEvents, which reads the hash. Otherwise clear it.
+      if (tab !== 'my' && loaded.length > 0) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [isPrivilegedUser]);
 
   useEffect(() => {
     if (selectedEventId) {
@@ -302,6 +329,20 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
   };
 
   const selectedEvent = events.find(e => e.id === selectedEventId);
+
+  // Regular users: wait for the access check so UserChecklist mounts once, with the hash intact.
+  if (!isPrivilegedUser && canViewSamples === null) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-4 md:space-y-5">
+        <div aria-busy="true" className="card p-10 md:p-12">
+          <div className="flex flex-col items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-brand-600" />
+            <p className="mt-4 text-sm text-stone-500">Loading your itinerary...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Regular users without sample access see only their own checklist
   if (!isPrivilegedUser && !canViewSamples) {
