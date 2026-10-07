@@ -13,7 +13,7 @@ import {
 export type SampleStatus = 'loading' | 'ready' | 'offline' | 'error';
 export type ItemField = 'singles' | 'displays' | 'emptyDisplays';
 
-interface Args { eventId: string; userId: string; role: string; actorId?: string }
+interface Args { eventId: string; userId: string; role: string; actorId?: string; onChanged?: () => void }
 
 const AUTOSAVE_MS = 800;
 const OVERRIDE = ['admin', 'coordinator', 'developer'];
@@ -45,7 +45,7 @@ const isWindowClosed = (e: unknown): boolean => {
     (err.details?.code === 'WINDOW_CLOSED' || err.details?.details?.code === 'WINDOW_CLOSED');
 };
 
-export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
+export function useSampleRequest({ eventId, userId, role, actorId, onChanged }: Args) {
   const onBehalf = !!actorId && actorId !== userId && OVERRIDE.includes(role);
   const api = useMemo(() => ({
     get: () => (onBehalf ? sampleRequestApi.getForUser(eventId, userId) : sampleRequestApi.getMine(eventId)),
@@ -68,6 +68,8 @@ export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<Promise<boolean> | null>(null);
   const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false);
+  const onChangedRef = useRef(onChanged);
+  onChangedRef.current = onChanged;
 
   const payload = useMemo(() => toPayload(items, materials), [items, materials]);
   const key = useMemo(() => serialize(payload), [payload]);
@@ -115,6 +117,7 @@ export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
       const v = await api.save(payload);
       setSavedKey(key);
       setView((prev) => (prev ? { ...prev, window: v.window } : v));
+      onChangedRef.current?.();
       return true;
     } catch (e) {
       if (isWindowClosed(e)) setClosed(true);
@@ -190,6 +193,7 @@ export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
       setSubmittedKey(key);
       setSavedKey(key);
       setClosed(!v.window.isOpen);
+      onChangedRef.current?.();
     } catch (e) {
       if (isWindowClosed(e)) setClosed(true);
       else setError('Could not submit. Check your connection and try again.');

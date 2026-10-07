@@ -3,26 +3,38 @@
  * Drafts are counted in totals but flagged, so the puller can see what is
  * still moving. Visible to the puller, admin, coordinator, developer.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AlertCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { sampleRequestApi, EventSampleSummary, SAMPLE_BRAND_LABELS, SAMPLE_BRAND_ORDER } from '../../../utils/sampleRequestApi';
 import { formatCloseDate } from './sampleRequestText';
+import { SampleRequestSection } from './SampleRequestSection';
 
-interface Props { eventId: string }
+interface Props { eventId: string; actorId: string; actorRole: string }
 
-export const SamplesSummaryTab: React.FC<Props> = ({ eventId }) => {
+const EDIT_ROLES = ['admin', 'coordinator', 'developer'];
+
+export const SamplesSummaryTab: React.FC<Props> = ({ eventId, actorId, actorRole }) => {
   const [summary, setSummary] = useState<EventSampleSummary | null>(null);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState<Set<string>>(new Set());
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [version, setVersion] = useState(0);
+  const loadedFor = useRef<string | null>(null);
+  const summaryRef = useRef(summary);
+  summaryRef.current = summary;
+  const canEditOthers = EDIT_ROLES.includes(actorRole);
 
   useEffect(() => {
     let cancelled = false;
-    setSummary(null); setFailed(false);
+    const fresh = loadedFor.current !== eventId;
+    loadedFor.current = eventId;
+    // A show switch resets; a refresh after an edit keeps the current view (and the open editor) mounted.
+    if (fresh) { setSummary(null); setFailed(false); setEditingUserId(null); }
     sampleRequestApi.getSummary(eventId)
       .then((s) => { if (!cancelled) setSummary(s); })
-      .catch(() => { if (!cancelled) setFailed(true); });
+      .catch(() => { if (!cancelled && (fresh || !summaryRef.current)) setFailed(true); });
     return () => { cancelled = true; };
-  }, [eventId]);
+  }, [eventId, version]);
 
   if (failed) return <div className="card p-4 text-sm text-stone-600">Couldn't load the sample summary for this show.</div>;
   if (!summary) return <div className="card p-4 text-sm text-stone-500">Loading sample summary…</div>;
@@ -48,15 +60,37 @@ export const SamplesSummaryTab: React.FC<Props> = ({ eventId }) => {
         </div>
         <p className="mt-1 text-sm text-stone-600">{submitted} of {summary.participants.length} submitted</p>
         <ul className="mt-2 flex flex-wrap gap-2">
-          {summary.participants.map((p) => (
-            <li key={p.userId} className={`chip px-2 py-0.5 text-[11px] ring-1 ${
+          {summary.participants.map((p) => {
+            const cls = `chip px-2 py-0.5 text-[11px] ring-1 ${
               p.status === 'submitted' ? 'bg-accent-50 text-accent-700 ring-accent-200'
-              : p.status === 'draft' ? 'bg-amber-50 text-amber-800 ring-amber-200' : 'bg-stone-50 text-stone-500 ring-stone-200'}`}>
-              {p.name} · {p.status === 'none' ? 'not started' : p.status}
-            </li>
-          ))}
+              : p.status === 'draft' ? 'bg-amber-50 text-amber-800 ring-amber-200' : 'bg-stone-50 text-stone-500 ring-stone-200'}`;
+            const label = `${p.name} · ${p.status === 'none' ? 'not started' : p.status}`;
+            return canEditOthers ? (
+              <li key={p.userId}>
+                <button type="button" aria-label={`Edit sample request for ${p.name}`} onClick={() => setEditingUserId(p.userId)}
+                  className={`${cls} ${editingUserId === p.userId ? 'ring-2 ring-brand-500' : ''} focus-visible:ring-2 focus-visible:ring-brand-500`}>
+                  {label}
+                </button>
+              </li>
+            ) : (
+              <li key={p.userId} className={cls}>{label}</li>
+            );
+          })}
         </ul>
       </section>
+
+      {canEditOthers && editingUserId && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-semibold text-stone-900">
+              Editing {summary.participants.find((p) => p.userId === editingUserId)?.name ?? 'participant'}'s request
+            </p>
+            <button type="button" onClick={() => setEditingUserId(null)} className="btn-secondary px-3 py-1 text-xs">Close</button>
+          </div>
+          <SampleRequestSection key={editingUserId} eventId={eventId} userId={editingUserId} role={actorRole}
+            actorId={actorId} onChanged={() => setVersion((v) => v + 1)} />
+        </div>
+      )}
 
       {SAMPLE_BRAND_ORDER.map((brand) => {
         const rows = summary.products.filter((p) => p.brand === brand);

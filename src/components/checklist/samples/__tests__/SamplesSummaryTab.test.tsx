@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 
 vi.mock('../../../../utils/sampleRequestApi', async (orig) => {
   const actual = await orig<typeof import('../../../../utils/sampleRequestApi')>();
@@ -24,11 +24,17 @@ vi.mock('../../../../utils/sampleRequestApi', async (orig) => {
   };
 });
 
+const sectionProps = vi.fn();
+vi.mock('../SampleRequestSection', () => ({
+  SampleRequestSection: (props: any) => { sectionProps(props); return <div data-testid="embedded-section" />; },
+}));
+
 import { SamplesSummaryTab } from '../SamplesSummaryTab';
+import { sampleRequestApi } from '../../../../utils/sampleRequestApi';
 
 describe('SamplesSummaryTab', () => {
   it('shows totals, who has submitted, and per-rep rows on expand', async () => {
-    render(<SamplesSummaryTab eventId="ev-1" />);
+    render(<SamplesSummaryTab eventId="ev-1" actorId="adm-1" actorRole="salesperson" />);
     expect(await screen.findByText('Mango')).toBeInTheDocument();
     expect(screen.getByText('3')).toBeInTheDocument();     // singles total
     expect(screen.getByText(/1 of 2 submitted/)).toBeInTheDocument();
@@ -38,5 +44,26 @@ describe('SamplesSummaryTab', () => {
     expect(screen.getByText('draft')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Banner/ }));
     expect(screen.getByText('big one')).toBeInTheDocument();
+  });
+
+  it('lets an admin open a rep\'s request from the participant chip, and refreshes after a change', async () => {
+    render(<SamplesSummaryTab eventId="ev-1" actorId="adm-1" actorRole="admin" />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Edit sample request for Bo' }));
+    expect(screen.getByText("Editing Bo's request")).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-section')).toBeInTheDocument();
+    const props = sectionProps.mock.calls.at(-1)![0];
+    expect(props).toMatchObject({ eventId: 'ev-1', userId: 'u-2', actorId: 'adm-1', role: 'admin' });
+    const before = vi.mocked(sampleRequestApi.getSummary).mock.calls.length;
+    await act(async () => { props.onChanged(); });
+    expect(vi.mocked(sampleRequestApi.getSummary).mock.calls.length).toBe(before + 1);
+    expect(screen.getByTestId('embedded-section')).toBeInTheDocument(); // editor stays mounted across the refresh
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByTestId('embedded-section')).not.toBeInTheDocument();
+  });
+
+  it('renders plain chips (not buttons) for a non-override role', async () => {
+    render(<SamplesSummaryTab eventId="ev-1" actorId="u-1" actorRole="salesperson" />);
+    expect(await screen.findByText(/Bo · not started/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Edit sample request for/ })).not.toBeInTheDocument();
   });
 });

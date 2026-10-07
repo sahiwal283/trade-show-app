@@ -347,7 +347,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         <UserChecklist user={user} embedded />
       ) : activeTab === 'samples' ? (
         selectedEventId ? (
-          <SamplesSummaryTab eventId={selectedEventId} />
+          <SamplesSummaryTab eventId={selectedEventId} actorId={user.id} actorRole={user.role} />
         ) : (
           <div className="card flex items-start gap-3 p-4 md:p-5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50">

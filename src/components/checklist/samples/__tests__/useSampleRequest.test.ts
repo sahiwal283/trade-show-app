@@ -154,6 +154,20 @@ describe('useSampleRequest', () => {
     });
   });
 
+  it('calls onChanged after a successful autosave and after submit', async () => {
+    const onChanged = vi.fn();
+    const { result } = renderHook(() => useSampleRequest({ eventId: 'ev-1', userId: 'u-1', role: 'salesperson', onChanged }));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(onChanged).not.toHaveBeenCalled();
+    act(() => result.current.setItem('p-1', 'singles', 2));
+    await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+    expect(sampleRequestApi.saveMine).toHaveBeenCalledTimes(1);
+    expect(onChanged).toHaveBeenCalledTimes(1);
+    await act(async () => { await result.current.submit(); });
+    expect(sampleRequestApi.submitMine).toHaveBeenCalledTimes(1);
+    expect(onChanged).toHaveBeenCalledTimes(2);
+  });
+
   it('flushes a dirty draft on unmount within the debounce window', async () => {
     const { result, unmount } = mk();
     await waitFor(() => expect(result.current.status).toBe('ready'));

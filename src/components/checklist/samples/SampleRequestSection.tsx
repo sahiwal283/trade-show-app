@@ -11,12 +11,16 @@ import { ProductTable } from './ProductTable';
 import { MaterialsTable } from './MaterialsTable';
 import { formatCountdown, isUrgent, formatCloseDate } from './sampleRequestText';
 
-interface Props { eventId: string; userId: string; role: string; actorId?: string }
+interface Props {
+  eventId: string; userId: string; role: string; actorId?: string;
+  /** Called after a successful draft save or submit (e.g. to refresh a summary). */
+  onChanged?: () => void;
+}
 
 const OVERRIDE = ['admin', 'coordinator', 'developer'];
 
-export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, actorId }) => {
-  const s = useSampleRequest({ eventId, userId, role, actorId });
+export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, actorId, onChanged }) => {
+  const s = useSampleRequest({ eventId, userId, role, actorId, onChanged });
   const [now, setNow] = useState(() => new Date());
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 60_000); return () => clearInterval(t); }, []);
 
