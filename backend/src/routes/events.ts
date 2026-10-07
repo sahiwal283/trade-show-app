@@ -127,12 +127,14 @@ export async function handleCreateEvent(req: AuthRequest, res: Response) {
 router.post('/', authorize('admin', 'coordinator', 'developer'), handleCreateEvent);
 
 // Update event
-router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
+export async function handleUpdateEvent(req: AuthRequest, res: Response) {
   const client = await pool.connect(); // Get a client for transaction
   
   try {
     const { id } = req.params;
     const { name, venue, city, state, start_date, end_date, show_start_date, show_end_date, travel_start_date, travel_end_date, budget, status, participant_ids, participants } = req.body;
+
+    let newlyAddedIds: string[] = [];
 
     // Start transaction
     await client.query('BEGIN');
@@ -161,12 +163,19 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
       // never silently drops historical participants.
       const existingIds = new Set(await getCurrentParticipantIds(id, client));
       await removeAllParticipants(id, client);
-      await processParticipants(id, participants, participant_ids, client, existingIds);
+      const rosterIds = await processParticipants(id, participants, participant_ids, client, existingIds);
+      newlyAddedIds = rosterIds.filter((uid) => !existingIds.has(uid));
     }
 
     // Commit transaction
     await client.query('COMMIT');
     console.log('[Events] Transaction committed successfully');
+
+    // Only people new to the roster hear that the sample form is open; off the response path.
+    if (newlyAddedIds.length > 0) {
+      void sampleRequestService.announceIfOpen(id, newlyAddedIds).catch((e) =>
+        console.error('[Events] sample request announce failed:', e));
+    }
 
     res.json(convertEventTypes(event));
   } catch (error: any) {
@@ -188,7 +197,8 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
     // Release the client back to the pool
     client.release();
   }
-});
+}
+router.put('/:id', authorize('admin', 'coordinator', 'developer'), handleUpdateEvent);
 
 // Add participants to an event without touching any other event field.
 // Used by the checklist's inline "Add person" flow.
