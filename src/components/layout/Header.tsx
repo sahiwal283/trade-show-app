@@ -3,6 +3,7 @@ import { Bell, Search, LogOut, Menu } from 'lucide-react';
 import { User, Expense } from '../../App';
 import { api } from '../../utils/api';
 import { apiClient } from '../../utils/apiClient';
+import { notificationsApi, AppNotification } from '../../utils/notificationsApi';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { IS_SANDBOX } from '../../constants/appEnv';
 
@@ -71,11 +72,48 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
     return () => { cancelled = true; clearInterval(timer); };
   }, []);
 
+  // General notifications table (e.g. sample request open/closing). Same
+  // polling pattern as the message rows above.
+  const [appNotifications, setAppNotifications] = React.useState<AppNotification[]>([]);
+  React.useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await notificationsApi.listUnread();
+        if (!cancelled) setAppNotifications(res.notifications || []);
+      } catch {
+        if (!cancelled) setAppNotifications([]);
+      }
+    };
+    void load();
+    const timer = setInterval(load, 60_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+
+  // Optimistic: drop the row locally, then fire-and-forget the API call.
+  const openAppNotification = (n: AppNotification) => {
+    setShowNotifications(false);
+    setAppNotifications((prev) => prev.filter((x) => x.id !== n.id));
+    void notificationsApi.markRead([n.id]).catch(() => undefined);
+    if (n.link?.page === 'checklist' && n.link.eventId) {
+      window.location.hash = `event=${n.link.eventId}&tab=my`;
+      onNavigate?.('checklist');
+    } else if (n.link?.page === 'samples' && n.link.eventId) {
+      window.location.hash = `event=${n.link.eventId}&tab=samples`;
+      onNavigate?.('checklist');
+    }
+  };
+
+  const markAllAppRead = () => {
+    setAppNotifications([]);
+    void notificationsApi.markAllRead().catch(() => undefined);
+  };
+
   // Escape closes the notifications panel
   useEscapeKey(() => setShowNotifications(false), showNotifications);
 
   const hasUnreadNotifications =
-    unreadMessages.length > 0 || (notifications.length > 0 && !hasViewedNotifications);
+    appNotifications.length > 0 || unreadMessages.length > 0 || (notifications.length > 0 && !hasViewedNotifications);
 
   const handleNotificationClick = () => {
     setShowNotifications(!showNotifications);
@@ -164,6 +202,27 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
                       </span>
                     )}
                   </div>
+                  {appNotifications.length > 0 && (
+                    <div className="border-b border-stone-100">
+                      <div className="flex items-center justify-end px-4 pt-2">
+                        <button type="button" onClick={markAllAppRead} className="text-[11px] font-semibold text-brand-700 hover:underline">
+                          Mark all read
+                        </button>
+                      </div>
+                      {appNotifications.map((n) => (
+                        <button
+                          key={n.id}
+                          type="button"
+                          onClick={() => openAppNotification(n)}
+                          className="block w-full px-4 py-3 text-left hover:bg-stone-50"
+                        >
+                          <p className="text-sm font-semibold text-stone-900">{n.title}</p>
+                          <p className="mt-0.5 line-clamp-2 text-sm text-stone-600">{n.body}</p>
+                          <p className="mt-1 text-[11px] text-stone-400">{new Date(n.created_at).toLocaleString()}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   {unreadMessages.length > 0 && (
                     <div className="border-b border-stone-100">
                       {unreadMessages.map((n) => (
