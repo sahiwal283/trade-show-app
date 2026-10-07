@@ -3,11 +3,12 @@
  * Handles trade show event management (CRUD)
  */
 
-import { Router } from 'express';
+import { Router, Response } from 'express';
 import { pool } from '../config/database';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { eventRepository, EventWithParticipants } from '../database/repositories';
 import { processParticipants, removeAllParticipants, getCurrentParticipantIds } from '../services/EventParticipantService';
+import { sampleRequestService } from '../services/sampleRequests/SampleRequestService';
 
 const router = Router();
 
@@ -82,7 +83,7 @@ router.get('/:id', async (req: AuthRequest, res) => {
 });
 
 // Create event
-router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
+export async function handleCreateEvent(req: AuthRequest, res: Response) {
   try {
     const { name, venue, city, state, start_date, end_date, show_start_date, show_end_date, travel_start_date, travel_end_date, budget, participant_ids, participants } = req.body;
 
@@ -109,7 +110,12 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
     console.log(`[Events] Created event: ${event.id} - ${event.name}`);
 
     // Handle participants - best effort (don't fail event if participant fails)
-    await processParticipants(event.id, participants, participant_ids);
+    const addedIds = await processParticipants(event.id, participants, participant_ids);
+
+    // Sample request window opens at creation - tell the roster. Off the
+    // response path; a notification failure must never fail event creation.
+    void sampleRequestService.announceIfOpen(event.id, addedIds).catch((e) =>
+      console.error('[Events] sample request announce failed:', e));
 
     // Event created successfully (even if some participants failed)
     res.status(201).json(event);
@@ -117,7 +123,8 @@ router.post('/', authorize('admin', 'coordinator', 'developer'), async (req: Aut
     console.error('[Events] Failed to create event:', error);
     res.status(500).json({ error: 'Failed to create event. Please try again.' });
   }
-});
+}
+router.post('/', authorize('admin', 'coordinator', 'developer'), handleCreateEvent);
 
 // Update event
 router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
@@ -185,7 +192,7 @@ router.put('/:id', authorize('admin', 'coordinator', 'developer'), async (req: A
 
 // Add participants to an event without touching any other event field.
 // Used by the checklist's inline "Add person" flow.
-router.post('/:id/participants', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
+export async function handleAddParticipants(req: AuthRequest, res: Response) {
   try {
     const { id } = req.params;
     const userIds = Array.isArray(req.body.user_ids)
@@ -199,6 +206,9 @@ router.post('/:id/participants', authorize('admin', 'coordinator', 'developer'),
     const addedIds = await processParticipants(id, undefined, userIds, undefined, previousIds);
     const newlyAddedIds = addedIds.filter((uid) => !previousIds.has(uid));
 
+    void sampleRequestService.announceIfOpen(id, newlyAddedIds).catch((e) =>
+      console.error('[Events] sample request announce failed:', e));
+
     res.json({ added: newlyAddedIds });
   } catch (error: any) {
     console.error('[Events] Failed to add participants:', error);
@@ -208,7 +218,8 @@ router.post('/:id/participants', authorize('admin', 'coordinator', 'developer'),
       res.status(500).json({ error: 'Failed to add participants. Please try again.' });
     }
   }
-});
+}
+router.post('/:id/participants', authorize('admin', 'coordinator', 'developer'), handleAddParticipants);
 
 // Delete event
 router.delete('/:id', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res) => {
