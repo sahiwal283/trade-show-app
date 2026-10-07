@@ -30,10 +30,20 @@ describe('SampleRequestReminderService.scan', () => {
     expect(notificationService.notify).toHaveBeenCalledWith('u-1', expect.objectContaining({
       kind: 'sample_request.closing_48h', link: { page: 'checklist', eventId: 'ev-1' },
     }));
+    // Ledger-first: candidates, unsubmitted, then one claim INSERT per participant.
+    const calls = vi.mocked(query).mock.calls;
+    expect(calls).toHaveLength(4);
+    expect(calls[2][0]).toMatch(/INSERT INTO sample_request_reminders/);
+    expect(calls[2][1]).toEqual(['ev-1', 'u-1', 'closing_48h']);
+    expect(calls[3][0]).toMatch(/INSERT INTO sample_request_reminders/);
+    expect(calls[3][1]).toEqual(['ev-1', 'u-2', 'closing_48h']);
+    // u-1's claim happened before its notification was sent.
+    expect(vi.mocked(query).mock.invocationCallOrder[2])
+      .toBeLessThan(vi.mocked(notificationService.notify).mock.invocationCallOrder[0]);
   });
 
   it('skips events whose close is more than 48h away or already past', async () => {
-    vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); // ~160h before close, more than 48h
+    vi.setSystemTime(new Date('2026-10-15T12:00:00Z')); // ~184h before close, more than 48h
     vi.mocked(query).mockResolvedValueOnce({ rows: [EVENT] } as any);
     await sampleRequestReminderService.scan();
     expect(notificationService.notify).not.toHaveBeenCalled();
