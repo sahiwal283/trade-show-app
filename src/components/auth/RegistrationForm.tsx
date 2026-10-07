@@ -7,6 +7,81 @@ interface RegistrationFormProps {
   onBack: () => void;
 }
 
+interface PasswordRule {
+  /** Shown in the live "Password Requirements" checklist. */
+  label: string;
+  /** Short phrase for the "Still needed:" hint under the strength bar. */
+  short: string;
+  /** Same wording the backend returns in `details`, so both paths read alike. */
+  detail: string;
+  test: (password: string) => boolean;
+}
+
+// Must stay in step with validatePassword() in backend/src/routes/auth.ts.
+// The backend is authoritative; this exists so the meter never calls a
+// password acceptable when the server will reject it.
+const PASSWORD_RULES: PasswordRule[] = [
+  {
+    label: 'At least 8 characters long',
+    short: 'at least 8 characters',
+    detail: 'Password must be at least 8 characters long',
+    test: (p) => p.length >= 8,
+  },
+  {
+    label: 'At least one uppercase letter',
+    short: 'an uppercase letter',
+    detail: 'Password must contain at least one uppercase letter',
+    test: (p) => /[A-Z]/.test(p),
+  },
+  {
+    label: 'At least one lowercase letter',
+    short: 'a lowercase letter',
+    detail: 'Password must contain at least one lowercase letter',
+    test: (p) => /[a-z]/.test(p),
+  },
+  {
+    label: 'At least one number',
+    short: 'a number',
+    detail: 'Password must contain at least one number',
+    test: (p) => /[0-9]/.test(p),
+  },
+  {
+    label: 'At least one special character (!@#$%^&*(),.?":{}|<>)',
+    short: 'a special character',
+    detail: 'Password must contain at least one special character',
+    test: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p),
+  },
+];
+
+const getUnmetPasswordRules = (password: string): PasswordRule[] =>
+  PASSWORD_RULES.filter((rule) => !rule.test(password));
+
+interface PasswordStrength {
+  strength: number;
+  label: string;
+  color: string;
+  textColor: string;
+  unmet: PasswordRule[];
+}
+
+// Never reports better than "Fair" while any backend rule is unmet.
+const getPasswordStrength = (password: string): PasswordStrength => {
+  const unmet = getUnmetPasswordRules(password);
+  const met = PASSWORD_RULES.length - unmet.length;
+  if (unmet.length === 0) {
+    return { strength: 4, label: 'Strong', color: 'bg-green-500', textColor: 'text-green-600', unmet };
+  }
+  if (met <= 2) {
+    return { strength: 1, label: 'Weak', color: 'bg-red-500', textColor: 'text-red-600', unmet };
+  }
+  return { strength: 2, label: 'Fair', color: 'bg-yellow-500', textColor: 'text-yellow-600', unmet };
+};
+
+interface RegisterErrorBody {
+  error?: string;
+  details?: string[];
+}
+
 export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -23,21 +98,6 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
   const [success, setSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({});
-  
-  // Password strength indicator
-  const getPasswordStrength = (password: string): { strength: number; label: string; color: string } => {
-    let strength = 0;
-    if (password.length >= 8) strength++;
-    if (/[A-Z]/.test(password)) strength++;
-    if (/[a-z]/.test(password)) strength++;
-    if (/[0-9]/.test(password)) strength++;
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
-    
-    if (strength <= 1) return { strength: 1, label: 'Weak', color: 'bg-red-500' };
-    if (strength <= 3) return { strength: 2, label: 'Fair', color: 'bg-yellow-500' };
-    if (strength === 4) return { strength: 3, label: 'Good', color: 'bg-blue-500' };
-    return { strength: 4, label: 'Strong', color: 'bg-green-500' };
-  };
   
   const passwordStrength = formData.password ? getPasswordStrength(formData.password) : null;
 
@@ -100,8 +160,10 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
       return;
     }
     
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    const unmetRules = getUnmetPasswordRules(formData.password);
+    if (unmetRules.length > 0) {
+      setError('Password does not meet security requirements');
+      setValidationErrors(unmetRules.map((rule) => rule.detail));
       setIsLoading(false);
       return;
     }
@@ -124,12 +186,21 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
         setSuccess(true);
       }
     } catch (err) {
-      const appError = err as AppError & { response?: { data?: { details?: string[]; error?: string } } };
-      if (appError.response?.data?.details) {
-        setValidationErrors(appError.response.data.details);
-        setError('Password does not meet security requirements');
+      // apiClient throws AppError with statusCode set and the parsed JSON body
+      // in `details` whenever the server answered; anything else (offline,
+      // DNS, CORS) arrives as a plain Error with no statusCode.
+      const appError = err as AppError;
+      const body = (appError.details ?? null) as RegisterErrorBody | null;
+      const status = appError.statusCode;
+      const clientRejected = typeof status === 'number' && status >= 400 && status < 500;
+
+      if (clientRejected && Array.isArray(body?.details) && body.details.length > 0) {
+        setValidationErrors(body.details);
+        setError(body.error || 'Password does not meet security requirements');
+      } else if (clientRejected && (body?.error || appError.message)) {
+        setError(body?.error || appError.message);
       } else {
-        setError(appError.response?.data?.error || 'Registration failed. Please try again.');
+        setError('Registration failed. Please try again.');
       }
     }
     
@@ -289,15 +360,16 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
                 <div className="mt-2">
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span className="text-stone-600">Password Strength:</span>
-                    <span className={`font-medium ${
-                      passwordStrength.label === 'Strong' ? 'text-green-600' :
-                      passwordStrength.label === 'Good' ? 'text-blue-600' :
-                      passwordStrength.label === 'Fair' ? 'text-yellow-600' : 'text-red-600'
-                    }`}>{passwordStrength.label}</span>
+                    <span className={`font-medium ${passwordStrength.textColor}`}>{passwordStrength.label}</span>
                   </div>
                   <div className="w-full bg-stone-200 rounded-full h-2">
                     <div className={`${passwordStrength.color} h-2 rounded-full transition-all`} style={{ width: `${(passwordStrength.strength / 4) * 100}%` }} />
                   </div>
+                  {passwordStrength.unmet.length > 0 && (
+                    <p className="text-red-600 text-sm mt-1">
+                      Still needed: {passwordStrength.unmet.map((rule) => rule.short).join(', ')}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -333,10 +405,14 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="text-sm font-medium text-blue-900 mb-2">Password Requirements:</h4>
               <ul className="text-sm text-blue-800 space-y-1">
-                <li>• At least 8 characters long</li>
-                <li>• Contains uppercase and lowercase letters</li>
-                <li>• Contains at least one number</li>
-                <li>• Contains at least one special character (!@#$%^&*)</li>
+                {PASSWORD_RULES.map((rule) => {
+                  const met = formData.password !== '' && rule.test(formData.password);
+                  return (
+                    <li key={rule.detail} className={met ? 'text-green-700' : undefined}>
+                      {met ? '✓' : '•'} {rule.label}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 

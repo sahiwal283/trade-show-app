@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.29.1] - 2026-10-07 - Registration: honest password meter, real error messages
+
+### Fixed
+- The registration password meter said "Good" for a password the server
+  would reject (four of five rules met, e.g. no uppercase letter). The meter
+  now mirrors the backend's five rules exactly: it reads Weak or Fair until
+  every rule passes, then Strong, and lists what is still needed under the
+  bar. The "Password Requirements" box ticks each rule live. Submit is
+  blocked client-side with the same per-rule wording the server uses.
+- Every registration failure showed "Registration failed. Please try
+  again." because the form read `err.response.data`, which `apiClient`'s
+  `AppError` never carries. It now reads `AppError.details` / `.message`, so
+  the user sees the server's actual 4xx reason (password rule list,
+  "Username already exists", "Email already exists"). Network failures and
+  5xx still show the generic message. Frontend only.
+
 ## [2.29.0] - 2026-10-06 - Leads page: styled pickers, events limited to open shows
 
 ### Changed
