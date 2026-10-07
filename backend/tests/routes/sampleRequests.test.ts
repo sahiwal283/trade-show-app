@@ -40,6 +40,8 @@ function mockRes() {
 }
 const rep = { id: 'u-1', role: 'salesperson' };
 const validUuid = '550e8400-e29b-41d4-a716-446655440000';
+const EV = '6f1c2b1e-3a4d-4c5e-8f90-1a2b3c4d5e6f';
+const U9 = '7a2d3c2f-4b5e-4d6f-9a01-2b3c4d5e6f70';
 
 describe('sample request routes', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -160,12 +162,12 @@ describe('sample request routes', () => {
   });
 
   it('mine endpoints always target the caller', async () => {
-    await handleGetMine({ user: rep, params: { eventId: 'ev-1' } } as any, mockRes());
-    expect(sampleRequestService.getRequest).toHaveBeenCalledWith('ev-1', 'u-1', rep);
-    await handleSaveMine({ user: rep, params: { eventId: 'ev-1' }, body: { items: [], materials: [] } } as any, mockRes());
-    expect(sampleRequestService.saveDraft).toHaveBeenCalledWith('ev-1', 'u-1', { items: [], materials: [] }, rep);
-    await handleSubmitMine({ user: rep, params: { eventId: 'ev-1' } } as any, mockRes());
-    expect(sampleRequestService.submit).toHaveBeenCalledWith('ev-1', 'u-1', rep);
+    await handleGetMine({ user: rep, params: { eventId: EV } } as any, mockRes());
+    expect(sampleRequestService.getRequest).toHaveBeenCalledWith(EV, 'u-1', rep);
+    await handleSaveMine({ user: rep, params: { eventId: EV }, body: { items: [], materials: [] } } as any, mockRes());
+    expect(sampleRequestService.saveDraft).toHaveBeenCalledWith(EV, 'u-1', { items: [], materials: [] }, rep);
+    await handleSubmitMine({ user: rep, params: { eventId: EV } } as any, mockRes());
+    expect(sampleRequestService.submit).toHaveBeenCalledWith(EV, 'u-1', rep);
   });
 
   it('handleListMine returns { requests }', async () => {
@@ -177,22 +179,38 @@ describe('sample request routes', () => {
   it('on-behalf handlers target path user and pass actor', async () => {
     const admin = { id: 'adm', role: 'admin' };
 
-    await handleGetForUser({ user: admin, params: { eventId: 'ev-1', userId: 'u-9' } } as any, mockRes());
-    expect(sampleRequestService.getRequest).toHaveBeenCalledWith('ev-1', 'u-9', admin);
+    await handleGetForUser({ user: admin, params: { eventId: EV, userId: U9 } } as any, mockRes());
+    expect(sampleRequestService.getRequest).toHaveBeenCalledWith(EV, U9, admin);
 
-    await handleSaveForUser({ user: admin, params: { eventId: 'ev-1', userId: 'u-9' }, body: { items: [] } } as any, mockRes());
-    expect(sampleRequestService.saveDraft).toHaveBeenCalledWith('ev-1', 'u-9', { items: [] }, admin);
+    await handleSaveForUser({ user: admin, params: { eventId: EV, userId: U9 }, body: { items: [] } } as any, mockRes());
+    expect(sampleRequestService.saveDraft).toHaveBeenCalledWith(EV, U9, { items: [] }, admin);
 
-    await handleSubmitForUser({ user: admin, params: { eventId: 'ev-1', userId: 'u-9' } } as any, mockRes());
-    expect(sampleRequestService.submit).toHaveBeenCalledWith('ev-1', 'u-9', admin);
+    await handleSubmitForUser({ user: admin, params: { eventId: EV, userId: U9 } } as any, mockRes());
+    expect(sampleRequestService.submit).toHaveBeenCalledWith(EV, U9, admin);
   });
 
   it('summary and access pass the actor through', async () => {
     const res = mockRes();
-    await handleGetSummary({ user: rep, params: { eventId: 'ev-1' } } as any, res);
-    expect(sampleRequestService.getEventSummary).toHaveBeenCalledWith('ev-1', rep);
+    await handleGetSummary({ user: rep, params: { eventId: EV } } as any, res);
+    expect(sampleRequestService.getEventSummary).toHaveBeenCalledWith(EV, rep);
     await handleAccess({ user: rep } as any, res);
     expect(res.json).toHaveBeenCalledWith({ canViewSummary: true });
+  });
+
+  it('400s a non-UUID eventId before calling the service', async () => {
+    const res = mockRes();
+    await handleGetMine({ user: rep, params: { eventId: 'not-a-uuid' } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid id' });
+    expect(sampleRequestService.getRequest).not.toHaveBeenCalled();
+  });
+
+  it('400s a non-UUID userId on an on-behalf route', async () => {
+    const res = mockRes();
+    await handleSaveForUser({ user: { id: 'adm', role: 'admin' }, params: { eventId: EV, userId: 'u-9' }, body: {} } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid id' });
+    expect(sampleRequestService.saveDraft).not.toHaveBeenCalled();
   });
 
   it('router /mine and /access appear before /:eventId paths', () => {

@@ -142,6 +142,13 @@ export async function handleReorder(req: AuthRequest, res: Response): Promise<vo
 }
 
 // ── Requests ──────────────────────────────────────────────────────────────
+/** 400s (and returns false) unless every named path param is a UUID, so a bad id never reaches pg. */
+const hasValidIds = (req: AuthRequest, res: Response, ...keys: Array<'eventId' | 'userId'>): boolean => {
+  if (keys.every((k) => isValidUuid(req.params[k]))) return true;
+  res.status(400).json({ error: 'Invalid id' });
+  return false;
+};
+
 export async function handleListMine(req: AuthRequest, res: Response): Promise<void> {
   res.json({ requests: await sampleRequestService.listMyOpenRequests(req.user!.id) });
 }
@@ -151,30 +158,37 @@ export async function handleAccess(req: AuthRequest, res: Response): Promise<voi
 }
 
 export async function handleGetMine(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res, 'eventId')) return;
   res.json(await sampleRequestService.getRequest(req.params.eventId, req.user!.id, req.user!));
 }
 
 export async function handleSaveMine(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res, 'eventId')) return;
   res.json(await sampleRequestService.saveDraft(req.params.eventId, req.user!.id, req.body, req.user!));
 }
 
 export async function handleSubmitMine(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res, 'eventId')) return;
   res.json(await sampleRequestService.submit(req.params.eventId, req.user!.id, req.user!));
 }
 
 export async function handleGetForUser(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res, 'eventId', 'userId')) return;
   res.json(await sampleRequestService.getRequest(req.params.eventId, req.params.userId, req.user!));
 }
 
 export async function handleSaveForUser(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res, 'eventId', 'userId')) return;
   res.json(await sampleRequestService.saveDraft(req.params.eventId, req.params.userId, req.body, req.user!));
 }
 
 export async function handleSubmitForUser(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res, 'eventId', 'userId')) return;
   res.json(await sampleRequestService.submit(req.params.eventId, req.params.userId, req.user!));
 }
 
 export async function handleGetSummary(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res, 'eventId')) return;
   res.json(await sampleRequestService.getEventSummary(req.params.eventId, req.user!));
 }
 
