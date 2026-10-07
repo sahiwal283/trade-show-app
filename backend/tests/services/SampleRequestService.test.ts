@@ -130,6 +130,14 @@ describe('SampleRequestService', () => {
       expect(view.request.status).toBe('submitted');
       expect(notificationService.notify).not.toHaveBeenCalled();
     });
+    it('still resolves as submitted when the puller notification fails', async () => {
+      const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      vi.mocked(notificationService.notify).mockRejectedValueOnce(new Error('smtp down'));
+      const view = await sampleRequestService.submit('ev-1', 'u-1', rep);
+      expect(view.request.status).toBe('submitted');
+      expect(err).toHaveBeenCalledWith('[SampleRequests] puller notify failed', expect.any(Error));
+      err.mockRestore();
+    });
     it('409s when closed for a rep', async () => {
       await expect(sampleRequestService.submit('ev-2', 'u-1', rep)).rejects.toMatchObject({ statusCode: 409 });
     });

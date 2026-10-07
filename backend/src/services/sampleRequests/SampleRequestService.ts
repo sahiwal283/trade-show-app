@@ -79,13 +79,18 @@ class SampleRequestService {
 
     const pullerId = await sampleRequestRepository.getPullerUserId();
     if (pullerId) {
-      const who = await this.userName(targetUserId);
-      await notificationService.notify(pullerId, {
-        kind: 'sample_request.submitted',
-        title: wasSubmitted ? `Sample request updated · ${event.name}` : `New sample request · ${event.name}`,
-        body: `${who} ${wasSubmitted ? 'updated their' : 'submitted a'} sample request for ${event.name}.`,
-        link: { page: 'samples', eventId },
-      });
+      // The submit is already committed; a failed notification must not fail it.
+      try {
+        const who = await this.userName(targetUserId);
+        await notificationService.notify(pullerId, {
+          kind: 'sample_request.submitted',
+          title: wasSubmitted ? `Sample request updated · ${event.name}` : `New sample request · ${event.name}`,
+          body: `${who} ${wasSubmitted ? 'updated their' : 'submitted a'} sample request for ${event.name}.`,
+          link: { page: 'samples', eventId },
+        });
+      } catch (e) {
+        console.error('[SampleRequests] puller notify failed', e);
+      }
     } else {
       console.warn(`[SampleRequests] No sample puller configured — submit for event ${eventId} by ${targetUserId} not routed`);
     }

@@ -54,9 +54,12 @@ describe('SampleRequestRepository.replaceContents', () => {
 });
 
 describe('SampleRequestRepository.getPullerUserId', () => {
-  it('reads the userId out of the app_settings JSON', async () => {
-    vi.mocked(query).mockResolvedValueOnce({ rows: [{ value: { userId: 'u-9' } }] } as any);
+  it('returns the puller id only for an existing active user', async () => {
+    vi.mocked(query).mockResolvedValueOnce({ rows: [{ id: 'u-9' }] } as any);
     expect(await sampleRequestRepository.getPullerUserId()).toBe('u-9');
+    const sql = String(vi.mocked(query).mock.calls.at(-1)![0]);
+    expect(sql).toMatch(/JOIN users u/);
+    expect(sql).toMatch(/u\.is_active = TRUE/);
   });
   it('returns null when unset', async () => {
     vi.mocked(query).mockResolvedValueOnce({ rows: [] } as any);

@@ -235,9 +235,13 @@ class SampleRequestRepository {
 
   // ── Setting ────────────────────────────────────────────────────────────
   async getPullerUserId(): Promise<string | null> {
-    const r = await query(`SELECT value FROM app_settings WHERE key = 'sample_puller_user_id'`);
-    const v = r.rows[0]?.value;
-    return v && typeof v.userId === 'string' && v.userId.length > 0 ? v.userId : null;
+    // Only an existing, active user counts; a deleted or deactivated puller reads as unset.
+    const r = await query(
+      `SELECT u.id FROM app_settings s
+       JOIN users u ON u.id::text = s.value->>'userId'
+       WHERE s.key = 'sample_puller_user_id' AND u.is_active = TRUE`
+    );
+    return r.rows[0]?.id ?? null;
   }
 }
 
