@@ -88,6 +88,12 @@ describe('SampleRequestSection', () => {
     hook.canEdit = true;
   });
 
+  it('renders nothing when the request is forbidden', () => {
+    hook.status = 'forbidden';
+    const { container } = render(<SampleRequestSection eventId="ev-1" userId="u-1" role="salesperson" />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('shows the offline note', () => {
     hook.status = 'offline';
     render(<SampleRequestSection eventId="ev-1" userId="u-1" role="salesperson" />);

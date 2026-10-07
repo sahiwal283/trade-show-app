@@ -33,6 +33,8 @@ export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, a
       ? { text: 'Submitted', cls: 'bg-accent-50 text-accent-700 ring-accent-200' }
       : { text: 'Draft', cls: 'bg-amber-50 text-amber-800 ring-amber-200' };
 
+  if (s.status === 'forbidden') return null;
+
   return (
     <section aria-label="Sample request" className="card p-4 md:p-5 space-y-4">
       <header className="flex flex-wrap items-start justify-between gap-3">

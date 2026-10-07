@@ -81,6 +81,12 @@ describe('useSampleRequest', () => {
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
   });
 
+  it('reports forbidden when the initial load is a 403', async () => {
+    vi.mocked(sampleRequestApi.getMine).mockRejectedValueOnce({ message: 'nope', statusCode: 403, details: {} });
+    const { result } = renderHook(() => useSampleRequest({ eventId: 'ev-1', userId: 'u-1', role: 'salesperson' }));
+    await waitFor(() => expect(result.current.status).toBe('forbidden'));
+  });
+
   it('uses on-behalf endpoints when an override role edits another user', async () => {
     vi.mocked(sampleRequestApi.getForUser).mockResolvedValueOnce(await (sampleRequestApi.getMine as any)());
     const { result } = renderHook(() => useSampleRequest({ eventId: 'ev-1', userId: 'u-9', role: 'admin', actorId: 'adm' }));

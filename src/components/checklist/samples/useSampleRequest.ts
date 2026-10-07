@@ -10,7 +10,7 @@ import {
   SampleRequestItem, SampleRequestMaterial, MAX_SAMPLE_QTY,
 } from '../../../utils/sampleRequestApi';
 
-export type SampleStatus = 'loading' | 'ready' | 'offline' | 'error';
+export type SampleStatus = 'loading' | 'ready' | 'offline' | 'error' | 'forbidden';
 export type ItemField = 'singles' | 'displays' | 'emptyDisplays';
 
 interface Args { eventId: string; userId: string; role: string; actorId?: string; onChanged?: () => void }
@@ -101,8 +101,10 @@ export function useSampleRequest({ eventId, userId, role, actorId, onChanged }: 
         setCatalog(c);
         applyView(v);
         setStatus('ready');
-      } catch {
+      } catch (e) {
         if (cancelled) return;
+        // 403: not on this show's roster (or no access) — the section hides itself.
+        if ((e as { statusCode?: number } | null)?.statusCode === 403) { setStatus('forbidden'); return; }
         setStatus(typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error');
       }
     })();
