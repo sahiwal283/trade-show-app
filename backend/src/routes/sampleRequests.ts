@@ -62,6 +62,18 @@ const validatePatch = (body: any): { name?: string; is_active?: boolean } | null
 };
 
 // ── Catalog ───────────────────────────────────────────────────────────────
+const DUPLICATE = Symbol('duplicate');
+/** Runs a catalog create/rename; a unique-name violation (pg 23505) answers 409 instead of 500. */
+async function catalogWrite<T>(res: Response, fn: () => Promise<T>): Promise<T | typeof DUPLICATE> {
+  try {
+    return await fn();
+  } catch (e) {
+    if ((e as { code?: string } | null)?.code !== '23505') throw e;
+    res.status(409).json({ error: 'A row with that name already exists' });
+    return DUPLICATE;
+  }
+}
+
 export async function handleGetCatalog(req: AuthRequest, res: Response): Promise<void> {
   const includeInactive = req.query.includeInactive === '1' || req.query.includeInactive === 'true';
   res.json(await sampleRequestRepository.getCatalog(includeInactive));
@@ -74,14 +86,17 @@ export async function handleCreateLine(req: AuthRequest, res: Response): Promise
     res.status(400).json({ error: 'brand (haute_brands|boomin_brands) and name are required' });
     return;
   }
-  res.status(201).json(await sampleRequestRepository.createLine({ brand: brand as SampleBrand, name }));
+  const row = await catalogWrite(res, () => sampleRequestRepository.createLine({ brand: brand as SampleBrand, name }));
+  if (row === DUPLICATE) return;
+  res.status(201).json(row);
 }
 
 export async function handleUpdateLine(req: AuthRequest, res: Response): Promise<void> {
   if (!isValidUuid(req.params.id)) { res.status(400).json({ error: 'id must be a valid UUID' }); return; }
   const patch = validatePatch(req.body);
   if (patch === null) { res.status(400).json({ error: 'patch must contain name and/or isActive with valid values' }); return; }
-  const row = await sampleRequestRepository.updateLine(req.params.id, patch);
+  const row = await catalogWrite(res, () => sampleRequestRepository.updateLine(req.params.id, patch));
+  if (row === DUPLICATE) return;
   if (!row) { res.status(404).json({ error: 'Product line not found' }); return; }
   res.json(row);
 }
@@ -90,14 +105,17 @@ export async function handleCreateProduct(req: AuthRequest, res: Response): Prom
   const productLineId = req.body?.productLineId;
   const name = cleanName(req.body?.name);
   if (!isValidUuid(productLineId) || !name) { res.status(400).json({ error: 'productLineId (UUID) and name are required' }); return; }
-  res.status(201).json(await sampleRequestRepository.createProduct({ product_line_id: productLineId, name }));
+  const row = await catalogWrite(res, () => sampleRequestRepository.createProduct({ product_line_id: productLineId, name }));
+  if (row === DUPLICATE) return;
+  res.status(201).json(row);
 }
 
 export async function handleUpdateProduct(req: AuthRequest, res: Response): Promise<void> {
   if (!isValidUuid(req.params.id)) { res.status(400).json({ error: 'id must be a valid UUID' }); return; }
   const patch = validatePatch(req.body);
   if (patch === null) { res.status(400).json({ error: 'patch must contain name and/or isActive with valid values' }); return; }
-  const row = await sampleRequestRepository.updateProduct(req.params.id, patch);
+  const row = await catalogWrite(res, () => sampleRequestRepository.updateProduct(req.params.id, patch));
+  if (row === DUPLICATE) return;
   if (!row) { res.status(404).json({ error: 'Product not found' }); return; }
   res.json(row);
 }
@@ -105,14 +123,17 @@ export async function handleUpdateProduct(req: AuthRequest, res: Response): Prom
 export async function handleCreateMaterial(req: AuthRequest, res: Response): Promise<void> {
   const name = cleanName(req.body?.name);
   if (!name) { res.status(400).json({ error: 'name is required' }); return; }
-  res.status(201).json(await sampleRequestRepository.createMaterial({ name }));
+  const row = await catalogWrite(res, () => sampleRequestRepository.createMaterial({ name }));
+  if (row === DUPLICATE) return;
+  res.status(201).json(row);
 }
 
 export async function handleUpdateMaterial(req: AuthRequest, res: Response): Promise<void> {
   if (!isValidUuid(req.params.id)) { res.status(400).json({ error: 'id must be a valid UUID' }); return; }
   const patch = validatePatch(req.body);
   if (patch === null) { res.status(400).json({ error: 'patch must contain name and/or isActive with valid values' }); return; }
-  const row = await sampleRequestRepository.updateMaterial(req.params.id, patch);
+  const row = await catalogWrite(res, () => sampleRequestRepository.updateMaterial(req.params.id, patch));
+  if (row === DUPLICATE) return;
   if (!row) { res.status(404).json({ error: 'Material not found' }); return; }
   res.json(row);
 }

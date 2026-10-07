@@ -67,7 +67,12 @@ export const SampleCatalogSection: React.FC = () => {
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true); setError(null);
-    try { await fn(); } catch { setError('That change did not save. Try again.'); } finally { setBusy(false); }
+    try {
+      await fn();
+    } catch (e) {
+      const dup = (e as { statusCode?: number } | null)?.statusCode === 409;
+      setError(dup ? 'That name already exists.' : 'That change did not save. Try again.');
+    } finally { setBusy(false); }
   };
 
   const savePuller = (userId: string) => run(async () => {

@@ -51,6 +51,16 @@ describe('SampleCatalogSection', () => {
     expect(await screen.findByText('Pink Rozay')).toBeInTheDocument();
   });
 
+  it('says the name already exists when the server answers 409', async () => {
+    vi.mocked(sampleRequestApi.createProduct).mockRejectedValueOnce({ message: 'dup', statusCode: 409, details: { error: 'A row with that name already exists' } });
+    render(<SampleCatalogSection />);
+    await screen.findByText('Blue Razz');
+    fireEvent.change(screen.getByLabelText('New product in Oh! Mit'), { target: { value: 'Blue Razz' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add product to Oh! Mit' }));
+    expect(await screen.findByText('That name already exists.')).toBeInTheDocument();
+    expect(screen.queryByText(/did not save/)).not.toBeInTheDocument();
+  });
+
   it('retires a product instead of deleting it', async () => {
     render(<SampleCatalogSection />);
     await screen.findByText('Blue Razz');

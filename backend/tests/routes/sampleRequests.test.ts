@@ -97,6 +97,23 @@ describe('sample request routes', () => {
     expect(sampleRequestRepository.updateLine).not.toHaveBeenCalled();
   });
 
+  it('409s a duplicate catalog name instead of a 500', async () => {
+    vi.mocked(sampleRequestRepository.createLine).mockRejectedValueOnce(Object.assign(new Error('dup'), { code: '23505' }));
+    const res = mockRes();
+    await handleCreateLine({ user: rep, body: { brand: 'haute_brands', name: 'Peelz' } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith({ error: 'A row with that name already exists' });
+  });
+
+  it('409s a rename onto an existing name, and rethrows other errors', async () => {
+    vi.mocked(sampleRequestRepository.updateMaterial).mockRejectedValueOnce(Object.assign(new Error('dup'), { code: '23505' }));
+    const res = mockRes();
+    await handleUpdateMaterial({ user: rep, params: { id: validUuid }, body: { name: 'Banner' } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(409);
+    vi.mocked(sampleRequestRepository.updateMaterial).mockRejectedValueOnce(new Error('boom'));
+    await expect(handleUpdateMaterial({ user: rep, params: { id: validUuid }, body: { name: 'Banner' } } as any, mockRes())).rejects.toThrow('boom');
+  });
+
   it('creates a product with valid UUID productLineId', async () => {
     const res = mockRes();
     await handleCreateProduct({ user: rep, body: { productLineId: validUuid, name: 'Product' } } as any, res);
