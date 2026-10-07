@@ -69,6 +69,12 @@ export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, a
 
       {s.status === 'ready' && s.catalog && (
         <>
+          {s.isOffline && (
+            <div className="flex items-start gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-600">
+              <WifiOff aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <p>You're offline. Reconnect to edit your sample request.</p>
+            </div>
+          )}
           {s.closed && (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
               <p>

@@ -66,13 +66,15 @@ export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
   const [override, setOverride] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pending = useRef<Promise<void> | null>(null);
+  const pending = useRef<Promise<boolean> | null>(null);
+  const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false);
 
   const payload = useMemo(() => toPayload(items, materials), [items, materials]);
   const key = useMemo(() => serialize(payload), [payload]);
   const dirty = key !== savedKey;
   const canSubmit = status === 'ready' && !submitting && (submittedKey === null || key !== submittedKey);
-  const canEdit = status === 'ready' && (!closed || (OVERRIDE.includes(role) && override));
+  const editable = status === 'ready' && (!closed || (OVERRIDE.includes(role) && override));
+  const canEdit = editable && !isOffline;
 
   const applyView = useCallback((v: SampleRequestView) => {
     const im = new Map(v.request.items.map((i) => [i.productId, i]));
@@ -104,17 +106,20 @@ export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
     return () => { cancelled = true; };
   }, [api, applyView]);
 
-  const persist = useCallback(async (): Promise<void> => {
-    if (!dirty) return;
+  // Resolves true when the draft is persisted (or nothing to save), false on failure.
+  const persist = useCallback(async (): Promise<boolean> => {
+    if (!dirty) return true;
     setSaving(true);
     setError(null);
     try {
       const v = await api.save(payload);
       setSavedKey(key);
       setView((prev) => (prev ? { ...prev, window: v.window } : v));
+      return true;
     } catch (e) {
       if (isWindowClosed(e)) setClosed(true);
       else setError('Could not save your changes. Check your connection and try again.');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -124,9 +129,36 @@ export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
   useEffect(() => {
     if (!dirty || !canEdit) return;
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => { pending.current = persist(); }, AUTOSAVE_MS);
+    timer.current = setTimeout(() => {
+      const p: Promise<boolean> = persist().finally(() => { if (pending.current === p) pending.current = null; });
+      pending.current = p;
+    }, AUTOSAVE_MS);
     return () => { if (timer.current) clearTimeout(timer.current); };
   }, [dirty, canEdit, persist]);
+
+  // Latest-value refs for the online handler and the unmount flush.
+  const latest = useRef({ payload, dirty, canEdit, editable, api, persist });
+  latest.current = { payload, dirty, canEdit, editable, api, persist };
+
+  useEffect(() => {
+    const goOffline = () => setIsOffline(true);
+    const goOnline = () => {
+      setIsOffline(false);
+      if (latest.current.dirty && latest.current.editable) void latest.current.persist();
+    };
+    window.addEventListener('offline', goOffline);
+    window.addEventListener('online', goOnline);
+    return () => {
+      window.removeEventListener('offline', goOffline);
+      window.removeEventListener('online', goOnline);
+    };
+  }, []);
+
+  // Best-effort flush of an unsaved draft when the section unmounts (show switch).
+  useEffect(() => () => {
+    const l = latest.current;
+    if (l.dirty && l.canEdit) l.api.save(l.payload).catch(() => undefined);
+  }, []);
 
   const setItem = useCallback((productId: string, field: ItemField, value: number) => {
     setItems((prev) => {
@@ -151,8 +183,8 @@ export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
     setError(null);
     try {
       if (timer.current) clearTimeout(timer.current);
-      await persist();
-      if (pending.current) await pending.current;
+      if (pending.current) await pending.current; // let an in-flight autosave land first
+      if (!(await persist())) return;              // flush failed: do not submit
       const v = await api.submit();
       setView(v);
       setSubmittedKey(key);
@@ -168,6 +200,6 @@ export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
 
   return {
     status, catalog, view, items, materials, dirty, saving, submitting, closed, override, setOverride,
-    canEdit, canSubmit, error, setItem, setMaterial, submit,
+    canEdit, canSubmit, isOffline, error, setItem, setMaterial, submit,
   };
 }

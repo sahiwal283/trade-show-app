@@ -163,7 +163,7 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
       )}
 
       {selectedEventId && (
-        <SampleRequestSection eventId={selectedEventId} userId={user.id} role={user.role} actorId={user.id} />
+        <SampleRequestSection key={selectedEventId} eventId={selectedEventId} userId={user.id} role={user.role} actorId={user.id} />
       )}
 
       {loading && (

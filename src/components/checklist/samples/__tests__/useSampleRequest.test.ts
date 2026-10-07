@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
 vi.mock('../../../../utils/sampleRequestApi', async (orig) => {
@@ -32,6 +32,7 @@ import { useSampleRequest } from '../useSampleRequest';
 import { sampleRequestApi } from '../../../../utils/sampleRequestApi';
 
 describe('useSampleRequest', () => {
+  afterEach(() => { vi.useRealTimers(); });
   beforeEach(() => { vi.clearAllMocks(); vi.useFakeTimers({ shouldAdvanceTime: true }); });
 
   it('loads catalog and request, then autosaves a changed quantity after the debounce', async () => {
@@ -84,5 +85,82 @@ describe('useSampleRequest', () => {
     const { result } = renderHook(() => useSampleRequest({ eventId: 'ev-1', userId: 'u-9', role: 'admin', actorId: 'adm' }));
     await waitFor(() => expect(result.current.status).toBe('ready'));
     expect(sampleRequestApi.getForUser).toHaveBeenCalledWith('ev-1', 'u-9');
+  });
+
+  const mk = () => renderHook(() => useSampleRequest({ eventId: 'ev-1', userId: 'u-1', role: 'salesperson' }));
+  const okView = (p: any) => ({
+    request: { id: 'r', event_id: 'ev-1', user_id: 'u-1', status: 'draft', submitted_at: null, ...p },
+    window: { opensAt: '2026-10-01T00:00:00Z', closesAt: '2099-01-01T00:00:00Z', isOpen: true },
+  });
+
+  it('submit waits for an in-flight autosave, then flushes, then submits', async () => {
+    let release!: () => void;
+    const order: string[] = [];
+    vi.mocked(sampleRequestApi.saveMine).mockImplementationOnce(async (_e: string, p: any) => {
+      order.push('save1');
+      await new Promise<void>((r) => { release = r; });
+      return okView(p) as any;
+    });
+    vi.mocked(sampleRequestApi.submitMine).mockImplementationOnce(async () => { order.push('submit'); return okView({ items: [], materials: [] }) as any; });
+    const { result } = mk();
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    act(() => result.current.setItem('p-1', 'singles', 2));
+    await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+    expect(sampleRequestApi.saveMine).toHaveBeenCalledTimes(1);
+    let done: Promise<void>;
+    await act(async () => { done = result.current.submit(); await Promise.resolve(); });
+    expect(sampleRequestApi.saveMine).toHaveBeenCalledTimes(1); // flush not sent while save1 in flight
+    expect(sampleRequestApi.submitMine).not.toHaveBeenCalled();
+    await act(async () => { release(); await done; });
+    expect(sampleRequestApi.saveMine).toHaveBeenCalledTimes(2);
+    expect(sampleRequestApi.submitMine).toHaveBeenCalledTimes(1);
+    expect(order).toEqual(['save1', 'submit']);
+  });
+
+  it('does not submit when the flush save fails, and surfaces an error', async () => {
+    vi.mocked(sampleRequestApi.saveMine).mockRejectedValueOnce(new Error('boom'));
+    const { result } = mk();
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    act(() => result.current.setItem('p-1', 'singles', 2));
+    await act(async () => { await result.current.submit(); });
+    expect(sampleRequestApi.submitMine).not.toHaveBeenCalled();
+    expect(result.current.error).toBeTruthy();
+    expect(result.current.view?.request.status).toBe('draft');
+  });
+
+  it('flips to closed on a 409 WINDOW_CLOSED from submit', async () => {
+    vi.mocked(sampleRequestApi.submitMine).mockRejectedValueOnce({
+      statusCode: 409,
+      details: { error: 'closed', details: { code: 'WINDOW_CLOSED', closesAt: '2026-10-01T00:00:00Z' } },
+    });
+    const { result } = mk();
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await act(async () => { await result.current.submit(); });
+    expect(result.current.closed).toBe(true);
+  });
+
+  it('disables editing while offline and flushes the dirty draft when back online', async () => {
+    const { result } = mk();
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    act(() => { window.dispatchEvent(new Event('offline')); });
+    expect(result.current.canEdit).toBe(false);
+    act(() => result.current.setItem('p-1', 'singles', 2));
+    expect(sampleRequestApi.saveMine).not.toHaveBeenCalled();
+    await act(async () => { window.dispatchEvent(new Event('online')); });
+    expect(result.current.canEdit).toBe(true);
+    expect(sampleRequestApi.saveMine).toHaveBeenCalledWith('ev-1', {
+      items: [{ productId: 'p-1', singles: 2, displays: 0, emptyDisplays: 0 }], materials: [],
+    });
+  });
+
+  it('flushes a dirty draft on unmount within the debounce window', async () => {
+    const { result, unmount } = mk();
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    act(() => result.current.setItem('p-1', 'singles', 5));
+    unmount();
+    expect(sampleRequestApi.saveMine).toHaveBeenCalledTimes(1);
+    expect(sampleRequestApi.saveMine).toHaveBeenCalledWith('ev-1', {
+      items: [{ productId: 'p-1', singles: 5, displays: 0, emptyDisplays: 0 }], materials: [],
+    });
   });
 });
