@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   sampleRequestApi, SampleCatalog, SampleRequestView, SampleRequestPayload,
-  SampleRequestItem, SampleRequestMaterial,
+  SampleRequestItem, SampleRequestMaterial, MAX_SAMPLE_QTY,
 } from '../../../utils/sampleRequestApi';
 
 export type SampleStatus = 'loading' | 'ready' | 'offline' | 'error';
@@ -16,6 +16,7 @@ export type ItemField = 'singles' | 'displays' | 'emptyDisplays';
 interface Args { eventId: string; userId: string; role: string; actorId?: string; onChanged?: () => void }
 
 const AUTOSAVE_MS = 800;
+const clampQty = (v: number): number => Math.min(MAX_SAMPLE_QTY, Math.max(0, Math.floor(v || 0)));
 const OVERRIDE = ['admin', 'coordinator', 'developer'];
 
 const emptyItem = (productId: string): SampleRequestItem => ({ productId, singles: 0, displays: 0, emptyDisplays: 0 });
@@ -166,7 +167,7 @@ export function useSampleRequest({ eventId, userId, role, actorId, onChanged }: 
   const setItem = useCallback((productId: string, field: ItemField, value: number) => {
     setItems((prev) => {
       const next = new Map(prev);
-      next.set(productId, { ...(prev.get(productId) ?? emptyItem(productId)), [field]: Math.max(0, Math.floor(value || 0)) });
+      next.set(productId, { ...(prev.get(productId) ?? emptyItem(productId)), [field]: clampQty(value) });
       return next;
     });
   }, []);
@@ -175,7 +176,7 @@ export function useSampleRequest({ eventId, userId, role, actorId, onChanged }: 
     setMaterials((prev) => {
       const next = new Map(prev);
       const cur = prev.get(materialId) ?? emptyMaterial(materialId);
-      next.set(materialId, { ...cur, ...patch, qty: patch.qty === undefined ? cur.qty : Math.max(0, Math.floor(patch.qty || 0)) });
+      next.set(materialId, { ...cur, ...patch, qty: patch.qty === undefined ? cur.qty : clampQty(patch.qty) });
       return next;
     });
   }, []);

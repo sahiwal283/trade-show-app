@@ -1,10 +1,13 @@
 import { ValidationError } from '../../utils/errors';
 import { SampleCatalog, SampleRequestPayload } from './types';
 
+export const MAX_SAMPLE_QTY = 10000;
+
 const nonNegInt = (v: unknown, field: string): number => {
   if (typeof v !== 'number' || !Number.isInteger(v) || v < 0) {
     throw new ValidationError(`${field} must be a non-negative integer`);
   }
+  if (v > MAX_SAMPLE_QTY) throw new ValidationError(`${field} must be between 0 and ${MAX_SAMPLE_QTY}`);
   return v;
 };
 

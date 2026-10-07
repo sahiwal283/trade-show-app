@@ -168,6 +168,15 @@ describe('useSampleRequest', () => {
     expect(onChanged).toHaveBeenCalledTimes(2);
   });
 
+  it('clamps item and material quantities to 10000', async () => {
+    const { result } = mk();
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    act(() => result.current.setItem('p-1', 'singles', 25000));
+    act(() => result.current.setMaterial('m-1', { qty: 99999 }));
+    expect(result.current.items.get('p-1')?.singles).toBe(10000);
+    expect(result.current.materials.get('m-1')?.qty).toBe(10000);
+  });
+
   it('flushes a dirty draft on unmount within the debounce window', async () => {
     const { result, unmount } = mk();
     await waitFor(() => expect(result.current.status).toBe('ready'));

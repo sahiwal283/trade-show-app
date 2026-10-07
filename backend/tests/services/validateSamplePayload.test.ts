@@ -29,6 +29,13 @@ describe('validateSamplePayload', () => {
     expect(() => validateSamplePayload({ items: [{ productId: 'p-1', singles: 1.5, displays: 0, emptyDisplays: 0 }], materials: [] }, catalog)).toThrow(/non-negative integer/i);
     expect(() => validateSamplePayload({ items: [], materials: [{ materialId: 'm-1', qty: '3' as any, notes: null }] }, catalog)).toThrow(/non-negative integer/i);
   });
+  it('rejects quantities above 10000 with a 400', () => {
+    const big = () => validateSamplePayload({ items: [{ productId: 'p-1', singles: 10001, displays: 0, emptyDisplays: 0 }], materials: [] }, catalog);
+    expect(big).toThrow(/items\[0\]\.singles must be between 0 and 10000/);
+    try { big(); } catch (e: any) { expect(e.statusCode).toBe(400); }
+    expect(() => validateSamplePayload({ items: [], materials: [{ materialId: 'm-1', qty: 10001, notes: null }] }, catalog)).toThrow(/must be between 0 and 10000/);
+    expect(validateSamplePayload({ items: [{ productId: 'p-1', singles: 10000, displays: 0, emptyDisplays: 0 }], materials: [] }, catalog).items[0].singles).toBe(10000);
+  });
   it('rejects a non-object body and missing arrays', () => {
     expect(() => validateSamplePayload(null, catalog)).toThrow(/items/i);
     expect(() => validateSamplePayload({ items: 'x', materials: [] }, catalog)).toThrow(/items/i);

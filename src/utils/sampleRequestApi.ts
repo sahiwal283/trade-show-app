@@ -3,6 +3,8 @@ import { apiClient } from './apiClient';
 export type SampleBrand = 'haute_brands' | 'boomin_brands';
 export const SAMPLE_BRAND_LABELS: Record<SampleBrand, string> = { haute_brands: 'Haute Brands', boomin_brands: 'Coolioh' };
 export const SAMPLE_BRAND_ORDER: SampleBrand[] = ['haute_brands', 'boomin_brands'];
+/** Per-field quantity cap; the server rejects anything above it. */
+export const MAX_SAMPLE_QTY = 10000;
 
 export interface SampleProductLine { id: string; brand: SampleBrand; name: string; position: number; is_active: boolean }
 export interface SampleProduct { id: string; product_line_id: string; name: string; position: number; is_active: boolean }

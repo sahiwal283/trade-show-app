@@ -1,5 +1,5 @@
 import React from 'react';
-import { SampleProduct, SampleRequestItem } from '../../../utils/sampleRequestApi';
+import { SampleProduct, SampleRequestItem, MAX_SAMPLE_QTY } from '../../../utils/sampleRequestApi';
 import { ItemField } from './useSampleRequest';
 
 interface Props {
@@ -38,7 +38,7 @@ export const ProductTable: React.FC<Props> = ({ lineName, products, items, disab
               {COLS.map((c) => (
                 <td key={c.field} className="py-1 text-right">
                   <input
-                    type="number" inputMode="numeric" min={0} step={1}
+                    type="number" inputMode="numeric" min={0} max={MAX_SAMPLE_QTY} step={1}
                     aria-label={`${p.name} ${c.label.toLowerCase()}`}
                     value={row?.[c.field] ?? 0}
                     disabled={disabled}
