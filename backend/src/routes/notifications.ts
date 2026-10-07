@@ -6,12 +6,7 @@ import express, { Response } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/errors';
 import { notificationService } from '../services/NotificationService';
-
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function isValidUuid(value: unknown): value is string {
-  return typeof value === 'string' && UUID_REGEX.test(value);
-}
+import { isValidUuid } from '../utils/uuid';
 
 const router = express.Router();
 router.use(authenticateToken);

@@ -24,9 +24,11 @@ vi.mock('../../src/database/repositories/SampleRequestRepository', () => ({
   },
 }));
 
-import {
-  handleGetCatalog, handleCreateLine, handleUpdateProduct, handleReorder,
-  handleGetMine, handleSaveMine, handleSubmitMine, handleSaveForUser, handleGetSummary, handleAccess,
+import router, {
+  handleGetCatalog, handleCreateLine, handleUpdateLine, handleCreateProduct, handleUpdateProduct,
+  handleCreateMaterial, handleUpdateMaterial, handleReorder,
+  handleListMine, handleGetMine, handleSaveMine, handleSubmitMine, handleGetForUser, handleSaveForUser,
+  handleSubmitForUser, handleGetSummary, handleAccess,
 } from '../../src/routes/sampleRequests';
 import { sampleRequestService } from '../../src/services/sampleRequests/SampleRequestService';
 import { sampleRequestRepository } from '../../src/database/repositories/SampleRequestRepository';
@@ -37,6 +39,7 @@ function mockRes() {
   };
 }
 const rep = { id: 'u-1', role: 'salesperson' };
+const validUuid = '550e8400-e29b-41d4-a716-446655440000';
 
 describe('sample request routes', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -64,19 +67,96 @@ describe('sample request routes', () => {
     expect(res.status).toHaveBeenCalledWith(201);
   });
 
-  it('404s an update to a missing product', async () => {
+  it('update line 400 on non-UUID id', async () => {
     const res = mockRes();
-    await handleUpdateProduct({ user: rep, params: { id: 'nope' }, body: { isActive: false } } as any, res);
-    expect(sampleRequestRepository.updateProduct).toHaveBeenCalledWith('nope', { name: undefined, is_active: false });
-    expect(res.status).toHaveBeenCalledWith(404);
+    await handleUpdateLine({ user: rep, params: { id: 'not-a-uuid' }, body: { name: 'X' } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(sampleRequestRepository.updateLine).not.toHaveBeenCalled();
   });
 
-  it('validates reorder input', async () => {
+  it('update line 400 on blank name', async () => {
     const res = mockRes();
-    await handleReorder({ user: rep, body: { kind: 'things', orderedIds: ['a'] } } as any, res);
+    await handleUpdateLine({ user: rep, params: { id: validUuid }, body: { name: '  ' } } as any, res);
     expect(res.status).toHaveBeenCalledWith(400);
-    await handleReorder({ user: rep, body: { kind: 'products', orderedIds: ['a', 'b'] } } as any, res);
-    expect(sampleRequestRepository.reorder).toHaveBeenCalledWith('products', ['a', 'b']);
+    expect(sampleRequestRepository.updateLine).not.toHaveBeenCalled();
+  });
+
+  it('update line 400 on non-boolean isActive', async () => {
+    const res = mockRes();
+    await handleUpdateLine({ user: rep, params: { id: validUuid }, body: { isActive: 'true' } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(sampleRequestRepository.updateLine).not.toHaveBeenCalled();
+  });
+
+  it('update line 400 on empty patch', async () => {
+    const res = mockRes();
+    await handleUpdateLine({ user: rep, params: { id: validUuid }, body: {} } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(sampleRequestRepository.updateLine).not.toHaveBeenCalled();
+  });
+
+  it('creates a product with valid UUID productLineId', async () => {
+    const res = mockRes();
+    await handleCreateProduct({ user: rep, body: { productLineId: validUuid, name: 'Product' } } as any, res);
+    expect(sampleRequestRepository.createProduct).toHaveBeenCalledWith({ product_line_id: validUuid, name: 'Product' });
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it('create product 400 on non-UUID productLineId', async () => {
+    const res = mockRes();
+    await handleCreateProduct({ user: rep, body: { productLineId: 'not-uuid', name: 'Product' } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(sampleRequestRepository.createProduct).not.toHaveBeenCalled();
+  });
+
+  it('update product 400 on non-UUID id', async () => {
+    const res = mockRes();
+    await handleUpdateProduct({ user: rep, params: { id: 'nope' }, body: { isActive: false } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(sampleRequestRepository.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it('update product 400 on empty patch', async () => {
+    const res = mockRes();
+    await handleUpdateProduct({ user: rep, params: { id: validUuid }, body: {} } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(sampleRequestRepository.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it('creates a material with valid name', async () => {
+    const res = mockRes();
+    await handleCreateMaterial({ user: rep, body: { name: 'Material' } } as any, res);
+    expect(sampleRequestRepository.createMaterial).toHaveBeenCalledWith({ name: 'Material' });
+    expect(res.status).toHaveBeenCalledWith(201);
+  });
+
+  it('update material 400 on non-UUID id', async () => {
+    const res = mockRes();
+    await handleUpdateMaterial({ user: rep, params: { id: 'invalid' }, body: { name: 'X' } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(sampleRequestRepository.updateMaterial).not.toHaveBeenCalled();
+  });
+
+  it('update material 400 on empty patch', async () => {
+    const res = mockRes();
+    await handleUpdateMaterial({ user: rep, params: { id: validUuid }, body: {} } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(sampleRequestRepository.updateMaterial).not.toHaveBeenCalled();
+  });
+
+  it('reorder 400 on non-UUID entry', async () => {
+    const res = mockRes();
+    await handleReorder({ user: rep, body: { kind: 'products', orderedIds: [validUuid, 'not-a-uuid'] } } as any, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(sampleRequestRepository.reorder).not.toHaveBeenCalled();
+  });
+
+  it('reorder succeeds with valid UUIDs', async () => {
+    const res = mockRes();
+    const id1 = '550e8400-e29b-41d4-a716-446655440001';
+    const id2 = '550e8400-e29b-41d4-a716-446655440002';
+    await handleReorder({ user: rep, body: { kind: 'products', orderedIds: [id1, id2] } } as any, res);
+    expect(sampleRequestRepository.reorder).toHaveBeenCalledWith('products', [id1, id2]);
   });
 
   it('mine endpoints always target the caller', async () => {
@@ -88,10 +168,23 @@ describe('sample request routes', () => {
     expect(sampleRequestService.submit).toHaveBeenCalledWith('ev-1', 'u-1', rep);
   });
 
-  it('on-behalf save targets the path user and passes the actor', async () => {
+  it('handleListMine returns { requests }', async () => {
+    const res = mockRes();
+    await handleListMine({ user: rep } as any, res);
+    expect(res.json).toHaveBeenCalledWith({ requests: [{ eventId: 'ev-1' }] });
+  });
+
+  it('on-behalf handlers target path user and pass actor', async () => {
     const admin = { id: 'adm', role: 'admin' };
-    await handleSaveForUser({ user: admin, params: { eventId: 'ev-1', userId: 'u-9' }, body: { items: [], materials: [] } } as any, mockRes());
-    expect(sampleRequestService.saveDraft).toHaveBeenCalledWith('ev-1', 'u-9', { items: [], materials: [] }, admin);
+
+    await handleGetForUser({ user: admin, params: { eventId: 'ev-1', userId: 'u-9' } } as any, mockRes());
+    expect(sampleRequestService.getRequest).toHaveBeenCalledWith('ev-1', 'u-9', admin);
+
+    await handleSaveForUser({ user: admin, params: { eventId: 'ev-1', userId: 'u-9' }, body: { items: [] } } as any, mockRes());
+    expect(sampleRequestService.saveDraft).toHaveBeenCalledWith('ev-1', 'u-9', { items: [] }, admin);
+
+    await handleSubmitForUser({ user: admin, params: { eventId: 'ev-1', userId: 'u-9' } } as any, mockRes());
+    expect(sampleRequestService.submit).toHaveBeenCalledWith('ev-1', 'u-9', admin);
   });
 
   it('summary and access pass the actor through', async () => {
@@ -100,5 +193,24 @@ describe('sample request routes', () => {
     expect(sampleRequestService.getEventSummary).toHaveBeenCalledWith('ev-1', rep);
     await handleAccess({ user: rep } as any, res);
     expect(res.json).toHaveBeenCalledWith({ canViewSummary: true });
+  });
+
+  it('router /mine and /access appear before /:eventId paths', () => {
+    const paths: string[] = [];
+    router.stack.forEach((layer: any) => {
+      if (layer.route?.path) {
+        paths.push(layer.route.path);
+      }
+    });
+
+    const mineIndex = paths.indexOf('/mine');
+    const accessIndex = paths.indexOf('/access');
+    const eventIdIndex = paths.findIndex((p: string) => p.includes(':eventId'));
+
+    expect(mineIndex).toBeGreaterThan(-1);
+    expect(accessIndex).toBeGreaterThan(-1);
+    expect(eventIdIndex).toBeGreaterThan(-1);
+    expect(mineIndex).toBeLessThan(eventIdIndex);
+    expect(accessIndex).toBeLessThan(eventIdIndex);
   });
 });
