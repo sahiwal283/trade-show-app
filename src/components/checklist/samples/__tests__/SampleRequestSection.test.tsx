@@ -94,6 +94,21 @@ describe('SampleRequestSection', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('reads Closed and disables inputs once closesAt has passed, without waiting for a 409', () => {
+    const saved = hook.view.window.closesAt;
+    hook.view.window.closesAt = new Date(Date.now() - 60_000).toISOString();
+    try {
+      render(<SampleRequestSection eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.getByText('Closed')).toBeInTheDocument();
+      expect(screen.queryByText(/Closes in/)).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Mango singles')).toBeDisabled();
+      expect(screen.getByLabelText('Banner qty')).toBeDisabled();
+      expect(screen.getByRole('button', { name: /^Submit/ })).toBeDisabled();
+    } finally {
+      hook.view.window.closesAt = saved;
+    }
+  });
+
   it('shows the offline note', () => {
     hook.status = 'offline';
     render(<SampleRequestSection eventId="ev-1" userId="u-1" role="salesperson" />);

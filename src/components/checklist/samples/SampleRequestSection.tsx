@@ -26,8 +26,12 @@ export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, a
 
   const closesAt = s.view?.window.closesAt ?? null;
   const submitted = s.view?.request.status === 'submitted';
+  // The deadline passing while the page is open closes the form without waiting for a 409.
+  const pastDeadline = !!closesAt && new Date(closesAt).getTime() <= now.getTime();
+  const closed = s.closed || pastDeadline;
+  const canEdit = s.canEdit && (!pastDeadline || (OVERRIDE.includes(role) && s.override));
 
-  const statusPill = s.closed
+  const statusPill = closed
     ? { text: 'Closed', cls: 'bg-stone-100 text-stone-600 ring-stone-200' }
     : submitted
       ? { text: 'Submitted', cls: 'bg-accent-50 text-accent-700 ring-accent-200' }
@@ -49,7 +53,7 @@ export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, a
         </div>
         <div className="flex items-center gap-2">
           <span className={`chip px-2 py-0.5 text-[11px] ring-1 ${statusPill.cls}`}>{statusPill.text}</span>
-          {closesAt && !s.closed && (
+          {closesAt && !closed && (
             <span className={`text-xs font-semibold tabular-nums ${isUrgent(closesAt, now) ? 'text-red-600' : 'text-stone-600'}`}>
               Closes in {formatCountdown(closesAt, now)}
             </span>
@@ -81,7 +85,7 @@ export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, a
               <p>You're offline. Reconnect to edit your sample request.</p>
             </div>
           )}
-          {s.closed && (
+          {closed && (
             <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
               <p>
                 Sample requests for this show closed on {closesAt ? formatCloseDate(closesAt) : 'the deadline'}. Contact your coordinator for changes.
@@ -110,7 +114,7 @@ export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, a
                     if (products.length === 0) return null;
                     return (
                       <ProductTable key={line.id} lineName={line.name} products={products}
-                        items={s.items} disabled={!s.canEdit} onChange={s.setItem} />
+                        items={s.items} disabled={!canEdit} onChange={s.setItem} />
                     );
                   })}
                 </div>
@@ -122,7 +126,7 @@ export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, a
             <h4 className="font-display font-semibold text-stone-900 mb-2">Marketing &amp; booth supplies</h4>
             <MaterialsTable
               materials={s.catalog.materials.filter((m) => m.is_active || s.materials.has(m.id))}
-              values={s.materials} disabled={!s.canEdit} onChange={s.setMaterial} />
+              values={s.materials} disabled={!canEdit} onChange={s.setMaterial} />
           </div>
 
           <footer className="flex flex-wrap items-center justify-between gap-3">
@@ -132,7 +136,7 @@ export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, a
                   ? <span className="inline-flex items-center gap-1"><CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5 text-accent-600" /> Submitted {new Date(s.view.request.submitted_at).toLocaleString()}</span>
                   : 'Draft saved'}
             </p>
-            <button type="button" onClick={s.submit} disabled={!s.canSubmit || !s.canEdit}
+            <button type="button" onClick={s.submit} disabled={!s.canSubmit || !canEdit}
               className="btn-primary min-h-[44px] px-5 lg:min-h-0">
               {s.submitting ? 'Submitting…' : submitted ? 'Resubmit changes' : 'Submit sample request'}
             </button>
