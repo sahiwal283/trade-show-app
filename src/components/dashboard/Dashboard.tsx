@@ -14,6 +14,7 @@ import { InstallPWA } from '../common/InstallPWA';
 import { EmptyState } from '../common/EmptyState';
 import { useDashboardData } from './hooks/useDashboardData';
 import { useShowDashboard } from './hooks/useShowDashboard';
+import { useSampleRequestActions } from './hooks/useSampleRequestActions';
 import { ShowHero } from './ShowHero';
 import { SpendStoryCard } from './SpendStoryCard';
 import { ReceiptLedger } from './ReceiptLedger';
@@ -36,6 +37,7 @@ function greeting(): string {
 
 export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
   const { expenses, events, users, loading } = useDashboardData();
+  const { pending: sampleRequests } = useSampleRequestActions();
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const board = useShowDashboard({
     expenses,
@@ -135,6 +137,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
                   pendingCount={board.pendingCount}
                   ocrReviewCount={board.ocrReviewCount}
                   zohoQueueCount={board.zohoQueueCount}
+                  sampleRequests={sampleRequests}
                   onPageChange={onPageChange}
                 />
               </div>

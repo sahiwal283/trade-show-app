@@ -7,6 +7,8 @@
  */
 
 import { CheckCircle } from 'lucide-react';
+import { OpenSampleRequest } from '../../utils/sampleRequestApi';
+import { formatCountdown, isUrgent } from '../checklist/samples/sampleRequestText';
 
 interface ActionQueueProps {
   canManage: boolean;
@@ -14,12 +16,13 @@ interface ActionQueueProps {
   ocrReviewCount: number;
   zohoQueueCount: number;
   onPageChange: (page: string) => void;
+  sampleRequests?: OpenSampleRequest[];
 }
 
 interface QueueItemProps {
   label: string;
   action: string;
-  tone: 'amber' | 'violet' | 'blue';
+  tone: 'amber' | 'violet' | 'blue' | 'red';
   onClick: () => void;
 }
 
@@ -38,6 +41,11 @@ const toneClasses = {
     wrap: 'border-brand-200 bg-brand-50 hover:border-brand-300',
     label: 'text-brand-900',
     action: 'text-brand-700',
+  },
+  red: {
+    wrap: 'border-red-200 bg-red-50 hover:border-red-300',
+    label: 'text-red-900',
+    action: 'text-red-700',
   },
 };
 
@@ -61,6 +69,7 @@ export function ActionQueue({
   ocrReviewCount,
   zohoQueueCount,
   onPageChange,
+  sampleRequests,
 }: ActionQueueProps) {
   const goToExpenses = () => onPageChange('expenses');
 
@@ -89,6 +98,19 @@ export function ActionQueue({
       action: 'Push',
       tone: 'blue',
       onClick: goToExpenses,
+    });
+  }
+
+  const now = new Date();
+  for (const r of sampleRequests ?? []) {
+    items.push({
+      label: `Sample request for ${r.eventName} closes in ${formatCountdown(r.closesAt, now)}`,
+      action: r.status === 'draft' ? 'Finish' : 'Start',
+      tone: isUrgent(r.closesAt, now) ? 'red' : 'amber',
+      onClick: () => {
+        window.location.hash = `event=${r.eventId}&tab=my`;
+        onPageChange('checklist');
+      },
     });
   }
 
