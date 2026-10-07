@@ -7,6 +7,12 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler } from '../utils/errors';
 import { notificationService } from '../services/NotificationService';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidUuid(value: unknown): value is string {
+  return typeof value === 'string' && UUID_REGEX.test(value);
+}
+
 const router = express.Router();
 router.use(authenticateToken);
 
@@ -21,7 +27,7 @@ export async function handleMarkRead(req: AuthRequest, res: Response): Promise<v
     res.status(400).json({ error: 'ids must be an array of notification ids' });
     return;
   }
-  const ids = raw.filter((v: unknown): v is string => typeof v === 'string' && v.length > 0);
+  const ids = raw.filter(isValidUuid);
   const updated = await notificationService.markRead(req.user!.id, ids);
   res.json({ updated });
 }

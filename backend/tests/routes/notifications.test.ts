@@ -37,8 +37,17 @@ describe('notification routes', () => {
 
   it('marks the given ids read for the caller', async () => {
     const res = mockRes();
-    await handleMarkRead({ user: { id: 'u-1' }, body: { ids: ['n-1', 7] } } as any, res);
-    expect(notificationService.markRead).toHaveBeenCalledWith('u-1', ['n-1']);
+    const validUuid = '550e8400-e29b-41d4-a716-446655440000';
+    await handleMarkRead({ user: { id: 'u-1' }, body: { ids: [validUuid, 7] } } as any, res);
+    expect(notificationService.markRead).toHaveBeenCalledWith('u-1', [validUuid]);
+    expect(res.json).toHaveBeenCalledWith({ updated: 1 });
+  });
+
+  it('filters out non-uuid ids', async () => {
+    const res = mockRes();
+    const validUuid = '550e8400-e29b-41d4-a716-446655440000';
+    await handleMarkRead({ user: { id: 'u-1' }, body: { ids: ['not-a-uuid', validUuid] } } as any, res);
+    expect(notificationService.markRead).toHaveBeenCalledWith('u-1', [validUuid]);
     expect(res.json).toHaveBeenCalledWith({ updated: 1 });
   });
 
