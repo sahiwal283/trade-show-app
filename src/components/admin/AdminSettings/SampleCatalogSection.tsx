@@ -33,7 +33,7 @@ const AddRow: React.FC<AddRowProps> = ({ busy, id, label, buttonLabel, draftKey,
   <div className="mt-2 flex gap-2">
     <input id={id} aria-label={label} value={draft[draftKey] || ''} placeholder={label}
       onChange={(e) => onDraft(draftKey, e.target.value)}
-      onKeyDown={(e) => { if (e.key === 'Enter') onAdd(); }}
+      onKeyDown={(e) => { if (e.key === 'Enter' && !busy) onAdd(); }}
       className="min-w-0 flex-1 rounded-lg border border-stone-200 px-2 py-1 text-sm" />
     <button type="button" disabled={busy} onClick={onAdd} aria-label={buttonLabel} className="btn-secondary px-3 text-sm">Add</button>
   </div>
@@ -71,8 +71,14 @@ export const SampleCatalogSection: React.FC = () => {
   };
 
   const savePuller = (userId: string) => run(async () => {
+    const previous = pullerId;
     setPullerId(userId);
-    await api.updateSettings({ sample_puller_user_id: { userId: userId || null } });
+    try {
+      await api.updateSettings({ sample_puller_user_id: { userId: userId || null } });
+    } catch (err) {
+      setPullerId(previous);
+      throw err;
+    }
   });
 
   const addLine = (brand: SampleBrand) => run(async () => {
@@ -175,7 +181,7 @@ export const SampleCatalogSection: React.FC = () => {
           <div className="rounded-xl border border-stone-100 p-3 xl:col-span-2">
             <h4 className="font-display font-semibold text-stone-900">Marketing &amp; booth supplies</h4>
             <ul className="mt-1 divide-y divide-stone-100">
-              {catalog.materials.sort((a, b) => a.position - b.position).map((m) => (
+              {[...catalog.materials].sort((a, b) => a.position - b.position).map((m) => (
                 <li key={m.id} className={`flex items-center justify-between gap-2 py-1 text-sm ${m.is_active ? '' : 'text-stone-400 line-through'}`}>
                   <span>{m.name}</span>
                   <RowActions busy={busy} name={m.name} active={m.is_active} onRename={() => rename('material', m.id, m.name)} onToggle={() => toggleMaterial(m.id, !m.is_active)} />

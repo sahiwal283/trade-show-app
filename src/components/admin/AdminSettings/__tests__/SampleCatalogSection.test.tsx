@@ -71,4 +71,14 @@ describe('SampleCatalogSection', () => {
     after.focus();
     expect(document.activeElement).toBe(after);
   });
+
+  it('reverts the puller select and shows an error when the save fails', async () => {
+    vi.mocked(api.updateSettings).mockRejectedValueOnce(new Error('boom'));
+    render(<SampleCatalogSection />);
+    const select = (await screen.findByLabelText('Sample puller')) as HTMLSelectElement;
+    expect(select.value).toBe('');
+    fireEvent.change(select, { target: { value: 'u-1' } });
+    expect(await screen.findByText('That change did not save. Try again.')).toBeInTheDocument();
+    expect((screen.getByLabelText('Sample puller') as HTMLSelectElement).value).toBe('');
+  });
 });
