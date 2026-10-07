@@ -23,7 +23,8 @@ describe('SampleRequestRepository.replaceContents', () => {
         { materialId: 'm-2', qty: 0, notes: '' },                  // dropped
       ],
     });
-    const sql = client.query.mock.calls.map((c: any[]) => String(c[0]));
+    const calls = client.query.mock.calls;
+    const sql = calls.map((c: any[]) => String(c[0]));
     expect(sql[0]).toBe('BEGIN');
     expect(sql.some((s) => /DELETE FROM sample_request_items/.test(s))).toBe(true);
     expect(sql.some((s) => /DELETE FROM sample_request_materials/.test(s))).toBe(true);
@@ -31,6 +32,12 @@ describe('SampleRequestRepository.replaceContents', () => {
     expect(sql.filter((s) => /INSERT INTO sample_request_materials/.test(s))).toHaveLength(1);
     expect(sql[sql.length - 1]).toBe('COMMIT');
     expect(client.release).toHaveBeenCalled();
+
+    // Assert parameter arrays
+    const itemsInsertCall = calls.find((c: any[]) => /INSERT INTO sample_request_items/.test(String(c[0])));
+    expect(itemsInsertCall?.[1]).toEqual(['req-1', ['p-1'], [2], [0], [0]]);
+    const materialsInsertCall = calls.find((c: any[]) => /INSERT INTO sample_request_materials/.test(String(c[0])));
+    expect(materialsInsertCall?.[1]).toEqual(['req-1', ['m-1'], [0], ['two banners please']]);
   });
 
   it('rolls back when an insert throws', async () => {

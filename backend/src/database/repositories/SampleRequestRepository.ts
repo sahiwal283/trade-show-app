@@ -157,14 +157,14 @@ class SampleRequestRepository {
       if (items.length > 0) {
         await client.query(
           `INSERT INTO sample_request_items (request_id, product_id, singles, displays, empty_displays)
-           SELECT $1, * FROM UNNEST($2::uuid[], $3::int[], $4::int[], $5::int[])`,
+           SELECT $1::uuid, * FROM UNNEST($2::uuid[], $3::int[], $4::int[], $5::int[])`,
           [requestId, items.map((i) => i.productId), items.map((i) => i.singles), items.map((i) => i.displays), items.map((i) => i.emptyDisplays)]
         );
       }
       if (materials.length > 0) {
         await client.query(
           `INSERT INTO sample_request_materials (request_id, material_id, qty, notes)
-           SELECT $1, * FROM UNNEST($2::uuid[], $3::int[], $4::text[])`,
+           SELECT $1::uuid, * FROM UNNEST($2::uuid[], $3::int[], $4::text[])`,
           [requestId, materials.map((m) => m.materialId), materials.map((m) => m.qty), materials.map((m) => m.notes?.trim() || null)]
         );
       }
