@@ -2,6 +2,7 @@
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
+const NON_STANDARD_SPACES = new RegExp('[' + String.fromCharCode(0x202f, 0x00a0) + ']', 'g');
 
 export function formatCountdown(closesAt: string, now: Date = new Date()): string {
   const left = new Date(closesAt).getTime() - now.getTime();
@@ -27,6 +28,6 @@ export function isUrgent(closesAt: string, now: Date = new Date()): boolean {
 export function formatCloseDate(closesAt: string): string {
   const s = new Date(closesAt).toLocaleString('en-US', {
     timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-  }).replace(/[  ]/g, ' ');
+  }).replace(NON_STANDARD_SPACES, ' ');
   return `${s} ET`;
 }

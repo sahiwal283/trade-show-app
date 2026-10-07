@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { formatCountdown, isUrgent, formatCloseDate } from '../sampleRequestText';
 
 const close = '2026-10-24T03:59:59.000Z';
@@ -62,14 +62,17 @@ describe('isUrgent', () => {
 });
 
 describe('formatCloseDate', () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it('renders in Eastern time with the zone label', () => {
     expect(formatCloseDate(close)).toBe('Oct 23, 11:59 PM ET');
   });
   it('normalizes narrow no-break spaces to regular spaces', () => {
-    const spy = vi.spyOn(Date.prototype, 'toLocaleString').mockReturnValue('Oct 23, 11:59 PM');
+    const narrowNBSP = String.fromCharCode(0x202f);
+    const stubbed = 'Oct 23, 11:59' + narrowNBSP + 'PM';
+    vi.spyOn(Date.prototype, 'toLocaleString').mockReturnValue(stubbed);
     const result = formatCloseDate(close);
     expect(result).toBe('Oct 23, 11:59 PM ET');
-    expect(result).not.toContain(' ');
-    spy.mockRestore();
+    expect(result).not.toContain(narrowNBSP);
   });
 });
