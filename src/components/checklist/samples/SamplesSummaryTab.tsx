@@ -129,7 +129,7 @@ export const SamplesSummaryTab: React.FC<Props> = ({ eventId }) => {
                   </tr>
                   {open.has(m.materialId) && m.byUser.map((u) => (
                     <tr key={u.userId} className="bg-stone-50 text-xs text-stone-600">
-                      <td className="py-1 pl-6">{u.name}{u.notes ? <span className="ml-2 text-stone-500">— {u.notes}</span> : null}</td>
+                      <td className="py-1 pl-6">{u.name}{u.notes ? <span className="ml-2 text-stone-500">— <span>{u.notes}</span></span> : null}</td>
                       <td className="py-1 text-right tabular-nums">{u.qty}</td>
                     </tr>
                   ))}

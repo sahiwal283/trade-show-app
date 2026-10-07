@@ -36,6 +36,7 @@ describe('SamplesSummaryTab', () => {
     fireEvent.click(screen.getByRole('button', { name: /Mango/ }));
     expect(screen.getByText('Cy')).toBeInTheDocument();
     expect(screen.getByText('draft')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Banner/ }));
     expect(screen.getByText('big one')).toBeInTheDocument();
   });
 });
