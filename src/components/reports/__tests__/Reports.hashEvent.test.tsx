@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, act } from '@testing-library/react';
 
 const filterArgs = vi.fn();
@@ -24,14 +24,17 @@ vi.mock('../hooks/useReportsFilters', async (orig) => {
   };
 });
 
+vi.mock('../../../utils/apiClient', async (orig) => {
+  const empty = vi.fn(() => Promise.resolve([]));
+  return { ...(await orig<typeof import('../../../utils/apiClient')>()), apiClient: { get: empty, post: empty, put: empty, delete: empty, patch: empty } };
+});
+
 import { Reports } from '../Reports';
 
 const user = { id: 'u-1', name: 'Ana', username: 'ana', email: 'a@x.test', role: 'admin' } as any;
 
 describe('Reports #event deep link', () => {
-  // Child widgets fetch on mount; keep them pending instead of hitting the network.
-  beforeEach(() => { vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined))); });
-  afterEach(() => { history.replaceState(null, '', '/'); vi.unstubAllGlobals(); });
+  afterEach(() => { history.replaceState(null, '', '/'); });
 
   it('reads the event id from a hash that carries extra params', () => {
     history.replaceState(null, '', '/#event=abc&tab=my');

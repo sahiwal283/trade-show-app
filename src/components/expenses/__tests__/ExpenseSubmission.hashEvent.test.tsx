@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 
 const setEventFilterSpy = vi.fn();
@@ -17,13 +17,22 @@ vi.mock('../ExpenseSubmission/hooks/useExpenseFilters', async (orig) => {
   };
 });
 
+// Module init of the network monitor pings the health endpoint, so stub it out.
+vi.mock('../../../utils/networkDetection', () => {
+  const networkMonitor = { isOnline: () => true, getState: () => ({ status: 'online', isOnline: true }), addListener: () => () => undefined };
+  return { networkMonitor, default: networkMonitor };
+});
+vi.mock('../../../utils/apiClient', async (orig) => {
+  const empty = vi.fn(() => Promise.resolve([]));
+  return { ...(await orig<typeof import('../../../utils/apiClient')>()), apiClient: { get: empty, post: empty, put: empty, delete: empty, patch: empty } };
+});
+
 import { ExpenseSubmission } from '../ExpenseSubmission';
 
 const user = { id: 'u-1', name: 'Ana', username: 'ana', email: 'a@x.test', role: 'salesperson' } as any;
 
 describe('ExpenseSubmission #event deep link', () => {
-  beforeEach(() => { vi.stubGlobal('fetch', vi.fn(() => new Promise(() => undefined))); });
-  afterEach(() => { history.replaceState(null, '', '/'); vi.unstubAllGlobals(); });
+  afterEach(() => { history.replaceState(null, '', '/'); });
 
   it('filters to the event id from a hash that carries extra params', () => {
     history.replaceState(null, '', '/#event=abc&tab=my');
