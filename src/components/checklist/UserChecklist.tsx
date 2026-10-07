@@ -78,7 +78,10 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
   // A deep link followed while this page is already open (#event=<id>&tab=my).
   useEffect(() => {
     const onHashChange = () => {
-      const linkedId = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('event');
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const tab = params.get('tab');
+      if (tab && tab !== 'my') return; // another tab's link; leave the hash for its listener
+      const linkedId = params.get('event');
       if (linkedId && events.some((e) => e.id === linkedId)) {
         setSelectedEventId(linkedId);
         history.replaceState(null, '', window.location.pathname + window.location.search);

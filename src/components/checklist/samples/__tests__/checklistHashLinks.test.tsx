@@ -42,6 +42,18 @@ describe('checklist #event hash links', () => {
     expect(window.location.hash).toBe('');
   });
 
+  it('UserChecklist ignores a tab=samples link and leaves the hash alone', async () => {
+    render(<UserChecklist user={user} />);
+    const select = await screen.findByRole('combobox');
+    await waitFor(() => expect((select as HTMLSelectElement).value).toBe('ev-1'));
+    act(() => {
+      history.replaceState(null, '', '/#event=ev-2&tab=samples');
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    });
+    expect((select as HTMLSelectElement).value).toBe('ev-1');
+    expect(window.location.hash).toBe('#event=ev-2&tab=samples');
+  });
+
   it('a rep does not mount UserChecklist until access is known, so a cold tab=my link lands on that show', async () => {
     let resolveAccess!: (v: { canViewSummary: boolean }) => void;
     vi.mocked(sampleRequestApi.getAccess).mockReturnValue(new Promise((r) => { resolveAccess = r; }) as any);
