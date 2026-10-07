@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 vi.mock('../../src/config/database', () => ({ query: vi.fn() }));
 vi.mock('../../src/services/NotificationService', () => ({
@@ -17,6 +17,7 @@ describe('SampleRequestReminderService.scan', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
   });
+  afterEach(() => vi.useRealTimers());
 
   it('reminds unsubmitted participants inside the 48h window, once', async () => {
     vi.setSystemTime(new Date('2026-10-20T12:00:00Z')); // Oct 22 03:59:59Z − Oct 20 12:00Z = 39h59m ≈ 40h, inside 48h

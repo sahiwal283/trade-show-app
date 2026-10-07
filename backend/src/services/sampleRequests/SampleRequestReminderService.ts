@@ -9,7 +9,7 @@ import { notificationService } from '../NotificationService';
 import { computeSampleWindow, SAMPLE_CLOSE_DAYS_BEFORE } from './sampleRequestWindow';
 
 const SCAN_INTERVAL_MS = 15 * 60 * 1000;
-const STARTUP_DELAY_MS = 20 * 1000;
+const STARTUP_DELAY_MS = 15 * 1000;
 const WINDOW_MS = 48 * 60 * 60 * 1000;
 export const REMINDER_KIND = 'closing_48h';
 
