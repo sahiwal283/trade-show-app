@@ -40,6 +40,7 @@ import { authenticateToken } from './middleware/auth';
 import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
 import { travelReminderService } from './services/TravelReminderService';
+import { sampleRequestReminderService } from './services/sampleRequests/SampleRequestReminderService';
 import { expenseMessageScanner } from './services/ExpenseMessageScanner';
 import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { leadConversionService } from './services/LeadConversionService';
@@ -226,6 +227,9 @@ const startServer = () => {
 
     // Flight check-in / departure push reminders (no-op if push not configured)
     travelReminderService.start();
+
+    // Sample request closing reminders (bell + push; runs even without push)
+    sampleRequestReminderService.start();
 
     // Poll Midas for new expense messages and notify owners (idles unless
     // EXPENSE_MESSAGING_ENABLED=true)
