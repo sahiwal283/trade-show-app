@@ -13,6 +13,7 @@ import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { FlightData, HotelData, CarRentalData } from './TradeShowChecklist';
 import { ItineraryCard } from './ItineraryCard';
+import { SampleRequestSection } from './samples/SampleRequestSection';
 import { joinSummary, formatDateRange } from './bookingText';
 
 interface UserChecklistProps {
@@ -50,7 +51,12 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
         const visible = mine.length > 0 ? mine : allEvents;
 
         setEvents(visible);
-        if (visible.length > 0) {
+        const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const linkedId = params.get('event');
+        if (linkedId && visible.some((e) => e.id === linkedId)) {
+          setSelectedEventId(linkedId);
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        } else if (visible.length > 0) {
           setSelectedEventId(visible[0].id);
         }
       } catch (error) {
@@ -154,6 +160,10 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
             </select>
           </label>
         </div>
+      )}
+
+      {selectedEventId && (
+        <SampleRequestSection eventId={selectedEventId} userId={user.id} role={user.role} actorId={user.id} />
       )}
 
       {loading && (

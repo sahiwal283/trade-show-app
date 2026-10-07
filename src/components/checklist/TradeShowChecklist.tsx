@@ -153,7 +153,10 @@ function pickDefaultEvent(events: TradeShow[]): TradeShow {
 
 export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) => {
   const isPrivilegedUser = user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer';
-  const [activeTab, setActiveTab] = useState<ChecklistTab>(isPrivilegedUser ? 'admin' : 'user');
+  const [activeTab, setActiveTab] = useState<ChecklistTab>(() => {
+    const p = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    return p.get('tab') === 'my' ? 'user' : isPrivilegedUser ? 'admin' : 'user';
+  });
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<ChecklistData | null>(null);
@@ -193,11 +196,14 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         setEvents(eventsArray);
 
         // Deep link from an event card (#event=<id>) wins over the default
-        const hash = window.location.hash;
-        const linkedId = hash.startsWith('#event=') ? hash.replace('#event=', '') : null;
+        const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const linkedId = params.get('event');
         if (linkedId && eventsArray.some((e) => e.id === linkedId)) {
           setSelectedEventId(linkedId);
-          history.replaceState(null, '', window.location.pathname + window.location.search);
+          // Only the admin tab consumed this hash; UserChecklist clears its own.
+          if (activeTab === 'admin') {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
         } else if (eventsArray.length > 0 && !selectedEventId) {
           const defaultEvent = pickDefaultEvent(eventsArray);
           console.log('[Checklist] Auto-selecting default event:', defaultEvent.id, defaultEvent.name);
