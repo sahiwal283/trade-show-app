@@ -6,7 +6,7 @@
  */
 import { query } from '../../config/database';
 import { notificationService } from '../NotificationService';
-import { computeSampleWindow } from './sampleRequestWindow';
+import { computeSampleWindow, SAMPLE_CLOSE_DAYS_BEFORE } from './sampleRequestWindow';
 
 const SCAN_INTERVAL_MS = 15 * 60 * 1000;
 const STARTUP_DELAY_MS = 20 * 1000;
@@ -38,12 +38,14 @@ class SampleRequestReminderService {
   async scan(): Promise<void> {
     try {
       const now = Date.now();
-      // Candidate shows: anchor date within the next ~10 days keeps the scan cheap.
+      // Candidate shows: close = anchor − SAMPLE_CLOSE_DAYS_BEFORE days, so a close inside the
+      // next 48h means an anchor at most CLOSE_DAYS + 2 days out; +4 leaves timezone slack.
       const events = await query(
         `SELECT id, name, created_at, travel_start_date, show_start_date
          FROM events
          WHERE status <> 'cancelled'
-           AND COALESCE(travel_start_date, show_start_date) BETWEEN CURRENT_DATE AND CURRENT_DATE + 10`
+           AND COALESCE(travel_start_date, show_start_date) BETWEEN CURRENT_DATE AND CURRENT_DATE + $1::int`,
+        [SAMPLE_CLOSE_DAYS_BEFORE + 4]
       );
       for (const event of events.rows as CandidateEvent[]) {
         const w = computeSampleWindow(event, new Date(now));

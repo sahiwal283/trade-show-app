@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeSampleWindow, endOfDayEastern } from '../../src/services/sampleRequests/sampleRequestWindow';
+import { computeSampleWindow, endOfDayEastern, SAMPLE_CLOSE_DAYS_BEFORE } from '../../src/services/sampleRequests/sampleRequestWindow';
 
 const base = { created_at: '2026-10-01T12:00:00.000Z' };
 
@@ -20,19 +20,25 @@ describe('endOfDayEastern', () => {
 });
 
 describe('computeSampleWindow', () => {
-  it('closes 7 days before travel start, end of day Eastern', () => {
+  it('uses a 10 day close offset', () => {
+    expect(SAMPLE_CLOSE_DAYS_BEFORE).toBe(10);
+  });
+  it('closes 10 days before travel start, end of day Eastern', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: '2026-10-20' }, new Date('2026-10-05T00:00:00Z'));
-    expect(w.closesAt).toBe('2026-10-14T03:59:59.000Z'); // Oct 13 23:59:59 EDT
+    // travel Oct 20 − 10 days = Oct 10; 23:59:59 EDT (UTC−4) = 2026-10-11T03:59:59Z
+    expect(w.closesAt).toBe('2026-10-11T03:59:59.000Z');
     expect(w.opensAt).toBe('2026-10-01T12:00:00.000Z');
     expect(w.isOpen).toBe(true);
   });
   it('falls back to show start when travel start is null', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: null, show_start_date: '2026-10-20' }, new Date('2026-10-05T00:00:00Z'));
-    expect(w.closesAt).toBe('2026-10-14T03:59:59.000Z');
+    // show Oct 20 − 10 days = Oct 10 → 2026-10-11T03:59:59Z (EDT)
+    expect(w.closesAt).toBe('2026-10-11T03:59:59.000Z');
   });
   it('prefers travel start over show start when both are present', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: '2026-10-18', show_start_date: '2026-10-20' }, new Date('2026-10-05T00:00:00Z'));
-    expect(w.closesAt).toBe('2026-10-12T03:59:59.000Z');
+    // travel Oct 18 − 10 days = Oct 8 → 23:59:59 EDT = 2026-10-09T03:59:59Z
+    expect(w.closesAt).toBe('2026-10-09T03:59:59.000Z');
   });
   it('has no window when neither date exists', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: null, show_start_date: null });
@@ -40,14 +46,14 @@ describe('computeSampleWindow', () => {
   });
   it('is closed one second after closesAt and open one second before', () => {
     const ev = { ...base, travel_start_date: '2026-10-20' };
-    expect(computeSampleWindow(ev, new Date('2026-10-14T03:59:58Z')).isOpen).toBe(true);
-    expect(computeSampleWindow(ev, new Date('2026-10-14T04:00:00Z')).isOpen).toBe(false);
+    expect(computeSampleWindow(ev, new Date('2026-10-11T03:59:58Z')).isOpen).toBe(true);
+    expect(computeSampleWindow(ev, new Date('2026-10-11T04:00:00Z')).isOpen).toBe(false);
   });
   it('is closed before opensAt', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: '2026-10-20' }, new Date('2026-09-30T00:00:00Z'));
     expect(w.isOpen).toBe(false);
   });
-  it('is already closed for a show booked inside the 7-day window', () => {
+  it('is already closed for a show booked inside the 10-day window', () => {
     const w = computeSampleWindow({ created_at: '2026-10-15T00:00:00Z', travel_start_date: '2026-10-20' }, new Date('2026-10-15T01:00:00Z'));
     expect(w.isOpen).toBe(false);
   });

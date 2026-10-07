@@ -1,13 +1,13 @@
 /**
  * The ONE place that knows when a show's sample request window opens and
  * closes. Opens at event creation; closes 23:59:59 America/New_York on
- * (travel_start_date ?? show_start_date) − 7 days. Never stored, so moving
+ * (travel_start_date ?? show_start_date) − 10 days. Never stored, so moving
  * a travel date moves the deadline and late-added participants just work.
  */
 import { SampleWindow } from './types';
 
 export const SAMPLE_WINDOW_TZ = 'America/New_York';
-export const SAMPLE_CLOSE_DAYS_BEFORE = 7;
+export const SAMPLE_CLOSE_DAYS_BEFORE = 10;
 
 type DateLike = string | Date | null | undefined;
 

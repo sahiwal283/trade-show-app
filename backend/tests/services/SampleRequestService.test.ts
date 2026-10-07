@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
+// travel Oct 30 − 10 days = Oct 20; 23:59:59 EDT (UTC−4) = 2026-10-21T03:59:59Z. NOW (Oct 7) is well inside.
 const OPEN_EVENT = { id: 'ev-1', name: 'Expo', created_at: '2026-10-01T00:00:00Z', travel_start_date: '2026-10-30', show_start_date: '2026-11-01' };
+// travel Oct 9 − 10 days = Sep 29, already past at NOW (Oct 7) -> closed.
 const CLOSED_EVENT = { id: 'ev-2', name: 'Soon', created_at: '2026-10-01T00:00:00Z', travel_start_date: '2026-10-09', show_start_date: '2026-10-10' };
 const NOW = new Date('2026-10-07T15:00:00Z');
 
@@ -66,7 +68,7 @@ describe('SampleRequestService', () => {
       const view = await sampleRequestService.getRequest('ev-1', 'u-1', rep);
       expect(view.request.status).toBe('draft');
       expect(view.window.isOpen).toBe(true);
-      expect(view.window.closesAt).toBe('2026-10-24T03:59:59.000Z');
+      expect(view.window.closesAt).toBe('2026-10-21T03:59:59.000Z');
     });
     it('rejects a non-participant', async () => {
       await expect(sampleRequestService.getRequest('ev-1', 'u-2', stranger)).rejects.toThrow(/participant/i);
@@ -138,7 +140,7 @@ describe('SampleRequestService', () => {
       vi.mocked(query).mockResolvedValueOnce({ rows: [OPEN_EVENT, CLOSED_EVENT] } as any);
       vi.mocked(sampleRequestRepository.findRequestsForUser).mockResolvedValueOnce([{ event_id: 'ev-1', status: 'draft', submitted_at: null }]);
       const rows = await sampleRequestService.listMyOpenRequests('u-1');
-      expect(rows).toEqual([{ eventId: 'ev-1', eventName: 'Expo', closesAt: '2026-10-24T03:59:59.000Z', status: 'draft', submittedAt: null }]);
+      expect(rows).toEqual([{ eventId: 'ev-1', eventName: 'Expo', closesAt: '2026-10-21T03:59:59.000Z', status: 'draft', submittedAt: null }]);
     });
     it('reports status none when no draft exists yet', async () => {
       vi.mocked(query).mockResolvedValueOnce({ rows: [OPEN_EVENT] } as any);
