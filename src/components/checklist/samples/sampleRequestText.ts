@@ -27,6 +27,6 @@ export function isUrgent(closesAt: string, now: Date = new Date()): boolean {
 export function formatCloseDate(closesAt: string): string {
   const s = new Date(closesAt).toLocaleString('en-US', {
     timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
-  }).replace(/ /g, ' ');
+  }).replace(/[  ]/g, ' ');
   return `${s} ET`;
 }
