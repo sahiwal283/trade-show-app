@@ -12,6 +12,7 @@ import {
   CardOptionsSection,
   EntityOptionsSection,
   CategoryOptionsSection,
+  SampleCatalogSection,
 } from './AdminSettings/index';
 import type { SettingsTab } from './AdminSettings/index';
 
@@ -545,6 +546,12 @@ export const AdminSettings: React.FC<AdminSettingsProps> = ({ user, initialTab }
               onSaveEdit={saveEditCategory}
             />
           </div>
+          )}
+
+          {(user.role === 'admin' || user.role === 'developer') && (
+            <div className="mt-4 md:mt-5 lg:mt-6">
+              <SampleCatalogSection />
+            </div>
           )}
         </div>
       )}

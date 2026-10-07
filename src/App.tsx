@@ -28,6 +28,7 @@ import { networkMonitor } from './utils/networkDetection';
 import { offlineDb } from './utils/offlineDb';
 import { clearEncryptionData } from './utils/encryption';
 import { apiClient } from './utils/apiClient';
+import { initialPageFromHash } from './utils/initialPageFromHash';
 
 export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'developer' | 'temporary' | 'pending';
 
@@ -103,13 +104,11 @@ export interface Expense {
 
 function App() {
   const { user, login, logout, bootstrapDone } = useAuth();
-  // A push notification click lands here as a cold entry point (`/#expense=<id>`,
-  // no in-app onNavigate call to carry it). ExpenseSubmission is the only
-  // component that reads that hash, so it must be the page mounted on first
-  // paint or the click silently opens the dashboard instead.
-  const [currentPage, setCurrentPage] = useState(() =>
-    window.location.hash.startsWith('#expense=') ? 'expenses' : 'dashboard'
-  );
+  // A push notification click lands here as a cold entry point (`/#expense=<id>`
+  // or `/#event=<id>&tab=my|samples`, no in-app onNavigate call to carry it).
+  // The page that reads that hash must be the one mounted on first paint or
+  // the click silently opens the dashboard instead.
+  const [currentPage, setCurrentPage] = useState<string>(() => initialPageFromHash(window.location.hash));
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);

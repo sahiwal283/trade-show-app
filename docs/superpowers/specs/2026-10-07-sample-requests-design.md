@@ -27,7 +27,7 @@ scope. "Booth essentials", "activation kit" and "before leaving" are not.
 | Who is the puller? | One user chosen in Admin settings (`app_settings` key `sample_puller_user_id`). |
 | When is the puller notified? | On **submit** and **re-submit** only. Draft edits never notify. |
 | Notification channels | Web push **and** the header bell panel (persistent until read). |
-| Close time | 23:59:59 America/New_York on `travel_start_date − 7 days`. Falls back to `show_start_date` when travel start is null. Computed live, never stored. |
+| Close time | 23:59:59 America/New_York on `travel_start_date − 10 days`. Falls back to `show_start_date` when travel start is null. Computed live, never stored. |
 | Date moves after open | Deadline moves with it. Later date reopens a closed form; earlier date past the cutoff closes it. |
 | Participant added after close | No notification, no action item. Section shows "closed". |
 | Late edits | Admin and coordinator can edit any rep's request after close. |
@@ -162,7 +162,7 @@ Seeds use `ON CONFLICT DO NOTHING` so re-running is safe.
 ## Window rule
 
 ```
-closeDate = (travel_start_date ?? show_start_date) − 7 days
+closeDate = (travel_start_date ?? show_start_date) − 10 days
 closesAt  = closeDate at 23:59:59 America/New_York
 opensAt   = event.created_at
 isOpen    = now >= opensAt && now <= closesAt
@@ -349,3 +349,5 @@ main has unrelated pre-existing failures.
 - Migrating existing expense and message notifications into `notifications`.
 - Per-event or per-user brand scoping.
 - Inventory deduction or Midas/Zoho integration for samples.
+
+Change log: 2026-10-07 close offset changed from 7 to 10 days at the user's request.

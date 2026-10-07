@@ -53,7 +53,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
   const getInitialEvent = () => {
     const hash = window.location.hash;
     if (hash.startsWith('#event=')) {
-      return hash.replace('#event=', '');
+      return new URLSearchParams(hash.slice(1)).get('event') ?? 'all';
     }
     return 'all';
   };
@@ -163,7 +163,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
     const handleHashChange = () => {
       const hash = window.location.hash;
       if (hash.startsWith('#event=')) {
-        const eventId = hash.replace('#event=', '');
+        const eventId = new URLSearchParams(hash.slice(1)).get('event') ?? '';
         setSelectedEvent(eventId);
         setReportType('detailed');
       } else if (hash === '#analytics') {

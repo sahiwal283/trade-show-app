@@ -13,6 +13,7 @@ import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { FlightData, HotelData, CarRentalData } from './TradeShowChecklist';
 import { ItineraryCard } from './ItineraryCard';
+import { SampleRequestSection } from './samples/SampleRequestSection';
 import { joinSummary, formatDateRange } from './bookingText';
 
 interface UserChecklistProps {
@@ -37,10 +38,13 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
   const [loadFailed, setLoadFailed] = useState(false);
 
   useEffect(() => {
+    // An unmounted instance (tab switch, page change) must never touch the hash or state.
+    let cancelled = false;
     const loadEvents = async () => {
       try {
         if (!api.USE_SERVER) return;
         const data = await api.getEvents();
+        if (cancelled) return;
         const allEvents: TradeShow[] = Array.isArray(data) ? data : [];
 
         // Prefer shows the user is on the roster for; fall back to all.
@@ -50,19 +54,42 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
         const visible = mine.length > 0 ? mine : allEvents;
 
         setEvents(visible);
-        if (visible.length > 0) {
+        const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const linkedId = params.get('event');
+        if (linkedId && visible.some((e) => e.id === linkedId)) {
+          setSelectedEventId(linkedId);
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+        } else if (visible.length > 0) {
           setSelectedEventId(visible[0].id);
         }
       } catch (error) {
+        if (cancelled) return;
         console.error('[UserChecklist] Error loading events:', error);
         setEvents([]);
       } finally {
-        setLoadingEvents(false);
+        if (!cancelled) setLoadingEvents(false);
       }
     };
 
     loadEvents();
+    return () => { cancelled = true; };
   }, [user.id]);
+
+  // A deep link followed while this page is already open (#event=<id>&tab=my).
+  useEffect(() => {
+    const onHashChange = () => {
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const tab = params.get('tab');
+      if (tab && tab !== 'my') return; // another tab's link; leave the hash for its listener
+      const linkedId = params.get('event');
+      if (linkedId && events.some((e) => e.id === linkedId)) {
+        setSelectedEventId(linkedId);
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [events]);
 
   useEffect(() => {
     if (!selectedEventId) return;
@@ -154,6 +181,10 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
             </select>
           </label>
         </div>
+      )}
+
+      {selectedEventId && (
+        <SampleRequestSection key={selectedEventId} eventId={selectedEventId} userId={user.id} role={user.role} actorId={user.id} />
       )}
 
       {loading && (

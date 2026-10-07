@@ -32,12 +32,15 @@ import boothAttachmentRoutes from './routes/boothAttachments';
 import userChecklistRoutes from './routes/userChecklist';
 import pushRoutes from './routes/push';
 import badgeScanRoutes from './routes/badgeScans';
+import notificationRoutes from './routes/notifications';
+import sampleRequestRoutes from './routes/sampleRequests';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
 import { travelReminderService } from './services/TravelReminderService';
+import { sampleRequestReminderService } from './services/sampleRequests/SampleRequestReminderService';
 import { expenseMessageScanner } from './services/ExpenseMessageScanner';
 import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { leadConversionService } from './services/LeadConversionService';
@@ -121,6 +124,8 @@ app.use('/api/booth-attachments', authenticateToken, sessionTracker, boothAttach
 app.use('/api/user-checklist', authenticateToken, sessionTracker, userChecklistRoutes);
 app.use('/api/push', authenticateToken, sessionTracker, pushRoutes);
 app.use('/api/badge-scans', authenticateToken, sessionTracker, badgeScanRoutes);
+app.use('/api/notifications', authenticateToken, sessionTracker, notificationRoutes);
+app.use('/api/sample-requests', authenticateToken, sessionTracker, sampleRequestRoutes);
 
 // Health check (with database connectivity test) - existing contract
 app.get('/api/health', async (req, res) => {
@@ -222,6 +227,9 @@ const startServer = () => {
 
     // Flight check-in / departure push reminders (no-op if push not configured)
     travelReminderService.start();
+
+    // Sample request closing reminders (bell + push; runs even without push)
+    sampleRequestReminderService.start();
 
     // Poll Midas for new expense messages and notify owners (idles unless
     // EXPENSE_MESSAGING_ENABLED=true)

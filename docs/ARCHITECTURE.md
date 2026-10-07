@@ -186,3 +186,23 @@ Every scan is attributed to the company the rep represents at the moment of scan
 Separately from the CRM upsert, `BadgeWebhookService` forwards each scan taken on behalf of a **webhook brand** — today only Nirvana Kulture, fixed in `badgeWebhookConfig.ts` — to that partner's own endpoint as the raw badge string plus the rep's note, `{"data": "<raw_payload>", "notes": "<note or empty>"}`, with no reshaping: the partner runs its own transcription. For the 13-field pipe-delimited format the scanning rep's email is appended to `data` as field 14. The note is sent as it stood at delivery; later edits are not re-sent. The URL (a Zoho CRM function carrying the partner's API key in its query string) comes from `NIRVANA_KULTURE_SCAN_WEBHOOK_URL` and is never logged. The create route fires one attempt immediately after the row is stored, without holding the 201; a five-minute sweep retries rows that attempt could not settle, with backoff and a five-attempt cap. `webhook_status` is decided by brand at capture — `pending` for a webhook brand, `skipped` for everyone else — so other companies' attendee data never leaves the app, and the upsert never resets it, so a rescan or an offline replay cannot send a badge twice.
 
 Routes live at `/api/badge-scans` (list, create, get, patch, retry-push, export); export (`BadgeExportService`) produces CSV or XLSX with every captured field plus CRM status, so a show's leads are usable even when no CRM push ever succeeds. New table: `badge_scans` (migration `041_create_badge_scans.sql`), `raw_payload` never discarded; webhook bookkeeping columns added in `042_add_badge_scan_webhook_columns.sql`.
+
+## 9. Sample requests
+
+Per-rep product sample orders for a show. `backend/src/services/sampleRequests/`
+owns the rules: `sampleRequestWindow.ts` is the only place that computes the
+open/close window (created_at → 23:59:59 America/New_York on
+`(travel_start_date ?? show_start_date) − 10 days`; never stored);
+`SampleRequestService.ts` owns draft/submit transitions and authorization
+(reps: own request while open; admin/coordinator/developer: anyone, any time;
+puller: read the summary); `SampleRequestReminderService.ts` sends the 48h
+reminder through the `sample_request_reminders` ledger (insert-before-send).
+
+`NotificationService` writes a `notifications` row and a push in one call.
+The header bell reads `/api/notifications/unread` as a third source; expense
+and message notifications are unchanged.
+
+Frontend: `src/components/checklist/samples/` (section, hook, summary tab),
+dashboard rows in `ActionQueue`, catalog editor in
+`admin/AdminSettings/SampleCatalogSection.tsx`. Deep link
+`#event=<id>&tab=my|samples` selects the show and tab on the checklist page.

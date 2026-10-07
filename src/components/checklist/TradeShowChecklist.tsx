@@ -7,7 +7,7 @@
  * labeled with its done/total count. Only the active tab renders.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { parseLocalDate } from '../../utils/dateUtils';
@@ -15,6 +15,8 @@ import { AlertCircle } from 'lucide-react';
 import { BookingBoard } from './BookingBoard';
 import { UserChecklist } from './UserChecklist';
 import { ChecklistMasthead } from './ChecklistMasthead';
+import { SamplesSummaryTab } from './samples/SamplesSummaryTab';
+import { sampleRequestApi } from '../../utils/sampleRequestApi';
 
 export interface ChecklistData {
   id: number;
@@ -94,7 +96,7 @@ interface TradeShowChecklistProps {
   user: User;
 }
 
-type ChecklistTab = 'admin' | 'user';
+type ChecklistTab = 'admin' | 'user' | 'samples';
 
 /** Overall completion — same counting rules the page has always used:
  *  booth (1) + electricity (1) + every flight/hotel/rental + shipping (1). */
@@ -153,7 +155,14 @@ function pickDefaultEvent(events: TradeShow[]): TradeShow {
 
 export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) => {
   const isPrivilegedUser = user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer';
-  const [activeTab, setActiveTab] = useState<ChecklistTab>(isPrivilegedUser ? 'admin' : 'user');
+  const [activeTab, setActiveTab] = useState<ChecklistTab>(() => {
+    const p = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const tab = p.get('tab');
+    if (tab === 'samples') return 'samples';
+    return tab === 'my' ? 'user' : isPrivilegedUser ? 'admin' : 'user';
+  });
+  // null while getAccess() is pending, so UserChecklist never mounts before access is known.
+  const [canViewSamples, setCanViewSamples] = useState<boolean | null>(null);
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<ChecklistData | null>(null);
@@ -161,10 +170,42 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (activeTab === 'admin') {
+    sampleRequestApi.getAccess()
+      .then((r) => setCanViewSamples(r.canViewSummary))
+      .catch(() => setCanViewSamples(false));
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'admin' || activeTab === 'samples') {
       loadEvents();
     }
   }, [activeTab]);
+
+  // A deep link followed while the page is already open: pick the show and the tab.
+  const hashCtx = useRef({ events, canViewSamples });
+  hashCtx.current = { events, canViewSamples };
+  useEffect(() => {
+    const onHashChange = () => {
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const linkedId = params.get('event');
+      if (!linkedId) return;
+      const tab = params.get('tab');
+      const { events: loaded, canViewSamples: samplesAllowed } = hashCtx.current;
+      if (tab === 'my') {
+        setActiveTab('user');
+      } else if (tab === 'samples' && (isPrivilegedUser || samplesAllowed === true)) {
+        setActiveTab('samples');
+      }
+      if (loaded.some((e) => e.id === linkedId)) setSelectedEventId(linkedId);
+      // My Checklist (UserChecklist) consumes a tab=my hash itself; an unloaded
+      // event list is filled by loadEvents, which reads the hash. Otherwise clear it.
+      if (tab !== 'my' && loaded.length > 0) {
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [isPrivilegedUser]);
 
   useEffect(() => {
     if (selectedEventId) {
@@ -193,11 +234,14 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         setEvents(eventsArray);
 
         // Deep link from an event card (#event=<id>) wins over the default
-        const hash = window.location.hash;
-        const linkedId = hash.startsWith('#event=') ? hash.replace('#event=', '') : null;
+        const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const linkedId = params.get('event');
         if (linkedId && eventsArray.some((e) => e.id === linkedId)) {
           setSelectedEventId(linkedId);
-          history.replaceState(null, '', window.location.pathname + window.location.search);
+          // The admin and samples tabs consume this hash; UserChecklist clears its own.
+          if (activeTab === 'admin' || activeTab === 'samples') {
+            history.replaceState(null, '', window.location.pathname + window.location.search);
+          }
         } else if (eventsArray.length > 0 && !selectedEventId) {
           const defaultEvent = pickDefaultEvent(eventsArray);
           console.log('[Checklist] Auto-selecting default event:', defaultEvent.id, defaultEvent.name);
@@ -286,8 +330,22 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
 
   const selectedEvent = events.find(e => e.id === selectedEventId);
 
-  // For regular users, show only User Checklist
-  if (!isPrivilegedUser) {
+  // Regular users: wait for the access check so UserChecklist mounts once, with the hash intact.
+  if (!isPrivilegedUser && canViewSamples === null) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-4 md:space-y-5">
+        <div aria-busy="true" className="card p-10 md:p-12">
+          <div className="flex flex-col items-center justify-center">
+            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-brand-600" />
+            <p className="mt-4 text-sm text-stone-500">Loading your itinerary...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular users without sample access see only their own checklist
+  if (!isPrivilegedUser && !canViewSamples) {
     return <UserChecklist user={user} />;
   }
 
@@ -304,23 +362,46 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         events={events}
         selectedEvent={selectedEvent || null}
         onSelectEvent={(id) => setSelectedEventId(id)}
-        showSelector={activeTab === 'admin'}
+        showSelector={activeTab !== 'user'}
         progress={activeTab === 'admin' && checklist && !loading ? progress : null}
       />
 
       {/* Tabs — segmented control */}
       <div className="seg-track">
-        <button type="button" onClick={() => setActiveTab('admin')} className={tabClasses('admin')}>
-          Admin Checklist
-        </button>
+        {isPrivilegedUser && (
+          <button type="button" onClick={() => setActiveTab('admin')} className={tabClasses('admin')}>
+            Admin Checklist
+          </button>
+        )}
         <button type="button" onClick={() => setActiveTab('user')} className={tabClasses('user')}>
           My Checklist
         </button>
+        {(isPrivilegedUser || canViewSamples) && (
+          <button type="button" onClick={() => setActiveTab('samples')} className={tabClasses('samples')}>
+            Samples
+          </button>
+        )}
       </div>
 
       {/* Tab Content */}
       {activeTab === 'user' ? (
         <UserChecklist user={user} embedded />
+      ) : activeTab === 'samples' ? (
+        selectedEventId ? (
+          <SamplesSummaryTab eventId={selectedEventId} actorId={user.id} actorRole={user.role} />
+        ) : (
+          <div className="card flex items-start gap-3 p-4 md:p-5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50">
+              <AlertCircle aria-hidden="true" className="w-5 h-5 text-amber-600" />
+            </span>
+            <div>
+              <p className="font-semibold text-stone-900">No Event Selected</p>
+              <p className="mt-1 text-sm text-stone-500">
+                Please select an event from the dropdown above to see its sample requests.
+              </p>
+            </div>
+          </div>
+        )
       ) : (
         <>
           {!selectedEvent && (

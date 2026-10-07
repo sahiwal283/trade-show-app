@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.30.0] - 2026-10-07 - Sample requests on the checklist
+
+### Added
+- **Sample Request** section on My Checklist. Every participant on a show
+  fills in Singles / Displays / Empty Displays per product across both
+  brands (Haute Brands, Coolioh) plus Qty and Notes for marketing materials.
+  Drafts autosave; one Submit button, "Resubmit changes" afterwards.
+- The window opens when the event is created and closes at 23:59:59 ET ten
+  days before travel start (show start when no travel date). Computed live,
+  so a moved date moves the deadline. Admin/coordinator/developer may still
+  edit after close ("Edit anyway").
+- Dashboard "Needs your attention" rows with a live countdown for each open,
+  unsubmitted show; red inside 48 hours.
+- One designated **sample puller** (Admin settings) is notified on every
+  submit and re-submit, and gets a **Samples** tab on the checklist with the
+  per-show aggregate and per-rep breakdown.
+- Roster notified when a window opens; 48-hour closing reminder for anyone
+  who has not submitted (send-once ledger).
+- General `notifications` table and `/api/notifications`; the header bell
+  now reads it alongside expense and message notifications.
+- Admin catalog editor (brand → line → product, materials). Retired rows are
+  inactive, never deleted.
+- Migration 043 (seeds the catalog from the paper checklists).
+
+### Operations
+- After deploy, pick the sample puller in Admin settings → System Settings.
 ## [2.29.1] - 2026-10-07 - Registration: honest password meter, real error messages
 
 ### Fixed

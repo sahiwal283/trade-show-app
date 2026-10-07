@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add a per-rep "Sample Request" form to the Checklist page that opens at event creation, closes 7 days before travel, shows as a dashboard action item with a countdown, and notifies a designated sample puller on every submit.
+**Goal:** Add a per-rep "Sample Request" form to the Checklist page that opens at event creation, closes 10 days before travel, shows as a dashboard action item with a countdown, and notifies a designated sample puller on every submit.
 
 **Architecture:** One new migration adds the catalog, request, general `notifications` and reminder-ledger tables. A `SampleRequestService` owns the window rule and all transitions; a new `NotificationService` writes bell rows and pushes in one call. The frontend adds a section to the My Checklist tab, rows to the dashboard action queue, a third bell source, a Samples summary tab, and an admin catalog editor.
 
@@ -14,7 +14,7 @@
 
 - Brand keys are exactly `haute_brands` and `boomin_brands`; display names "Haute Brands" and "Coolioh".
 - Per-product fields are exactly `singles`, `displays`, `empty_displays` (integers ≥ 0). Materials: `qty` ≥ 0 and `notes`.
-- Close time: 23:59:59 `America/New_York` on `(travel_start_date ?? show_start_date) − 7 days`. Never stored. Computed in one place: `backend/src/services/sampleRequests/sampleRequestWindow.ts`.
+- Close time: 23:59:59 `America/New_York` on `(travel_start_date ?? show_start_date) − 10 days`. Never stored. Computed in one place: `backend/src/services/sampleRequests/sampleRequestWindow.ts`.
 - Puller setting key: `app_settings.key = 'sample_puller_user_id'`, value `{ "userId": "<uuid>" | null }`.
 - Puller is notified on submit and re-submit only. Never on draft saves.
 - Admin, coordinator, developer may edit any rep's request after close. Nobody else may.
@@ -416,19 +416,19 @@ describe('endOfDayEastern', () => {
 });
 
 describe('computeSampleWindow', () => {
-  it('closes 7 days before travel start, end of day Eastern', () => {
+  it('closes 10 days before travel start, end of day Eastern', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: '2026-10-20' }, new Date('2026-10-05T00:00:00Z'));
-    expect(w.closesAt).toBe('2026-10-14T03:59:59.000Z'); // Oct 13 23:59:59 EDT
+    expect(w.closesAt).toBe('2026-10-11T03:59:59.000Z'); // travel Oct 20 − 10 = Oct 10, 23:59:59 EDT
     expect(w.opensAt).toBe('2026-10-01T12:00:00.000Z');
     expect(w.isOpen).toBe(true);
   });
   it('falls back to show start when travel start is null', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: null, show_start_date: '2026-10-20' }, new Date('2026-10-05T00:00:00Z'));
-    expect(w.closesAt).toBe('2026-10-14T03:59:59.000Z');
+    expect(w.closesAt).toBe('2026-10-11T03:59:59.000Z');
   });
   it('prefers travel start over show start when both are present', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: '2026-10-18', show_start_date: '2026-10-20' }, new Date('2026-10-05T00:00:00Z'));
-    expect(w.closesAt).toBe('2026-10-12T03:59:59.000Z');
+    expect(w.closesAt).toBe('2026-10-09T03:59:59.000Z');
   });
   it('has no window when neither date exists', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: null, show_start_date: null });
@@ -436,14 +436,14 @@ describe('computeSampleWindow', () => {
   });
   it('is closed one second after closesAt and open one second before', () => {
     const ev = { ...base, travel_start_date: '2026-10-20' };
-    expect(computeSampleWindow(ev, new Date('2026-10-14T03:59:58Z')).isOpen).toBe(true);
-    expect(computeSampleWindow(ev, new Date('2026-10-14T04:00:00Z')).isOpen).toBe(false);
+    expect(computeSampleWindow(ev, new Date('2026-10-11T03:59:58Z')).isOpen).toBe(true);
+    expect(computeSampleWindow(ev, new Date('2026-10-11T04:00:00Z')).isOpen).toBe(false);
   });
   it('is closed before opensAt', () => {
     const w = computeSampleWindow({ ...base, travel_start_date: '2026-10-20' }, new Date('2026-09-30T00:00:00Z'));
     expect(w.isOpen).toBe(false);
   });
-  it('is already closed for a show booked inside the 7-day window', () => {
+  it('is already closed for a show booked inside the 10-day window', () => {
     const w = computeSampleWindow({ created_at: '2026-10-15T00:00:00Z', travel_start_date: '2026-10-20' }, new Date('2026-10-15T01:00:00Z'));
     expect(w.isOpen).toBe(false);
   });
@@ -462,13 +462,13 @@ Expected: FAIL — module not found.
 /**
  * The ONE place that knows when a show's sample request window opens and
  * closes. Opens at event creation; closes 23:59:59 America/New_York on
- * (travel_start_date ?? show_start_date) − 7 days. Never stored, so moving
+ * (travel_start_date ?? show_start_date) − 10 days. Never stored, so moving
  * a travel date moves the deadline and late-added participants just work.
  */
 import { SampleWindow } from './types';
 
 export const SAMPLE_WINDOW_TZ = 'America/New_York';
-export const SAMPLE_CLOSE_DAYS_BEFORE = 7;
+export const SAMPLE_CLOSE_DAYS_BEFORE = 10;
 
 type DateLike = string | Date | null | undefined;
 
@@ -1410,7 +1410,7 @@ describe('SampleRequestService', () => {
       const view = await sampleRequestService.getRequest('ev-1', 'u-1', rep);
       expect(view.request.status).toBe('draft');
       expect(view.window.isOpen).toBe(true);
-      expect(view.window.closesAt).toBe('2026-10-24T03:59:59.000Z');
+      expect(view.window.closesAt).toBe('2026-10-21T03:59:59.000Z');
     });
     it('rejects a non-participant', async () => {
       await expect(sampleRequestService.getRequest('ev-1', 'u-2', stranger)).rejects.toThrow(/participant/i);
@@ -1482,7 +1482,7 @@ describe('SampleRequestService', () => {
       vi.mocked(query).mockResolvedValueOnce({ rows: [OPEN_EVENT, CLOSED_EVENT] } as any);
       vi.mocked(sampleRequestRepository.findRequestsForUser).mockResolvedValueOnce([{ event_id: 'ev-1', status: 'draft', submitted_at: null }]);
       const rows = await sampleRequestService.listMyOpenRequests('u-1');
-      expect(rows).toEqual([{ eventId: 'ev-1', eventName: 'Expo', closesAt: '2026-10-24T03:59:59.000Z', status: 'draft', submittedAt: null }]);
+      expect(rows).toEqual([{ eventId: 'ev-1', eventName: 'Expo', closesAt: '2026-10-21T03:59:59.000Z', status: 'draft', submittedAt: null }]);
     });
     it('reports status none when no draft exists yet', async () => {
       vi.mocked(query).mockResolvedValueOnce({ rows: [OPEN_EVENT] } as any);
@@ -2208,7 +2208,7 @@ import { sampleRequestReminderService } from '../../src/services/sampleRequests/
 import { notificationService } from '../../src/services/NotificationService';
 import { query } from '../../src/config/database';
 
-// Window closes 2026-10-24T03:59:59Z (travel 10/31 − 7 = 10/24 → EOD Eastern 10/23 23:59:59 EDT)
+// Window closes 2026-10-22T03:59:59Z (travel 10/31 − 10 = 10/21 → EOD Eastern 10/21 23:59:59 EDT)
 const EVENT = { id: 'ev-1', name: 'Expo', created_at: '2026-10-01T00:00:00Z', travel_start_date: '2026-10-31', show_start_date: '2026-11-01' };
 
 describe('SampleRequestReminderService.scan', () => {
@@ -2218,7 +2218,7 @@ describe('SampleRequestReminderService.scan', () => {
   });
 
   it('reminds unsubmitted participants inside the 48h window, once', async () => {
-    vi.setSystemTime(new Date('2026-10-22T12:00:00Z')); // ~40h before close
+    vi.setSystemTime(new Date('2026-10-20T12:00:00Z')); // ~40h before close
     vi.mocked(query)
       .mockResolvedValueOnce({ rows: [EVENT] } as any)                                  // candidate events
       .mockResolvedValueOnce({ rows: [{ user_id: 'u-1' }, { user_id: 'u-2' }] } as any)  // unsubmitted
@@ -2237,7 +2237,7 @@ describe('SampleRequestReminderService.scan', () => {
     await sampleRequestReminderService.scan();
     expect(notificationService.notify).not.toHaveBeenCalled();
 
-    vi.setSystemTime(new Date('2026-10-25T12:00:00Z'));
+    vi.setSystemTime(new Date('2026-10-23T12:00:00Z'));
     vi.mocked(query).mockResolvedValueOnce({ rows: [EVENT] } as any);
     await sampleRequestReminderService.scan();
     expect(notificationService.notify).not.toHaveBeenCalled();
@@ -2299,12 +2299,13 @@ class SampleRequestReminderService {
   async scan(): Promise<void> {
     try {
       const now = Date.now();
-      // Candidate shows: anchor date within the next ~10 days keeps the scan cheap.
+      // Candidate shows: close = anchor − SAMPLE_CLOSE_DAYS_BEFORE days; +4 covers the 48h lookahead plus slack.
       const events = await query(
         `SELECT id, name, created_at, travel_start_date, show_start_date
          FROM events
          WHERE status <> 'cancelled'
-           AND COALESCE(travel_start_date, show_start_date) BETWEEN CURRENT_DATE AND CURRENT_DATE + 10`
+           AND COALESCE(travel_start_date, show_start_date) BETWEEN CURRENT_DATE AND CURRENT_DATE + $1::int`,
+        [SAMPLE_CLOSE_DAYS_BEFORE + 4]
       );
       for (const event of events.rows as CandidateEvent[]) {
         const w = computeSampleWindow(event, new Date(now));
@@ -4112,7 +4113,7 @@ Insert after `## [Unreleased]`:
   fills in Singles / Displays / Empty Displays per product across both
   brands (Haute Brands, Coolioh) plus Qty and Notes for marketing materials.
   Drafts autosave; one Submit button, "Resubmit changes" afterwards.
-- The window opens when the event is created and closes at 23:59:59 ET seven
+- The window opens when the event is created and closes at 23:59:59 ET ten
   days before travel start (show start when no travel date). Computed live,
   so a moved date moves the deadline. Admin/coordinator/developer may still
   edit after close ("Edit anyway").
@@ -4143,7 +4144,7 @@ Append after section 8:
 Per-rep product sample orders for a show. `backend/src/services/sampleRequests/`
 owns the rules: `sampleRequestWindow.ts` is the only place that computes the
 open/close window (created_at → 23:59:59 America/New_York on
-`(travel_start_date ?? show_start_date) − 7 days`; never stored);
+`(travel_start_date ?? show_start_date) − 10 days`; never stored);
 `SampleRequestService.ts` owns draft/submit transitions and authorization
 (reps: own request while open; admin/coordinator/developer: anyone, any time;
 puller: read the summary); `SampleRequestReminderService.ts` sends the 48h

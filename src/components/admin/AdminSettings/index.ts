@@ -9,3 +9,4 @@ export { CardOptionsSection } from './CardOptionsSection';
 export { EntityOptionsSection } from './EntityOptionsSection';
 export { CategoryOptionsSection } from './CategoryOptionsSection';
 
+export { SampleCatalogSection } from './SampleCatalogSection';
