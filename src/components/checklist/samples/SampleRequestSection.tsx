@@ -91,13 +91,15 @@ export const SampleRequestSection: React.FC<Props> = ({ eventId, userId, role, a
 
           <div className="grid gap-4 lg:grid-cols-2">
             {SAMPLE_BRAND_ORDER.map((brand: SampleBrand) => {
-              const lines = s.catalog!.lines.filter((l) => l.brand === brand);
+              // Retired lines/products stay visible only when already on this request.
+              const onRequest = (lineId: string) => s.catalog!.products.some((p) => p.product_line_id === lineId && s.items.has(p.id));
+              const lines = s.catalog!.lines.filter((l) => l.brand === brand && (l.is_active || onRequest(l.id)));
               return (
                 <div key={brand} className="rounded-xl border border-stone-100 p-3 md:p-4 space-y-4">
                   <h4 className="font-display font-semibold text-stone-900">{SAMPLE_BRAND_LABELS[brand]}</h4>
                   {lines.map((line) => {
                     const products = s.catalog!.products
-                      .filter((p) => p.product_line_id === line.id && (p.is_active || s.items.has(p.id)))
+                      .filter((p) => p.product_line_id === line.id && ((p.is_active && line.is_active) || s.items.has(p.id)))
                       .sort((a, b) => a.position - b.position);
                     if (products.length === 0) return null;
                     return (

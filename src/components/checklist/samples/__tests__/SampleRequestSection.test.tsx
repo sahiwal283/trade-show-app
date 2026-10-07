@@ -37,6 +37,30 @@ describe('SampleRequestSection', () => {
     expect(screen.getByText(/no longer offered/i)).toBeInTheDocument();
   });
 
+  it('shows a retired line only when one of its products is on the request', () => {
+    const saved = { lines: hook.catalog.lines, products: hook.catalog.products };
+    hook.catalog.lines = [...saved.lines,
+      { id: 'l-ret', brand: 'boomin_brands', name: 'Old Line', position: 2, is_active: false },
+      { id: 'l-ret2', brand: 'boomin_brands', name: 'Dead Line', position: 3, is_active: false }];
+    hook.catalog.products = [...saved.products,
+      { id: 'p-ret', product_line_id: 'l-ret', name: 'Old Flavor', position: 1, is_active: false },
+      { id: 'p-act', product_line_id: 'l-ret', name: 'Active Under Retired', position: 2, is_active: true },
+      { id: 'p-dead', product_line_id: 'l-ret2', name: 'Dead Flavor', position: 1, is_active: true }];
+    const savedItems = hook.items;
+    hook.items = new Map([...savedItems, ['p-ret', { productId: 'p-ret', singles: 2, displays: 0, emptyDisplays: 0 }]]);
+    try {
+      render(<SampleRequestSection eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.getByText('Old Line')).toBeInTheDocument();
+      expect(screen.getByText('Old Flavor')).toBeInTheDocument();
+      expect(screen.getAllByText(/no longer offered/i).length).toBeGreaterThanOrEqual(2);
+      expect(screen.queryByText('Active Under Retired')).not.toBeInTheDocument();
+      expect(screen.queryByText('Dead Line')).not.toBeInTheDocument();
+      expect(screen.queryByText('Dead Flavor')).not.toBeInTheDocument();
+    } finally {
+      hook.catalog.lines = saved.lines; hook.catalog.products = saved.products; hook.items = savedItems;
+    }
+  });
+
   it('calls setItem with a parsed integer', () => {
     render(<SampleRequestSection eventId="ev-1" userId="u-1" role="salesperson" />);
     const input = screen.getByLabelText('Mango singles');

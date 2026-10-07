@@ -38,6 +38,7 @@ describe('useSampleRequest', () => {
   it('loads catalog and request, then autosaves a changed quantity after the debounce', async () => {
     const { result } = renderHook(() => useSampleRequest({ eventId: 'ev-1', userId: 'u-1', role: 'salesperson' }));
     await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(sampleRequestApi.getCatalog).toHaveBeenCalledWith(true); // retired rows on the request must load
     act(() => result.current.setItem('p-1', 'singles', 2));
     expect(result.current.dirty).toBe(true);
     await act(async () => { await vi.advanceTimersByTimeAsync(900); });

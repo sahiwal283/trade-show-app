@@ -93,7 +93,7 @@ export function useSampleRequest({ eventId, userId, role, actorId }: Args) {
     setStatus('loading');
     (async () => {
       try {
-        const [c, v] = await Promise.all([sampleRequestApi.getCatalog(), api.get()]);
+        const [c, v] = await Promise.all([sampleRequestApi.getCatalog(true), api.get()]);
         if (cancelled) return;
         setCatalog(c);
         applyView(v);
