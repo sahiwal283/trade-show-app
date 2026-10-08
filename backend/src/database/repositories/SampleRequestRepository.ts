@@ -1,9 +1,13 @@
 /**
- * All SQL for sample requests and the catalog. Event-scoped reads join
- * through event_participants so a rep removed from a show drops out of the
- * summary and the dashboard without any cleanup job.
+ * All SQL for sample requests and the catalog. There is ONE shared request per
+ * event (sample_requests.event_id is unique); any participant may edit it.
+ * Edits arrive as a row-level patch (only the rows the client changed), applied
+ * in one transaction that first locks the parent request so concurrent patches
+ * serialize. Every changed field is recorded in sample_request_changes, so the
+ * history always matches what is stored.
  */
 import { query, pool } from '../../config/database';
+import { NotFoundError } from '../../utils/errors';
 import {
   SampleCatalog, SampleProductLine, SampleProduct, SampleMaterial, SampleBrand,
   SampleRequestRow, SampleRequestPayload, SampleRequestStatus, SampleChangeRow, SampleChangeField, UserRef,
@@ -142,12 +146,19 @@ class SampleRequestRepository {
     const client = await pool.connect();
     const log = (kind: 'item' | 'material', targetId: string, field: SampleChangeField, oldV: unknown, newV: unknown) =>
       client.query(
-        `INSERT INTO sample_request_changes (request_id, user_id, kind, target_id, field, old_value, new_value)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        `INSERT INTO sample_request_changes (request_id, user_id, kind, target_id, field, old_value, new_value, changed_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, clock_timestamp())`,
         [requestId, userId, kind, targetId, field, oldV == null ? null : String(oldV), newV == null ? null : String(newV)]
       );
     try {
       await client.query('BEGIN');
+      // Serialize patches per request so every read below sees committed state.
+      const parent = await client.query(
+        `SELECT id FROM sample_requests WHERE id = $1 FOR NO KEY UPDATE`,
+        [requestId]
+      );
+      if (parent.rows.length === 0) throw new NotFoundError('Sample request', requestId);
+      let anyChange = false;
       for (const it of patch.items) {
         const cur = await client.query(
           `SELECT singles, displays, empty_displays FROM sample_request_items WHERE request_id = $1 AND product_id = $2 FOR UPDATE`,
@@ -157,6 +168,7 @@ class SampleRequestRepository {
         const next = { singles: it.singles, displays: it.displays, empty_displays: it.emptyDisplays };
         const changed = (Object.keys(next) as Array<keyof typeof next>).filter((k) => old[k] !== next[k]);
         if (changed.length === 0) continue;
+        anyChange = true;
         if (next.singles === 0 && next.displays === 0 && next.empty_displays === 0) {
           await client.query(`DELETE FROM sample_request_items WHERE request_id = $1 AND product_id = $2`, [requestId, it.productId]);
         } else {
@@ -181,6 +193,7 @@ class SampleRequestRepository {
         if (old.qty !== m.qty) changed.push('qty');
         if ((old.notes ?? null) !== notes) changed.push('notes');
         if (changed.length === 0) continue;
+        anyChange = true;
         if (m.qty === 0 && notes === null) {
           await client.query(`DELETE FROM sample_request_materials WHERE request_id = $1 AND material_id = $2`, [requestId, m.materialId]);
         } else {
@@ -193,10 +206,12 @@ class SampleRequestRepository {
         }
         for (const k of changed) await log('material', m.materialId, k, k === 'qty' ? old.qty : old.notes, k === 'qty' ? m.qty : notes);
       }
-      await client.query(
-        `UPDATE sample_requests SET last_edited_by = $2, last_edited_at = now(), updated_at = now() WHERE id = $1`,
-        [requestId, userId]
-      );
+      if (anyChange) {
+        await client.query(
+          `UPDATE sample_requests SET last_edited_by = $2, last_edited_at = clock_timestamp(), updated_at = now() WHERE id = $1`,
+          [requestId, userId]
+        );
+      }
       await client.query('COMMIT');
     } catch (e) {
       await client.query('ROLLBACK');
