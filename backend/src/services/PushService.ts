@@ -38,6 +38,8 @@ interface PushSubscriptionRow {
 }
 
 const GONE_STATUS_CODES = [404, 410];
+/** Without this a push service that never answers holds its caller forever. */
+const PUSH_REQUEST_TIMEOUT_MS = 10_000;
 
 class PushService {
   private enabled = false;
@@ -144,7 +146,8 @@ class PushService {
                 auth: subscription.auth
               }
             },
-            body
+            body,
+            { timeout: PUSH_REQUEST_TIMEOUT_MS }
           );
         } catch (error: unknown) {
           const err = error as { statusCode?: number; message?: string };

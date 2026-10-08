@@ -65,13 +65,16 @@ export class BadgeCrmPushService {
       return summary;
     }
     this.inFlight = true;
+    let result: PushSummary;
     try {
-      const result = await this.runPass(summary);
-      await this.notifyExhausted();
-      return result;
+      result = await this.runPass(summary);
     } finally {
       this.inFlight = false;
     }
+    // Outside the guard and not awaited: a notification that hangs must never
+    // stop the next pass from pushing leads.
+    void this.notifyExhausted();
+    return result;
   }
 
   /**
