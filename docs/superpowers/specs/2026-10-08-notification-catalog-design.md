@@ -1,7 +1,7 @@
 # Notification Catalog — Design
 
 **Date:** 2026-10-08
-**Status:** Awaiting review
+**Status:** Approved for planning
 **Target release:** v2.32.0
 **Scope:** Argo repo only. Spec 1 of 2. Spec 2 (expense notifications via
 Midas) is designed separately and is summarised under "Out of scope".
@@ -143,13 +143,15 @@ New folder `backend/src/services/notifications/`:
 
 | File | Responsibility | Depends on |
 |---|---|---|
-| `recipients.ts` | `eventParticipants(eventId, { except })` and `usersWithRole(roles, { except })`. Both drop inactive users. The only place recipient queries live. | `config/database` |
+| `recipients.ts` | `eventParticipants(eventId, { except })`, `usersWithRole(roles, { except })` and `activeUsers(ids, { except })` for named recipients. All drop inactive users. The only place recipient queries live. | `config/database` |
 | `notifyMany.ts` | `notifyMany(userIds, input)`: calls `notificationService.notify` per user, catches and logs per user, returns nothing. | `NotificationService` |
 | `eventNotifications.ts` | `added`, `removed`, `detailsChanged`, `cancelled`, plus the pure `diffEventDetails(before, after)`. | `recipients`, `notifyMany` |
 | `boothNotifications.ts` | `ordered`, `shipped`, `mapUploaded`, `componentReported`. | `recipients`, `notifyMany` |
 | `travelNotifications.ts` | `flightSaved(before, after, actorId)`, `hotelSaved`, `carRentalSaved`, and the pure `classifyBooking(before, after, watched)` that returns which of booked / changed / cancelled / reassigned / nothing applies. `before` is null on create, `after` is null on delete. | `recipients`, `notifyMany` |
 | `adminNotifications.ts` | `userPending`, `badgeCrmFailed`. | `recipients`, `notifyMany` |
-| `ReminderScheduler.ts` | One 15-minute loop over a list of reminder definitions. Each definition supplies a query for due `(subject_id, user_id)` pairs and a message builder. | `notifyMany`, ledger |
+| `reminderDefinitions.ts` | The six reminder definitions: a query for due `(subject_id, user_id)` pairs and a message builder each. | |
+| `ReminderScheduler.ts` | One 5-minute loop over the reminder definitions (5 minutes, as `TravelReminderService` ran, so flight reminders keep their timing). | `notifyMany`, ledger |
+| `values.ts`, `eventRefs.ts` | Value normalisers and formatters; event lookup by id or checklist id. | `config/database` |
 | `index.ts` | Re-exports the catalog. | |
 
 `NotificationService`, `NotificationRepository` and `PushService` are used as
@@ -230,6 +232,10 @@ WHERE f.attendee_id IS NOT NULL
 ON CONFLICT DO NOTHING;
 
 ALTER TABLE badge_scans ADD COLUMN IF NOT EXISTS crm_failure_notified_at TIMESTAMPTZ;
+
+-- Scans already failed for good before this release are not news.
+UPDATE badge_scans SET crm_failure_notified_at = now()
+ WHERE crm_status = 'failed' AND crm_attempts >= 5 AND crm_failure_notified_at IS NULL;
 ```
 
 - `subject_id` is text because events use uuids and flights use integers.
@@ -262,8 +268,8 @@ its destination:
 | `samples` + `eventId` | `checklist` | `#event=<id>&tab=samples` (existing) |
 | `expenses` + `eventId` | `expenses` | `#expenses-event=<id>` |
 | `admin-users` | `settings` | `#users` (existing hash) |
-| `booth-inventory` | `booths` | `#booths` |
-| `badge-scans` | `leads` | `#leads` |
+| `booth-inventory` | `booths` | `#booths` (cleared once applied) |
+| `badge-scans` | `leads` | `#leads` (cleared once applied) |
 | none | `dashboard` | none |
 
 - `expenses` cannot reuse a bare `#event=<id>`: `initialPageFromHash` sends
@@ -284,11 +290,11 @@ its destination:
 ### Push click while the app is open
 
 `public/push-sw.js` currently focuses an open window and ignores the
-notification's URL. It will navigate the focused client to the URL
-(`client.navigate(url)`, falling back to `postMessage` + a listener in
-`App.tsx` that sets the hash, for browsers where `navigate` is unavailable on
-an uncontrolled client). The existing hash listeners then route as they do
-for a bell tap.
+notification's URL. It will post the URL to the focused client
+(`postMessage({ type: 'notification-click', url })`), and a listener in
+`App.tsx` switches page and sets the hash. No reload, so unsaved state in
+the open app survives. The existing hash listeners then route as they do for
+a bell tap.
 
 ## Error handling
 
