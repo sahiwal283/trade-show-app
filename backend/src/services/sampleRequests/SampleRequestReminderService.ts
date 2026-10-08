@@ -62,19 +62,24 @@ class SampleRequestReminderService {
   private async remindEvent(event: CandidateEvent, closesAt: string, now: number): Promise<void> {
     const due = await query(`SELECT user_id FROM event_participants WHERE event_id = $1`, [event.id]);
     for (const { user_id } of due.rows as Array<{ user_id: string }>) {
-      const claimed = await query(
-        `INSERT INTO sample_request_reminders (event_id, user_id, kind) VALUES ($1, $2, $3)
-         ON CONFLICT (event_id, user_id, kind) DO NOTHING RETURNING event_id`,
-        [event.id, user_id, REMINDER_KIND]
-      );
-      if (claimed.rows.length === 0) continue;
-      await notificationService.notify(user_id, {
-        kind: `sample_request.${REMINDER_KIND}`,
-        title: `Sample request closes in ${hoursLeft(closesAt, now)}h · ${event.name}`,
-        body: `The sample request for ${event.name} closes soon. Review it before the window closes.`,
-        link: { page: 'samples', eventId: event.id },
-      });
-      console.log(`[SampleReminders] Sent ${REMINDER_KIND} for event ${event.id} to ${user_id}`);
+      // Per user: one failed claim or notify must not abort the rest of the pass.
+      try {
+        const claimed = await query(
+          `INSERT INTO sample_request_reminders (event_id, user_id, kind) VALUES ($1, $2, $3)
+           ON CONFLICT (event_id, user_id, kind) DO NOTHING RETURNING event_id`,
+          [event.id, user_id, REMINDER_KIND]
+        );
+        if (claimed.rows.length === 0) continue;
+        await notificationService.notify(user_id, {
+          kind: `sample_request.${REMINDER_KIND}`,
+          title: `Sample request closes in ${hoursLeft(closesAt, now)}h · ${event.name}`,
+          body: `The sample request for ${event.name} closes soon. Review it before the window closes.`,
+          link: { page: 'samples', eventId: event.id },
+        });
+        console.log(`[SampleReminders] Sent ${REMINDER_KIND} for event ${event.id} to ${user_id}`);
+      } catch (error) {
+        console.error(`[SampleReminders] ${REMINDER_KIND} failed for event ${event.id}, user ${user_id}:`, error);
+      }
     }
   }
 }

@@ -13,7 +13,6 @@ export interface SampleCatalog { lines: SampleProductLine[]; products: SamplePro
 
 export interface SampleRequestItem { productId: string; singles: number; displays: number; emptyDisplays: number }
 export interface SampleRequestMaterial { materialId: string; qty: number; notes: string | null }
-export interface SampleRequestPayload { items: SampleRequestItem[]; materials: SampleRequestMaterial[] }
 
 export type SampleRequestStatus = 'draft' | 'submitted';
 export interface SampleWindow { opensAt: string | null; closesAt: string | null; isOpen: boolean }

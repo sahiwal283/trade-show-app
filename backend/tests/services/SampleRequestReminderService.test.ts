@@ -57,6 +57,22 @@ describe('SampleRequestReminderService.scan', () => {
     expect(notificationService.notify).not.toHaveBeenCalled();
   });
 
+  it('a failed notify for one participant does not stop the next one', async () => {
+    vi.setSystemTime(new Date('2026-10-20T12:00:00Z'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(query)
+      .mockResolvedValueOnce({ rows: [EVENT] } as any)
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u-1' }, { user_id: 'u-2' }] } as any)
+      .mockResolvedValueOnce({ rows: [{ event_id: 'ev-1' }] } as any)   // claim u-1 ok
+      .mockResolvedValueOnce({ rows: [{ event_id: 'ev-1' }] } as any);  // claim u-2 ok
+    vi.mocked(notificationService.notify).mockRejectedValueOnce(new Error('push down'));
+    await expect(sampleRequestReminderService.scan()).resolves.toBeUndefined();
+    expect(notificationService.notify).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(notificationService.notify).mock.calls.map((c) => c[0])).toEqual(['u-1', 'u-2']);
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('u-1'), expect.any(Error));
+    errorSpy.mockRestore();
+  });
+
   it('never throws out of scan', async () => {
     vi.mocked(query).mockRejectedValueOnce(new Error('db down'));
     await expect(sampleRequestReminderService.scan()).resolves.toBeUndefined();

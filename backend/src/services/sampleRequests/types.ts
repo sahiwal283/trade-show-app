@@ -70,7 +70,7 @@ export interface OpenSampleRequest {
   status: 'none' | SampleRequestStatus; submittedAt: string | null;
 }
 
-/** Roles that may edit any rep's request, including after close. */
+/** Roles that may edit the show's shared request after its window has closed. */
 export const SAMPLE_OVERRIDE_ROLES = ['admin', 'coordinator', 'developer'] as const;
 export const canOverrideSampleWindow = (role: string | undefined): boolean =>
   !!role && (SAMPLE_OVERRIDE_ROLES as readonly string[]).includes(role);
