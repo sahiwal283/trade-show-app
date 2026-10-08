@@ -1,6 +1,6 @@
 import React from 'react';
 import { SampleProduct, SampleRequestItem, MAX_SAMPLE_QTY } from '../../../utils/sampleRequestApi';
-import { ItemField } from './useSampleRequest';
+import type { ItemField } from './useEventSampleRequest';
 
 interface Props {
   lineName: string;
@@ -18,7 +18,7 @@ const COLS: Array<{ field: ItemField; label: string }> = [
 
 export const ProductTable: React.FC<Props> = ({ lineName, products, items, disabled, onChange }) => (
   <div>
-    <h4 className="micro-label mb-2">{lineName}</h4>
+    <h5 className="micro-label mb-2">{lineName}</h5>
     <table className="w-full text-sm">
       <thead>
         <tr className="text-[11px] uppercase tracking-wide text-stone-400">

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { formatCountdown, isUrgent, formatCloseDate } from '../sampleRequestText';
+import { formatCountdown, isUrgent, formatCloseDate, formatRelative, formatShortDate, describeChange } from '../sampleRequestText';
 
 const close = '2026-10-24T03:59:59.000Z';
 
@@ -74,5 +74,30 @@ describe('formatCloseDate', () => {
     const result = formatCloseDate(close);
     expect(result).toBe('Oct 23, 11:59 PM ET');
     expect(result).not.toContain(narrowNBSP);
+  });
+});
+
+describe('formatRelative', () => {
+  const now = new Date('2026-10-15T12:00:00Z');
+  it('says just now under a minute', () => { expect(formatRelative('2026-10-15T11:59:30Z', now)).toBe('just now'); });
+  it('uses minutes under an hour', () => { expect(formatRelative('2026-10-15T11:55:00Z', now)).toBe('5 min ago'); });
+  it('uses hours under a day', () => { expect(formatRelative('2026-10-15T09:00:00Z', now)).toBe('3 h ago'); });
+  it('falls back to a short date', () => { expect(formatRelative('2026-10-12T09:00:00Z', now)).toBe('on Oct 12'); });
+});
+
+describe('formatShortDate', () => {
+  it('renders month and day in Eastern time', () => { expect(formatShortDate('2026-10-14T16:00:00Z')).toBe('Oct 14'); });
+});
+
+describe('describeChange', () => {
+  const base = { id: 'c', userId: 'u', userName: 'Sameer', kind: 'item' as const, targetId: 'p', targetName: 'Mango', lineName: 'Peelz', brand: 'boomin_brands' as const, changedAt: '' };
+  it('describes a quantity change', () => {
+    expect(describeChange({ ...base, field: 'singles', oldValue: '2', newValue: '4' })).toBe('Sameer changed Mango singles 2 → 4');
+    expect(describeChange({ ...base, field: 'empty_displays', oldValue: '0', newValue: '1' })).toBe('Sameer changed Mango empty displays 0 → 1');
+  });
+  it('describes notes and a missing user', () => {
+    expect(describeChange({ ...base, userName: null, kind: 'material', targetName: 'Banner', lineName: null, brand: null, field: 'notes', oldValue: null, newValue: 'big one' }))
+      .toBe('Someone changed Banner notes to "big one"');
+    expect(describeChange({ ...base, kind: 'material', targetName: 'Banner', field: 'notes', oldValue: 'x', newValue: null })).toBe('Sameer cleared Banner notes');
   });
 });
