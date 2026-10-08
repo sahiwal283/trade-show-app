@@ -17,7 +17,7 @@ vi.mock('../../src/services/devDashboard/auditLog', async (original) => ({
   getAuditLogs: (q: unknown) => getAuditLogs(q),
 }));
 
-import router, { requireDashboardRole } from '../../src/routes/devDashboard';
+import router, { requireDashboardRole, dashboardErrorHandler } from '../../src/routes/devDashboard';
 import { routeHandler } from '../helpers/routeHandler';
 
 const mockRes = () => {
@@ -88,5 +88,33 @@ describe('dev dashboard routes', () => {
     const next = await call('/sessions', { query: {} }, res);
     expect(next).toHaveBeenCalledWith(expect.objectContaining({ message: 'db down' }));
     expect(res.json).not.toHaveBeenCalled();
+  });
+
+  describe('dashboardErrorHandler', () => {
+    beforeEach(() => { vi.spyOn(console, 'error').mockImplementation(() => {}); });
+
+    it('answers 500 with the real error message', () => {
+      const res = mockRes();
+      dashboardErrorHandler(new Error('permission denied for table audit_logs'), {} as any, res, vi.fn());
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'permission denied for table audit_logs' });
+    });
+
+    it('defers to next when headers are already sent', () => {
+      const res = mockRes();
+      res.headersSent = true;
+      const next = vi.fn();
+      const err = new Error('late');
+      dashboardErrorHandler(err, {} as any, res, next);
+      expect(next).toHaveBeenCalledWith(err);
+      expect(res.json).not.toHaveBeenCalled();
+    });
+
+    it('is registered after the five routes', () => {
+      const stack = (router as any).stack;
+      expect(stack[stack.length - 1].handle.length).toBe(4);
+      const lastRoute = stack.map((l: any) => !!l.route).lastIndexOf(true);
+      expect(lastRoute).toBeLessThan(stack.length - 1);
+    });
   });
 });
