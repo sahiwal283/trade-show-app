@@ -36,6 +36,13 @@ describe('boothNotifications', () => {
     expect(lastInput().body).toBe('The booth for Expo has shipped with FedEx · Tracking 1Z999 · Arrives Oct 29, 2026');
   });
 
+  it('shipped rejects rather than throwing into its caller when a value cannot be read', async () => {
+    const bad = { get carrier_name(): unknown { throw new Error('unreadable'); } };
+    let promise: Promise<void> | undefined;
+    expect(() => { promise = boothNotifications.shipped(7, bad, 'adm'); }).not.toThrow();
+    await expect(promise).rejects.toThrow('unreadable');
+  });
+
   it('shipped stays readable with no carrier details', async () => {
     await boothNotifications.shipped(7, {}, 'adm');
     expect(lastInput().body).toBe('The booth for Expo has shipped');

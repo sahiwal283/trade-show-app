@@ -33,7 +33,7 @@ export const boothNotifications = {
     }));
   },
 
-  shipped(
+  async shipped(
     checklistId: number,
     shipping: { carrier_name?: unknown; tracking_number?: unknown; delivery_date?: unknown },
     actorId?: Actor

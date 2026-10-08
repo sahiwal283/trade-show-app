@@ -519,6 +519,12 @@ export class ChecklistRepository extends BaseRepository<EventChecklist> {
     return result.rows[0];
   }
 
+  /** One shipment, for the before/after comparison on an edit. */
+  async getBoothShippingById(id: number): Promise<ChecklistBoothShipping | null> {
+    const result = await this.executeQuery<ChecklistBoothShipping>(`SELECT * FROM checklist_booth_shipping WHERE id = $1`, [id]);
+    return result.rows[0] || null;
+  }
+
   /**
    * Update booth shipping entry
    */

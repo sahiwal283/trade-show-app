@@ -8,6 +8,7 @@ import { authorize, AuthRequest } from '../middleware/auth';
 import { uploadBoothMap } from '../config/upload';
 import { checklistRepository } from '../database/repositories';
 import { boothNotifications, travelNotifications, logNotifyError } from '../services/notifications';
+import { NotFoundError } from '../utils/errors';
 import multer from 'multer';
 import fs from 'fs';
 
@@ -603,6 +604,49 @@ router.post('/:checklistId/booth-shipping', authorize('admin', 'coordinator', 'd
   } catch (error) {
     console.error('[Checklist] Error saving booth shipping:', error);
     res.status(500).json({ error: 'Failed to save booth shipping' });
+  }
+});
+
+// Update booth shipping (edit a shipment, or tick it shipped)
+router.put('/booth-shipping/:shippingId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { shippingId } = req.params;
+    const { shippingMethod, carrierName, trackingNumber, shippingDate, deliveryDate, notes, shipped } = req.body;
+    const id = parseInt(shippingId);
+
+    // undefined = the read failed; then there is nothing to compare against.
+    const before = await checklistRepository.getBoothShippingById(id).catch(() => undefined);
+    if (before === null) {
+      return res.status(404).json({ error: 'Booth shipping entry not found' });
+    }
+
+    // Only what the body carries, so a bare shipped toggle blanks nothing.
+    const fields = {
+      shipping_method: shippingMethod,
+      carrier_name: carrierName,
+      tracking_number: trackingNumber,
+      shipping_date: shippingDate,
+      delivery_date: deliveryDate,
+      notes,
+      shipped
+    };
+    const shipping = await checklistRepository.updateBoothShipping(
+      id,
+      Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined))
+    );
+
+    if (before !== undefined && !before.shipped && shipping.shipped) {
+      void boothNotifications.shipped(shipping.checklist_id, shipping, req.user?.id)
+        .catch(logNotifyError('booth.shipped'));
+    }
+
+    res.json(shipping);
+  } catch (error) {
+    if (error instanceof NotFoundError) {
+      return res.status(404).json({ error: 'Booth shipping entry not found' });
+    }
+    console.error('[Checklist] Error updating booth shipping:', error);
+    res.status(500).json({ error: 'Failed to update booth shipping' });
   }
 });
 
