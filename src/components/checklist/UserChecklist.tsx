@@ -60,12 +60,14 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
         setEvents(visible);
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
         const linkedId = params.get('event');
-        if (linkedId && ownsLink(params.get('tab'), embedded) && visible.some((e) => e.id === linkedId)) {
+        const owned = !!linkedId && ownsLink(params.get('tab'), embedded);
+        if (owned && visible.some((e) => e.id === linkedId)) {
           setSelectedEventId(linkedId);
-          history.replaceState(null, '', window.location.pathname + window.location.search);
         } else if (visible.length > 0) {
           setSelectedEventId(visible[0].id);
         }
+        // An owned link is consumed whether or not it resolved.
+        if (owned) history.replaceState(null, '', window.location.pathname + window.location.search);
       } catch (error) {
         if (cancelled) return;
         console.error('[UserChecklist] Error loading events:', error);
@@ -79,14 +81,14 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
     return () => { cancelled = true; };
   }, [user.id]);
 
-  // A deep link followed while this page is already open (#event=<id>&tab=my).
+  // A deep link followed while this page is already open (#event=<id>&tab=my, or tab=samples on the rep's own page).
   useEffect(() => {
     const onHashChange = () => {
       const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       if (!ownsLink(params.get('tab'), embedded)) return; // another page's link; leave the hash for its listener
       const linkedId = params.get('event');
-      if (linkedId && events.some((e) => e.id === linkedId)) {
-        setSelectedEventId(linkedId);
+      if (linkedId && events.length > 0) {
+        if (events.some((e) => e.id === linkedId)) setSelectedEventId(linkedId);
         history.replaceState(null, '', window.location.pathname + window.location.search);
       }
     };

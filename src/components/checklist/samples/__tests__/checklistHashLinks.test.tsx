@@ -45,17 +45,42 @@ describe('checklist #event hash links (shared sample request)', () => {
     expect(window.location.hash).toBe('');
   });
 
+  it('a rep cold-loading #event=ev-2&tab=samples gets that show and the hash is cleared', async () => {
+    window.location.hash = '#event=ev-2&tab=samples';
+    render(<UserChecklist user={rep} />);
+    expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-2');
+    expect(window.location.hash).toBe('');
+  });
+
+  it('a rep link to an unknown show keeps the current show and clears the hash', async () => {
+    render(<UserChecklist user={rep} />);
+    expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+    go('#event=nope&tab=samples');
+    expect(window.location.hash).toBe('');
+    expect(screen.getByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+  });
+
+  it('a rep cold link to an unknown show falls back to the first show and clears the hash', async () => {
+    window.location.hash = '#event=nope&tab=samples';
+    render(<UserChecklist user={rep} />);
+    expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+    expect(window.location.hash).toBe('');
+  });
+
   it('hides the Samples block when the rep cannot view that show', async () => {
-    vi.mocked(sampleRequestApi.getEventAccess).mockResolvedValue({ canView: false, canEdit: false });
+    let resolveAccess!: (v: { canView: boolean; canEdit: boolean }) => void;
+    vi.mocked(sampleRequestApi.getEventAccess).mockReturnValue(new Promise((r) => { resolveAccess = r; }));
     render(<UserChecklist user={rep} />);
     await waitFor(() => expect(sampleRequestApi.getEventAccess).toHaveBeenCalledWith('ev-1'));
+    await act(async () => { resolveAccess({ canView: false, canEdit: false }); await Promise.resolve(); });
     expect(screen.queryByTestId('samples-panel')).not.toBeInTheDocument();
     expect(screen.queryByRole('tab', { name: 'Samples' })).not.toBeInTheDocument();
   });
 
   it('an embedded My Checklist shows no Samples panel and leaves tab=samples links alone', async () => {
     render(<UserChecklist user={admin} embedded />);
-    await waitFor(() => expect(api.getEvents).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(2));
+    await waitFor(() => expect(api.checklist.getChecklist).toHaveBeenCalled());
     expect(screen.queryByTestId('samples-panel')).not.toBeInTheDocument();
     go('#event=ev-2&tab=samples');
     expect(window.location.hash).toBe('#event=ev-2&tab=samples');
@@ -69,6 +94,13 @@ describe('checklist #event hash links (shared sample request)', () => {
     expect(board).toHaveAttribute('data-tab', 'samples');
     expect(screen.queryByRole('button', { name: 'Samples' })).not.toBeInTheDocument();
     expect(window.location.hash).toBe('');
+  });
+
+  it('the privileged toggle has exactly two options', async () => {
+    render(<TradeShowChecklist user={admin} />);
+    await screen.findByTestId('board');
+    expect(screen.getAllByRole('button').filter((b) => b.className.includes('seg-tab')).map((b) => b.textContent))
+      .toEqual(['Admin Checklist', 'My Checklist']);
   });
 
   it('a rep gets My Checklist straight away with no access round-trip at the page level', async () => {

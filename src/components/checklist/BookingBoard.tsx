@@ -2,12 +2,12 @@
  * BookingBoard — the coordinator's admin surface for one show.
  *
  * Readiness card up top, then a segmented board: Booth / Flights / Hotels /
- * Cars / Tasks tabs, each labeled with its done/total count. Only the
+ * Cars / Tasks / Samples tabs, each labeled with its done/total count. Only the
  * active tab's panel renders. All section components keep their existing
  * handlers, API calls, and receipt flows.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { ChecklistData } from './TradeShowChecklist';
@@ -48,6 +48,7 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
 }) => {
   const [boardTab, setBoardTab] = useState<BoardTabKey>(requestedTab ?? 'booth');
   const [samplesSubmitted, setSamplesSubmitted] = useState(false);
+  const panelReported = useRef(false);
 
   useEffect(() => {
     if (!requestedTab) return;
@@ -59,13 +60,17 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
   useEffect(() => {
     let cancelled = false;
     setSamplesSubmitted(false);
+    panelReported.current = false;
     sampleRequestApi.getEvent(event.id)
-      .then((v) => { if (!cancelled) setSamplesSubmitted(v.request.status === 'submitted'); })
+      .then((v) => { if (!cancelled && !panelReported.current) setSamplesSubmitted(v.request.status === 'submitted'); })
       .catch(() => undefined);
     return () => { cancelled = true; };
   }, [event.id]);
 
-  const handleSamplesStatus = useCallback((s: 'draft' | 'submitted') => setSamplesSubmitted(s === 'submitted'), []);
+  const handleSamplesStatus = useCallback((s: 'draft' | 'submitted') => {
+    panelReported.current = true;   // the panel's word beats a slower status fetch
+    setSamplesSubmitted(s === 'submitted');
+  }, []);
   const [showAddPerson, setShowAddPerson] = useState(false);
   const canManageRoster =
     user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer';
