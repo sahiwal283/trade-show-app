@@ -4,7 +4,7 @@
  * and under My Checklist (reps). Anyone on the show edits it; saves are
  * field-level; a puller off the roster sees it read-only. History below.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Package, AlertCircle, WifiOff } from 'lucide-react';
 import { SAMPLE_BRAND_LABELS, SAMPLE_BRAND_ORDER } from '../../../utils/sampleRequestApi';
 import { useEventSampleRequest } from './useEventSampleRequest';
@@ -38,7 +38,11 @@ export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusC
 
   const req = s.view?.request ?? null;
   const reqStatus = req?.status;
-  useEffect(() => { if (reqStatus) onStatusChange?.(reqStatus); }, [reqStatus, onStatusChange]);
+  // Reported once per status value. The callback lives in a ref so a parent passing a new function on every
+  // render (and setting state in it) cannot make this fire again and loop.
+  const onStatusChangeRef = useRef(onStatusChange);
+  useEffect(() => { onStatusChangeRef.current = onStatusChange; });
+  useEffect(() => { if (reqStatus) onStatusChangeRef.current?.(reqStatus); }, [reqStatus]);
 
   if (s.status === 'forbidden') return null;
 
@@ -51,10 +55,20 @@ export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusC
   const canEdit = s.canEdit && (!pastDeadline || (isOverride && s.override));
   /**
    * The server says this viewer cannot edit: a puller off the roster, or (window closed) anyone without an
-   * override role. They get no Submit button at all; an override role always has canEdit true.
+   * override role. They get no Submit button; an override role always has canEdit true. The save-state line
+   * is a separate matter: an error or unsaved fields are shown to everyone.
    */
   const serverReadOnly = s.view?.canEdit === false;
   const viewOnly = s.status === 'ready' && !closed && !s.isOffline && serverReadOnly;
+  /**
+   * Error first, then what is happening to the user's edits. Offline edits are sent on reconnect, so they are
+   * merely unsaved; edits stranded by a closed window or lost access will not be sent. A viewer who cannot
+   * edit and has nothing pending gets no line.
+   */
+  const saveState: React.ReactNode = s.error ? <span className="text-red-600">{s.error}</span>
+    : s.saving ? 'Saving…'
+    : s.dirtyCount > 0 ? (canEdit || s.isOffline ? 'Unsaved changes' : 'These changes were not saved.')
+    : serverReadOnly ? null : 'All changes saved';
 
   const statusPill = closed
     ? { text: 'Closed', cls: 'bg-stone-100 text-stone-600 ring-stone-200' }
@@ -145,7 +159,7 @@ export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusC
                       .sort((a, b) => a.position - b.position);
                     if (products.length === 0) return null;
                     return (
-                      <ProductTable key={line.id} lineName={line.name} products={products} items={s.items}
+                      <ProductTable key={line.id} lineName={line.name} lineActive={line.is_active} products={products} items={s.items}
                         disabled={!canEdit} onChange={s.setItem} />
                     );
                   })}
@@ -161,15 +175,14 @@ export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusC
               values={s.materials} disabled={!canEdit} onChange={s.setMaterial} />
           </div>
 
-          {!serverReadOnly && (
+          {(saveState || !serverReadOnly) && (
             <footer className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs text-stone-500" aria-live="polite">
-                {s.error ? <span className="text-red-600">{s.error}</span>
-                  : s.saving ? 'Saving…' : s.dirtyCount > 0 ? 'Unsaved changes' : 'All changes saved'}
-              </p>
-              <button type="button" onClick={() => { void s.submit(); }} disabled={!s.canSubmit || !canEdit} className="btn-primary min-h-[44px] px-5 lg:min-h-0">
-                {s.submitting ? 'Submitting…' : submitted ? 'Resubmit changes' : 'Submit sample request'}
-              </button>
+              <p className="text-xs text-stone-500" aria-live="polite">{saveState}</p>
+              {!serverReadOnly && (
+                <button type="button" onClick={() => { void s.submit(); }} disabled={!s.canSubmit || !canEdit} className="btn-primary min-h-[44px] px-5 lg:min-h-0">
+                  {s.submitting ? 'Submitting…' : submitted ? 'Resubmit changes' : 'Submit sample request'}
+                </button>
+              )}
             </footer>
           )}
 

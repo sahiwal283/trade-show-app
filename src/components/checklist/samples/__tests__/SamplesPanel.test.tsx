@@ -1,6 +1,6 @@
 // src/components/checklist/samples/__tests__/SamplesPanel.test.tsx
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 
 const makeHook = () => ({
   status: 'ready',
@@ -154,5 +154,130 @@ describe('SamplesPanel', () => {
     expect(screen.queryAllByRole('spinbutton')).toHaveLength(0);
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
     expect(hook.retry).toHaveBeenCalledTimes(1);
+  });
+
+  describe('what was not saved stays visible when the form turns read-only', () => {
+    it('window closed with dirty fields and a read-only view: the not-saved line shows and there is no Submit', () => {
+      hook.closed = true; hook.canEdit = false; hook.canSubmit = false; hook.view.canEdit = false; hook.dirtyCount = 2;
+      hook.view.window.isOpen = false;
+      render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.getByText('These changes were not saved.')).toBeInTheDocument();
+      expect(screen.queryByText('Unsaved changes')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
+      expectAllDisabled();
+    });
+
+    it('removed from the roster mid-edit: the hook error stays visible on a read-only view, with no Submit', () => {
+      hook.view.canEdit = false; hook.canEdit = false; hook.canSubmit = false;
+      hook.error = 'Your changes were not accepted. Refresh to see the current list.';
+      render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.getByText('Your changes were not accepted. Refresh to see the current list.')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /submit/i })).not.toBeInTheDocument();
+    });
+
+    it('a read-only view with nothing unsaved and no error shows no save-state line', () => {
+      hook.view.canEdit = false; hook.canEdit = false; hook.canSubmit = false;
+      render(<SamplesPanel eventId="ev-1" userId="puller" role="salesperson" />);
+      expect(screen.queryByText('All changes saved')).not.toBeInTheDocument();
+      expect(screen.queryByText('These changes were not saved.')).not.toBeInTheDocument();
+    });
+
+    it('closed by a 409 while the view still says editable: not-saved line, Submit shown but disabled', () => {
+      hook.closed = true; hook.canEdit = false; hook.canSubmit = false; hook.dirtyCount = 1;
+      render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.getByText('These changes were not saved.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Submit sample request' })).toBeDisabled();
+    });
+
+    it('offline with dirty fields still reads Unsaved changes: they are sent on reconnect', () => {
+      hook.isOffline = true; hook.canEdit = false; hook.canSubmit = false; hook.dirtyCount = 1;
+      render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
+    });
+  });
+
+  describe('retired catalog rows', () => {
+    const LABEL = 'no longer offered';
+    const rowOf = (name: string) => screen.getByText(name).closest('tr') as HTMLElement;
+    const item = (productId: string) => [productId, { productId, singles: 1, displays: 0, emptyDisplays: 0 }] as const;
+    beforeEach(() => {
+      hook.catalog.lines.push({ id: 'l-3', brand: 'haute_brands', name: 'Old Line', position: 2, is_active: false });
+      hook.catalog.products.push(
+        { id: 'p-3', product_line_id: 'l-1', name: 'Retired Kiwi', position: 2, is_active: false },
+        { id: 'p-4', product_line_id: 'l-3', name: 'Orphan Lime', position: 1, is_active: true },
+      );
+      hook.catalog.materials.push({ id: 'm-2', name: 'Old Flyer', position: 2, is_active: false });
+    });
+
+    it('a retired product on the request renders with the label; active rows carry none', () => {
+      hook.items = new Map([item('p-3')]);
+      render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(within(rowOf('Retired Kiwi')).getByText(LABEL)).toBeInTheDocument();
+      expect(within(rowOf('Mango')).queryByText(LABEL)).not.toBeInTheDocument();
+    });
+
+    it('a retired product not on the request does not render', () => {
+      render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.queryByText('Retired Kiwi')).not.toBeInTheDocument();
+      expect(screen.queryByText(LABEL)).not.toBeInTheDocument();
+    });
+
+    it('an active product under a retired line renders, labelled, only when it is on the request', () => {
+      const { unmount } = render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.queryByText('Orphan Lime')).not.toBeInTheDocument();
+      expect(screen.queryByText('Old Line')).not.toBeInTheDocument();
+      unmount();
+      hook.items = new Map([item('p-4')]);
+      render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.getByRole('heading', { level: 5, name: 'Old Line' })).toBeInTheDocument();
+      expect(within(rowOf('Orphan Lime')).getByText(LABEL)).toBeInTheDocument();
+      expect(screen.getAllByText(LABEL)).toHaveLength(1);
+    });
+
+    it('a retired material renders with the label when on the request, and not at all otherwise', () => {
+      const { unmount } = render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(screen.queryByText('Old Flyer')).not.toBeInTheDocument();
+      unmount();
+      hook.materials = new Map([['m-2', { materialId: 'm-2', qty: 1, notes: null }]]);
+      render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+      expect(within(rowOf('Old Flyer')).getByText(LABEL)).toBeInTheDocument();
+      expect(within(rowOf('Banner')).queryByText(LABEL)).not.toBeInTheDocument();
+    });
+  });
+
+  it('does not call onStatusChange again for the same status when the callback identity changes', () => {
+    const first = vi.fn(); const second = vi.fn();
+    const { rerender } = render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" onStatusChange={first} />);
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(first).toHaveBeenCalledWith('draft');
+    rerender(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" onStatusChange={second} />);
+    rerender(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" onStatusChange={() => second('draft')} />);
+    expect(first).toHaveBeenCalledTimes(1);
+    expect(second).not.toHaveBeenCalled();
+    hook.view = { ...hook.view, request: { ...hook.view.request, status: 'submitted', submittedAt: '2026-10-14T16:00:00Z' } };
+    rerender(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" onStatusChange={second} />);
+    expect(second).toHaveBeenCalledTimes(1);                         // the status changed: the current callback hears it
+    expect(second).toHaveBeenCalledWith('submitted');
+    expect(first).toHaveBeenCalledTimes(1);
+  });
+
+  describe('past the deadline on this clock, override role', () => {
+    beforeEach(() => { hook.view.window.closesAt = '2020-01-01T05:00:00Z'; hook.view.canEdit = true; hook.canEdit = true; });
+
+    it('with Edit anyway on: inputs enabled and Submit shown', () => {
+      hook.override = true;
+      render(<SamplesPanel eventId="ev-1" userId="adm" role="admin" />);
+      for (const label of INPUTS) expect(screen.getByLabelText(label)).toBeEnabled();
+      expect(screen.getByRole('button', { name: 'Submit sample request' })).toBeEnabled();
+      expect(screen.getByLabelText(/Edit anyway/)).toBeChecked();
+    });
+
+    it('with Edit anyway off: inputs disabled', () => {
+      hook.override = false;
+      render(<SamplesPanel eventId="ev-1" userId="adm" role="admin" />);
+      expectAllDisabled();
+      expect(screen.getByRole('button', { name: 'Submit sample request' })).toBeDisabled();
+      expect(screen.getByLabelText(/Edit anyway/)).not.toBeChecked();
+    });
   });
 });
