@@ -499,23 +499,6 @@ ORDER BY tc.table_name;
 - **Production Credentials**: `credentials/HAUTE_CREDENTIALS.md`
 - **DO NOT** mix or "unify" these credentials!
 
-### AI Training Pipeline Database Setup
-
-**⚠️ TRAINING PIPELINE REQUIRES SPECIFIC DATABASE TABLES!**
-
-The AI training pipeline requires `ocr_corrections` table to exist.
-
-**Required Database Migrations:**
-- `006_create_ocr_corrections_table.sql` - Creates main corrections table
-- `007_enhance_ocr_corrections_for_cross_environment.sql` - Adds training features
-
-**How to Verify:**
-```bash
-ssh root@192.168.1.190
-pct exec 2600 -- su - postgres -c 'psql -d expense_app -c "\dt"'
-# Should see: ocr_corrections
-```
-
 ### Frontend Deployment Directory
 
 **CRITICAL**: Frontend MUST be deployed to `/var/www/trade-show-app` (NOT `/var/www/html`)

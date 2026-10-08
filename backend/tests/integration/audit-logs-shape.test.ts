@@ -51,6 +51,31 @@ describe('audit_logs shape (migration 048)', () => {
     await expect(query(MIGRATION)).resolves.toBeDefined();
   });
 
+  it('replaces a status check that rejects "warning" whatever that check is called', async () => {
+    await query(`ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS weird_legacy_chk`);
+    await query(
+      `ALTER TABLE audit_logs ADD CONSTRAINT weird_legacy_chk CHECK (status IN ('success', 'failure')) NOT VALID`
+    );
+    try {
+      await expect(
+        query(`INSERT INTO audit_logs (user_name, action, status) VALUES ($1, 'shape-test', 'warning')`, [MARK])
+      ).rejects.toMatchObject({ code: '23514' });
+
+      await query(MIGRATION);
+
+      await expect(
+        query(`INSERT INTO audit_logs (user_name, action, status) VALUES ($1, 'shape-test', 'warning')`, [MARK])
+      ).resolves.toMatchObject({ rowCount: 1 });
+      const checks = await query(
+        `SELECT conname FROM pg_constraint WHERE conrelid = 'public.audit_logs'::regclass AND contype = 'c'`
+      );
+      expect(checks.rows.map((row) => row.conname)).toEqual(['audit_logs_status_check']);
+    } finally {
+      await query(`ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS weird_legacy_chk`);
+      await query('DELETE FROM audit_logs WHERE user_name = $1', [MARK]);
+    }
+  });
+
   it('repairs a table that predates the migrations: missing columns, a VARCHAR address, a status check without "warning"', async () => {
     // A private schema inside a transaction that is rolled back: the real table is never touched.
     const client = await pool.connect();
@@ -72,7 +97,7 @@ describe('audit_logs shape (migration 048)', () => {
       // A row the new constraint would reject must not stop the migration.
       await client.query('ALTER TABLE audit_logs DROP CONSTRAINT audit_logs_status_check');
       await client.query(`INSERT INTO audit_logs (action, status) VALUES ('odd-row', 'error')`);
-      await client.query(`ALTER TABLE audit_logs ADD CONSTRAINT audit_logs_status_check CHECK (status IN ('success', 'failure', 'error'))`);
+      await client.query(`ALTER TABLE audit_logs ADD CONSTRAINT legacy_status_rule CHECK (status IN ('success', 'failure', 'error'))`);
 
       await client.query(MIGRATION);
       await client.query(MIGRATION);
@@ -92,6 +117,10 @@ describe('audit_logs shape (migration 048)', () => {
       const read = await client.query(
         `SELECT split_part(ip_address::text, '/', 1) AS ip_address FROM audit_logs ORDER BY created_at DESC, id DESC`
       );
+      const checks = await client.query(
+        `SELECT conname FROM pg_constraint WHERE conrelid = 'audit_logs'::regclass AND contype = 'c'`
+      );
+      expect(checks.rows.map((row) => row.conname)).toEqual(['audit_logs_status_check']);
       expect(read.rows.map((row) => row.ip_address).sort()).toEqual([null, '203.0.113.9', 'unknown'].sort());
     } finally {
       await client.query('ROLLBACK');

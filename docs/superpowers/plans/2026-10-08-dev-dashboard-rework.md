@@ -5722,7 +5722,7 @@ After the frontend deploy, wait 90 seconds for NPMplus to regenerate its proxy c
 
 - [ ] **Step 4: Verify in production**
 
-1. Migration 047 is recorded: on CT 2320, `SELECT version FROM schema_migrations WHERE version LIKE '047%';` returns one row and `\d page_views` shows the table. If the row is missing, apply the migration as `postgres`, grant the table to `trade_show_app_prod`, and insert the row.
+1. Nothing is applied by hand here: the predeploy script from Step 1 created `page_views` and recorded migrations 047 and 048. The proof is item 4, where the Usage and Audit Log tabs load. If either shows an error, read the message it prints and re-run the predeploy script (it is safe to run again) rather than patching the database.
 2. On CT 2220, `curl -s localhost:3000/api/health` reports version `2.34.0`.
 3. In the backend journal, `[Retention] Scheduler started` appears and no `[Retention] Cleanup failed` line follows within two minutes.
 4. At `https://argo.booute.duckdns.org`, signed in as a developer: all five tabs load with real values; make one change elsewhere and find it in Audit Log; open a screen and find it in Usage.

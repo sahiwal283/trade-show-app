@@ -113,14 +113,26 @@ ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS error_message TEXT;
 ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP;
 
 -- The status check is replaced, not trusted: an older one may not allow
--- 'warning'. NOT VALID means existing rows are not examined, so a row holding
--- some other value cannot fail this migration; new rows are still checked.
--- audit_log_status_check is the same constraint under the table's old singular
--- name, left behind wherever the rename in migration 023 did not run.
+-- 'warning'. It is found by what it checks, not by its name, because a table
+-- created by hand or renamed since (migration 023) can carry it under any
+-- name: every check constraint on this table that mentions status is dropped,
+-- then the one the code needs is added. The lookup reads the system catalog
+-- only. NOT VALID means existing rows are not examined, so a row holding some
+-- other value cannot fail this migration; new rows are still checked.
 DO $$
+DECLARE
+  legacy RECORD;
 BEGIN
-  ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS audit_logs_status_check;
-  ALTER TABLE audit_logs DROP CONSTRAINT IF EXISTS audit_log_status_check;
+  FOR legacy IN
+    SELECT conname
+      FROM pg_constraint
+     WHERE conrelid = 'audit_logs'::regclass
+       AND contype = 'c'
+       AND pg_get_constraintdef(oid) ILIKE '%status%'
+  LOOP
+    EXECUTE format('ALTER TABLE audit_logs DROP CONSTRAINT %I', legacy.conname);
+  END LOOP;
+
   ALTER TABLE audit_logs
     ADD CONSTRAINT audit_logs_status_check CHECK (status IN ('success', 'failure', 'warning')) NOT VALID;
 END $$;

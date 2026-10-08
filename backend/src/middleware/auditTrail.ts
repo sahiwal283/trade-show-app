@@ -37,7 +37,9 @@ export function auditStatus(statusCode: number): 'success' | 'warning' | 'failur
 }
 
 /**
- * audit_logs.ip_address is INET: anything that is not an IP must become null.
+ * audit_logs.ip_address is INET where the migrations created the table and
+ * VARCHAR where the table predates them. Either way, anything that is not an
+ * IP becomes null: INET would reject it, and VARCHAR should not hold it.
  *
  * The leftmost X-Forwarded-For entry is client-controlled and the app does not
  * set `trust proxy`, so it cannot be believed. Prefer X-Real-IP, then the LAST

@@ -59,9 +59,9 @@ describe('scripts/predeploy-2.34.0.sql', () => {
     expect(insert).toContain('ON CONFLICT (version) DO NOTHING');
   });
 
-  it('never reads table data: no SELECT ... FROM anything but the schema_migrations guard', () => {
+  it('never reads table data: the only SELECT ... FROM is the system catalog lookup of constraint names', () => {
     const readFrom = [...body.matchAll(/\bSELECT\b[^;]*?\bFROM\s+([\w."]+)/gi)].map((match) => match[1]);
-    expect(readFrom.filter((table) => table !== 'schema_migrations')).toEqual([]);
+    expect(readFrom.filter((table) => table !== 'schema_migrations' && table !== 'pg_constraint')).toEqual([]);
     expect(body).not.toMatch(/^\s*(TABLE|COPY|\\copy)\b/im);
     expect(body).not.toMatch(/\bRETURNING\b/i);
   });
