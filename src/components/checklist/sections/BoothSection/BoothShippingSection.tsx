@@ -44,10 +44,10 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
     <div className="border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors bg-stone-50">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Package className="w-5 h-5 text-purple-600" />
+          <Package className="w-5 h-5 text-brand-600" />
           <h4 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">Booth Shipping</h4>
           {checklist.boothShipping.length > 0 && (
-            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-medium">
+            <span className="px-2 py-1 bg-brand-100 text-brand-700 rounded-lg text-xs font-medium">
               {checklist.boothShipping.length} Shipment{checklist.boothShipping.length !== 1 ? 's' : ''}
             </span>
           )}
@@ -136,7 +136,7 @@ export const BoothShippingSection: React.FC<BoothShippingSectionProps> = ({
 
         {/* Add New Shipment Form */}
         {showAddShipmentForm && (
-          <div className="border border-purple-300 rounded-lg p-4 bg-purple-50">
+          <div className="border border-brand-300 rounded-lg p-4 bg-brand-50">
             <h5 className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400 mb-3">New Shipment</h5>
             
             {/* Shipping Method */}

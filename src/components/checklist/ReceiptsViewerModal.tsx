@@ -142,44 +142,44 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
                 icon={<Calendar className="w-5 h-5" />}
                 label="Date"
                 value={formatLocalDate(currentReceipt.date)}
-                bgColor="bg-blue-100"
-                iconColor="text-blue-600"
+                bgColor="bg-brand-50"
+                iconColor="text-brand-600"
               />
               <DetailItem
                 icon={<DollarSign className="w-5 h-5" />}
                 label="Amount"
                 value={`$${currentReceipt.amount.toFixed(2)}`}
-                bgColor="bg-emerald-100"
-                iconColor="text-emerald-600"
+                bgColor="bg-brand-50"
+                iconColor="text-brand-600"
               />
               <DetailItem
                 icon={<FileText className="w-5 h-5" />}
                 label="Category"
                 value={currentReceipt.category}
-                bgColor="bg-purple-100"
-                iconColor="text-purple-600"
+                bgColor="bg-brand-50"
+                iconColor="text-brand-600"
               />
               <DetailItem
                 icon={<Receipt className="w-5 h-5" />}
                 label="Merchant"
                 value={currentReceipt.merchant}
-                bgColor="bg-orange-100"
-                iconColor="text-orange-600"
+                bgColor="bg-brand-50"
+                iconColor="text-brand-600"
               />
               <DetailItem
                 icon={<CreditCard className="w-5 h-5" />}
                 label="Card Used"
                 value={currentReceipt.cardUsed || 'N/A'}
-                bgColor="bg-indigo-100"
-                iconColor="text-indigo-600"
+                bgColor="bg-brand-50"
+                iconColor="text-brand-600"
               />
               {currentReceipt.location && (
                 <DetailItem
                   icon={<MapPin className="w-5 h-5" />}
                   label="Location"
                   value={currentReceipt.location}
-                  bgColor="bg-red-100"
-                  iconColor="text-red-600"
+                  bgColor="bg-brand-50"
+                  iconColor="text-brand-600"
                 />
               )}
               {currentReceipt.user_name && (
@@ -187,8 +187,8 @@ export const ReceiptsViewerModal: React.FC<ReceiptsViewerModalProps> = ({
                   icon={<User className="w-5 h-5" />}
                   label="Submitted By"
                   value={currentReceipt.user_name}
-                  bgColor="bg-teal-100"
-                  iconColor="text-teal-600"
+                  bgColor="bg-brand-50"
+                  iconColor="text-brand-600"
                 />
               )}
             </div>

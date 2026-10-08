@@ -72,7 +72,7 @@ export const BoothMapUpload: React.FC<BoothMapUploadProps> = ({
         >
           {uploadingMap ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-brand-600"></div>
               Uploading...
             </>
           ) : (

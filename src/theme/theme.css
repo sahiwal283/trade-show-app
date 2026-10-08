@@ -1,0 +1,76 @@
+/* Argo colour tokens: Executive Navy + Electric Blue.
+
+   Every themed Tailwind colour resolves to one of these space-separated RGB
+   triplets (see tailwind.config.js), so the palette is defined once, here.
+
+   Roles:
+     brand   electric blue   primary actions, links, focus, selection
+     grad    deeper blue     second stop of brand gradients
+     hero    navy to blue    mastheads and modal headers
+     side    deep navy       sidebar surface and its nav states
+     stone   cool slate      every neutral: text, borders, page and card surfaces
+     accent  emerald         success, approved, done
+
+   Warning (amber), needs-attention (orange), danger (red) and the handful of
+   categorical hues are mapped in tailwind.config.js. */
+:root {
+  --c-brand-50: 239 246 255;
+  --c-brand-100: 219 234 254;
+  --c-brand-200: 191 219 254;
+  --c-brand-300: 147 197 253;
+  --c-brand-400: 96 165 250;
+  --c-brand-500: 59 130 246;
+  --c-brand-600: 37 99 235;
+  --c-brand-700: 29 78 216;
+  --c-brand-800: 30 64 175;
+  --c-brand-900: 30 58 138;
+  --c-brand-950: 23 37 84;
+  --c-accent-50: 236 253 245;
+  --c-accent-100: 209 250 229;
+  --c-accent-200: 167 243 208;
+  --c-accent-300: 110 231 183;
+  --c-accent-400: 52 211 153;
+  --c-accent-500: 16 185 129;
+  --c-accent-600: 5 150 105;
+  --c-accent-700: 4 120 87;
+  --c-accent-800: 6 95 70;
+  --c-accent-900: 6 78 59;
+  --c-accent-950: 2 44 34;
+  --c-grad-50: 239 246 255;
+  --c-grad-100: 219 234 254;
+  --c-grad-200: 191 219 254;
+  --c-grad-300: 147 197 253;
+  --c-grad-400: 59 130 246;
+  --c-grad-500: 37 99 235;
+  --c-grad-600: 29 78 216;
+  --c-grad-700: 30 64 175;
+  --c-grad-800: 30 58 138;
+  --c-grad-900: 23 37 84;
+  --c-grad-950: 23 37 84;
+  --c-stone-50: 248 250 252;
+  --c-stone-100: 241 245 249;
+  --c-stone-200: 226 232 240;
+  --c-stone-300: 203 213 225;
+  --c-stone-400: 148 163 184;
+  --c-stone-500: 100 116 139;
+  --c-stone-600: 71 85 105;
+  --c-stone-700: 51 65 85;
+  --c-stone-800: 30 41 59;
+  --c-stone-900: 30 41 59;
+  --c-stone-950: 2 6 23;
+  --c-hero-1: 15 23 42;
+  --c-hero-2: 30 58 138;
+  --c-hero-3: 37 99 235;
+  --c-side-bg: 17 24 39;
+  --c-side-border: 31 41 55;
+  --c-side-text: 203 213 225;
+  --c-side-muted: 148 163 184;
+  --c-side-strong: 255 255 255;
+  --c-side-hover: 31 41 55;
+  --c-side-hover-text: 255 255 255;
+  --c-side-active: 37 99 235;
+  --c-side-active-text: 255 255 255;
+  --c-side-active-icon: 255 255 255;
+  --c-side-ind-1: 147 197 253;
+  --c-side-ind-2: 147 197 253;
+}

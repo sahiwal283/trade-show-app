@@ -22,7 +22,6 @@ import { ActionQueue } from './ActionQueue';
 import { ReimbursementsCard } from './ReimbursementsCard';
 import { UpNextCard } from './UpNextCard';
 import { MyTravelCard } from './MyTravelCard';
-import { ThemePicker } from '../../theme/ThemePicker';
 
 interface DashboardProps {
   user: User;
@@ -75,7 +74,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
         <InstallPWA />
       </div>
 
-      <ThemePicker />
 
       {!board.show ? (
         <div className="card">

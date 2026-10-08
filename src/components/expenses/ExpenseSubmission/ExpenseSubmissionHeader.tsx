@@ -60,7 +60,7 @@ export const ExpenseSubmissionHeader: React.FC<ExpenseSubmissionHeaderProps> = (
           >
             <Clock className="w-4 h-4" />
             <span>Pending Sync</span>
-            <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-white">
+            <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-amber-950">
               {pendingCount}
             </span>
           </button>

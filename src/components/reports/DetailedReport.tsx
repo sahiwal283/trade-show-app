@@ -65,7 +65,7 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
     'bg-emerald-50': 'bg-emerald-500',
     'bg-orange-50': 'bg-orange-500',
     'bg-purple-50': 'bg-purple-500',
-    'bg-yellow-50': 'bg-yellow-500',
+    'bg-sky-50': 'bg-sky-500',
     'bg-pink-50': 'bg-pink-500',
     'bg-indigo-50': 'bg-indigo-500',
     'bg-cyan-50': 'bg-cyan-500',
@@ -480,8 +480,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
               {/* Expense Info Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-start space-x-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-50 ring-1 ring-inset ring-black/5">
-                    <Calendar className="w-5 h-5 text-blue-600" />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 ring-1 ring-inset ring-black/5">
+                    <Calendar className="w-5 h-5 text-brand-600" />
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
@@ -494,8 +494,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50 ring-1 ring-inset ring-black/5">
-                    <DollarSign className="w-5 h-5 text-emerald-600" />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 ring-1 ring-inset ring-black/5">
+                    <DollarSign className="w-5 h-5 text-brand-600" />
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
@@ -508,8 +508,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-purple-50 ring-1 ring-inset ring-black/5">
-                    <FileText className="w-5 h-5 text-purple-600" />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 ring-1 ring-inset ring-black/5">
+                    <FileText className="w-5 h-5 text-brand-600" />
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
@@ -520,8 +520,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-orange-50 ring-1 ring-inset ring-black/5">
-                    <Store className="w-5 h-5 text-orange-600" />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 ring-1 ring-inset ring-black/5">
+                    <Store className="w-5 h-5 text-brand-600" />
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
@@ -532,8 +532,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
                 </div>
 
                 <div className="flex items-start space-x-3">
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 ring-1 ring-inset ring-black/5">
-                    <CreditCard className="w-5 h-5 text-indigo-600" />
+                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 ring-1 ring-inset ring-black/5">
+                    <CreditCard className="w-5 h-5 text-brand-600" />
                   </div>
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
@@ -545,8 +545,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
                 {viewingExpense.location && (
                   <div className="flex items-start space-x-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-red-50 ring-1 ring-inset ring-black/5">
-                      <MapPin className="w-5 h-5 text-red-600" />
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 ring-1 ring-inset ring-black/5">
+                      <MapPin className="w-5 h-5 text-brand-600" />
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
@@ -559,8 +559,8 @@ export const DetailedReport: React.FC<DetailedReportProps> = ({
 
                 {viewingExpense.user_name && (
                   <div className="flex items-start space-x-3">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-teal-50 ring-1 ring-inset ring-black/5">
-                      <User className="w-5 h-5 text-teal-600" />
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-brand-50 ring-1 ring-inset ring-black/5">
+                      <User className="w-5 h-5 text-brand-600" />
                     </div>
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">

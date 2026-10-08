@@ -1,3 +1,5 @@
+import colors from 'tailwindcss/colors';
+
 const token = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
 const scale = (name) =>
   Object.fromEntries(
@@ -13,18 +15,36 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Themed colours: each resolves to a CSS variable from
-        // src/theme/themes.css, so data-theme on <html> recolours the app.
+        // The palette is Executive Navy + Electric Blue. Tokens live in
+        // src/theme/theme.css; every family below either reads a token or is
+        // folded into a neighbour, so no off-palette hue can appear by using
+        // a default Tailwind class (role badges store class names in the
+        // database, so this has to hold for classes not in the source too).
+
+        // Primary: electric blue. Legacy blue-* utilities are the same colour.
         brand: scale('brand'),
-        // Success green (also the "done"/"approved" tint)
-        accent: scale('accent'),
+        blue: scale('brand'),
         // Second stop of brand gradients (CTA, avatars, progress bars)
         grad: scale('grad'),
-        // Neutrals. stone-900 is body text, stone-50 the page background.
+        // Neutrals: one cool slate ramp. stone-900 is body text, stone-50 the
+        // page background.
         stone: scale('stone'),
-        gray: scale('gray'),
-        // Legacy blue-* utilities follow the primary colour
-        blue: scale('brand'),
+        gray: scale('stone'),
+        slate: scale('stone'),
+        zinc: scale('stone'),
+        neutral: scale('stone'),
+        // Success: one emerald ("approved", "done", positive figures)
+        accent: scale('accent'),
+        emerald: scale('accent'),
+        green: scale('accent'),
+        // Warning is amber; yellow is not a separate colour here
+        yellow: colors.amber,
+        // Danger is red
+        rose: colors.red,
+        // Categorical hues, kept cool so they sit beside the blue: purple
+        // reads as violet, fuchsia as pink
+        purple: colors.violet,
+        fuchsia: colors.pink,
         // Masthead gradient stops (dashboard hero, report bands, modal headers)
         hero: { 1: token('hero-1'), 2: token('hero-2'), 3: token('hero-3') },
         // Sidebar surface and its nav states

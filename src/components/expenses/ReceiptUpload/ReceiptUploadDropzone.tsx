@@ -81,7 +81,7 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-3 text-left">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 ring-1 ring-inset ring-purple-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
               <Scan className="w-5 h-5" />
             </div>
             <div>

@@ -187,7 +187,7 @@ export const CustomItemsSection: React.FC<CustomItemsSectionProps> = ({ checklis
 
       {/* Add New Item Form */}
       {showAddForm && (
-        <div className="mb-4 border border-indigo-200 rounded-lg p-4 bg-indigo-50">
+        <div className="mb-4 border border-brand-200 rounded-lg p-4 bg-brand-50">
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-stone-700 mb-1">

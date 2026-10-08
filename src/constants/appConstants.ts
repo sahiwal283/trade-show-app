@@ -96,7 +96,7 @@ export const CATEGORY_COLORS = {
   Hotels: { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-1 ring-inset ring-emerald-200/60' },
   Meals: { bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-1 ring-inset ring-orange-200/60' },
   Supplies: { bg: 'bg-purple-50', text: 'text-purple-700', ring: 'ring-1 ring-inset ring-purple-200/60' },
-  Transportation: { bg: 'bg-yellow-50', text: 'text-yellow-700', ring: 'ring-1 ring-inset ring-yellow-200/60' },
+  Transportation: { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-1 ring-inset ring-sky-200/60' },
   'Marketing Materials': { bg: 'bg-pink-50', text: 'text-pink-700', ring: 'ring-1 ring-inset ring-pink-200/60' },
   Shipping: { bg: 'bg-indigo-50', text: 'text-indigo-700', ring: 'ring-1 ring-inset ring-indigo-200/60' },
 
@@ -104,7 +104,7 @@ export const CATEGORY_COLORS = {
   'Booth / Marketing / Tools': { bg: 'bg-purple-50', text: 'text-purple-700', ring: 'ring-1 ring-inset ring-purple-200/60' },
   'Travel - Flight': { bg: 'bg-blue-50', text: 'text-blue-700', ring: 'ring-1 ring-inset ring-blue-200/60' },
   'Accommodation - Hotel': { bg: 'bg-emerald-50', text: 'text-emerald-700', ring: 'ring-1 ring-inset ring-emerald-200/60' },
-  'Transportation - Uber / Lyft / Others': { bg: 'bg-yellow-50', text: 'text-yellow-700', ring: 'ring-1 ring-inset ring-yellow-200/60' },
+  'Transportation - Uber / Lyft / Others': { bg: 'bg-sky-50', text: 'text-sky-700', ring: 'ring-1 ring-inset ring-sky-200/60' },
   'Parking Fees': { bg: 'bg-cyan-50', text: 'text-cyan-700', ring: 'ring-1 ring-inset ring-cyan-200/60' },
   'Rental - Car / U-haul': { bg: 'bg-teal-50', text: 'text-teal-700', ring: 'ring-1 ring-inset ring-teal-200/60' },
   'Meal and Entertainment': { bg: 'bg-orange-50', text: 'text-orange-700', ring: 'ring-1 ring-inset ring-orange-200/60' },

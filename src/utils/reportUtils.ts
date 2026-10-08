@@ -8,21 +8,23 @@ import { Expense, TradeShow } from '../App';
 
 export const UNASSIGNED_ENTITY = 'Unassigned';
 
-// Fixed categorical series colors (colorblind-safe order — do not re-order).
+// Fixed categorical series colors, anchored on the brand blue. The order
+// alternates cool and warm, light and dark, so neighbouring series stay
+// distinct; do not re-order.
 // Colors are assigned to entities by their position in the settings entity
 // list, so an entity keeps its color no matter which filters are active.
 export const ENTITY_SERIES_COLORS = [
-  '#2a78d6', // blue
-  '#eb6834', // orange
-  '#1baf7a', // aqua
-  '#eda100', // yellow
-  '#e87ba4', // magenta
-  '#008300', // green
-  '#4a3aa7', // violet
-  '#e34948', // red
+  '#2563eb', // blue (the brand primary)
+  '#f59e0b', // amber
+  '#0d9488', // teal
+  '#7c3aed', // violet
+  '#38bdf8', // sky
+  '#ea580c', // orange
+  '#1e3a8a', // navy
+  '#e11d48', // rose
 ] as const;
 
-export const UNASSIGNED_ENTITY_COLOR = '#898781';
+export const UNASSIGNED_ENTITY_COLOR = '#94a3b8'; // slate-400
 
 /**
  * Builds a stable entity → color map. Entities from settings come first (fixed

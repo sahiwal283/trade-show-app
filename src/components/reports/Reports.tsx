@@ -130,7 +130,7 @@ export const Reports: React.FC<ReportsProps> = ({ user }) => {
       (c) => !(c in base.colorMap)
     );
     extra.forEach((c, i) => {
-      base.colorMap[c] = ['#4a3aa7', '#e34948', '#eda100'][i % 3];
+      base.colorMap[c] = ['#7c3aed', '#e11d48', '#f59e0b'][i % 3];
       base.entityOrder.splice(base.entityOrder.length - 1, 0, c);
     });
     return base;
