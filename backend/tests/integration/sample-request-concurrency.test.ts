@@ -4,7 +4,8 @@ import { sampleRequestRepository } from '../../src/database/repositories/SampleR
 
 /**
  * Real-database proof that applyRows serializes per request: overlapping
- * patches neither lose history, nor deadlock, nor drop rows.
+ * patches neither lose history, nor deadlock, nor drop rows, and field-level
+ * patches to the same row merge instead of overwriting each other.
  */
 const PREFIX = `sdd-concurrency-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 let userA: string, userB: string, eventId: string, requestId: string;
@@ -36,16 +37,16 @@ afterAll(async () => {
 });
 
 describe('applyRows concurrency (real database)', () => {
-  it('history replayed in changed_at order reproduces the stored row', async () => {
+  it('concurrent single-field patches to one row both survive, and the history replays to the stored row', async () => {
     const pid = productIds[0];
     await Promise.all([
-      sampleRequestRepository.applyRows(requestId, userA, { items: [p(pid, 5)], materials: [] }),
-      sampleRequestRepository.applyRows(requestId, userB, { items: [p(pid, 0, 2)], materials: [] }),
+      sampleRequestRepository.applyRows(requestId, userA, { items: [{ productId: pid, singles: 5 }], materials: [] }),
+      sampleRequestRepository.applyRows(requestId, userB, { items: [{ productId: pid, displays: 2 }], materials: [] }),
     ]);
     const stored = (await query(
       `SELECT singles, displays, empty_displays FROM sample_request_items WHERE request_id = $1 AND product_id = $2`, [requestId, pid]
     )).rows[0];
-    expect([{ singles: 0, displays: 2, empty_displays: 0 }, { singles: 5, displays: 0, empty_displays: 0 }]).toContainEqual(stored);
+    expect(stored).toEqual({ singles: 5, displays: 2, empty_displays: 0 });
 
     const changes = (await query(
       `SELECT field, old_value, new_value FROM sample_request_changes WHERE request_id = $1 AND target_id = $2 ORDER BY changed_at, id`,
@@ -56,6 +57,7 @@ describe('applyRows concurrency (real database)', () => {
       expect(String(state[c.field])).toBe(c.old_value);
       state[c.field] = Number(c.new_value);
     }
+    expect(changes).toHaveLength(2);
     expect(state).toEqual(stored);
   });
 

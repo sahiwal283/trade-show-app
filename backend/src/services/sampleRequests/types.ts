@@ -50,8 +50,10 @@ export interface SampleWindow { opensAt: string | null; closesAt: string | null;
 
 export interface EventSampleRequestView { request: EventSampleRequest; window: SampleWindow; canEdit: boolean }
 
-/** Only the rows the client changed. Same row shape as the full payload. */
-export type SampleRequestPatch = SampleRequestPayload;
+export interface SampleRequestItemPatch { productId: string; singles?: number; displays?: number; emptyDisplays?: number }
+export interface SampleRequestMaterialPatch { materialId: string; qty?: number; notes?: string | null }
+/** Only the fields the client changed, per row. */
+export interface SampleRequestPatch { items: SampleRequestItemPatch[]; materials: SampleRequestMaterialPatch[] }
 
 export type SampleChangeField = 'singles' | 'displays' | 'empty_displays' | 'qty' | 'notes';
 

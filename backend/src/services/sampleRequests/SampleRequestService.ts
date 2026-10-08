@@ -2,7 +2,7 @@
  * One shared sample request per event, owned by the event's roster.
  *  - any participant edits (and submits) while the window is open; override roles (admin/coordinator/developer) any time, even after close
  *  - the puller (app_settings) can read but not write unless also on the roster or an override role
- *  - the puller is notified on submit and re-submit only. Row patches are silent.
+ *  - the puller is notified on submit and re-submit only. Patches (field-level) are silent.
  */
 import { query } from '../../config/database';
 import { eventRepository } from '../../database/repositories/EventRepository';
@@ -11,9 +11,9 @@ import { isEventParticipant } from '../EventParticipantService';
 import { notificationService } from '../NotificationService';
 import { NotFoundError, AuthorizationError, ConflictError } from '../../utils/errors';
 import { computeSampleWindow } from './sampleRequestWindow';
-import { validateSamplePayload } from './validateSamplePayload';
+import { validateSamplePatch } from './validateSamplePayload';
 import {
-  SampleWindow, SampleRequestRow, EventSampleRequest, EventSampleRequestView, SampleRequestPayload,
+  SampleWindow, SampleRequestRow, EventSampleRequest, EventSampleRequestView, SampleRequestPatch,
   OpenSampleRequest, SampleChangeRow, canOverrideSampleWindow,
 } from './types';
 
@@ -100,7 +100,7 @@ class SampleRequestService {
 
   async patchRows(eventId: string, body: unknown, actor: Actor): Promise<EventSampleRequestView> {
     const { window, a } = await this.guardEdit(eventId, actor);
-    const patch: SampleRequestPayload = validateSamplePayload(body, await sampleRequestRepository.getCatalog(true));
+    const patch: SampleRequestPatch = validateSamplePatch(body, await sampleRequestRepository.getCatalog(true));
     const row = await this.ensureRow(eventId, actor);
     await sampleRequestRepository.applyRows(row.id, actor.id, patch);
     const fresh = (await sampleRequestRepository.findByEvent(eventId)) ?? row;

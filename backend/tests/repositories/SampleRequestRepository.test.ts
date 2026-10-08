@@ -23,7 +23,7 @@ const setClient = (rowFor: (sql: string) => any[] = () => []) =>
 describe('SampleRequestRepository.applyRows', () => {
   beforeEach(() => { vi.clearAllMocks(); setClient(); });
 
-  it('locks the parent first, upserts a changed item, logs only changed fields, stamps last_edited', async () => {
+  it('locks the parent first, upserts the merged item, logs only changed fields, stamps last_edited', async () => {
     setClient((sql) => /SELECT singles, displays, empty_displays FROM sample_request_items/.test(sql)
       ? [{ singles: 1, displays: 0, empty_displays: 0 }] : []);
     await sampleRequestRepository.applyRows('req-1', 'u-1', {
@@ -87,16 +87,14 @@ describe('SampleRequestRepository.applyRows', () => {
   });
 
   it('logs old 0 for a brand-new item row', async () => {
-    await sampleRequestRepository.applyRows('req-1', 'u-1', {
-      items: [{ productId: 'p-9', singles: 4, displays: 0, emptyDisplays: 0 }], materials: [],
-    });
+    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [{ productId: 'p-9', singles: 4 }], materials: [] });
     expect(callsOf(/INSERT INTO sample_request_changes/).map((c: any[]) => c[1]))
       .toEqual([['req-1', 'u-1', 'item', 'p-9', 'singles', '0', '4']]);
   });
 
   it('trims notes and treats blank as null', async () => {
     setClient((sql) => /SELECT qty, notes FROM sample_request_materials/.test(sql) ? [{ qty: 1, notes: 'x' }] : []);
-    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [], materials: [{ materialId: 'm-1', qty: 1, notes: '  big  ' }] });
+    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [], materials: [{ materialId: 'm-1', notes: '  big  ' }] });
     expect(callsOf(/INSERT INTO sample_request_materials/)[0][1]).toEqual(['req-1', 'm-1', 1, 'big']);
     expect(callsOf(/INSERT INTO sample_request_changes/).map((c: any[]) => c[1]))
       .toEqual([['req-1', 'u-1', 'material', 'm-1', 'notes', 'x', 'big']]);
@@ -104,7 +102,7 @@ describe('SampleRequestRepository.applyRows', () => {
 
   it('treats null -> empty notes as a no-op', async () => {
     setClient((sql) => /SELECT qty, notes FROM sample_request_materials/.test(sql) ? [{ qty: 1, notes: null }] : []);
-    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [], materials: [{ materialId: 'm-1', qty: 1, notes: '' }] });
+    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [], materials: [{ materialId: 'm-1', notes: '' }] });
     expect(sqlOf().some((s) => /INSERT|DELETE FROM|UPDATE sample_requests/.test(s))).toBe(false);
   });
 
@@ -115,6 +113,63 @@ describe('SampleRequestRepository.applyRows', () => {
     expect(sqlOf().some((s) => /INSERT INTO sample_request_materials/.test(s))).toBe(false);
     expect(callsOf(/INSERT INTO sample_request_changes/).map((c: any[]) => c[1]))
       .toEqual([['req-1', 'u-1', 'material', 'm-1', 'qty', '3', '0']]);
+  });
+
+  it('merges a single-field item patch into the current row and logs exactly that field', async () => {
+    setClient((sql) => /SELECT singles, displays, empty_displays/.test(sql) ? [{ singles: 1, displays: 4, empty_displays: 0 }] : []);
+    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [{ productId: 'p-1', singles: 3 }], materials: [] });
+    expect(callsOf(/INSERT INTO sample_request_items/).map((c: any[]) => c[1])).toEqual([['req-1', 'p-1', 3, 4, 0]]);
+    expect(callsOf(/INSERT INTO sample_request_changes/).map((c: any[]) => c[1]))
+      .toEqual([['req-1', 'u-1', 'item', 'p-1', 'singles', '1', '3']]);
+    expect(callsOf(/UPDATE sample_requests SET last_edited_by/)).toHaveLength(1);
+  });
+
+  it('deletes the row when a single-field patch zeroes its last non-zero field', async () => {
+    setClient((sql) => /SELECT singles, displays, empty_displays/.test(sql) ? [{ singles: 0, displays: 2, empty_displays: 0 }] : []);
+    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [{ productId: 'p-1', displays: 0 }], materials: [] });
+    expect(callsOf(/DELETE FROM sample_request_items/).map((c: any[]) => c[1])).toEqual([['req-1', 'p-1']]);
+    expect(callsOf(/INSERT INTO sample_request_items/)).toHaveLength(0);
+    expect(callsOf(/INSERT INTO sample_request_changes/).map((c: any[]) => c[1]))
+      .toEqual([['req-1', 'u-1', 'item', 'p-1', 'displays', '2', '0']]);
+  });
+
+  it('does not delete when a single-field zero leaves another field non-zero', async () => {
+    setClient((sql) => /SELECT singles, displays, empty_displays/.test(sql) ? [{ singles: 5, displays: 2, empty_displays: 0 }] : []);
+    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [{ productId: 'p-1', displays: 0 }], materials: [] });
+    expect(callsOf(/DELETE FROM sample_request_items/)).toHaveLength(0);
+    expect(callsOf(/INSERT INTO sample_request_items/)[0][1]).toEqual(['req-1', 'p-1', 5, 0, 0]);
+  });
+
+  it('a patch whose provided fields equal the current values is a no-op, whatever the other fields hold', async () => {
+    setClient((sql) => /SELECT singles, displays, empty_displays/.test(sql) ? [{ singles: 3, displays: 4, empty_displays: 1 }] : []);
+    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [{ productId: 'p-1', singles: 3 }], materials: [] });
+    expect(sqlOf().some((s) => /INSERT|DELETE FROM|UPDATE sample_requests/.test(s))).toBe(false);
+    expect(sqlOf().at(-1)).toBe('COMMIT');
+  });
+
+  it('merges a notes-only material patch and keeps the stored qty', async () => {
+    setClient((sql) => /SELECT qty, notes FROM sample_request_materials/.test(sql) ? [{ qty: 2, notes: null }] : []);
+    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [], materials: [{ materialId: 'm-1', notes: 'x' }] });
+    expect(callsOf(/INSERT INTO sample_request_materials/).map((c: any[]) => c[1])).toEqual([['req-1', 'm-1', 2, 'x']]);
+    expect(callsOf(/INSERT INTO sample_request_changes/).map((c: any[]) => c[1]))
+      .toEqual([['req-1', 'u-1', 'material', 'm-1', 'notes', null, 'x']]);
+  });
+
+  it('merges a qty-only material patch and keeps the stored notes', async () => {
+    setClient((sql) => /SELECT qty, notes FROM sample_request_materials/.test(sql) ? [{ qty: 2, notes: 'keep' }] : []);
+    await sampleRequestRepository.applyRows('req-1', 'u-1', { items: [], materials: [{ materialId: 'm-1', qty: 0 }] });
+    expect(callsOf(/DELETE FROM sample_request_materials/)).toHaveLength(0);
+    expect(callsOf(/INSERT INTO sample_request_materials/).map((c: any[]) => c[1])).toEqual([['req-1', 'm-1', 0, 'keep']]);
+    expect(callsOf(/INSERT INTO sample_request_changes/).map((c: any[]) => c[1]))
+      .toEqual([['req-1', 'u-1', 'material', 'm-1', 'qty', '2', '0']]);
+  });
+
+  it('a single-field patch on a missing row starts from zeros', async () => {
+    await sampleRequestRepository.applyRows('req-1', 'u-1', {
+      items: [{ productId: 'p-9', emptyDisplays: 2 }], materials: [{ materialId: 'm-9', notes: 'n' }],
+    });
+    expect(callsOf(/INSERT INTO sample_request_items/)[0][1]).toEqual(['req-1', 'p-9', 0, 0, 2]);
+    expect(callsOf(/INSERT INTO sample_request_materials/)[0][1]).toEqual(['req-1', 'm-9', 0, 'n']);
   });
 
   it('rolls back when a statement throws', async () => {

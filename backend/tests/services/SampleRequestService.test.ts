@@ -110,6 +110,19 @@ describe('SampleRequestService (shared request)', () => {
       await sampleRequestService.patchRows('ev-1', patch, rep);
       expect(sampleRequestRepository.applyRows).toHaveBeenCalledWith('req-1', 'u-1', patch);
     });
+    it('passes a partial row through to applyRows unchanged', async () => {
+      const partial = { items: [{ productId: 'p-1', singles: 3 }], materials: [{ materialId: 'm-1', notes: 'x' }] };
+      await sampleRequestService.patchRows('ev-1', partial, rep);
+      expect(sampleRequestRepository.applyRows).toHaveBeenCalledWith('req-1', 'u-1', partial);
+      const sent = vi.mocked(sampleRequestRepository.applyRows).mock.calls[0][2];
+      expect(Object.keys(sent.items[0])).toEqual(['productId', 'singles']);
+      expect(Object.keys(sent.materials[0])).toEqual(['materialId', 'notes']);
+    });
+    it('400s a row with no fields and writes nothing', async () => {
+      await expect(sampleRequestService.patchRows('ev-1', { items: [{ productId: 'p-1' }], materials: [] }, rep))
+        .rejects.toMatchObject({ statusCode: 400, message: expect.stringMatching(/no fields to change/) });
+      expect(sampleRequestRepository.applyRows).not.toHaveBeenCalled();
+    });
     it('accepts an inactive catalog product', async () => {
       await sampleRequestService.patchRows('ev-1', { items: [{ productId: 'p-old', singles: 1, displays: 0, emptyDisplays: 0 }], materials: [] }, rep);
       expect(sampleRequestRepository.applyRows).toHaveBeenCalled();

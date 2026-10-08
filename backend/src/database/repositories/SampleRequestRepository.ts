@@ -1,16 +1,17 @@
 /**
  * All SQL for sample requests and the catalog. There is ONE shared request per
  * event (sample_requests.event_id is unique); any participant may edit it.
- * Edits arrive as a row-level patch (only the rows the client changed), applied
- * in one transaction that first locks the parent request so concurrent patches
- * serialize. Every changed field is recorded in sample_request_changes, so the
- * history always matches what is stored.
+ * Edits arrive as a field-level patch (only the fields the client changed, per
+ * row), merged into the current row in one transaction that first locks the
+ * parent request so concurrent patches serialize: two people editing different
+ * fields of one row both keep their numbers. Every changed field is recorded in
+ * sample_request_changes, so the history always matches what is stored.
  */
 import { query, pool } from '../../config/database';
 import { NotFoundError } from '../../utils/errors';
 import {
   SampleCatalog, SampleProductLine, SampleProduct, SampleMaterial, SampleBrand,
-  SampleRequestRow, SampleRequestPayload, SampleRequestStatus, SampleChangeRow, SampleChangeField, UserRef,
+  SampleRequestRow, SampleRequestPayload, SampleRequestPatch, SampleRequestStatus, SampleChangeRow, SampleChangeField, UserRef,
 } from '../../services/sampleRequests/types';
 
 const ACTIVE = (includeInactive: boolean) => (includeInactive ? '' : 'WHERE is_active = TRUE');
@@ -138,11 +139,12 @@ class SampleRequestRepository {
   }
 
   /**
-   * Row-level merge. For each row in the patch: lock the current row, upsert
-   * (or delete when everything is zero/blank), and log one change row per
-   * field whose value differs. One transaction, so history matches storage.
+   * Field-level merge. For each row in the patch: lock the current row, lay the
+   * provided fields over it (absent fields keep their stored value), upsert (or
+   * delete when the merged row is all zero/blank), and log one change row per
+   * provided field whose value differs. One transaction, so history matches storage.
    */
-  async applyRows(requestId: string, userId: string, patch: SampleRequestPayload): Promise<void> {
+  async applyRows(requestId: string, userId: string, patch: SampleRequestPatch): Promise<void> {
     const client = await pool.connect();
     const log = (kind: 'item' | 'material', targetId: string, field: SampleChangeField, oldV: unknown, newV: unknown) =>
       client.query(
@@ -164,9 +166,13 @@ class SampleRequestRepository {
           `SELECT singles, displays, empty_displays FROM sample_request_items WHERE request_id = $1 AND product_id = $2 FOR UPDATE`,
           [requestId, it.productId]
         );
-        const old = cur.rows[0] ?? { singles: 0, displays: 0, empty_displays: 0 };
-        const next = { singles: it.singles, displays: it.displays, empty_displays: it.emptyDisplays };
-        const changed = (Object.keys(next) as Array<keyof typeof next>).filter((k) => old[k] !== next[k]);
+        const old: { singles: number; displays: number; empty_displays: number } =
+          cur.rows[0] ?? { singles: 0, displays: 0, empty_displays: 0 };
+        const next = { ...old };
+        if (it.singles !== undefined) next.singles = it.singles;
+        if (it.displays !== undefined) next.displays = it.displays;
+        if (it.emptyDisplays !== undefined) next.empty_displays = it.emptyDisplays;
+        const changed = (['singles', 'displays', 'empty_displays'] as const).filter((k) => old[k] !== next[k]);
         if (changed.length === 0) continue;
         anyChange = true;
         if (next.singles === 0 && next.displays === 0 && next.empty_displays === 0) {
@@ -187,24 +193,24 @@ class SampleRequestRepository {
           `SELECT qty, notes FROM sample_request_materials WHERE request_id = $1 AND material_id = $2 FOR UPDATE`,
           [requestId, m.materialId]
         );
-        const old = cur.rows[0] ?? { qty: 0, notes: null };
-        const notes = m.notes && m.notes.trim().length > 0 ? m.notes.trim() : null;
-        const changed: SampleChangeField[] = [];
-        if (old.qty !== m.qty) changed.push('qty');
-        if ((old.notes ?? null) !== notes) changed.push('notes');
+        const old: { qty: number; notes: string | null } = { qty: cur.rows[0]?.qty ?? 0, notes: cur.rows[0]?.notes ?? null };
+        const next = { ...old };
+        if (m.qty !== undefined) next.qty = m.qty;
+        if (m.notes !== undefined) next.notes = m.notes && m.notes.trim().length > 0 ? m.notes.trim() : null;
+        const changed = (['qty', 'notes'] as const).filter((k) => old[k] !== next[k]);
         if (changed.length === 0) continue;
         anyChange = true;
-        if (m.qty === 0 && notes === null) {
+        if (next.qty === 0 && next.notes === null) {
           await client.query(`DELETE FROM sample_request_materials WHERE request_id = $1 AND material_id = $2`, [requestId, m.materialId]);
         } else {
           await client.query(
             `INSERT INTO sample_request_materials (request_id, material_id, qty, notes)
              VALUES ($1, $2, $3, $4)
              ON CONFLICT (request_id, material_id) DO UPDATE SET qty = EXCLUDED.qty, notes = EXCLUDED.notes`,
-            [requestId, m.materialId, m.qty, notes]
+            [requestId, m.materialId, next.qty, next.notes]
           );
         }
-        for (const k of changed) await log('material', m.materialId, k, k === 'qty' ? old.qty : old.notes, k === 'qty' ? m.qty : notes);
+        for (const k of changed) await log('material', m.materialId, k, old[k], next[k]);
       }
       if (anyChange) {
         await client.query(
