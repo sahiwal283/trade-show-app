@@ -25,6 +25,7 @@ import {
   MidasFeedMessage,
   MidasMessageDto,
   MidasMessageFeedResult,
+  MidasEventFeedResult,
   MidasPostMessageInput,
 } from './MidasTypes';
 
@@ -448,5 +449,10 @@ export class MockMidasClient {
       : null;
 
     return { messages: page, nextCursor };
+  }
+
+  /** The mock raises no events. */
+  async listEventsSince(_cursor: string, _limit: number): Promise<MidasEventFeedResult> {
+    return { events: [], nextCursor: null };
   }
 }

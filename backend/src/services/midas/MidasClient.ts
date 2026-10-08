@@ -25,6 +25,7 @@ import {
   MidasVocabularyHealth,
   MidasMessageDto,
   MidasMessageFeedResult,
+  MidasEventFeedResult,
   MidasPostMessageInput,
 } from './MidasTypes';
 
@@ -341,6 +342,18 @@ export class MidasClient {
         params: { sourceApp, since: cursor, limit },
       });
       return await this.parse<MidasMessageFeedResult>(
+        res.status, res.data, [200], res.headers as Record<string, unknown>
+      );
+    } catch (e) {
+      return toMidasError(e);
+    }
+  }
+
+  /** Events after `cursor` (the last seq processed; '0' for the start), oldest first. */
+  async listEventsSince(cursor: string, limit: number): Promise<MidasEventFeedResult> {
+    try {
+      const res = await this.http.get('/events', { params: { since: cursor, limit } });
+      return await this.parse<MidasEventFeedResult>(
         res.status, res.data, [200], res.headers as Record<string, unknown>
       );
     } catch (e) {
