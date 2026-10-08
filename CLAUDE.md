@@ -96,6 +96,15 @@ Key service boundaries:
   submit and the puller notification; the repository's `applyRows` writes the
   change log in the same transaction. `NotificationService` is the one way to
   write a bell row + push.
+- **`notifications/`** — The notification catalog: one named function per
+  trigger (`eventNotifications`, `boothNotifications`, `travelNotifications`,
+  `adminNotifications`). `recipients.ts` is the only place that decides who
+  is told; the actor and inactive users never are. Callers fire-and-forget
+  after their write commits. `ReminderScheduler` runs every definition in
+  `reminderDefinitions.ts` through the `notification_reminders` send-once
+  ledger. Link → URL lives in `linkToUrl` and is mirrored by
+  `src/utils/notificationLinks.ts`; both are asserted against
+  `src/utils/__fixtures__/notificationLinks.json`.
 
 ### Frontend (`src/`)
 
