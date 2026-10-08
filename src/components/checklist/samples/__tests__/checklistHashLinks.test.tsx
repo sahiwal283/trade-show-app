@@ -118,11 +118,27 @@ describe('checklist #event hash links (shared sample request)', () => {
       vi.mocked(api.getEvents).mockResolvedValue([others('ev-2'), ev('ev-1'), others('ev-3')] as any);
     });
 
-    it('sees every show, own shows first, though on one roster only', async () => {
+    it('sees every upcoming show, soonest first, though on one roster only', async () => {
       vi.mocked(api.getSettings).mockResolvedValue({ sample_puller_user_id: { userId: 'u-1' } } as any);
+      const on = (id: string, start: string, end: string, mine = false) => ({ ...ev(id), startDate: start, endDate: end, showStartDate: start, showEndDate: end, participants: mine ? [{ id: 'u-1' }] : [{ id: 'u-9' }] });
+      vi.mocked(api.getEvents).mockResolvedValue([
+        on('later', '2099-06-01', '2099-06-03'), on('past', '2020-01-01', '2020-01-03'), on('past-mine', '2020-02-01', '2020-02-03', true),
+        on('live', '2020-01-01', '2099-01-01'), on('live-mine', '2020-01-02', '2099-01-01', true), on('next', '2099-03-01', '2099-03-03'),
+      ] as any);
       render(<UserChecklist user={rep} />);
-      await waitFor(() => expect(optionValues()).toEqual(['ev-1', 'ev-2', 'ev-3']));
-      expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+      // Finished shows and other people's live shows are gone; a live show the puller attends stays for their itinerary.
+      await waitFor(() => expect(optionValues()).toEqual(['live-mine', 'next', 'later']));
+      // It opens on the next show that has not started, not on the live one.
+      expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'next');
+      expect(screen.getByRole('option', { name: 'Show next · Mar 1, 2099' })).toBeInTheDocument();
+    });
+
+    it('a non-puller sees their shows with current and upcoming first, then past ones newest first', async () => {
+      vi.mocked(api.getSettings).mockResolvedValue({} as any);
+      const on = (id: string, start: string, end: string) => ({ ...ev(id), startDate: start, endDate: end, showStartDate: start, showEndDate: end });
+      vi.mocked(api.getEvents).mockResolvedValue([on('old', '2019-01-01', '2019-01-02'), on('far', '2099-06-01', '2099-06-02'), on('recent', '2020-01-01', '2020-01-02'), on('soon', '2099-03-01', '2099-03-02')] as any);
+      render(<UserChecklist user={rep} />);
+      await waitFor(() => expect(optionValues()).toEqual(['soon', 'far', 'recent', 'old']));
     });
 
     it('cold-loading a link to a show they are not on opens that show and clears the hash', async () => {
