@@ -89,7 +89,7 @@ sequenceDiagram
     Acct->>Midas: Review expense, post message to thread
     loop every MIDAS_MESSAGE_SCAN_INTERVAL_MS
         Scan->>Midas: GET /ext/events?since=<seq>
-        Midas-->>Scan: message batch
+        Midas-->>Scan: event batch
         Scan->>Scan: persist notifications, advance cursor
         Scan->>Push: notify submitter
     end
