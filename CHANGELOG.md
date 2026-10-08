@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.35.0] - 2026-10-08 - Executive Navy + Electric Blue
+
+### Changed
+- **The app has a new look: deep navy with electric blue.** A navy sidebar and mastheads, electric blue for buttons, links and selection, and cool slate for text, borders and backgrounds, on every screen.
+- **One colour per meaning.** Green always means approved or done, amber means waiting, orange means needs attention, red means rejected or a problem. Stray purples, teals and yellows that meant nothing are gone.
+- **Category tags and charts use a matching set of colours**, so reports and expense lists sit comfortably beside the rest of the app.
+
+### Removed
+- The theme picker that was on the sandbox dashboard while the palette was being chosen.
+
+### Technical
+- Colour tokens live in `src/theme/theme.css` (CSS variables read by Tailwind). `tailwind.config.js` folds near-duplicate Tailwind families into the palette (`green`/`emerald` → success, `gray`/`slate`/`zinc`/`neutral` → the slate neutrals, `yellow` → amber, `rose` → red, `purple` → violet, `fuchsia` → pink), which also recolours role badge classes stored in the database.
+- Chart series colours (`ENTITY_SERIES_COLORS`) re-anchored on the brand blue.
+- Browser chrome colour (`theme-color`, manifest) is the sidebar navy.
+
 ## [2.34.0] - 2026-10-08 - Developer dashboard rebuilt
 
 ### Changed

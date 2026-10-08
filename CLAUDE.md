@@ -132,6 +132,7 @@ Key service boundaries:
 - **`utils/apiClient.ts`** — Axios instance with JWT injection; all API calls go through here
 - **`utils/syncManager.ts`** — Offline sync queue; auto-flushes on reconnect
 - **`utils/offlineDb.ts`** — Dexie (IndexedDB) wrapper for offline storage
+- **`theme/theme.css`** — The palette (Executive Navy + Electric Blue) as CSS variables; `tailwind.config.js` maps every colour family onto it. Use `brand` (primary), `stone` (neutrals), `accent` (success), `amber` (warning), `orange` (needs attention) and `red` (danger); do not introduce other hues or raw hex values in components.
 
 ### Authentication & Sessions
 
