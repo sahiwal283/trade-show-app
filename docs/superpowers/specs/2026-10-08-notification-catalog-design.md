@@ -98,9 +98,8 @@ Watched fields:
 - Hotel: `property_name`, `confirmation_number`, `check_in_date`, `check_out_date`
 - Car rental: `provider`, `confirmation_number`, `pickup_date`, `return_date`
 
-The implementation plan confirms the exact column names against
-`ChecklistRepository`; the intent is "what was booked, the reference, and
-when".
+A car rental with `rental_type = 'group'` still notifies only its
+`assigned_to_id`, as it does today.
 
 ### Reminders
 
@@ -223,9 +222,7 @@ CREATE TABLE IF NOT EXISTS notification_reminders (
 
 -- Carry the flight ledger over so nobody is re-reminded on deploy.
 INSERT INTO notification_reminders (kind, subject_id, user_id, sent_at)
-SELECT 'reminder.flight_' || CASE r.kind
-         WHEN 'checkin_24h' THEN 'checkin_24h'
-         WHEN 'departure_3h' THEN 'departure_3h' END,
+SELECT 'reminder.flight_' || r.kind,   -- checkin_24h, departure_3h
        r.flight_id::text, f.attendee_id, r.sent_at
 FROM travel_reminders r
 JOIN checklist_flights f ON f.id = r.flight_id
