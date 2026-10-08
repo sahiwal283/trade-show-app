@@ -45,6 +45,7 @@ import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { leadConversionService } from './services/LeadConversionService';
 import { badgeCrmPushService } from './services/badge/BadgeCrmPushService';
 import { badgeWebhookService } from './services/badge/BadgeWebhookService';
+import { retentionJob } from './services/devDashboard/RetentionJob';
 import { runMigrations } from './database/migrate';
 
 dotenv.config();
@@ -251,6 +252,9 @@ const startServer = () => {
     // Badge scan → partner webhook retry sweep; idles until a brand has a
     // <BRAND>_SCAN_WEBHOOK_URL configured
     badgeWebhookService.start();
+
+    // Daily cleanup of api_requests, page_views, audit_logs and expired sessions
+    retentionJob.start();
   });
 };
 
