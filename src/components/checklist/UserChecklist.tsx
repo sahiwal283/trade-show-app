@@ -13,7 +13,8 @@ import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { FlightData, HotelData, CarRentalData } from './TradeShowChecklist';
 import { ItineraryCard } from './ItineraryCard';
-import { SampleRequestSection } from './samples/SampleRequestSection';
+import { SamplesPanel } from './samples/SamplesPanel';
+import { sampleRequestApi } from '../../utils/sampleRequestApi';
 import { joinSummary, formatDateRange } from './bookingText';
 
 interface UserChecklistProps {
@@ -28,6 +29,9 @@ interface ItineraryData {
   hotels: HotelData[];
   carRentals: CarRentalData[];
 }
+
+/** Which hash links this instance owns: tab=my always; tab=samples only as the rep's page. */
+const ownsLink = (tab: string | null, embedded: boolean) => !tab || tab === 'my' || (tab === 'samples' && !embedded);
 
 export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = false }) => {
   const [events, setEvents] = useState<TradeShow[]>([]);
@@ -56,7 +60,7 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
         setEvents(visible);
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
         const linkedId = params.get('event');
-        if (linkedId && visible.some((e) => e.id === linkedId)) {
+        if (linkedId && ownsLink(params.get('tab'), embedded) && visible.some((e) => e.id === linkedId)) {
           setSelectedEventId(linkedId);
           history.replaceState(null, '', window.location.pathname + window.location.search);
         } else if (visible.length > 0) {
@@ -79,8 +83,7 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
   useEffect(() => {
     const onHashChange = () => {
       const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-      const tab = params.get('tab');
-      if (tab && tab !== 'my') return; // another tab's link; leave the hash for its listener
+      if (!ownsLink(params.get('tab'), embedded)) return; // another page's link; leave the hash for its listener
       const linkedId = params.get('event');
       if (linkedId && events.some((e) => e.id === linkedId)) {
         setSelectedEventId(linkedId);
@@ -89,7 +92,18 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
-  }, [events]);
+  }, [events, embedded]);
+
+  const [canViewSamples, setCanViewSamples] = useState(false);
+  useEffect(() => {
+    if (embedded || !selectedEventId) { setCanViewSamples(false); return; }
+    let cancelled = false;
+    setCanViewSamples(false);
+    sampleRequestApi.getEventAccess(selectedEventId)
+      .then((r) => { if (!cancelled) setCanViewSamples(r.canView); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [selectedEventId, embedded]);
 
   useEffect(() => {
     if (!selectedEventId) return;
@@ -183,8 +197,15 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
         </div>
       )}
 
-      {selectedEventId && (
-        <SampleRequestSection key={selectedEventId} eventId={selectedEventId} userId={user.id} role={user.role} actorId={user.id} />
+      {!embedded && selectedEventId && canViewSamples && (
+        <div className="space-y-3">
+          <div className="seg-track" role="tablist" aria-label="Show sections">
+            <button type="button" role="tab" aria-selected="true" className="seg-tab seg-tab-active">Samples</button>
+          </div>
+          <div className="card">
+            <SamplesPanel key={selectedEventId} eventId={selectedEventId} userId={user.id} role={user.role} />
+          </div>
+        </div>
       )}
 
       {loading && (

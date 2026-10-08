@@ -7,7 +7,7 @@
  * handlers, API calls, and receipt flows.
  */
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { User, TradeShow } from '../../App';
 import { ChecklistData } from './TradeShowChecklist';
@@ -19,6 +19,8 @@ import { CustomItemsSection } from './sections/CustomItemsSection';
 import { BookingBoardTabs, BoardTab, BoardTabKey } from './BookingBoardTabs';
 import { boardPanelId, boardTabId } from './bookingText';
 import { AddParticipantModal } from './AddParticipantModal';
+import { SamplesPanel } from './samples/SamplesPanel';
+import { sampleRequestApi } from '../../utils/sampleRequestApi';
 
 interface BookingBoardProps {
   checklist: ChecklistData;
@@ -28,6 +30,9 @@ interface BookingBoardProps {
   onUpdate: (updates: Partial<ChecklistData>) => Promise<void>;
   onReload: () => void;
   onRosterChanged?: () => void;
+  /** A deep link asked for a specific board tab (e.g. samples). */
+  requestedTab?: BoardTabKey | null;
+  onRequestedTabHandled?: () => void;
 }
 
 export const BookingBoard: React.FC<BookingBoardProps> = ({
@@ -38,8 +43,29 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
   onUpdate,
   onReload,
   onRosterChanged,
+  requestedTab,
+  onRequestedTabHandled,
 }) => {
-  const [boardTab, setBoardTab] = useState<BoardTabKey>('booth');
+  const [boardTab, setBoardTab] = useState<BoardTabKey>(requestedTab ?? 'booth');
+  const [samplesSubmitted, setSamplesSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!requestedTab) return;
+    setBoardTab(requestedTab);
+    onRequestedTabHandled?.();
+  }, [requestedTab, onRequestedTabHandled]);
+
+  // The tab wears 0/1 -> 1/1; the panel reports later changes itself.
+  useEffect(() => {
+    let cancelled = false;
+    setSamplesSubmitted(false);
+    sampleRequestApi.getEvent(event.id)
+      .then((v) => { if (!cancelled) setSamplesSubmitted(v.request.status === 'submitted'); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [event.id]);
+
+  const handleSamplesStatus = useCallback((s: 'draft' | 'submitted') => setSamplesSubmitted(s === 'submitted'), []);
   const [showAddPerson, setShowAddPerson] = useState(false);
   const canManageRoster =
     user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer';
@@ -76,6 +102,7 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
       completed: checklist.customItems.filter(i => i.completed).length,
       total: checklist.customItems.length,
     },
+    { key: 'samples', label: 'Samples', completed: samplesSubmitted ? 1 : 0, total: 1 },
   ];
 
   // Only the active tab's panel renders.
@@ -106,6 +133,9 @@ export const BookingBoard: React.FC<BookingBoardProps> = ({
         canEdit={user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer'}
         isAdmin={user.role === 'admin' || user.role === 'developer'}
       />
+    ),
+    samples: (
+      <SamplesPanel key={event.id} eventId={event.id} userId={user.id} role={user.role} onStatusChange={handleSamplesStatus} />
     ),
   };
 

@@ -1,68 +1,79 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 
 vi.mock('../../../../utils/api', () => ({
   api: {
     USE_SERVER: true,
     getEvents: vi.fn(),
-    checklist: { getChecklist: vi.fn(), updateChecklist: vi.fn() },
+    checklist: { getChecklist: vi.fn(async () => ({ id: 1, event_id: 1, flights: [], hotels: [], carRentals: [], boothShipping: [], customItems: [] })) },
   },
 }));
-vi.mock('../SampleRequestSection', () => ({ SampleRequestSection: () => null }));
-vi.mock('../../../../utils/sampleRequestApi', async (orig) => ({
-  ...(await orig<typeof import('../../../../utils/sampleRequestApi')>()),
-  sampleRequestApi: { getAccess: vi.fn() },
+vi.mock('../../../../utils/sampleRequestApi', async (orig) => {
+  const actual = await orig<typeof import('../../../../utils/sampleRequestApi')>();
+  return { ...actual, sampleRequestApi: { getEventAccess: vi.fn(async () => ({ canView: true, canEdit: true })) } };
+});
+vi.mock('../SamplesPanel', () => ({ SamplesPanel: (p: any) => <div data-testid="samples-panel" data-event={p.eventId} /> }));
+vi.mock('../../BookingBoard', () => ({
+  BookingBoard: (p: any) => <div data-testid="board" data-event={p.event.id} data-tab={p.requestedTab ?? ''} />,
 }));
 
-import { api } from '../../../../utils/api';
-import { sampleRequestApi } from '../../../../utils/sampleRequestApi';
 import { UserChecklist } from '../../UserChecklist';
 import { TradeShowChecklist } from '../../TradeShowChecklist';
+import { api } from '../../../../utils/api';
+import { sampleRequestApi } from '../../../../utils/sampleRequestApi';
 
-const user = { id: 'u-1', name: 'Ana', username: 'ana', email: 'a@x.test', role: 'salesperson' } as any;
-const ev = (id: string, name: string) => ({ id, name, startDate: '2026-11-01', endDate: '2026-11-03', participants: [{ id: 'u-1' }] });
+const rep = { id: 'u-1', name: 'Rep', username: 'r', email: 'r@x.com', role: 'salesperson' } as any;
+const admin = { id: 'adm', name: 'Admin', username: 'a', email: 'a@x.com', role: 'admin' } as any;
+const ev = (id: string) => ({ id, name: `Show ${id}`, startDate: '2099-01-01', endDate: '2099-01-02', showStartDate: '2099-01-01', showEndDate: '2099-01-02', participants: [{ id: 'u-1' }] });
 
-describe('checklist #event hash links', () => {
+const go = (hash: string) => act(() => { window.location.hash = hash; window.dispatchEvent(new HashChangeEvent('hashchange')); });
+
+describe('checklist #event hash links (shared sample request)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(api.getEvents).mockResolvedValue([ev('ev-1', 'Expo One'), ev('ev-2', 'Expo Two')] as any);
-    vi.mocked(api.checklist.getChecklist).mockResolvedValue({ flights: [], hotels: [], carRentals: [] } as any);
+    history.replaceState(null, '', window.location.pathname);
+    vi.mocked(api.getEvents).mockResolvedValue([ev('ev-1'), ev('ev-2')] as any);
+    vi.mocked(sampleRequestApi.getEventAccess).mockResolvedValue({ canView: true, canEdit: true });
   });
-  afterEach(() => { history.replaceState(null, '', '/'); });
 
-  it('UserChecklist selects the linked show on hashchange and clears the hash', async () => {
-    render(<UserChecklist user={user} />);
-    const select = await screen.findByRole('combobox');
-    await waitFor(() => expect((select as HTMLSelectElement).value).toBe('ev-1'));
-    act(() => {
-      history.replaceState(null, '', '/#event=ev-2&tab=my');
-      window.dispatchEvent(new HashChangeEvent('hashchange'));
-    });
-    await waitFor(() => expect((select as HTMLSelectElement).value).toBe('ev-2'));
+  it('a rep sees the Samples panel for the selected show and follows a tab=samples link', async () => {
+    render(<UserChecklist user={rep} />);
+    expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+    expect(screen.getByRole('tab', { name: 'Samples' })).toBeInTheDocument();
+    go('#event=ev-2&tab=samples');
+    await waitFor(() => expect(screen.getByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-2'));
     expect(window.location.hash).toBe('');
   });
 
-  it('UserChecklist ignores a tab=samples link and leaves the hash alone', async () => {
-    render(<UserChecklist user={user} />);
-    const select = await screen.findByRole('combobox');
-    await waitFor(() => expect((select as HTMLSelectElement).value).toBe('ev-1'));
-    act(() => {
-      history.replaceState(null, '', '/#event=ev-2&tab=samples');
-      window.dispatchEvent(new HashChangeEvent('hashchange'));
-    });
-    expect((select as HTMLSelectElement).value).toBe('ev-1');
+  it('hides the Samples block when the rep cannot view that show', async () => {
+    vi.mocked(sampleRequestApi.getEventAccess).mockResolvedValue({ canView: false, canEdit: false });
+    render(<UserChecklist user={rep} />);
+    await waitFor(() => expect(sampleRequestApi.getEventAccess).toHaveBeenCalledWith('ev-1'));
+    expect(screen.queryByTestId('samples-panel')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Samples' })).not.toBeInTheDocument();
+  });
+
+  it('an embedded My Checklist shows no Samples panel and leaves tab=samples links alone', async () => {
+    render(<UserChecklist user={admin} embedded />);
+    await waitFor(() => expect(api.getEvents).toHaveBeenCalled());
+    expect(screen.queryByTestId('samples-panel')).not.toBeInTheDocument();
+    go('#event=ev-2&tab=samples');
     expect(window.location.hash).toBe('#event=ev-2&tab=samples');
   });
 
-  it('a rep does not mount UserChecklist until access is known, so a cold tab=my link lands on that show', async () => {
-    let resolveAccess!: (v: { canViewSummary: boolean }) => void;
-    vi.mocked(sampleRequestApi.getAccess).mockReturnValue(new Promise((r) => { resolveAccess = r; }) as any);
-    history.replaceState(null, '', '/#event=ev-2&tab=my');
-    render(<TradeShowChecklist user={user} />);
-    expect(screen.getByText(/Loading your itinerary/)).toBeInTheDocument();
-    expect(api.getEvents).not.toHaveBeenCalled();
-    await act(async () => { resolveAccess({ canViewSummary: false }); });
-    const select = await screen.findByRole('combobox');
-    await waitFor(() => expect((select as HTMLSelectElement).value).toBe('ev-2'));
+  it('an admin opening a tab=samples link lands on the board with the Samples tab requested', async () => {
+    window.location.hash = '#event=ev-2&tab=samples';
+    render(<TradeShowChecklist user={admin} />);
+    const board = await screen.findByTestId('board');
+    expect(board).toHaveAttribute('data-event', 'ev-2');
+    expect(board).toHaveAttribute('data-tab', 'samples');
+    expect(screen.queryByRole('button', { name: 'Samples' })).not.toBeInTheDocument();
+    expect(window.location.hash).toBe('');
+  });
+
+  it('a rep gets My Checklist straight away with no access round-trip at the page level', async () => {
+    render(<TradeShowChecklist user={rep} />);
+    expect(await screen.findByTestId('samples-panel')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Admin Checklist' })).not.toBeInTheDocument();
   });
 });
