@@ -67,6 +67,21 @@ describe('Header general notifications', () => {
     expect(onNavigate).toHaveBeenCalledWith('checklist');
   });
 
+  it.each([
+    [{ page: 'expenses', eventId: 'ev-3' }, '#expenses-event=ev-3', 'expenses'],
+    [{ page: 'admin-users' }, '#users', 'settings'],
+    [{ page: 'booth-inventory' }, '#booths', 'booths'],
+    [{ page: 'badge-scans' }, '#leads', 'leads'],
+  ])('deep-links %o to %s on the %s page', async (link, hash, page) => {
+    mockRows([row({ link })]);
+    const onNavigate = vi.fn();
+    renderHeader(onNavigate);
+    fireEvent.click(screen.getByRole('button', { name: /Notifications/ }));
+    fireEvent.click(await screen.findByText('Sample request open · Expo'));
+    expect(window.location.hash).toBe(hash);
+    expect(onNavigate).toHaveBeenCalledWith(page);
+  });
+
   it('a row without a link only marks read and closes the panel', async () => {
     mockRows([row({ link: null })]);
     const onNavigate = vi.fn();
