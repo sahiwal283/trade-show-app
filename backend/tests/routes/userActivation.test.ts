@@ -10,10 +10,9 @@ import type { Response } from 'express';
 
 vi.mock('../../src/database/repositories', () => ({
   userRepository: { findById: vi.fn(), setActive: vi.fn() },
-  auditLogRepository: { create: vi.fn().mockResolvedValue({}) },
 }));
 
-import { userRepository, auditLogRepository } from '../../src/database/repositories';
+import { userRepository } from '../../src/database/repositories';
 import { handleSetUserActive } from '../../src/routes/users';
 
 function mockRes() {
@@ -43,7 +42,6 @@ describe('PATCH /api/users/:id/active', () => {
     (userRepository.setActive as any).mockImplementation((id: string, isActive: boolean) =>
       Promise.resolve({ id, username: 'rita', is_active: isActive })
     );
-    (auditLogRepository.create as any).mockResolvedValue({});
   });
 
   it('deactivates a user and returns the updated row', async () => {

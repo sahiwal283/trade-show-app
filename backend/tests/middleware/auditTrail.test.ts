@@ -42,6 +42,8 @@ describe('shouldAudit', () => {
     ['POST', '/api/page-views/'],
     ['POST', '/api/push/subscribe'],
     ['POST', '/api/midas/events-ping'],
+    ['POST', '/api/Auth/login'],
+    ['POST', '/api/Midas/x'],
   ])('skips %s %s', (method, path) => {
     expect(shouldAudit(method, path)).toBe(false);
   });
@@ -55,9 +57,29 @@ describe('auditStatus', () => {
 });
 
 describe('clientIp', () => {
-  it('prefers the first forwarded address', () => {
-    expect(clientIp({ headers: { 'x-forwarded-for': '203.0.113.9, 10.0.0.1' }, ip: '10.0.0.1', socket: {} } as any))
+  it('prefers x-real-ip over x-forwarded-for', () => {
+    expect(clientIp({ headers: { 'x-real-ip': '198.51.100.7', 'x-forwarded-for': '6.6.6.6, 203.0.113.9' }, ip: '10.0.0.1', socket: {} } as any))
+      .toBe('198.51.100.7');
+  });
+
+  it('uses the last forwarded entry when there is no x-real-ip', () => {
+    expect(clientIp({ headers: { 'x-forwarded-for': '6.6.6.6, 203.0.113.9' }, ip: '10.0.0.1', socket: {} } as any))
       .toBe('203.0.113.9');
+  });
+
+  it('uses the last element of an array header', () => {
+    expect(clientIp({ headers: { 'x-forwarded-for': ['6.6.6.6', '203.0.113.9'] }, ip: '10.0.0.1', socket: {} } as any))
+      .toBe('203.0.113.9');
+  });
+
+  it('falls through an invalid forwarded value to req.ip', () => {
+    expect(clientIp({ headers: { 'x-forwarded-for': 'unknown' }, ip: '10.0.0.1', socket: {} } as any))
+      .toBe('10.0.0.1');
+  });
+
+  it('returns undefined when every candidate is invalid', () => {
+    expect(clientIp({ headers: { 'x-real-ip': 'nope', 'x-forwarded-for': 'unknown' }, ip: 'x', socket: { remoteAddress: 'y' } } as any))
+      .toBeUndefined();
   });
 
   it.each(['unknown', 'proxy.internal', ''])('returns undefined for %j', (value) => {
@@ -119,5 +141,29 @@ describe('auditTrail', () => {
   it('never throws when the audit write rejects', () => {
     logAudit.mockRejectedValue(new Error('db down'));
     expect(() => run()).not.toThrow();
+  });
+
+  it('survives a circular error object and still responds', () => {
+    const circular: any = {}; circular.self = circular;
+    const req: any = { method: 'PUT', originalUrl: '/api/events/1', headers: {}, ip: '10.0.0.1', socket: {} };
+    const res: any = new EventEmitter();
+    res.statusCode = 500;
+    const original = vi.fn(() => 'sent');
+    res.json = original;
+    auditTrail(req, res, vi.fn());
+    expect(res.json({ error: circular })).toBe('sent');
+    expect(original).toHaveBeenCalled();
+    res.emit('finish');
+    expect(logAudit.mock.calls[0][0].errorMessage).toBe('Unserializable error');
+  });
+
+  it('never throws out of the finish listener when building the entry fails', () => {
+    const req: any = { method: 'PUT', originalUrl: '/api/events/1', headers: {}, socket: {} };
+    Object.defineProperty(req, 'user', { get() { throw new Error('boom'); } });
+    const res: any = new EventEmitter();
+    res.statusCode = 200;
+    res.json = vi.fn();
+    auditTrail(req, res, vi.fn());
+    expect(() => res.emit('finish')).not.toThrow();
   });
 });

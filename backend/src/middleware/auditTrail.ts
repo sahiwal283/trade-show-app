@@ -23,7 +23,8 @@ const PATH_MAX = 500; // audit_logs.request_path VARCHAR(500)
 
 export function shouldAudit(method: string, path: string): boolean {
   if (!WRITE_METHODS.has(method)) return false;
-  const clean = path.length > 1 ? path.replace(/\/+$/, '') : path;
+  // Express routing is case-insensitive, so the skip checks must be too.
+  const clean = (path.length > 1 ? path.replace(/\/+$/, '') : path).toLowerCase();
   if (!clean.startsWith('/api/')) return false;
   if (SKIPPED_PATHS.has(clean)) return false;
   return !SKIPPED_PREFIXES.some((prefix) => `${clean}/`.startsWith(prefix));
@@ -35,11 +36,25 @@ export function auditStatus(statusCode: number): 'success' | 'warning' | 'failur
   return 'success';
 }
 
-/** audit_logs.ip_address is INET: anything that is not an IP must become null. */
+/**
+ * audit_logs.ip_address is INET: anything that is not an IP must become null.
+ *
+ * The leftmost X-Forwarded-For entry is client-controlled and the app does not
+ * set `trust proxy`, so it cannot be believed. Prefer X-Real-IP, then the LAST
+ * forwarded entry (the one the trusted proxy appended), then the socket values.
+ */
 export function clientIp(req: AuthRequest): string | undefined {
-  const forwarded = (req.headers['x-forwarded-for'] as string | undefined)?.split(',')[0]?.trim();
-  const candidate = forwarded || req.ip || req.socket?.remoteAddress || '';
-  return net.isIP(candidate) ? candidate : undefined;
+  const last = (value: string | string[] | undefined): string | undefined => {
+    const raw = Array.isArray(value) ? value[value.length - 1] : value;
+    return raw?.split(',').pop()?.trim();
+  };
+  const candidates = [
+    last(req.headers['x-real-ip']),
+    last(req.headers['x-forwarded-for']),
+    req.ip,
+    req.socket?.remoteAddress,
+  ];
+  return candidates.find((c): c is string => !!c && net.isIP(c) !== 0);
 }
 
 export const auditTrail = (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -50,25 +65,33 @@ export const auditTrail = (req: AuthRequest, res: Response, next: NextFunction) 
   const originalJson = res.json.bind(res);
   res.json = function (body: any): Response {
     if (res.statusCode >= 400 && body && body.error) {
-      errorMessage = typeof body.error === 'string' ? body.error : JSON.stringify(body.error);
+      try {
+        errorMessage = typeof body.error === 'string' ? body.error : JSON.stringify(body.error);
+      } catch {
+        errorMessage = 'Unserializable error';
+      }
     }
     return originalJson(body);
   };
 
   res.on('finish', () => {
-    // req.user is set by the route's own authenticateToken, which has run by now.
-    logAudit({
-      userId: req.user?.id,
-      userName: req.user?.username,
-      userRole: req.user?.role,
-      action: `${req.method} ${normalizeEndpoint(path)}`.slice(0, ACTION_MAX),
-      status: auditStatus(res.statusCode),
-      ipAddress: clientIp(req),
-      userAgent: req.headers['user-agent'],
-      requestMethod: req.method,
-      requestPath: path.slice(0, PATH_MAX),
-      errorMessage,
-    }).catch(() => {});
+    try {
+      // req.user is set by the route's own authenticateToken, which has run by now.
+      logAudit({
+        userId: req.user?.id,
+        userName: req.user?.username,
+        userRole: req.user?.role,
+        action: `${req.method} ${normalizeEndpoint(path)}`.slice(0, ACTION_MAX),
+        status: auditStatus(res.statusCode),
+        ipAddress: clientIp(req),
+        userAgent: req.headers['user-agent'],
+        requestMethod: req.method,
+        requestPath: path.slice(0, PATH_MAX),
+        errorMessage,
+      }).catch(() => {});
+    } catch {
+      // Auditing must never throw out of the emitter.
+    }
   });
 
   next();
