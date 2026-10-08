@@ -22,7 +22,7 @@
 - Dashboard: unsubmitted → amber/red countdown row (Start/Finish); submitted → stone "submitted · edit until <date>" row (Open). Both deep-link `#event=<id>&tab=samples`.
 - Deep links: `tab=samples` opens the Samples board tab (admins) or the rep's Samples panel. `tab=my` unchanged.
 - Version bumps to **2.31.0** in `package.json` and `backend/package.json`.
-- Commit messages end with `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Commit messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - Backend tests: `cd backend && npx vitest run` (never `npm test`, it opens watch mode). Frontend: `npx vitest run <dir>` from the root; ~90 pre-existing failures live in files this work does not touch; judge by the directories touched.
 
 ## Review Focus
@@ -158,6 +158,7 @@ WITH agg AS (
          (ARRAY_AGG(sr.user_id ORDER BY sr.updated_at DESC))[1] AS last_editor
   FROM sample_requests sr JOIN sr_keeper k ON k.event_id = sr.event_id
   GROUP BY k.keeper_id
+  HAVING COUNT(*) > 1            -- single-row events keep their row untouched
 )
 UPDATE sample_requests s
 SET status         = CASE WHEN a.any_submitted THEN 'submitted' ELSE s.status END,
@@ -198,6 +199,8 @@ CREATE TABLE IF NOT EXISTS sample_request_changes (
 CREATE INDEX IF NOT EXISTS sample_request_changes_request_idx ON sample_request_changes (request_id, changed_at DESC);
 ```
 
+Note on atomicity: open `backend/src/database/migrate.ts` and check whether each migration file runs inside a transaction. If it does not, wrap this file's statements in `BEGIN;` … `COMMIT;` so a failed merge cannot leave half-merged rows.
+
 Note on names: migration 043 left the constraints unnamed, so Postgres named them `sample_requests_event_id_user_id_key` and `sample_requests_user_id_fkey`; the `DROP CONSTRAINT IF EXISTS` lines use those defaults. If the dev DB shows different names (`\d sample_requests`), use the actual names.
 
 - [ ] **Step 4: Apply and verify**
@@ -211,7 +214,7 @@ Expected: 3 PASS.
 git add backend/src/database/migrations/044_shared_sample_requests.sql backend/tests/integration/shared-sample-requests-schema.test.ts
 git commit -m "feat(sample-requests): migration 044 one request per event with change log and merge
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -560,7 +563,7 @@ Expected: repository tests PASS. `tsc` will FAIL in `SampleRequestService.ts` an
 git add backend/src/services/sampleRequests/types.ts backend/src/database/repositories/SampleRequestRepository.ts backend/tests/repositories/SampleRequestRepository.test.ts
 git commit -m "feat(sample-requests): event-scoped repository with row-level patch and change log
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -964,7 +967,7 @@ Expected: all PASS. `tsc` still fails only in `routes/sampleRequests.ts` (Task 4
 git add backend/src/services/sampleRequests/SampleRequestService.ts backend/tests/services/SampleRequestService.test.ts
 git commit -m "feat(sample-requests): event-scoped service with row patches, history and shared submit
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1106,7 +1109,7 @@ Expected: PASS; tsc clean across the backend.
 git add backend/src/routes/sampleRequests.ts backend/tests/routes/sampleRequests.test.ts
 git commit -m "feat(sample-requests): event-scoped routes (get, patch, submit, history, access)
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1156,7 +1159,7 @@ Expected: scanner tests PASS; whole backend suite green; tsc clean.
 git add backend/src/services/sampleRequests/SampleRequestReminderService.ts backend/tests/services/SampleRequestReminderService.test.ts
 git commit -m "feat(sample-requests): 48h reminder goes to every participant and links to the Samples view
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1244,7 +1247,7 @@ Expected: PASS. (`npx tsc --noEmit` for the frontend will fail in the old hook/s
 git add src/utils/sampleRequestApi.ts src/utils/__tests__/sampleRequestApi.test.ts src/utils/apiClient.ts
 git commit -m "feat(sample-requests): frontend api for the shared event request
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
@@ -1616,13 +1619,1066 @@ Expected: 6 PASS. If the reconcile test's `updatedBy` assertion fails because th
 git add src/components/checklist/samples/useEventSampleRequest.ts src/components/checklist/samples/__tests__/useEventSampleRequest.test.ts
 git commit -m "feat(sample-requests): shared-request hook with row-level saves and reconciliation
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ```
 
 ---
-<!-- PLAN IN PROGRESS: Tasks 8–11 still to be written (session paused at usage limit). Outline:
-### Task 8: SamplesPanel + SampleHistory components; delete SampleRequestSection, SamplesSummaryTab, useSampleRequest and their tests
-### Task 9: Placement — BookingBoard 'samples' tab (count 0/1 → 1/1, requestedTab prop), UserChecklist one-tab Samples panel, TradeShowChecklist back to Admin/My with tab=samples deep link routing; update checklistHashLinks test
-### Task 10: Dashboard — useSampleRequestActions returns submitted rows too; ActionQueue renders the stone "submitted · edit until <date>" variant; both link #event=<id>&tab=samples
-### Task 11: Release — 2.31.0, CHANGELOG, ARCHITECTURE §9 rewrite, CLAUDE.md bullet, full verification
--->
+### Task 8: `SamplesPanel` and `SampleHistory`
+
+**Files:**
+- Modify: `src/components/checklist/samples/sampleRequestText.ts` (add `formatRelative`, `formatShortDate`, `describeChange`)
+- Modify: `src/components/checklist/samples/ProductTable.tsx`, `MaterialsTable.tsx` (optional `onFocusChange` prop)
+- Create: `src/components/checklist/samples/SampleHistory.tsx`
+- Create: `src/components/checklist/samples/SamplesPanel.tsx`
+- Test: `src/components/checklist/samples/__tests__/sampleRequestText.test.ts` (add cases), `SamplesPanel.test.tsx`, `SampleHistory.test.tsx`
+
+**Interfaces:**
+- Consumes: `useEventSampleRequest` (Task 7), `sampleRequestApi.getHistory` and `SampleChangeRow` (Task 6), existing `formatCountdown`/`isUrgent`/`formatCloseDate`.
+- Produces: `<SamplesPanel eventId userId role onStatusChange? />` where `onStatusChange?: (status: 'draft' | 'submitted') => void`; `<SampleHistory eventId refreshKey />`; text helpers `formatRelative(iso, now?)`, `formatShortDate(iso)`, `describeChange(row)`.
+- The old `SampleRequestSection`, `SamplesSummaryTab` and `useSampleRequest` stay in place in this task (Task 9 removes them), so the app keeps compiling.
+
+- [ ] **Step 1: Write the failing text-helper tests**
+
+Append to `sampleRequestText.test.ts`:
+
+```ts
+import { formatRelative, formatShortDate, describeChange } from '../sampleRequestText';
+
+describe('formatRelative', () => {
+  const now = new Date('2026-10-15T12:00:00Z');
+  it('says just now under a minute', () => { expect(formatRelative('2026-10-15T11:59:30Z', now)).toBe('just now'); });
+  it('uses minutes under an hour', () => { expect(formatRelative('2026-10-15T11:55:00Z', now)).toBe('5 min ago'); });
+  it('uses hours under a day', () => { expect(formatRelative('2026-10-15T09:00:00Z', now)).toBe('3 h ago'); });
+  it('falls back to a short date', () => { expect(formatRelative('2026-10-12T09:00:00Z', now)).toBe('on Oct 12'); });
+});
+
+describe('formatShortDate', () => {
+  it('renders month and day in Eastern time', () => { expect(formatShortDate('2026-10-14T16:00:00Z')).toBe('Oct 14'); });
+});
+
+describe('describeChange', () => {
+  const base = { id: 'c', userId: 'u', userName: 'Sameer', kind: 'item' as const, targetId: 'p', targetName: 'Mango', lineName: 'Peelz', brand: 'boomin_brands' as const, changedAt: '' };
+  it('describes a quantity change', () => {
+    expect(describeChange({ ...base, field: 'singles', oldValue: '2', newValue: '4' })).toBe('Sameer changed Mango singles 2 → 4');
+    expect(describeChange({ ...base, field: 'empty_displays', oldValue: '0', newValue: '1' })).toBe('Sameer changed Mango empty displays 0 → 1');
+  });
+  it('describes notes and a missing user', () => {
+    expect(describeChange({ ...base, userName: null, kind: 'material', targetName: 'Banner', lineName: null, brand: null, field: 'notes', oldValue: null, newValue: 'big one' }))
+      .toBe('Someone changed Banner notes to "big one"');
+    expect(describeChange({ ...base, kind: 'material', targetName: 'Banner', field: 'notes', oldValue: 'x', newValue: null })).toBe('Sameer cleared Banner notes');
+  });
+});
+```
+
+- [ ] **Step 2: Implement the helpers**
+
+Append to `sampleRequestText.ts`:
+
+```ts
+import type { SampleChangeRow } from '../../../utils/sampleRequestApi';
+
+export function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
+}
+
+export function formatRelative(iso: string, now: Date = new Date()): string {
+  const ago = now.getTime() - new Date(iso).getTime();
+  if (ago < 60_000) return 'just now';
+  if (ago < 3_600_000) return `${Math.floor(ago / 60_000)} min ago`;
+  if (ago < 86_400_000) return `${Math.floor(ago / 3_600_000)} h ago`;
+  return `on ${formatShortDate(iso)}`;
+}
+
+const FIELD_LABEL: Record<SampleChangeRow['field'], string> = {
+  singles: 'singles', displays: 'displays', empty_displays: 'empty displays', qty: 'qty', notes: 'notes',
+};
+
+export function describeChange(c: SampleChangeRow): string {
+  const who = c.userName ?? 'Someone';
+  if (c.field === 'notes') {
+    return c.newValue ? `${who} changed ${c.targetName} notes to "${c.newValue}"` : `${who} cleared ${c.targetName} notes`;
+  }
+  return `${who} changed ${c.targetName} ${FIELD_LABEL[c.field]} ${c.oldValue ?? '0'} → ${c.newValue ?? '0'}`;
+}
+```
+
+Put the `import type` at the top of the file with any existing imports. Run: `npx vitest run src/components/checklist/samples/__tests__/sampleRequestText.test.ts` → all PASS.
+
+- [ ] **Step 3: Add focus reporting to the two tables**
+
+In `ProductTable.tsx` add to `Props`: `onFocusChange?: (productId: string, focused: boolean) => void;`, destructure it, and add to the `<input>`:
+
+```tsx
+                    onFocus={() => onFocusChange?.(p.id, true)}
+                    onBlur={() => onFocusChange?.(p.id, false)}
+```
+
+In `MaterialsTable.tsx` add `onFocusChange?: (materialId: string, focused: boolean) => void;` and the same two handlers (with `m.id`) on BOTH the qty and the notes inputs.
+
+- [ ] **Step 4: Write the failing component tests**
+
+```tsx
+// src/components/checklist/samples/__tests__/SampleHistory.test.tsx
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+
+vi.mock('../../../../utils/sampleRequestApi', async (orig) => {
+  const actual = await orig<typeof import('../../../../utils/sampleRequestApi')>();
+  return { ...actual, sampleRequestApi: { getHistory: vi.fn() } };
+});
+import { SampleHistory } from '../SampleHistory';
+import { sampleRequestApi } from '../../../../utils/sampleRequestApi';
+
+const change = { id: 'c-1', userId: 'u-2', userName: 'Sameer', kind: 'item', targetId: 'p-1', targetName: 'Mango', lineName: 'Peelz', brand: 'boomin_brands', field: 'singles', oldValue: '2', newValue: '4', changedAt: new Date(Date.now() - 5 * 60_000).toISOString() };
+
+describe('SampleHistory', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('loads only when opened and lists changes newest first as given', async () => {
+    vi.mocked(sampleRequestApi.getHistory).mockResolvedValue({ changes: [change] } as any);
+    render(<SampleHistory eventId="ev-1" refreshKey="a" />);
+    expect(sampleRequestApi.getHistory).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /History/ }));
+    expect(await screen.findByText(/Sameer changed Mango singles 2 → 4/)).toBeInTheDocument();
+    expect(screen.getByText(/5 min ago/)).toBeInTheDocument();
+  });
+
+  it('reloads when refreshKey changes while open, and shows the empty and failure states', async () => {
+    vi.mocked(sampleRequestApi.getHistory).mockResolvedValueOnce({ changes: [] } as any);
+    const { rerender } = render(<SampleHistory eventId="ev-1" refreshKey="a" />);
+    fireEvent.click(screen.getByRole('button', { name: /History/ }));
+    expect(await screen.findByText(/No changes yet/)).toBeInTheDocument();
+    vi.mocked(sampleRequestApi.getHistory).mockRejectedValueOnce(new Error('x'));
+    rerender(<SampleHistory eventId="ev-1" refreshKey="b" />);
+    await waitFor(() => expect(sampleRequestApi.getHistory).toHaveBeenCalledTimes(2));
+    expect(await screen.findByText(/History unavailable/)).toBeInTheDocument();
+  });
+});
+```
+
+```tsx
+// src/components/checklist/samples/__tests__/SamplesPanel.test.tsx
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+
+const makeHook = () => ({
+  status: 'ready',
+  catalog: {
+    lines: [{ id: 'l-1', brand: 'boomin_brands', name: 'Peelz', position: 1, is_active: true }, { id: 'l-2', brand: 'haute_brands', name: 'Oh! Mit', position: 1, is_active: true }],
+    products: [{ id: 'p-1', product_line_id: 'l-1', name: 'Mango', position: 1, is_active: true }, { id: 'p-2', product_line_id: 'l-2', name: 'Blue Razz', position: 1, is_active: true }],
+    materials: [{ id: 'm-1', name: 'Banner', position: 1, is_active: true }],
+  },
+  view: {
+    request: { id: 'r', eventId: 'ev-1', status: 'draft', submittedAt: null, submittedBy: null, lastEditedAt: null, lastEditedBy: null, items: [], materials: [] },
+    window: { opensAt: null, closesAt: '2099-01-01T05:00:00Z', isOpen: true }, canEdit: true,
+  } as any,
+  items: new Map(), materials: new Map(), dirtyCount: 0, saving: false, submitting: false, closed: false, override: false,
+  setOverride: vi.fn(), canEdit: true, canSubmit: true, isOffline: false, error: null as string | null, updatedBy: null as { name: string; at: string } | null,
+  setItem: vi.fn(), setMaterial: vi.fn(), markFocused: vi.fn(), submit: vi.fn(), refresh: vi.fn(),
+});
+let hook = makeHook();
+vi.mock('../useEventSampleRequest', () => ({ useEventSampleRequest: () => hook }));
+vi.mock('../SampleHistory', () => ({ SampleHistory: (p: any) => <div data-testid="history" data-key={p.refreshKey} /> }));
+
+import { SamplesPanel } from '../SamplesPanel';
+
+describe('SamplesPanel', () => {
+  beforeEach(() => { hook = makeHook(); });
+
+  it('shows not-yet-submitted, both brands (Haute first), the countdown, Submit and History', () => {
+    render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+    expect(screen.getByText('Not yet submitted')).toBeInTheDocument();
+    const headings = screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent);
+    expect(headings.indexOf('Haute Brands')).toBeLessThan(headings.indexOf('Coolioh'));
+    expect(screen.getByText(/Closes in/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Submit sample request' })).toBeEnabled();
+    expect(screen.getByTestId('history')).toBeInTheDocument();
+  });
+
+  it('shows who submitted and who last edited, and Resubmit changes', () => {
+    hook.view.request = { ...hook.view.request, status: 'submitted', submittedAt: '2026-10-14T16:00:00Z', submittedBy: { id: 'u-5', name: 'Rita' },
+      lastEditedAt: new Date(Date.now() - 5 * 60_000).toISOString(), lastEditedBy: { id: 'u-2', name: 'Sameer' } };
+    hook.canSubmit = false;
+    const onStatusChange = vi.fn();
+    render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" onStatusChange={onStatusChange} />);
+    expect(screen.getByText(/Submitted by Rita on Oct 14 · last edited by Sameer 5 min ago/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Resubmit changes' })).toBeDisabled();
+    expect(onStatusChange).toHaveBeenCalledWith('submitted');
+  });
+
+  it('reports focus to the hook and edits through setItem', () => {
+    render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+    const input = screen.getByLabelText('Mango singles');
+    fireEvent.focus(input);
+    expect(hook.markFocused).toHaveBeenCalledWith('p-1', true);
+    fireEvent.change(input, { target: { value: '4' } });
+    expect(hook.setItem).toHaveBeenCalledWith('p-1', 'singles', 4);
+    fireEvent.blur(input);
+    expect(hook.markFocused).toHaveBeenCalledWith('p-1', false);
+  });
+
+  it('shows the updated-by note', () => {
+    hook.updatedBy = { name: 'Sameer', at: new Date().toISOString() };
+    render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+    expect(screen.getByText(/Updated by Sameer just now/)).toBeInTheDocument();
+  });
+
+  it('is view-only for someone who cannot edit while the window is open', () => {
+    hook.view.canEdit = false; hook.canEdit = false; hook.canSubmit = false;
+    render(<SamplesPanel eventId="ev-1" userId="puller" role="salesperson" />);
+    expect(screen.getByText(/View only/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Mango singles')).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /Submit sample request/ })).not.toBeInTheDocument();
+  });
+
+  it('closed: banner, disabled inputs, Edit anyway only for override roles', () => {
+    hook.closed = true; hook.canEdit = false;
+    const { rerender } = render(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+    expect(screen.getByText(/closed on/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Edit anyway/)).not.toBeInTheDocument();
+    rerender(<SamplesPanel eventId="ev-1" userId="adm" role="admin" />);
+    fireEvent.click(screen.getByLabelText(/Edit anyway/));
+    expect(hook.setOverride).toHaveBeenCalledWith(true);
+  });
+
+  it('renders nothing when forbidden, and the offline note when offline', () => {
+    hook.status = 'forbidden';
+    const { container, rerender } = render(<SamplesPanel eventId="ev-1" userId="u-9" role="salesperson" />);
+    expect(container).toBeEmptyDOMElement();
+    hook = makeHook(); hook.isOffline = true; hook.canEdit = false;
+    rerender(<SamplesPanel eventId="ev-1" userId="u-1" role="salesperson" />);
+    expect(screen.getByText(/You're offline/)).toBeInTheDocument();
+  });
+});
+```
+
+- [ ] **Step 5: Run to verify they fail**
+
+Run: `npx vitest run src/components/checklist/samples/__tests__/SamplesPanel.test.tsx src/components/checklist/samples/__tests__/SampleHistory.test.tsx`
+Expected: FAIL (modules not found).
+
+- [ ] **Step 6: Implement `SampleHistory`**
+
+```tsx
+// src/components/checklist/samples/SampleHistory.tsx
+/**
+ * Collapsible change history for an event's sample request. Loads when
+ * opened and again whenever refreshKey changes while open. A failure here
+ * never affects editing.
+ */
+import React, { useEffect, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { sampleRequestApi, SampleChangeRow } from '../../../utils/sampleRequestApi';
+import { describeChange, formatRelative } from './sampleRequestText';
+
+interface Props { eventId: string; refreshKey: string | null }
+
+export const SampleHistory: React.FC<Props> = ({ eventId, refreshKey }) => {
+  const [open, setOpen] = useState(false);
+  const [changes, setChanges] = useState<SampleChangeRow[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setFailed(false);
+    sampleRequestApi.getHistory(eventId)
+      .then((r) => { if (!cancelled) setChanges(r.changes || []); })
+      .catch(() => { if (!cancelled) setFailed(true); });
+    return () => { cancelled = true; };
+  }, [open, eventId, refreshKey]);
+
+  return (
+    <div className="rounded-xl border border-stone-100 p-3 md:p-4">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
+        className="inline-flex items-center gap-1 font-display font-semibold text-stone-900">
+        {open ? <ChevronDown aria-hidden="true" className="h-4 w-4" /> : <ChevronRight aria-hidden="true" className="h-4 w-4" />}
+        History
+      </button>
+      {open && (
+        failed ? <p className="mt-2 text-sm text-stone-500">History unavailable.</p>
+        : changes === null ? <p className="mt-2 text-sm text-stone-500">Loading history…</p>
+        : changes.length === 0 ? <p className="mt-2 text-sm text-stone-500">No changes yet.</p>
+        : (
+          <ul className="mt-2 divide-y divide-stone-100 text-sm">
+            {changes.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2 py-1.5">
+                <span className="text-stone-700">{describeChange(c)}</span>
+                <span className="text-[11px] text-stone-400">{formatRelative(c.changedAt)}</span>
+              </li>
+            ))}
+          </ul>
+        )
+      )}
+    </div>
+  );
+};
+```
+
+- [ ] **Step 7: Implement `SamplesPanel`**
+
+```tsx
+// src/components/checklist/samples/SamplesPanel.tsx
+/**
+ * The event's one shared sample request. Used on the booking board (admins)
+ * and under My Checklist (reps). Anyone on the show edits it; saves are
+ * row-level; a puller off the roster sees it read-only. History below.
+ */
+import React, { useEffect, useState } from 'react';
+import { Package, AlertCircle, WifiOff } from 'lucide-react';
+import { SAMPLE_BRAND_LABELS, SAMPLE_BRAND_ORDER, SampleBrand } from '../../../utils/sampleRequestApi';
+import { useEventSampleRequest } from './useEventSampleRequest';
+import { ProductTable } from './ProductTable';
+import { MaterialsTable } from './MaterialsTable';
+import { SampleHistory } from './SampleHistory';
+import { formatCountdown, isUrgent, formatCloseDate, formatRelative, formatShortDate } from './sampleRequestText';
+
+interface Props {
+  eventId: string; userId: string; role: string;
+  /** Lets the booking board keep its 0/1 → 1/1 tab count current. */
+  onStatusChange?: (status: 'draft' | 'submitted') => void;
+}
+
+const OVERRIDE = ['admin', 'coordinator', 'developer'];
+
+export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusChange }) => {
+  const s = useEventSampleRequest({ eventId, userId, role });
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const t = setInterval(() => setNow(new Date()), 60_000); return () => clearInterval(t); }, []);
+
+  const req = s.view?.request ?? null;
+  const reqStatus = req?.status;
+  useEffect(() => { if (reqStatus) onStatusChange?.(reqStatus); }, [reqStatus, onStatusChange]);
+
+  if (s.status === 'forbidden') return null;
+
+  const closesAt = s.view?.window.closesAt ?? null;
+  const submitted = reqStatus === 'submitted';
+  const isOverride = OVERRIDE.includes(role);
+  const pastDeadline = !!closesAt && new Date(closesAt).getTime() <= now.getTime();
+  const closed = s.closed || pastDeadline;
+  const canEdit = s.canEdit && (!pastDeadline || (isOverride && s.override));
+  const viewOnly = s.status === 'ready' && !closed && !s.isOffline && s.view?.canEdit === false;
+
+  const statusPill = closed
+    ? { text: 'Closed', cls: 'bg-stone-100 text-stone-600 ring-stone-200' }
+    : submitted
+      ? { text: 'Submitted', cls: 'bg-accent-50 text-accent-700 ring-accent-200' }
+      : { text: 'Draft', cls: 'bg-amber-50 text-amber-800 ring-amber-200' };
+
+  const statusLine = !req ? null
+    : [
+        submitted && req.submittedAt ? `Submitted by ${req.submittedBy?.name ?? 'someone'} on ${formatShortDate(req.submittedAt)}` : 'Not yet submitted',
+        req.lastEditedAt ? `last edited by ${req.lastEditedBy?.name ?? 'someone'} ${formatRelative(req.lastEditedAt, now)}` : null,
+      ].filter(Boolean).join(' · ');
+
+  return (
+    <section aria-label="Sample request" className="space-y-4 p-4 md:p-5">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50">
+            <Package aria-hidden="true" className="h-5 w-5 text-brand-600" />
+          </span>
+          <div>
+            <h3 className="font-display font-semibold tracking-tight text-stone-900">Sample Request</h3>
+            <p className="mt-0.5 text-sm text-stone-500">One list for the whole show. Anyone attending can update it.</p>
+            {statusLine && <p className="mt-1 text-xs text-stone-500">{statusLine}</p>}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`chip px-2 py-0.5 text-[11px] ring-1 ${statusPill.cls}`}>{statusPill.text}</span>
+          {closesAt && !closed && (
+            <span className={`text-xs font-semibold tabular-nums ${isUrgent(closesAt, now) ? 'text-red-600' : 'text-stone-600'}`}>
+              Closes in {formatCountdown(closesAt, now)}
+            </span>
+          )}
+        </div>
+      </header>
+
+      {s.status === 'loading' && <p className="text-sm text-stone-500">Loading sample request…</p>}
+
+      {s.status === 'offline' && (
+        <div className="flex items-start gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-600">
+          <WifiOff aria-hidden="true" className="h-4 w-4 shrink-0" />
+          <p>You're offline. Reconnect to edit the sample request.</p>
+        </div>
+      )}
+
+      {s.status === 'error' && (
+        <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
+          <p>Couldn't load the sample request. Try refreshing.</p>
+        </div>
+      )}
+
+      {s.status === 'ready' && s.catalog && (
+        <>
+          {s.isOffline && (
+            <div className="flex items-start gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-600">
+              <WifiOff aria-hidden="true" className="h-4 w-4 shrink-0" />
+              <p>You're offline. Reconnect to edit the sample request.</p>
+            </div>
+          )}
+          {viewOnly && (
+            <p className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-600">
+              View only. People attending this show can edit the list.
+            </p>
+          )}
+          {closed && (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700">
+              <p>Sample requests for this show closed on {closesAt ? formatCloseDate(closesAt) : 'the deadline'}. Contact your coordinator for changes.</p>
+              {isOverride && (
+                <label className="inline-flex items-center gap-2 text-xs font-semibold">
+                  <input type="checkbox" checked={s.override} onChange={(e) => s.setOverride(e.target.checked)} />
+                  Edit anyway
+                </label>
+              )}
+            </div>
+          )}
+          {s.updatedBy && (
+            <p className="text-xs text-brand-700" aria-live="polite">Updated by {s.updatedBy.name} {formatRelative(s.updatedBy.at, now)}</p>
+          )}
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            {SAMPLE_BRAND_ORDER.map((brand: SampleBrand) => {
+              const onRequest = (lineId: string) => s.catalog!.products.some((p) => p.product_line_id === lineId && s.items.has(p.id));
+              const lines = s.catalog!.lines.filter((l) => l.brand === brand && (l.is_active || onRequest(l.id)));
+              return (
+                <div key={brand} className="rounded-xl border border-stone-100 p-3 md:p-4 space-y-4">
+                  <h4 className="font-display font-semibold text-stone-900">{SAMPLE_BRAND_LABELS[brand]}</h4>
+                  {lines.map((line) => {
+                    const products = s.catalog!.products
+                      .filter((p) => p.product_line_id === line.id && ((p.is_active && line.is_active) || s.items.has(p.id)))
+                      .sort((a, b) => a.position - b.position);
+                    if (products.length === 0) return null;
+                    return (
+                      <ProductTable key={line.id} lineName={line.name} products={products} items={s.items}
+                        disabled={!canEdit} onChange={s.setItem} onFocusChange={s.markFocused} />
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="rounded-xl border border-stone-100 p-3 md:p-4">
+            <h4 className="font-display font-semibold text-stone-900 mb-2">Marketing &amp; booth supplies</h4>
+            <MaterialsTable
+              materials={s.catalog.materials.filter((m) => m.is_active || s.materials.has(m.id))}
+              values={s.materials} disabled={!canEdit} onChange={s.setMaterial} onFocusChange={s.markFocused} />
+          </div>
+
+          {!viewOnly && (
+            <footer className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-stone-500" aria-live="polite">
+                {s.error ? <span className="text-red-600">{s.error}</span>
+                  : s.saving ? 'Saving…' : s.dirtyCount > 0 ? 'Unsaved changes' : 'All changes saved'}
+              </p>
+              <button type="button" onClick={s.submit} disabled={!s.canSubmit || !canEdit} className="btn-primary min-h-[44px] px-5 lg:min-h-0">
+                {s.submitting ? 'Submitting…' : submitted ? 'Resubmit changes' : 'Submit sample request'}
+              </button>
+            </footer>
+          )}
+
+          <SampleHistory eventId={eventId} refreshKey={req?.lastEditedAt ?? null} />
+        </>
+      )}
+    </section>
+  );
+};
+```
+
+Note: the line sub-header inside `ProductTable` is an `h4` too; change it to `h5` in `ProductTable.tsx` so the panel test's level-4 heading query returns only brand and card titles (this also fixes the heading-level nit from the v2.30.0 review).
+
+- [ ] **Step 8: Run tests and lint**
+
+Run: `npx vitest run src/components/checklist/samples && npm run lint`
+Expected: new tests PASS; the old `SampleRequestSection`/`SamplesSummaryTab`/`useSampleRequest` tests will now FAIL to type-check or run because Task 6 removed the API methods they mock — that is expected and they are deleted in Task 9. Report their names; do not fix them. Lint: 0 errors.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add src/components/checklist/samples
+git commit -m "feat(sample-requests): SamplesPanel and change history for the shared request
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+### Task 9: Placement — Samples on the booking board and under My Checklist; remove the per-rep UI
+
+**Files:**
+- Modify: `src/components/checklist/BookingBoardTabs.tsx:11` (`BoardTabKey`)
+- Modify: `src/components/checklist/BookingBoard.tsx` (props, `tabs`, `panels`, tab state)
+- Modify: `src/components/checklist/TradeShowChecklist.tsx` (`ChecklistTab`, hash handling, early return, segmented control, render)
+- Modify: `src/components/checklist/UserChecklist.tsx` (hash handling, render)
+- Modify: `src/components/checklist/samples/ProductTable.tsx:3` (import `ItemField` from `./useEventSampleRequest`)
+- Delete: `src/components/checklist/samples/SampleRequestSection.tsx`, `SamplesSummaryTab.tsx`, `useSampleRequest.ts`, and `__tests__/SampleRequestSection.test.tsx`, `__tests__/SamplesSummaryTab.test.tsx`, `__tests__/useSampleRequest.test.ts`
+- Test: rewrite `src/components/checklist/samples/__tests__/checklistHashLinks.test.tsx`; create `src/components/checklist/__tests__/BookingBoard.samples.test.tsx`
+
+**Interfaces:**
+- Consumes: `SamplesPanel` (Task 8), `sampleRequestApi.getEvent` and `getEventAccess` (Task 6).
+- Produces: `BookingBoard` props `requestedTab?: BoardTabKey | null` and `onRequestedTabHandled?: () => void`; `BoardTabKey` includes `'samples'`; `ChecklistTab = 'admin' | 'user'`.
+- Deep-link contract: `#event=<id>&tab=samples` → privileged users land on Admin Checklist with the Samples board tab active; reps land on My Checklist with that show selected (the panel is always visible there). `tab=my` unchanged.
+
+- [ ] **Step 1: Write the failing board test**
+
+```tsx
+// src/components/checklist/__tests__/BookingBoard.samples.test.tsx
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, act } from '@testing-library/react';
+
+let lastPanelProps: any = null;
+vi.mock('../samples/SamplesPanel', () => ({
+  SamplesPanel: (p: any) => { lastPanelProps = p; return <div data-testid="samples-panel" data-event={p.eventId} />; },
+}));
+vi.mock('../../../utils/sampleRequestApi', async (orig) => {
+  const actual = await orig<typeof import('../../../utils/sampleRequestApi')>();
+  return { ...actual, sampleRequestApi: { getEvent: vi.fn(async () => ({ request: { status: 'draft' }, window: {}, canEdit: true })) } };
+});
+
+import { BookingBoard } from '../BookingBoard';
+import { sampleRequestApi } from '../../../utils/sampleRequestApi';
+
+const user = { id: 'adm', name: 'Admin', username: 'a', email: 'a@x.com', role: 'admin' } as any;
+const event = { id: 'ev-1', name: 'Expo', participants: [] } as any;
+const checklist = { id: 1, event_id: 1, booth_ordered: false, booth_notes: null, booth_map_url: null, electricity_ordered: false, electricity_notes: null, flights: [], hotels: [], carRentals: [], boothShipping: [], customItems: [] } as any;
+const props = { checklist, user, event, saving: false, onUpdate: vi.fn(async () => undefined), onReload: vi.fn() };
+
+describe('BookingBoard samples tab', () => {
+  beforeEach(() => { vi.clearAllMocks(); lastPanelProps = null; });
+
+  it('has a Samples tab after Tasks showing 0/1, and opens it when requested', async () => {
+    const handled = vi.fn();
+    render(<BookingBoard {...props} requestedTab="samples" onRequestedTabHandled={handled} />);
+    const tabs = screen.getAllByRole('tab').map((t) => t.textContent);
+    expect(tabs[tabs.length - 1]).toMatch(/^Samples/);
+    expect(screen.getByRole('tab', { name: /Samples/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('tab', { name: /Samples/ }).textContent).toContain('0/1');
+    expect(screen.getByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+    expect(lastPanelProps).toMatchObject({ eventId: 'ev-1', userId: 'adm', role: 'admin' });
+    await waitFor(() => expect(handled).toHaveBeenCalled());
+  });
+
+  it('counts 1/1 once the event request is submitted, from the fetch or from the panel', async () => {
+    vi.mocked(sampleRequestApi.getEvent).mockResolvedValueOnce({ request: { status: 'submitted' }, window: {}, canEdit: true } as any);
+    const { unmount } = render(<BookingBoard {...props} requestedTab="samples" />);
+    await waitFor(() => expect(screen.getByRole('tab', { name: /Samples/ }).textContent).toContain('1/1'));
+    unmount();
+    render(<BookingBoard {...props} requestedTab="samples" />);
+    await waitFor(() => expect(sampleRequestApi.getEvent).toHaveBeenCalledTimes(2));
+    await act(async () => { await Promise.resolve(); });   // let the board's own status fetch settle first
+    act(() => lastPanelProps.onStatusChange('submitted'));
+    expect(screen.getByRole('tab', { name: /Samples/ }).textContent).toContain('1/1');
+  });
+});
+```
+
+- [ ] **Step 2: Rewrite the hash-link test**
+
+Replace the whole of `src/components/checklist/samples/__tests__/checklistHashLinks.test.tsx`:
+
+```tsx
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor, act } from '@testing-library/react';
+
+vi.mock('../../../../utils/api', () => ({
+  api: {
+    USE_SERVER: true,
+    getEvents: vi.fn(),
+    checklist: { getChecklist: vi.fn(async () => ({ id: 1, event_id: 1, flights: [], hotels: [], carRentals: [], boothShipping: [], customItems: [] })) },
+  },
+}));
+vi.mock('../../../../utils/sampleRequestApi', async (orig) => {
+  const actual = await orig<typeof import('../../../../utils/sampleRequestApi')>();
+  return { ...actual, sampleRequestApi: { getEventAccess: vi.fn(async () => ({ canView: true, canEdit: true })) } };
+});
+vi.mock('../SamplesPanel', () => ({ SamplesPanel: (p: any) => <div data-testid="samples-panel" data-event={p.eventId} /> }));
+vi.mock('../../BookingBoard', () => ({
+  BookingBoard: (p: any) => <div data-testid="board" data-event={p.event.id} data-tab={p.requestedTab ?? ''} />,
+}));
+
+import { UserChecklist } from '../../UserChecklist';
+import { TradeShowChecklist } from '../../TradeShowChecklist';
+import { api } from '../../../../utils/api';
+import { sampleRequestApi } from '../../../../utils/sampleRequestApi';
+
+const rep = { id: 'u-1', name: 'Rep', username: 'r', email: 'r@x.com', role: 'salesperson' } as any;
+const admin = { id: 'adm', name: 'Admin', username: 'a', email: 'a@x.com', role: 'admin' } as any;
+const ev = (id: string) => ({ id, name: `Show ${id}`, startDate: '2099-01-01', endDate: '2099-01-02', showStartDate: '2099-01-01', showEndDate: '2099-01-02', participants: [{ id: 'u-1' }] });
+
+const go = (hash: string) => act(() => { window.location.hash = hash; window.dispatchEvent(new HashChangeEvent('hashchange')); });
+
+describe('checklist #event hash links (shared sample request)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    history.replaceState(null, '', window.location.pathname);
+    vi.mocked(api.getEvents).mockResolvedValue([ev('ev-1'), ev('ev-2')] as any);
+  });
+
+  it('a rep sees the Samples panel for the selected show and follows a tab=samples link', async () => {
+    render(<UserChecklist user={rep} />);
+    expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+    expect(screen.getByRole('tab', { name: 'Samples' })).toBeInTheDocument();
+    go('#event=ev-2&tab=samples');
+    await waitFor(() => expect(screen.getByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-2'));
+    expect(window.location.hash).toBe('');
+  });
+
+  it('hides the Samples block when the rep cannot view that show', async () => {
+    vi.mocked(sampleRequestApi.getEventAccess).mockResolvedValue({ canView: false, canEdit: false });
+    render(<UserChecklist user={rep} />);
+    await waitFor(() => expect(sampleRequestApi.getEventAccess).toHaveBeenCalledWith('ev-1'));
+    expect(screen.queryByTestId('samples-panel')).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: 'Samples' })).not.toBeInTheDocument();
+  });
+
+  it('an embedded My Checklist shows no Samples panel and leaves tab=samples links alone', async () => {
+    render(<UserChecklist user={admin} embedded />);
+    await waitFor(() => expect(api.getEvents).toHaveBeenCalled());
+    expect(screen.queryByTestId('samples-panel')).not.toBeInTheDocument();
+    go('#event=ev-2&tab=samples');
+    expect(window.location.hash).toBe('#event=ev-2&tab=samples');
+  });
+
+  it('an admin opening a tab=samples link lands on the board with the Samples tab requested', async () => {
+    window.location.hash = '#event=ev-2&tab=samples';
+    render(<TradeShowChecklist user={admin} />);
+    const board = await screen.findByTestId('board');
+    expect(board).toHaveAttribute('data-event', 'ev-2');
+    expect(board).toHaveAttribute('data-tab', 'samples');
+    expect(screen.queryByRole('button', { name: 'Samples' })).not.toBeInTheDocument();
+    expect(window.location.hash).toBe('');
+  });
+
+  it('a rep gets My Checklist straight away with no access round-trip at the page level', async () => {
+    render(<TradeShowChecklist user={rep} />);
+    expect(await screen.findByTestId('samples-panel')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Admin Checklist' })).not.toBeInTheDocument();
+  });
+});
+```
+
+- [ ] **Step 3: Run to verify both fail**
+
+Run: `npx vitest run src/components/checklist/__tests__/BookingBoard.samples.test.tsx src/components/checklist/samples/__tests__/checklistHashLinks.test.tsx`
+Expected: FAIL.
+
+- [ ] **Step 4: Booking board**
+
+`BookingBoardTabs.tsx` line 11:
+
+```ts
+export type BoardTabKey = 'booth' | 'flights' | 'hotels' | 'cars' | 'tasks' | 'samples';
+```
+
+`BookingBoard.tsx`:
+- Imports: `useCallback, useEffect` alongside `useState`; `import { SamplesPanel } from './samples/SamplesPanel';` and `import { sampleRequestApi } from '../../utils/sampleRequestApi';`.
+- Props: add
+
+```ts
+  /** A deep link asked for a specific board tab (e.g. samples). */
+  requestedTab?: BoardTabKey | null;
+  onRequestedTabHandled?: () => void;
+```
+
+- State and effects (replace the `boardTab` line):
+
+```ts
+  const [boardTab, setBoardTab] = useState<BoardTabKey>(requestedTab ?? 'booth');
+  const [samplesSubmitted, setSamplesSubmitted] = useState(false);
+
+  useEffect(() => {
+    if (!requestedTab) return;
+    setBoardTab(requestedTab);
+    onRequestedTabHandled?.();
+  }, [requestedTab, onRequestedTabHandled]);
+
+  // The tab wears 0/1 → 1/1; the panel reports later changes itself.
+  useEffect(() => {
+    let cancelled = false;
+    setSamplesSubmitted(false);
+    sampleRequestApi.getEvent(event.id)
+      .then((v) => { if (!cancelled) setSamplesSubmitted(v.request.status === 'submitted'); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [event.id]);
+
+  const handleSamplesStatus = useCallback((s: 'draft' | 'submitted') => setSamplesSubmitted(s === 'submitted'), []);
+```
+
+- Append to `tabs` after the `tasks` entry:
+
+```ts
+    { key: 'samples', label: 'Samples', completed: samplesSubmitted ? 1 : 0, total: 1 },
+```
+
+- Append to `panels`:
+
+```tsx
+    samples: (
+      <SamplesPanel key={event.id} eventId={event.id} userId={user.id} role={user.role} onStatusChange={handleSamplesStatus} />
+    ),
+```
+
+- [ ] **Step 5: Checklist page**
+
+In `TradeShowChecklist.tsx`:
+- `type ChecklistTab = 'admin' | 'user';`
+- Remove the imports of `SamplesSummaryTab` and `sampleRequestApi`, the `canViewSamples` state, the `getAccess` effect, and the tri-state loading return.
+- Import `BoardTabKey` from `./BookingBoardTabs`.
+- Tab state:
+
+```ts
+  const initialHash = () => new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const [activeTab, setActiveTab] = useState<ChecklistTab>(() =>
+    initialHash().get('tab') === 'my' ? 'user' : isPrivilegedUser ? 'admin' : 'user');
+  const [requestedBoardTab, setRequestedBoardTab] = useState<BoardTabKey | null>(() =>
+    initialHash().get('tab') === 'samples' ? 'samples' : null);
+```
+
+- Events effect: `if (activeTab === 'admin') loadEvents();`
+- Replace the `hashCtx`/`onHashChange` block with:
+
+```ts
+  // A deep link followed while the page is open. Reps' links are handled by UserChecklist.
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
+  useEffect(() => {
+    if (!isPrivilegedUser) return;
+    const onHashChange = () => {
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+      const linkedId = params.get('event');
+      if (!linkedId) return;
+      const tab = params.get('tab');
+      if (tab === 'my') { setActiveTab('user'); return; }   // embedded UserChecklist consumes it
+      setActiveTab('admin');
+      if (tab === 'samples') setRequestedBoardTab('samples');
+      const loaded = eventsRef.current;
+      if (loaded.some((e) => e.id === linkedId)) setSelectedEventId(linkedId);
+      if (loaded.length > 0) history.replaceState(null, '', window.location.pathname + window.location.search);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [isPrivilegedUser]);
+```
+
+- In `loadEvents`, the hash-clearing condition becomes `if (activeTab === 'admin')`.
+- Early return: `if (!isPrivilegedUser) { return <UserChecklist user={user} />; }`
+- Masthead: `showSelector={activeTab === 'admin'}`.
+- Segmented control: two buttons only (Admin Checklist, My Checklist); delete the Samples button and the `isPrivilegedUser &&` guard on Admin (this branch is privileged-only now).
+- Tab content: `activeTab === 'user' ? <UserChecklist user={user} embedded /> : (<>…admin content…</>)`; delete the `samples` branch.
+- `BookingBoard` gets `requestedTab={requestedBoardTab}` and `onRequestedTabHandled={() => setRequestedBoardTab(null)}`. Wrap that callback in `useCallback` (declare `const clearRequestedBoardTab = useCallback(() => setRequestedBoardTab(null), []);`) so the board's effect does not loop.
+
+- [ ] **Step 6: My Checklist**
+
+In `UserChecklist.tsx`:
+- Replace the `SampleRequestSection` import with `import { SamplesPanel } from './samples/SamplesPanel';` and `import { sampleRequestApi } from '../../utils/sampleRequestApi';`.
+- Add a helper above the component:
+
+```ts
+/** Which hash links this instance owns: tab=my always; tab=samples only as the rep's page. */
+const ownsLink = (tab: string | null, embedded: boolean) => !tab || tab === 'my' || (tab === 'samples' && !embedded);
+```
+
+- In the `loadEvents` hash logic: `if (linkedId && ownsLink(params.get('tab'), embedded) && visible.some(...))`. Add `embedded` to nothing else there (the effect keeps deps `[user.id]`; `embedded` is constant per mount).
+- In the `hashchange` listener replace the `tab` guard with `if (!ownsLink(params.get('tab'), embedded)) return;` and add `embedded` to the effect deps.
+- Samples access for the selected show:
+
+```ts
+  const [canViewSamples, setCanViewSamples] = useState(false);
+  useEffect(() => {
+    if (embedded || !selectedEventId) { setCanViewSamples(false); return; }
+    let cancelled = false;
+    setCanViewSamples(false);
+    sampleRequestApi.getEventAccess(selectedEventId)
+      .then((r) => { if (!cancelled) setCanViewSamples(r.canView); })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [selectedEventId, embedded]);
+```
+
+- Replace the `SampleRequestSection` render with:
+
+```tsx
+      {!embedded && selectedEventId && canViewSamples && (
+        <div className="space-y-3">
+          <div className="seg-track" role="tablist" aria-label="Show sections">
+            <button type="button" role="tab" aria-selected="true" className="seg-tab seg-tab-active">Samples</button>
+          </div>
+          <div className="card">
+            <SamplesPanel key={selectedEventId} eventId={selectedEventId} userId={user.id} role={user.role} />
+          </div>
+        </div>
+      )}
+```
+
+- [ ] **Step 7: Remove the per-rep UI**
+
+```bash
+git rm src/components/checklist/samples/SampleRequestSection.tsx \
+       src/components/checklist/samples/SamplesSummaryTab.tsx \
+       src/components/checklist/samples/useSampleRequest.ts \
+       src/components/checklist/samples/__tests__/SampleRequestSection.test.tsx \
+       src/components/checklist/samples/__tests__/SamplesSummaryTab.test.tsx \
+       src/components/checklist/samples/__tests__/useSampleRequest.test.ts
+```
+
+In `ProductTable.tsx` line 3: `import { ItemField } from './useEventSampleRequest';`. Then `grep -rn "useSampleRequest'\|SampleRequestSection\|SamplesSummaryTab\|getAccess()\|canViewSummary" src` must return nothing.
+
+- [ ] **Step 8: Run tests, type-check, lint**
+
+Run: `npx vitest run src/components/checklist && npx tsc --noEmit && npm run lint`
+Expected: the two new test files PASS; `src/components/checklist` failures are only the pre-existing files (CarRentalsSection, checklist-defensive, EventDropdown, HotelsSection, ReceiptsViewerModal, TradeShowChecklist.test). `tsc` may still report errors in `src/components/dashboard` (Task 10 changes the hook's return) only if you changed shared types; it should be clean, since `OpenSampleRequest` is unchanged. Lint 0 errors.
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add -A src/components/checklist
+git commit -m "feat(sample-requests): Samples moves onto the booking board; one shared panel under My Checklist
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 10: Dashboard rows for both states
+
+**Files:**
+- Modify: `src/components/dashboard/hooks/useSampleRequestActions.ts`
+- Modify: `src/components/dashboard/ActionQueue.tsx` (tone map, sample rows block lines 104–116)
+- Modify: `src/components/dashboard/Dashboard.tsx:40`
+- Test: `src/components/dashboard/__tests__/ActionQueue.samples.test.tsx`
+
+**Interfaces:**
+- Consumes: `sampleRequestApi.listMine()` (now returns submitted shows too), `formatCountdown`, `isUrgent`, `formatCloseDate`.
+- Produces: `useSampleRequestActions(): { requests: OpenSampleRequest[] }` (all open shows, any status).
+
+- [ ] **Step 1: Update the tests**
+
+In `ActionQueue.samples.test.tsx`: change the deep-link expectation to `'#event=ev-1&tab=samples'`, move `vi.useRealTimers()` into an `afterEach`, and add:
+
+```tsx
+  it('shows a quieter row for a submitted show and still links to the Samples view', () => {
+    const onPageChange = vi.fn();
+    render(<ActionQueue {...base} onPageChange={onPageChange} sampleRequests={[
+      { eventId: 'ev-2', eventName: 'IGES', closesAt: '2099-10-24T03:59:59Z', status: 'submitted', submittedAt: '2099-10-01T00:00:00Z' },
+    ]} />);
+    const row = screen.getByRole('button', { name: /Sample request for IGES submitted · edit until Oct 23, 11:59 PM ET/ });
+    expect(row.className).toMatch(/stone/);
+    expect(row.textContent).toContain('Open');
+    fireEvent.click(row);
+    expect(window.location.hash).toBe('#event=ev-2&tab=samples');
+    expect(onPageChange).toHaveBeenCalledWith('checklist');
+  });
+
+  it('labels the action Start with no draft and Finish with a draft', () => {
+    render(<ActionQueue {...base} onPageChange={vi.fn()} sampleRequests={[
+      { eventId: 'a', eventName: 'A', closesAt: '2099-01-01T00:00:00Z', status: 'none', submittedAt: null },
+      { eventId: 'b', eventName: 'B', closesAt: '2099-01-01T00:00:00Z', status: 'draft', submittedAt: null },
+    ]} />);
+    expect(screen.getByRole('button', { name: /Sample request for A/ }).textContent).toContain('Start');
+    expect(screen.getByRole('button', { name: /Sample request for B/ }).textContent).toContain('Finish');
+  });
+```
+
+- [ ] **Step 2: Run to verify it fails**
+
+Run: `npx vitest run src/components/dashboard`
+Expected: FAIL on the new and changed cases.
+
+- [ ] **Step 3: Implement**
+
+`useSampleRequestActions.ts`:
+
+```ts
+/** Open sample requests for the signed-in user's shows, submitted or not. */
+import { useEffect, useState } from 'react';
+import { api } from '../../../utils/api';
+import { sampleRequestApi, OpenSampleRequest } from '../../../utils/sampleRequestApi';
+
+export function useSampleRequestActions(): { requests: OpenSampleRequest[] } {
+  const [requests, setRequests] = useState<OpenSampleRequest[]>([]);
+  useEffect(() => {
+    let mounted = true;
+    if (!api.USE_SERVER) return;
+    sampleRequestApi.listMine()
+      .then((r) => { if (mounted) setRequests(r.requests || []); })
+      .catch((e) => console.error('[Dashboard] sample requests failed:', e));
+    return () => { mounted = false; };
+  }, []);
+  return { requests };
+}
+```
+
+`Dashboard.tsx` line 40: `const { requests: sampleRequests } = useSampleRequestActions();`
+
+`ActionQueue.tsx`: widen the tone union to include `'stone'`, add to `toneClasses`:
+
+```ts
+  stone: {
+    wrap: 'border-stone-200 bg-stone-50 hover:border-stone-300',
+    label: 'text-stone-700',
+    action: 'text-stone-500',
+  },
+```
+
+import `formatCloseDate` alongside `formatCountdown, isUrgent`, and replace the sample rows block with:
+
+```ts
+  const now = new Date();
+  for (const r of sampleRequests ?? []) {
+    const submitted = r.status === 'submitted';
+    items.push({
+      label: submitted
+        ? `Sample request for ${r.eventName} submitted · edit until ${formatCloseDate(r.closesAt)}`
+        : `Sample request for ${r.eventName} closes in ${formatCountdown(r.closesAt, now)}`,
+      action: submitted ? 'Open' : r.status === 'draft' ? 'Finish' : 'Start',
+      tone: submitted ? 'stone' : isUrgent(r.closesAt, now) ? 'red' : 'amber',
+      onClick: () => {
+        window.location.hash = `event=${r.eventId}&tab=samples`;
+        onPageChange('checklist');
+      },
+    });
+  }
+```
+
+- [ ] **Step 4: Run tests and lint**
+
+Run: `npx vitest run src/components/dashboard && npx tsc --noEmit && npm run lint`
+Expected: PASS; tsc clean; lint 0 errors.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/components/dashboard
+git commit -m "feat(sample-requests): dashboard rows for unsubmitted and submitted shared requests
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+### Task 11: Version, docs, full verification
+
+**Files:**
+- Modify: `package.json`, `backend/package.json`, `backend/src/config/version.ts` (→ `2.31.0`)
+- Modify: `CHANGELOG.md`, `docs/ARCHITECTURE.md` (§9), `CLAUDE.md` (the `sampleRequests/` bullet)
+
+- [ ] **Step 1: Bump versions**
+
+```bash
+OLD=$(grep '"version"' package.json | head -1 | sed 's/.*: "\(.*\)".*/\1/')
+sed -i '' "s/\"version\": \"$OLD\"/\"version\": \"2.31.0\"/" package.json backend/package.json
+sed -i '' "s/FRONTEND_VERSION = '$OLD'/FRONTEND_VERSION = '2.31.0'/" backend/src/config/version.ts
+grep -n '"version"' package.json backend/package.json; grep -n FRONTEND_VERSION backend/src/config/version.ts
+```
+
+Expected: all three show `2.31.0`. If `main` has moved past 2.30.0 by execution time, still set 2.31.0 unless that version is already taken in `CHANGELOG.md`; in that case use the next minor and say so in the report.
+
+- [ ] **Step 2: CHANGELOG**
+
+Insert directly under `## [Unreleased]` (use the actual release date):
+
+```markdown
+## [2.31.0] - 2026-10-08 - One shared sample request per show
+
+### Changed
+- **One sample request per show**, not one per rep. Anyone attending can open
+  it and change quantities. Saves are per row, so two people editing at once
+  never overwrite each other; the form refreshes other people's rows every 30
+  seconds and when the window regains focus, with an "Updated by <name>" note.
+- **Samples is a booking-board tab** beside Booth, Flights, Hotels, Cars and
+  Tasks (0/1 until submitted, 1/1 after). Reps see the same panel under My
+  Checklist. The top-level toggle is back to Admin Checklist / My Checklist.
+- The sample puller sees the same form, read-only unless they are on the
+  show, with a status line ("Submitted by Rita on Oct 14 · last edited by
+  Sameer 5 min ago") and a **History** of who changed which numbers. They are
+  notified whenever anyone submits or resubmits.
+- Dashboard: after submission the row stays as a quieter "submitted · edit
+  until <date>" link. The 48-hour reminder now goes to every participant,
+  submitted or not.
+
+### Removed
+- Per-rep sample requests, the roster/aggregate Samples view and the
+  on-behalf editor. Existing per-rep rows were merged per show by summing
+  quantities (migration 044).
+
+### Operations
+- Migration 044 reshapes `sample_requests` and adds `sample_request_changes`.
+  Verify `schema_migrations` after deploy as usual.
+```
+
+- [ ] **Step 3: ARCHITECTURE §9**
+
+Replace the body of `## 9. Sample requests` with:
+
+```markdown
+One shared sample order per show. `backend/src/services/sampleRequests/`
+owns the rules: `sampleRequestWindow.ts` is the only place that computes the
+open/close window (created_at → 23:59:59 America/New_York on
+`(travel_start_date ?? show_start_date) − 10 days`; never stored);
+`SampleRequestService.ts` owns access (participants and override roles edit;
+the puller reads), row-level patches, submit and the puller notification;
+`SampleRequestReminderService.ts` sends one 48h reminder per participant
+through the `sample_request_reminders` ledger (insert-before-send).
+
+`sample_requests` has one row per event (`UNIQUE (event_id)`). A PATCH carries
+only the rows the client changed; `SampleRequestRepository.applyRows` upserts
+them and writes `sample_request_changes` rows for each field that changed, in
+one transaction, so the history is what was stored.
+
+`NotificationService` writes a `notifications` row and a push in one call.
+
+Frontend: `src/components/checklist/samples/` — `SamplesPanel` (the form,
+status line, history) driven by `useEventSampleRequest` (dirty-row tracking,
+30 s / on-focus reconciliation). The panel is a `BookingBoard` tab for
+admins and sits under My Checklist for reps. Deep link
+`#event=<id>&tab=samples` opens it in either place; `tab=my` selects My
+Checklist.
+```
+
+- [ ] **Step 4: CLAUDE.md bullet**
+
+Replace the `sampleRequests/` bullet under "Key service boundaries" with:
+
+```markdown
+- **`sampleRequests/`** — One shared sample order per show (`UNIQUE
+  (event_id)`). `sampleRequestWindow.ts` is the single source of the
+  open/close rule; `SampleRequestService` owns access, row-level patches,
+  submit and the puller notification; the repository's `applyRows` writes the
+  change log in the same transaction. `NotificationService` is the one way to
+  write a bell row + push.
+```
+
+- [ ] **Step 5: Full verification**
+
+```bash
+cd backend && npx vitest run && npx tsc --noEmit -p . && cd ..
+npx tsc --noEmit
+npm run lint
+npx vitest run src/components/checklist src/components/dashboard src/components/layout src/components/admin src/utils src/components/expenses src/components/reports
+npm run build
+grep -rn "getMine\|saveMine\|submitMine\|getForUser\|getSummary\|canViewSummary\|SamplesSummaryTab\|SampleRequestSection" src backend/src || echo "no stale references"
+```
+
+Expected: backend green; both type-checks clean; lint 0 errors; frontend failures only in files this work never touched (list them and confirm each has no commits from this branch); build succeeds; the final grep prints `no stale references`.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add package.json backend/package.json backend/src/config/version.ts CHANGELOG.md docs/ARCHITECTURE.md CLAUDE.md
+git commit -m "chore(release): v2.31.0 shared sample request
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+```
+
+---
+
+## Self-review notes
+
+- **Spec coverage:** data model + merge → T1; types/repository/change log → T2; access rules, row patches, submit wording, history, dashboard feed → T3; routes (incl. per-event access, removals) → T4; reminder to everyone → T5; frontend API → T6; row-level hook with reconciliation, poll, focus, offline, closed, forbidden → T7; panel, status line, history, view-only, Edit anyway → T8; board tab, rep placement, deep links, removal of per-rep UI → T9; dashboard variants → T10; release/docs → T11.
+- **Type consistency:** `EventSampleRequestView { request, window, canEdit }`, `EventSampleRequest` field names, `SampleChangeRow`, and `OpenSampleRequest` are identical in backend `types.ts` (T2) and `src/utils/sampleRequestApi.ts` (T6). Hook return keys used by the panel (T8) match T7. `BoardTabKey` gains `'samples'` in T9 only; `Record<BoardTabKey, …>` forces the panel entry.
+- **Ordering hazard:** T6 removes API methods the old hook/section use, so the frontend does not type-check between T6 and T9. Old files are deleted in T9. Per-task verification commands say which failures are expected.
+- **Review Focus coverage:** 1 → T3 "two participants patching the same row"; 2 → T3 "accepts a retired product"; 3 → T3 "creates the row if needed … submit"; 4 → T7 reconcile test; 5 → T3 access tests and T4 handler passing the actor (service returns 403).
+- **Notification links** for `form_open` and the 48h reminder change to `{ page: 'samples' }` (T3, T5); `linkToUrl` and the Header already map that to `#event=<id>&tab=samples`.
