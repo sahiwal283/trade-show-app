@@ -33,6 +33,19 @@ interface ItineraryData {
 /** Which hash links this instance owns: tab=my always; tab=samples only as the rep's page. */
 const ownsLink = (tab: string | null, embedded: boolean) => !tab || tab === 'my' || (tab === 'samples' && !embedded);
 
+/**
+ * Whether this user is the configured sample puller. GET /settings is readable
+ * by every signed-in user. Any failure reads as "not the puller".
+ */
+const isSamplePuller = async (userId: string): Promise<boolean> => {
+  try {
+    const settings = (await api.getSettings()) as { sample_puller_user_id?: { userId?: string } } | null;
+    return !!userId && settings?.sample_puller_user_id?.userId === userId;
+  } catch {
+    return false;
+  }
+};
+
 export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = false }) => {
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
@@ -47,7 +60,11 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
     const loadEvents = async () => {
       try {
         if (!api.USE_SERVER) return;
-        const data = await api.getEvents();
+        // The puller fulfils every show's request, so on their own page they see every show.
+        const [data, puller] = await Promise.all([
+          api.getEvents(),
+          embedded ? Promise.resolve(false) : isSamplePuller(user.id),
+        ]);
         if (cancelled) return;
         const allEvents: TradeShow[] = Array.isArray(data) ? data : [];
 
@@ -55,7 +72,9 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
         const mine = allEvents.filter(event =>
           (event.participants || []).some(p => p.id === user.id)
         );
-        const visible = mine.length > 0 ? mine : allEvents;
+        const visible = puller
+          ? [...mine, ...allEvents.filter(event => !mine.includes(event))]
+          : mine.length > 0 ? mine : allEvents;
 
         setEvents(visible);
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));

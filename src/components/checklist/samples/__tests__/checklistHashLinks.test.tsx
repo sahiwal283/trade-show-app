@@ -9,6 +9,7 @@ vi.mock('../../../../utils/api', () => ({
   api: {
     USE_SERVER: true,
     getEvents: vi.fn(),
+    getSettings: vi.fn(),
     checklist: { getChecklist: vi.fn(async () => ({ id: 1, event_id: 1, flights: [], hotels: [], carRentals: [], boothShipping: [], customItems: [] })) },
   },
 }));
@@ -37,6 +38,7 @@ describe('checklist #event hash links (shared sample request)', () => {
     vi.clearAllMocks();
     history.replaceState(null, '', window.location.pathname);
     vi.mocked(api.getEvents).mockResolvedValue([ev('ev-1'), ev('ev-2')] as any);
+    vi.mocked(api.getSettings).mockResolvedValue({} as any); // no puller configured
     vi.mocked(sampleRequestApi.getEventAccess).mockResolvedValue({ canView: true, canEdit: true });
   });
 
@@ -105,6 +107,55 @@ describe('checklist #event hash links (shared sample request)', () => {
     await screen.findByTestId('board');
     expect(screen.getAllByRole('button').filter((b) => b.className.includes('seg-tab')).map((b) => b.textContent))
       .toEqual(['Admin Checklist', 'My Checklist']);
+  });
+
+  describe('the sample puller', () => {
+    // u-1 is on ev-1 only; ev-2 and ev-3 belong to other reps. The API lists ev-2 first.
+    const others = (id: string) => ({ ...ev(id), participants: [{ id: 'u-9' }] });
+    const optionValues = () => screen.getAllByRole('option').map((o) => (o as HTMLOptionElement).value);
+
+    beforeEach(() => {
+      vi.mocked(api.getEvents).mockResolvedValue([others('ev-2'), ev('ev-1'), others('ev-3')] as any);
+    });
+
+    it('sees every show, own shows first, though on one roster only', async () => {
+      vi.mocked(api.getSettings).mockResolvedValue({ sample_puller_user_id: { userId: 'u-1' } } as any);
+      render(<UserChecklist user={rep} />);
+      await waitFor(() => expect(optionValues()).toEqual(['ev-1', 'ev-2', 'ev-3']));
+      expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+    });
+
+    it('cold-loading a link to a show they are not on opens that show and clears the hash', async () => {
+      vi.mocked(api.getSettings).mockResolvedValue({ sample_puller_user_id: { userId: 'u-1' } } as any);
+      window.location.hash = '#event=ev-3&tab=samples';
+      render(<UserChecklist user={rep} />);
+      expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-3');
+      expect(window.location.hash).toBe('');
+    });
+
+    it('a rep who is not the puller still sees only their own show and a link elsewhere is dropped', async () => {
+      vi.mocked(api.getSettings).mockResolvedValue({ sample_puller_user_id: { userId: 'someone-else' } } as any);
+      window.location.hash = '#event=ev-3&tab=samples';
+      render(<UserChecklist user={rep} />);
+      expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+      expect(optionValues()).toEqual(['ev-1']);
+      expect(window.location.hash).toBe('');
+    });
+
+    it('a settings failure behaves as a non-puller', async () => {
+      vi.mocked(api.getSettings).mockRejectedValue(new Error('boom'));
+      window.location.hash = '#event=ev-3&tab=samples';
+      render(<UserChecklist user={rep} />);
+      expect(await screen.findByTestId('samples-panel')).toHaveAttribute('data-event', 'ev-1');
+      expect(optionValues()).toEqual(['ev-1']);
+      expect(window.location.hash).toBe('');
+    });
+
+    it('an embedded My Checklist does not read settings', async () => {
+      render(<UserChecklist user={admin} embedded />);
+      await waitFor(() => expect(screen.getAllByRole('option').length).toBeGreaterThan(0));
+      expect(api.getSettings).not.toHaveBeenCalled();
+    });
   });
 
   it('a rep gets My Checklist straight away with no access round-trip at the page level', async () => {
