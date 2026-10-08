@@ -151,4 +151,28 @@ describe('Header general notifications', () => {
     expect(window.location.hash).toBe('#expense=ex-9');
     expect(onNavigate).toHaveBeenCalledWith('expenses');
   });
+
+  it('keeps every row inside the scroll area and "Mark all read" outside it', async () => {
+    mockRows(Array.from({ length: 12 }, (_, i) => row({ id: `n-${i}`, title: `Row ${i}` })));
+    renderHeader();
+    await waitFor(() => expect(notificationsApi.listUnread).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: /Notifications/ }));
+    const scroll = await screen.findByTestId('notifications-scroll');
+    expect(scroll.className).toContain('overflow-y-auto');
+    for (let i = 0; i < 12; i++) {
+      const el = screen.getByText(`Row ${i}`);
+      expect(el).toBeInTheDocument();
+      expect(scroll.contains(el)).toBe(true);
+    }
+    expect(scroll.contains(screen.getByRole('button', { name: /Mark all read/ }))).toBe(false);
+  });
+
+  it('renders the empty state inside the scroll area', async () => {
+    mockRows([]);
+    renderHeader();
+    await waitFor(() => expect(notificationsApi.listUnread).toHaveBeenCalled());
+    fireEvent.click(screen.getByRole('button', { name: /Notifications/ }));
+    const scroll = await screen.findByTestId('notifications-scroll');
+    expect(scroll.contains(screen.getByText('No new notifications'))).toBe(true);
+  });
 });

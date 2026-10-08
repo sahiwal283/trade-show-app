@@ -128,18 +128,25 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
                     the bell (header z-40 keeps this above the dashboard hero).
                     Avoid fixed here — header backdrop-blur makes fixed
                     descendants position against the header, not the viewport. */}
-                <div className="fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-50 max-h-[min(24rem,calc(100vh-5rem))] overflow-hidden rounded-card bg-white shadow-elevation-3 ring-1 ring-stone-900/5 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
-                  <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
+                <div className="fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-50 flex flex-col max-h-[min(24rem,calc(100vh-5rem))] overflow-hidden rounded-card bg-white shadow-elevation-3 ring-1 ring-stone-900/5 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
+                  <div className="px-4 py-3 border-b border-stone-100">
                     <h3 className="font-display font-semibold tracking-tight text-stone-900">Notifications</h3>
                   </div>
                   {appNotifications.length > 0 && (
-                    <div className="border-b border-stone-100">
-                      <div className="flex items-center justify-end px-4 pt-2">
-                        <button type="button" onClick={markAllAppRead} className="text-[11px] font-semibold text-brand-700 hover:underline">
-                          Mark all read
-                        </button>
+                    <div className="flex items-center justify-end border-b border-stone-100 px-4 py-1.5">
+                      <button type="button" onClick={markAllAppRead} className="text-[11px] font-semibold text-brand-700 hover:underline">
+                        Mark all read
+                      </button>
+                    </div>
+                  )}
+                  <div data-testid="notifications-scroll" className="min-h-0 flex-1 max-h-96 overflow-y-auto">
+                    {appNotifications.length === 0 ? (
+                      <div className="px-4 py-10 text-center">
+                        <p className="text-sm font-medium text-stone-600">You're all caught up!</p>
+                        <p className="text-xs text-stone-400 mt-1">No new notifications</p>
                       </div>
-                      {appNotifications.map((n) => (
+                    ) : (
+                      appNotifications.map((n) => (
                         <button
                           key={n.id}
                           type="button"
@@ -150,15 +157,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
                           <p className="mt-0.5 line-clamp-2 text-sm text-stone-600">{n.body}</p>
                           <p className="mt-1 text-[11px] text-stone-400">{new Date(n.created_at).toLocaleString()}</p>
                         </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="max-h-96 overflow-y-auto">
-                    {appNotifications.length === 0 && (
-                      <div className="px-4 py-10 text-center">
-                        <p className="text-sm font-medium text-stone-600">You're all caught up!</p>
-                        <p className="text-xs text-stone-400 mt-1">No new notifications</p>
-                      </div>
+                      ))
                     )}
                   </div>
                 </div>
