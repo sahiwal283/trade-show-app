@@ -36,7 +36,7 @@ export interface NotificationRow {
  * Insert a batch, skipping any message already recorded. Returns the ids
  * actually inserted — a replayed batch returns [] rather than re-notifying.
  *
- * The caller (ExpenseMessageScanner) uses this to gate push sends: pushing
+ * The caller (MidasEventScanner) uses this to gate push sends: pushing
  * for every row in the input batch, rather than only the ids this function
  * reports back, would re-notify on every redelivery once the cursor and the
  * insert fall out of lockstep (e.g. insert succeeds, then setCursor fails or

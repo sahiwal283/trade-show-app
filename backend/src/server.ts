@@ -41,7 +41,7 @@ import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
 import { reminderScheduler } from './services/notifications';
 import { sampleRequestReminderService } from './services/sampleRequests/SampleRequestReminderService';
-import { expenseMessageScanner } from './services/ExpenseMessageScanner';
+import { midasEventScanner } from './services/midas/MidasEventScanner';
 import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { leadConversionService } from './services/LeadConversionService';
 import { badgeCrmPushService } from './services/badge/BadgeCrmPushService';
@@ -232,9 +232,10 @@ const startServer = () => {
     // Sample request closing reminders (bell + push; runs even without push)
     sampleRequestReminderService.start();
 
-    // Poll Midas for new expense messages and notify owners (idles unless
-    // EXPENSE_MESSAGING_ENABLED=true)
-    expenseMessageScanner.start();
+    // Pull Midas's event feed and notify expense owners (idles unless
+    // EXPENSE_MESSAGING_ENABLED=true); Midas pings /api/midas/events-ping to
+    // make this immediate
+    midasEventScanner.start();
 
     // Zoho CRM lead sync — daily; idles until ZOHO_CRM_REFRESH_TOKEN is set
     zohoCrmLeadsService.startScheduler();
