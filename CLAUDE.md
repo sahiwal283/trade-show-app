@@ -80,7 +80,10 @@ trade-show-app/
 
 Key service boundaries:
 - **`zohoIntegrationClient.ts`** — All Zoho Books OAuth and sync logic lives here. Enforced boundary: only the integration service accesses Zoho.
-- **`ocr/`** — Tesseract.js → optional Ollama LLM enhancement (when confidence < 0.70) → correction tracking
+- **`ocr/`** — Receipt OCR goes through Midas in production (`routes/ocrV2.ts`
+  falls back to the external OCR service only when expenses are local). User
+  corrections are still captured into `ocr_corrections`
+  (`UserCorrectionService.storeCorrection`); nothing in this app trains on them.
 - **`ExpenseService.ts`** — Owns expense status transitions via 3-rule automated approval logic
 - **`EventParticipantService.ts`** — Event-user relationship management
 - **`badge/`** — PDF417 badge scans. `BadgeScanService` owns validation and
@@ -110,6 +113,16 @@ Key service boundaries:
   `midas_message_sync_state`, key `trade_show:events`) and
   `routes/midasPing.ts` lets Midas trigger a pull. `notifications.source_event_id`
   is the dedupe key, so a re-read page never notifies twice.
+- **`devDashboard/`** — One module per developer-dashboard tab (`overview`,
+  `apiAnalytics`, `usage`, `sessions`, `auditLog`), each behind one endpoint
+  in `routes/devDashboard.ts`. Response shapes are pinned by
+  `src/utils/__fixtures__/devDashboard/*.json`, asserted by both backend and
+  frontend tests. Every query starts with a `/* devdash:<name> */` tag that
+  unit tests route on. `middleware/auditTrail.ts` writes one `audit_logs` row
+  per non-GET `/api` request (never the body); `routes/pageViews.ts` records
+  screen opens sent by `usePageViewTracking`; `RetentionJob` prunes
+  `api_requests` (30d), `page_views` (90d), `audit_logs` (365d) and expired
+  sessions daily.
 
 ### Frontend (`src/`)
 

@@ -424,9 +424,6 @@ OLLAMA_TEMPERATURE=0.05
 
 # 3. Adjust confidence threshold
 # Increase from 0.7 to 0.8 to reduce false positives
-
-# 4. Collect user corrections
-# Review correction stats: GET /api/ocr/v2/corrections/stats
 ```
 
 ---
@@ -465,7 +462,6 @@ iptables -A INPUT -p tcp --dport 11434 -j DROP
 ### Regular Tasks
 
 **Daily:**
-- Monitor OCR accuracy via correction stats
 - Check Ollama service uptime
 
 **Weekly:**
@@ -534,23 +530,7 @@ lxc.mount.entry: /dev/dri dev/dri none bind,optional,create=dir
 ollama pull dolphin-llama3:11b  # Larger, more accurate
 ```
 
-### 2. Fine-Tuning with User Corrections
-
-```bash
-# Export corrections
-GET /api/ocr/v2/corrections/export
-
-# Convert to training format
-{
-  "input": "WALMAR\nTotal: $45.99",
-  "output": {"merchant": "Walmart", "amount": 45.99}
-}
-
-# Fine-tune model (using Ollama Modelfile)
-# See: https://ollama.com/docs/modelfile
-```
-
-### 3. Multi-Model Ensemble
+### 2. Multi-Model Ensemble
 
 ```bash
 # Run multiple models for consensus
@@ -561,7 +541,7 @@ GET /api/ocr/v2/corrections/export
 # Merge results with confidence voting
 ```
 
-### 4. Streaming Responses
+### 3. Streaming Responses
 
 ```typescript
 // Enable streaming for faster UX

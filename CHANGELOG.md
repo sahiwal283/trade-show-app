@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.34.0] - 2026-10-08 - Developer dashboard rebuilt
+
+### Changed
+- **The developer dashboard has five tabs that show real numbers:** Overview, API, Usage, Sessions and Audit Log. Each loads on its own, so switching tabs is immediate.
+- **Overview** shows memory, CPU load, disk and database figures that were previously blank, and replaces the Alerts tab with six health checks that show the measured value beside the threshold.
+- **API** adds median and 95th-percentile response times, a requests-over-time strip, a sortable endpoint table and a list of recent errors with who hit them. Monitoring probes are no longer counted.
+- **Sessions** is one row per person instead of one per login, with device and address filled in.
+
+### Added
+- **Usage:** which screens people open, how often, on what device, and who has not used the app.
+- **Audit Log now records every change** made through the app, with who made it, from where, and whether it succeeded. Request contents are never stored.
+
+### Removed
+- **OCR Service and Model Training tabs.** Receipts are read through Midas, so this app could not report on the OCR service, and the training pipeline never trained anything. Corrections you make to scanned receipts are still saved.
+- **Page Views tab**, replaced by Usage.
+
+### Technical
+- One module per tab under `backend/src/services/devDashboard/`; response shapes pinned by `src/utils/__fixtures__/devDashboard/*.json` on both sides.
+- Migration `047_create_page_views.sql`; `POST /api/page-views`; `usePageViewTracking`.
+- `middleware/auditTrail.ts` logs non-GET `/api` requests; `logAuth('token_refresh')` removed.
+- `RetentionJob` (daily): `api_requests` 30d, `page_views` 90d, `audit_logs` 365d, expired sessions. These cleanups existed but were never called.
+- Removed routes: `/api/retraining/*`, `/api/training/*`, `/api/learning/*`, `/api/training/sync/*`, `GET /api/ocr/v2/corrections/stats`, `GET /api/ocr/v2/corrections/export`, `GET /api/ocr/v2/accuracy`, and the old `/api/dev-dashboard/{version,summary,metrics,alerts,page-analytics,ocr-metrics}`.
+- The dashboard no longer pages the Midas expense set.
+
 ## [2.33.0] - 2026-10-08 - Expense notifications from Midas
 
 ### Added

@@ -196,5 +196,4 @@ Future versions will include:
 
 **Ready to start?** Just upload receipts and correct any mistakes - the AI does the rest! 🚀
 
-For full technical details, see [OCR_TRAINING_GUIDE.md](./OCR_TRAINING_GUIDE.md)
 

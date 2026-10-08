@@ -242,3 +242,41 @@ by both. A push tapped while the app is open reaches `App.tsx` as a
 `notification-click` message from `public/push-sw.js`.
 
 The bell has one source: the `notifications` table.
+
+## 11. Developer dashboard
+
+Five tabs, each with one endpoint under `/api/dev-dashboard` and one module
+under `backend/src/services/devDashboard/`:
+
+| Tab | Endpoint | Source |
+|---|---|---|
+| Overview | `GET /overview` | process and OS figures, Postgres catalog, six live health checks over `api_requests` and `user_sessions` |
+| API | `GET /api-analytics?timeRange=` | `api_requests`, written by `apiRequestLogger` (monitoring probes are not logged) |
+| Usage | `GET /usage?timeRange=` | `page_views`, written by `POST /api/page-views` from `usePageViewTracking` |
+| Sessions | `GET /sessions` | unexpired `user_sessions`, grouped by person |
+| Audit Log | `GET /audit-logs` | `audit_logs` |
+
+The API allows `admin` and `developer`; the screen is shown to `developer`
+only. `timeRange` is `1h`, `24h`, `7d` or `30d` and is mapped through a fixed
+lookup before reaching SQL as a parameter.
+
+**Audit trail.** `middleware/auditTrail.ts` writes one row for every `POST`,
+`PUT`, `PATCH` and `DELETE` under `/api` after the response finishes: who, the
+real path, the outcome, the address. It never stores the request body and can
+never fail a request. `/api/auth/*` is skipped because `logAuth` writes login,
+failed-login and logout rows itself; those rows have no `request_method`,
+which is how the tab's "Sign-in" filter finds them.
+
+**Health checks** are computed on every Overview load and never stored. There
+is no alert history, acknowledgement or notification.
+
+**Retention.** `RetentionJob` runs a minute after startup and then daily:
+`api_requests` 30 days, `page_views` 90 days, `audit_logs` 365 days, and
+`user_sessions` past `expires_at`.
+
+**Contract.** `src/utils/__fixtures__/devDashboard/*.json` is the response
+contract. Backend tests assert each module returns exactly those keys;
+frontend tab tests render from the same files.
+
+**Not here.** OCR service monitoring and model training. Receipts are OCR'd
+through Midas; this app only records user corrections in `ocr_corrections`.

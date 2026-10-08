@@ -85,7 +85,7 @@
 - ✅ **Type Safety** - No `any` types, proper interfaces throughout
 
 ### What Worked Well
-- ✅ **Helper Function Extraction** - Reduced DevDashboardService complexity significantly
+- ✅ **Helper Function Extraction** - Reduced service complexity significantly
 - ✅ **Repository Pattern** - Improved testability and maintainability
 - ✅ **Component Modularization** - Easier to find and modify features
 - ✅ **Schema Validation** - Prevents deployment disasters
@@ -629,7 +629,7 @@ ssh root@192.168.1.190 "pct exec 2600 -- ls -la /var/www/trade-show-app"
 
 **Available Services:**
 - `ExpenseService` - Expense business logic
-- `DevDashboardService` - Developer dashboard logic
+- `devDashboard/` - Developer dashboard modules, one per tab
 - `ZohoMultiAccountService` - Multi-entity Zoho integration
 - `ZohoBooksService` - Zoho Books API integration
 - `OCRService` - OCR processing orchestration
@@ -1386,17 +1386,13 @@ Authorization: Bearer <token>
 **Complexity Reduction Strategy:**
 
 **What Worked:**
-- ✅ **Helper Function Extraction** - Extracted 13 helper functions from DevDashboardService (368 lines → cleaner service)
+- ✅ **Helper Function Extraction** - Extracted helper functions out of large services
 - ✅ **Utility File Organization** - Frontend utilities organized by domain (date, event, filter, OCR)
 - ✅ **Single Responsibility** - Each helper has one clear purpose
 - ✅ **Reusability** - Helpers can be used across multiple services/components
 - ✅ **Testability** - Pure functions easier to test independently
 
 **Helper Functions Created:**
-
-**Backend (`DevDashboardService.helpers.ts`):**
-- 6 alert functions: `checkErrorRateAlert`, `checkSlowResponseAlert`, `checkStaleSessionsAlert`, `checkEndpointFailureAlert`, `checkTrafficSpikeAlert`, `checkAuthFailuresAlert`
-- 7 utility functions: `parseTimeRange`, `getSystemMemoryMetrics`, `getSystemCPUMetrics`, `formatSessionDuration`, `mapEndpointToPage`, `checkOCRServiceHealth`, `calculateOCRCosts`
 
 **Frontend (`src/utils/`):**
 - `dateUtils.ts` - Date parsing/formatting (prevents timezone bugs)
