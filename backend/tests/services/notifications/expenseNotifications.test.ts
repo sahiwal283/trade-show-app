@@ -1,15 +1,19 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 
 vi.mock('../../../src/services/notifications/recipients', () => ({
   activeUsers: vi.fn(async (ids: string[]) => ids),
 }));
-vi.mock('../../../src/services/notifications/notifyMany', () => ({ notifyMany: vi.fn(async () => undefined) }));
+vi.mock('../../../src/services/NotificationService', () => ({
+  notificationService: { notify: vi.fn(async () => ({ id: 'n-1' })) },
+}));
 
 import { expenseNotifications, CONVERSATION_KINDS } from '../../../src/services/notifications/expenseNotifications';
 import { activeUsers } from '../../../src/services/notifications/recipients';
-import { notifyMany } from '../../../src/services/notifications/notifyMany';
+import { notificationService } from '../../../src/services/NotificationService';
+
+const notify = notificationService.notify as unknown as ReturnType<typeof vi.fn>;
 
 const fixture = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../../fixtures/midasEvents.json'), 'utf8'));
 const byType = (type: string) => fixture.events.find((e: { type: string }) => e.type === type);
@@ -74,36 +78,72 @@ describe('expenseNotifications.fromMidasEvent (contract fixture shared with Mida
 });
 
 describe('expenseNotifications.deliver', () => {
-  beforeEach(() => vi.clearAllMocks());
+  let log: ReturnType<typeof vi.spyOn>;
+  beforeEach(() => {
+    vi.clearAllMocks();
+    log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  });
+  afterEach(() => log.mockRestore());
 
   it('notifies the Argo user once, keyed on the event id', async () => {
     const event = withUser(byType('approved'));
     expect(await expenseNotifications.deliver(event as never)).toBe('sent');
     expect(activeUsers).toHaveBeenCalledWith([USER]);
-    expect(notifyMany).toHaveBeenCalledWith([USER], expect.objectContaining({
+    expect(notify).toHaveBeenCalledWith(USER, expect.objectContaining({
       kind: 'expense.approved', dedupeKey: '11111111-1111-4111-8111-111111111111',
     }));
   });
 
   it('skips an event whose user id is not an Argo id, without touching the database', async () => {
     expect(await expenseNotifications.deliver(byType('approved'))).toBe('skipped'); // "argo-user-1" is not a UUID
+    expect(log).toHaveBeenCalled();
     expect(activeUsers).not.toHaveBeenCalled();
-    expect(notifyMany).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
   });
 
   it('skips an unknown or inactive user', async () => {
     vi.mocked(activeUsers).mockResolvedValueOnce([]);
     expect(await expenseNotifications.deliver(withUser(byType('approved')) as never)).toBe('skipped');
-    expect(notifyMany).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
   });
 
   it('skips an unknown type', async () => {
     expect(await expenseNotifications.deliver(withUser({ ...byType('approved'), type: 'something_new' }) as never)).toBe('skipped');
-    expect(notifyMany).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
   });
 
   it('lets a database failure through so the scanner retries the page', async () => {
     vi.mocked(activeUsers).mockRejectedValueOnce(new Error('db down'));
     await expect(expenseNotifications.deliver(withUser(byType('approved')) as never)).rejects.toThrow('db down');
+  });
+
+  it('skips an event with no expense, even of an unknown type, without throwing', async () => {
+    const { expense: _x, ...noExpense } = withUser(byType('approved')) as { expense: unknown };
+    expect(await expenseNotifications.deliver(noExpense as never)).toBe('skipped');
+    expect(await expenseNotifications.deliver({ ...noExpense, type: 'something_new' } as never)).toBe('skipped');
+    expect(await expenseNotifications.deliver(null as never)).toBe('skipped');
+    expect(activeUsers).not.toHaveBeenCalled();
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('builds the wording when missing is not an array', () => {
+    const n = expenseNotifications.fromMidasEvent({ ...byType('expense_incomplete'), missing: 'receipt' as never });
+    expect(n!.body).toContain('is missing: .');
+  });
+
+  it('lets a failed notification write through so the scanner retries', async () => {
+    notify.mockRejectedValueOnce(new Error('insert failed'));
+    await expect(expenseNotifications.deliver(withUser(byType('approved')) as never)).rejects.toThrow('insert failed');
+  });
+
+  it('counts a duplicate (notify returns null) as sent', async () => {
+    notify.mockResolvedValueOnce(null);
+    expect(await expenseNotifications.deliver(withUser(byType('approved')) as never)).toBe('sent');
+  });
+
+  it('clips an over-long note', () => {
+    const n = expenseNotifications.fromMidasEvent({ ...byType('rejected'), note: 'x'.repeat(2000) });
+    expect(n!.body.length).toBeLessThan(400);
+    expect(n!.body.endsWith('…')).toBe(true);
   });
 });
