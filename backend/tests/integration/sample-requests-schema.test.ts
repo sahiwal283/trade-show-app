@@ -55,10 +55,11 @@ describe('sample requests schema (migration 043)', () => {
     expect(materials.rows[0].n).toBe(6);
   });
 
-  it('one request per user per event', async () => {
+  it('one request per event (superseded by migration 044)', async () => {
     const { rows } = await query(
       `SELECT indexdef FROM pg_indexes WHERE tablename = 'sample_requests' AND indexdef ILIKE '%UNIQUE%'`
     );
-    expect(rows.some((r: { indexdef: string }) => /event_id, user_id/.test(r.indexdef))).toBe(true);
+    expect(rows.some((r: { indexdef: string }) => /\(event_id\)/.test(r.indexdef))).toBe(true);
+    expect(rows.some((r: { indexdef: string }) => /event_id, user_id/.test(r.indexdef))).toBe(false);
   });
 });
