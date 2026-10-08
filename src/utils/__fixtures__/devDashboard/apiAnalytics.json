@@ -1,0 +1,19 @@
+{
+  "totals": { "requests": 4210, "errors": 34, "errorRate": 0.81, "p50Ms": 24, "p95Ms": 180 },
+  "buckets": [
+    { "start": "2026-10-08T12:00:00.000Z", "requests": 310, "errors": 2 },
+    { "start": "2026-10-08T13:00:00.000Z", "requests": 0, "errors": 0 },
+    { "start": "2026-10-08T14:00:00.000Z", "requests": 402, "errors": 5 }
+  ],
+  "endpoints": [
+    { "method": "GET", "endpoint": "/api/expense-messages/unread", "calls": 748, "avgMs": 28, "p95Ms": 61, "maxMs": 160, "errors": 8 },
+    { "method": "GET", "endpoint": "/api/expenses", "calls": 47, "avgMs": 137, "p95Ms": 301, "maxMs": 349, "errors": 2 }
+  ],
+  "slowest": [
+    { "method": "GET", "endpoint": "/api/expenses", "calls": 47, "avgMs": 137, "maxMs": 349 }
+  ],
+  "recentErrors": [
+    { "id": "7d1f0c52-0000-4000-8000-000000000001", "createdAt": "2026-10-08T14:41:07.000Z", "method": "GET", "endpoint": "/api/session/properties", "statusCode": 404, "userName": "Sahil Khatri", "errorMessage": "Not found" },
+    { "id": "7d1f0c52-0000-4000-8000-000000000002", "createdAt": "2026-10-08T14:02:55.000Z", "method": "POST", "endpoint": "/api/events", "statusCode": 500, "userName": null, "errorMessage": null }
+  ]
+}

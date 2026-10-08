@@ -1,0 +1,29 @@
+{
+  "logs": [
+    {
+      "id": "bbbbbbbb-0000-4000-8000-000000000001",
+      "createdAt": "2026-10-08T15:40:00.000Z",
+      "userName": "sahil",
+      "userRole": "developer",
+      "action": "PUT /api/events/:id",
+      "method": "PUT",
+      "path": "/api/events/0b5f1c7e-1111-2222-3333-444455556666",
+      "status": "success",
+      "ipAddress": "203.0.113.9",
+      "errorMessage": null
+    },
+    {
+      "id": "bbbbbbbb-0000-4000-8000-000000000002",
+      "createdAt": "2026-10-08T15:12:00.000Z",
+      "userName": "digi",
+      "userRole": null,
+      "action": "login_failed",
+      "method": null,
+      "path": null,
+      "status": "failure",
+      "ipAddress": null,
+      "errorMessage": "Invalid password"
+    }
+  ],
+  "total": 37
+}

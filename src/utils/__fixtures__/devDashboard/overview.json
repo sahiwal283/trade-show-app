@@ -1,0 +1,28 @@
+{
+  "version": {
+    "frontend": "2.34.0",
+    "backend": "2.34.0",
+    "node": "v20.11.0",
+    "environment": "production",
+    "uptimeSeconds": 93784
+  },
+  "system": {
+    "memory": { "usedBytes": 1288490188, "totalBytes": 4294967296 },
+    "cpu": { "load1": 0.42, "cores": 4 },
+    "disk": { "usedBytes": 21474836480, "totalBytes": 53687091200 }
+  },
+  "database": {
+    "sizeBytes": 187432960,
+    "connections": 7,
+    "maxConnections": 100,
+    "tables": [
+      { "name": "api_requests", "sizeBytes": 98566144 },
+      { "name": "audit_logs", "sizeBytes": 12582912 }
+    ]
+  },
+  "checks": [
+    { "id": "error-rate", "label": "API error rate", "status": "pass", "value": "0.4% of 512 requests", "threshold": "under 10% in the last hour" },
+    { "id": "slow-endpoints", "label": "Slow endpoints", "status": "warn", "value": "1 endpoint, slowest /api/expenses at 2400ms", "threshold": "none averaging over 2000ms" },
+    { "id": "endpoint-failures", "label": "Repeated server errors", "status": "fail", "value": "POST /api/events failed 6 times", "threshold": "no endpoint with 5 or more 500s in the last hour" }
+  ]
+}
