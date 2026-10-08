@@ -18,6 +18,7 @@ const PENDING_EMAIL_MAX = 80;
  * stranger typed: one line, no control characters, and a bounded length.
  */
 function sanitise(value: string | null | undefined, max: number): string {
+  // eslint-disable-next-line no-control-regex -- stripping control characters is the point
   const clean = String(value ?? '').replace(/[\s\u0000-\u001f\u007f]+/g, ' ').trim();
   return clean.length > max ? `${clean.slice(0, max)}…` : clean;
 }
