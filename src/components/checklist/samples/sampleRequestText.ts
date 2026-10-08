@@ -1,4 +1,5 @@
-/** Countdown + date copy for the sample request window. closesAt is ISO. */
+/** Countdown + date copy for the sample request window, and the wording of its change history. closesAt is ISO. */
+import type { SampleChangeRow } from '../../../utils/sampleRequestApi';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -30,4 +31,30 @@ export function formatCloseDate(closesAt: string): string {
     timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
   }).replace(NON_STANDARD_SPACES, ' ');
   return `${s} ET`;
+}
+
+export function formatShortDate(iso: string): string {
+  return new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
+}
+
+export function formatRelative(iso: string, now: Date = new Date()): string {
+  const ago = now.getTime() - new Date(iso).getTime();
+  if (ago < 60_000) return 'just now';
+  if (ago < HOUR) return `${Math.floor(ago / 60_000)} min ago`;
+  if (ago < DAY) return `${Math.floor(ago / HOUR)} h ago`;
+  return `on ${formatShortDate(iso)}`;
+}
+
+const FIELD_LABEL: Record<SampleChangeRow['field'], string> = {
+  singles: 'singles', displays: 'displays', empty_displays: 'empty displays', qty: 'qty', notes: 'notes',
+};
+
+export function describeChange(c: SampleChangeRow): string {
+  const who = c.userName ?? 'Someone';
+  // The same product name exists in more than one line, so an item names its line.
+  const target = c.kind === 'item' && c.lineName ? `${c.lineName} · ${c.targetName}` : c.targetName;
+  if (c.field === 'notes') {
+    return c.newValue ? `${who} changed ${target} notes to "${c.newValue}"` : `${who} cleared ${target} notes`;
+  }
+  return `${who} changed ${target} ${FIELD_LABEL[c.field]} ${c.oldValue ?? '0'} → ${c.newValue ?? '0'}`;
 }

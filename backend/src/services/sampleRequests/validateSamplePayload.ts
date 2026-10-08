@@ -1,5 +1,7 @@
 import { ValidationError } from '../../utils/errors';
-import { SampleCatalog, SampleRequestPayload } from './types';
+import {
+  SampleCatalog, SampleRequestPatch, SampleRequestItemPatch, SampleRequestMaterialPatch,
+} from './types';
 
 export const MAX_SAMPLE_QTY = 10000;
 
@@ -11,12 +13,16 @@ const nonNegInt = (v: unknown, field: string): number => {
   return v;
 };
 
+const ITEM_PATCH_FIELDS = ['singles', 'displays', 'emptyDisplays'] as const;
+
 /**
- * Shape + referential checks. The catalog passed in must INCLUDE inactive
- * rows: a retired product already on a request stays valid so a rep's old
- * numbers are never silently dropped on save.
+ * Field-level patch: each row carries only the fields the client changed, and
+ * an absent field stays absent (never defaulted) so the repository leaves the
+ * stored value alone. The catalog passed in must INCLUDE inactive rows: a
+ * retired product already on a request stays valid so old numbers are never
+ * silently dropped on save.
  */
-export function validateSamplePayload(body: unknown, catalog: SampleCatalog): SampleRequestPayload {
+export function validateSamplePatch(body: unknown, catalog: SampleCatalog): SampleRequestPatch {
   if (!body || typeof body !== 'object') throw new ValidationError('items and materials are required');
   const { items, materials } = body as { items?: unknown; materials?: unknown };
   if (!Array.isArray(items)) throw new ValidationError('items must be an array');
@@ -32,12 +38,12 @@ export function validateSamplePayload(body: unknown, catalog: SampleCatalog): Sa
     if (!productIds.has(productId)) throw new ValidationError(`items[${idx}]: unknown product`);
     if (seenP.has(productId)) throw new ValidationError(`items[${idx}]: duplicate product`);
     seenP.add(productId);
-    return {
-      productId,
-      singles: nonNegInt(raw.singles, `items[${idx}].singles`),
-      displays: nonNegInt(raw.displays, `items[${idx}].displays`),
-      emptyDisplays: nonNegInt(raw.emptyDisplays, `items[${idx}].emptyDisplays`),
-    };
+    const out: SampleRequestItemPatch = { productId };
+    for (const f of ITEM_PATCH_FIELDS) {
+      if (raw[f] !== undefined) out[f] = nonNegInt(raw[f], `items[${idx}].${f}`);
+    }
+    if (Object.keys(out).length === 1) throw new ValidationError(`items[${idx}]: no fields to change`);
+    return out;
   });
 
   const outMaterials = materials.map((raw: any, idx: number) => {
@@ -45,8 +51,17 @@ export function validateSamplePayload(body: unknown, catalog: SampleCatalog): Sa
     if (!materialIds.has(materialId)) throw new ValidationError(`materials[${idx}]: unknown material`);
     if (seenM.has(materialId)) throw new ValidationError(`materials[${idx}]: duplicate material`);
     seenM.add(materialId);
-    const notes = typeof raw.notes === 'string' ? raw.notes.trim().slice(0, 500) : '';
-    return { materialId, qty: nonNegInt(raw.qty, `materials[${idx}].qty`), notes: notes.length > 0 ? notes : null };
+    const out: SampleRequestMaterialPatch = { materialId };
+    if (raw.qty !== undefined) out.qty = nonNegInt(raw.qty, `materials[${idx}].qty`);
+    if (raw.notes !== undefined) {
+      if (raw.notes !== null && typeof raw.notes !== 'string') {
+        throw new ValidationError(`materials[${idx}].notes must be a string or null`);
+      }
+      const notes = (raw.notes ?? '').trim().slice(0, 500);
+      out.notes = notes.length > 0 ? notes : null;
+    }
+    if (Object.keys(out).length === 1) throw new ValidationError(`materials[${idx}]: no fields to change`);
+    return out;
   });
 
   return { items: outItems, materials: outMaterials };

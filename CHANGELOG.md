@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.31.0] - 2026-10-08 - One shared sample request per show
+
+### Changed
+- **One sample request per show**, not one per rep. Anyone attending can open it and change quantities. Saves are per field, so two people editing at once never overwrite each other, even on the same product; the form picks up other people's changes every 30 seconds and when the window regains focus, with an "Updated by <name>" note.
+- **Samples is a booking-board tab** beside Booth, Flights, Hotels, Cars and
+  Tasks (0/1 until submitted, 1/1 after). Reps see the same panel under My
+  Checklist. The top-level toggle is back to Admin Checklist / My Checklist.
+- The sample puller sees the same form, read-only unless they are on the
+  show, with a status line ("Submitted by Rita on Oct 14 · last edited by
+  Sameer 5 min ago") and a **History** of who changed which numbers. They are
+  notified whenever anyone submits or resubmits.
+- Dashboard: after submission the row stays as a quieter "submitted · edit
+  until <date>" link. The 48-hour reminder now goes to every participant,
+  submitted or not.
+- Sample notifications (form open, 48-hour reminder, submitted) now open the Samples view directly. A link to a show that no longer exists, or that you are no longer on, is ignored instead of opening a different show.
+- "Resubmit changes" is available whenever the request has edits newer than its last submission, for everyone on the show.
+
+### Removed
+- Per-rep sample requests, the roster/aggregate Samples view and the
+  on-behalf editor. Existing per-rep rows were merged per show by summing
+  quantities (migration 044).
+
+### Operations
+- Back up the production database before deploying: migration 044 merges and
+  deletes per-rep rows, and it removes `sample_requests.user_id`, so rolling
+  back to v2.30.0 requires restoring that backup.
+- Before deploying, confirm the app's database role owns `sample_requests`
+  (or apply 044 as the owner first). `migrate.ts` skips a migration on a
+  permission error and still logs success; the new code would then fail on
+  every sample endpoint.
+- After deploying, verify that `schema_migrations` lists
+  `044_shared_sample_requests.sql` and that `sample_requests.created_by`
+  exists. Single-request shows are kept as they are and backfilled with who
+  submitted and last edited.
+- If the sample puller is not an admin, coordinator or developer, they reach
+  requests through My Checklist, where they see every show. A puller with the
+  accountant role cannot open the checklist page; give them another role.
+
 ## [2.30.0] - 2026-10-07 - Sample requests on the checklist
 
 ### Added

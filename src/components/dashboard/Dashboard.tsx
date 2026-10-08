@@ -37,7 +37,7 @@ function greeting(): string {
 
 export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
   const { expenses, events, users, loading } = useDashboardData();
-  const { pending: sampleRequests } = useSampleRequestActions();
+  const { requests: sampleRequests } = useSampleRequestActions();
   const [selectedShowId, setSelectedShowId] = useState<string | null>(null);
   const board = useShowDashboard({
     expenses,

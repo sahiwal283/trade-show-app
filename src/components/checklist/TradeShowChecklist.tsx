@@ -3,11 +3,11 @@
  *
  * One designed surface: masthead with the event switcher, a segmented
  * Admin/My tab control, the readiness story (display numeral), then a
- * booking board — Booth / Flights / Hotels / Cars / Tasks tabs, each
+ * booking board — Booth / Flights / Hotels / Cars / Tasks / Samples tabs, each
  * labeled with its done/total count. Only the active tab renders.
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { User, TradeShow } from '../../App';
 import { api } from '../../utils/api';
 import { parseLocalDate } from '../../utils/dateUtils';
@@ -15,8 +15,7 @@ import { AlertCircle } from 'lucide-react';
 import { BookingBoard } from './BookingBoard';
 import { UserChecklist } from './UserChecklist';
 import { ChecklistMasthead } from './ChecklistMasthead';
-import { SamplesSummaryTab } from './samples/SamplesSummaryTab';
-import { sampleRequestApi } from '../../utils/sampleRequestApi';
+import type { BoardTabKey } from './BookingBoardTabs';
 
 export interface ChecklistData {
   id: number;
@@ -96,7 +95,7 @@ interface TradeShowChecklistProps {
   user: User;
 }
 
-type ChecklistTab = 'admin' | 'user' | 'samples';
+type ChecklistTab = 'admin' | 'user';
 
 /** Overall completion — same counting rules the page has always used:
  *  booth (1) + electricity (1) + every flight/hotel/rental + shipping (1). */
@@ -155,53 +154,49 @@ function pickDefaultEvent(events: TradeShow[]): TradeShow {
 
 export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) => {
   const isPrivilegedUser = user.role === 'admin' || user.role === 'coordinator' || user.role === 'developer';
-  const [activeTab, setActiveTab] = useState<ChecklistTab>(() => {
-    const p = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    const tab = p.get('tab');
-    if (tab === 'samples') return 'samples';
-    return tab === 'my' ? 'user' : isPrivilegedUser ? 'admin' : 'user';
+  const initialHash = () => new URLSearchParams(window.location.hash.replace(/^#/, ''));
+  const [activeTab, setActiveTab] = useState<ChecklistTab>(() =>
+    initialHash().get('tab') === 'my' ? 'user' : isPrivilegedUser ? 'admin' : 'user');
+  // A deep link's board-tab request is bound to its show, so it can only land on that show's board.
+  const [boardRequest, setBoardRequest] = useState<{ eventId: string; tab: BoardTabKey } | null>(() => {
+    const h = initialHash();
+    const id = h.get('event');
+    return h.get('tab') === 'samples' && id ? { eventId: id, tab: 'samples' } : null;
   });
-  // null while getAccess() is pending, so UserChecklist never mounts before access is known.
-  const [canViewSamples, setCanViewSamples] = useState<boolean | null>(null);
+  const clearBoardRequest = useCallback(() => setBoardRequest(null), []);
   const [events, setEvents] = useState<TradeShow[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [checklist, setChecklist] = useState<ChecklistData | null>(null);
   const [loading, setLoading] = useState(false);
+  // Which show the loaded checklist belongs to; the board only mounts when it matches the selection.
+  const [loadedEventId, setLoadedEventId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    sampleRequestApi.getAccess()
-      .then((r) => setCanViewSamples(r.canViewSummary))
-      .catch(() => setCanViewSamples(false));
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'admin' || activeTab === 'samples') {
-      loadEvents();
-    }
+    if (activeTab === 'admin') loadEvents();
   }, [activeTab]);
 
-  // A deep link followed while the page is already open: pick the show and the tab.
-  const hashCtx = useRef({ events, canViewSamples });
-  hashCtx.current = { events, canViewSamples };
+  const loadSeq = useRef(0);
+  const selectedIdRef = useRef<string | null>(null);
+  selectedIdRef.current = selectedEventId;
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
+  // A deep link followed while the page is open. Reps' links are handled by UserChecklist.
   useEffect(() => {
+    if (!isPrivilegedUser) return;
     const onHashChange = () => {
       const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
       const linkedId = params.get('event');
       if (!linkedId) return;
       const tab = params.get('tab');
-      const { events: loaded, canViewSamples: samplesAllowed } = hashCtx.current;
-      if (tab === 'my') {
-        setActiveTab('user');
-      } else if (tab === 'samples' && (isPrivilegedUser || samplesAllowed === true)) {
-        setActiveTab('samples');
-      }
-      if (loaded.some((e) => e.id === linkedId)) setSelectedEventId(linkedId);
-      // My Checklist (UserChecklist) consumes a tab=my hash itself; an unloaded
-      // event list is filled by loadEvents, which reads the hash. Otherwise clear it.
-      if (tab !== 'my' && loaded.length > 0) {
-        history.replaceState(null, '', window.location.pathname + window.location.search);
-      }
+      if (tab === 'my') { setActiveTab('user'); return; }   // embedded UserChecklist consumes it
+      if (tab === 'samples') setActiveTab('admin');         // a bare event link leaves the tab alone
+      const loaded = eventsRef.current;
+      const known = loaded.some((e) => e.id === linkedId);
+      if (tab === 'samples' && (known || loaded.length === 0)) setBoardRequest({ eventId: linkedId, tab: 'samples' });
+      if (known) setSelectedEventId(linkedId);
+      // Events not loaded yet: loadEvents reads the hash. Otherwise consume it (an unknown id is dropped).
+      if (loaded.length > 0) history.replaceState(null, '', window.location.pathname + window.location.search);
     };
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
@@ -238,10 +233,15 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
         const linkedId = params.get('event');
         if (linkedId && eventsArray.some((e) => e.id === linkedId)) {
           setSelectedEventId(linkedId);
-          // The admin and samples tabs consume this hash; UserChecklist clears its own.
-          if (activeTab === 'admin' || activeTab === 'samples') {
+          // The admin tab consumes this hash; UserChecklist clears its own.
+          if (activeTab === 'admin') {
             history.replaceState(null, '', window.location.pathname + window.location.search);
           }
+        } else if (linkedId && activeTab === 'admin') {
+          // Unresolvable link: drop the request and the hash, fall back to the default show.
+          setBoardRequest(null);
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+          if (eventsArray.length > 0 && !selectedEventId) setSelectedEventId(pickDefaultEvent(eventsArray).id);
         } else if (eventsArray.length > 0 && !selectedEventId) {
           const defaultEvent = pickDefaultEvent(eventsArray);
           console.log('[Checklist] Auto-selecting default event:', defaultEvent.id, defaultEvent.name);
@@ -257,11 +257,15 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
   // background=true refreshes data without unmounting the board — this is what
   // preserves unsaved row edits, the expanded row, and the active tab.
   const loadChecklist = async (eventId: string, opts: { background?: boolean } = {}) => {
-    if (!opts.background) setLoading(true);
+    // A background reload for a show that is no longer selected must not supersede the current show's load.
+    if (opts.background && eventId !== selectedIdRef.current) return;
+    if (!opts.background) { setLoading(true); setLoadedEventId(null); }
+    const myLoad = ++loadSeq.current;
     try {
       if (api.USE_SERVER) {
         console.log('[Checklist] Loading checklist for event:', eventId);
         const data = await api.checklist.getChecklist(eventId) as unknown;
+        if (myLoad !== loadSeq.current) return;   // a newer load superseded this one
         console.log('[Checklist] Checklist loaded:', data);
 
         // Defensive normalization: ensure all arrays exist and are actually arrays
@@ -297,12 +301,14 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
 
         console.log('[Checklist] Normalized checklist data:', normalizedData);
         setChecklist(normalizedData);
+        setLoadedEventId(eventId);
       }
     } catch (error) {
+      if (myLoad !== loadSeq.current) return;
       console.error('[Checklist] Error loading checklist:', error);
       setChecklist(null);
     } finally {
-      setLoading(false);
+      if (myLoad === loadSeq.current) setLoading(false);
     }
   };
 
@@ -330,22 +336,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
 
   const selectedEvent = events.find(e => e.id === selectedEventId);
 
-  // Regular users: wait for the access check so UserChecklist mounts once, with the hash intact.
-  if (!isPrivilegedUser && canViewSamples === null) {
-    return (
-      <div className="mx-auto max-w-6xl space-y-4 md:space-y-5">
-        <div aria-busy="true" className="card p-10 md:p-12">
-          <div className="flex flex-col items-center justify-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-brand-600" />
-            <p className="mt-4 text-sm text-stone-500">Loading your itinerary...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Regular users without sample access see only their own checklist
-  if (!isPrivilegedUser && !canViewSamples) {
+  if (!isPrivilegedUser) {
     return <UserChecklist user={user} />;
   }
 
@@ -361,47 +352,24 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
       <ChecklistMasthead
         events={events}
         selectedEvent={selectedEvent || null}
-        onSelectEvent={(id) => setSelectedEventId(id)}
-        showSelector={activeTab !== 'user'}
+        onSelectEvent={(id) => { setBoardRequest(null); setSelectedEventId(id); }}
+        showSelector={activeTab === 'admin'}
         progress={activeTab === 'admin' && checklist && !loading ? progress : null}
       />
 
       {/* Tabs — segmented control */}
       <div className="seg-track">
-        {isPrivilegedUser && (
-          <button type="button" onClick={() => setActiveTab('admin')} className={tabClasses('admin')}>
-            Admin Checklist
-          </button>
-        )}
+        <button type="button" onClick={() => setActiveTab('admin')} className={tabClasses('admin')}>
+          Admin Checklist
+        </button>
         <button type="button" onClick={() => setActiveTab('user')} className={tabClasses('user')}>
           My Checklist
         </button>
-        {(isPrivilegedUser || canViewSamples) && (
-          <button type="button" onClick={() => setActiveTab('samples')} className={tabClasses('samples')}>
-            Samples
-          </button>
-        )}
       </div>
 
       {/* Tab Content */}
       {activeTab === 'user' ? (
         <UserChecklist user={user} embedded />
-      ) : activeTab === 'samples' ? (
-        selectedEventId ? (
-          <SamplesSummaryTab eventId={selectedEventId} actorId={user.id} actorRole={user.role} />
-        ) : (
-          <div className="card flex items-start gap-3 p-4 md:p-5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50">
-              <AlertCircle aria-hidden="true" className="w-5 h-5 text-amber-600" />
-            </span>
-            <div>
-              <p className="font-semibold text-stone-900">No Event Selected</p>
-              <p className="mt-1 text-sm text-stone-500">
-                Please select an event from the dropdown above to see its sample requests.
-              </p>
-            </div>
-          </div>
-        )
       ) : (
         <>
           {!selectedEvent && (
@@ -418,7 +386,7 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
             </div>
           )}
 
-          {selectedEvent && loading && (
+          {selectedEvent && (loading || (checklist && loadedEventId !== selectedEventId)) && (
             <div aria-busy="true" className="card p-10 md:p-12">
               <div className="flex flex-col items-center justify-center">
                 <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-brand-600" />
@@ -441,12 +409,15 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
             </div>
           )}
 
-          {selectedEvent && !loading && checklist && (
+          {selectedEvent && !loading && checklist && loadedEventId === selectedEventId && (
             <BookingBoard
+              key={selectedEvent.id}
               checklist={checklist}
               user={user}
               event={selectedEvent}
               saving={saving}
+              requestedTab={boardRequest && boardRequest.eventId === selectedEvent.id ? boardRequest.tab : null}
+              onRequestedTabHandled={clearBoardRequest}
               onUpdate={updateChecklist}
               onReload={() => loadChecklist(selectedEventId!, { background: true })}
               onRosterChanged={() => {

@@ -1,9 +1,8 @@
 /**
- * Owns every sample request state transition and the authorization rules:
- *  - a rep may read/write only their own request, only while the window is open
- *  - admin/coordinator/developer may read/write anyone's, at any time
- *  - the puller (app_settings) may read the per-event summary
- * The puller is notified on submit and re-submit only. Draft saves are silent.
+ * One shared sample request per event, owned by the event's roster.
+ *  - any participant edits (and submits) while the window is open; override roles (admin/coordinator/developer) any time, even after close
+ *  - the puller (app_settings) can read but not write unless also on the roster or an override role
+ *  - the puller is notified on submit and re-submit only. Patches (field-level) are silent.
  */
 import { query } from '../../config/database';
 import { eventRepository } from '../../database/repositories/EventRepository';
@@ -12,16 +11,18 @@ import { isEventParticipant } from '../EventParticipantService';
 import { notificationService } from '../NotificationService';
 import { NotFoundError, AuthorizationError, ConflictError } from '../../utils/errors';
 import { computeSampleWindow } from './sampleRequestWindow';
-import { validateSamplePayload } from './validateSamplePayload';
+import { validateSamplePatch } from './validateSamplePayload';
 import {
-  SampleWindow, SampleRequestView, SampleRequestPayload, OpenSampleRequest,
-  EventSampleSummary, SummaryProduct, SummaryMaterial, canOverrideSampleWindow,
+  SampleWindow, SampleRequestRow, EventSampleRequest, EventSampleRequestView, SampleRequestPatch,
+  OpenSampleRequest, SampleChangeRow, canOverrideSampleWindow,
 } from './types';
 
 export interface Actor { id: string; role: string }
 
 const fmtClose = (iso: string | null): string =>
   iso ? new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'n/a';
+
+interface Access { isParticipant: boolean; isOverride: boolean; isPuller: boolean; pullerId: string | null }
 
 class SampleRequestService {
   private async loadEvent(eventId: string) {
@@ -30,71 +31,114 @@ class SampleRequestService {
     return event;
   }
 
+  private async access(eventId: string, actor: Actor): Promise<Access> {
+    const [isParticipant, pullerId] = await Promise.all([
+      isEventParticipant(eventId, actor.id),
+      sampleRequestRepository.getPullerUserId(),
+    ]);
+    return { isParticipant, isOverride: canOverrideSampleWindow(actor.role), isPuller: pullerId === actor.id, pullerId };
+  }
+
+  private canView(a: Access): boolean { return a.isParticipant || a.isOverride || a.isPuller; }
+  private canEdit(a: Access, window: SampleWindow): boolean {
+    if (a.isOverride) return true;
+    return a.isParticipant && window.isOpen;
+  }
+
   async getWindowForEvent(eventId: string): Promise<SampleWindow> {
     return computeSampleWindow(await this.loadEvent(eventId));
   }
 
-  /** Rep → own request only, and must be on the roster. Override roles → anyone on the roster. */
-  private async authorizeTarget(eventId: string, targetUserId: string, actor: Actor): Promise<void> {
-    if (!canOverrideSampleWindow(actor.role) && actor.id !== targetUserId) {
-      throw new AuthorizationError('You can only access your own sample request');
-    }
-    if (!(await isEventParticipant(eventId, targetUserId))) {
-      throw new AuthorizationError('User is not a participant of this event');
-    }
+  async canViewSamples(eventId: string, actor: Actor): Promise<boolean> {
+    await this.loadEvent(eventId);
+    return this.canView(await this.access(eventId, actor));
   }
 
-  private assertOpenOrOverride(window: SampleWindow, actor: Actor): void {
-    if (window.isOpen || canOverrideSampleWindow(actor.role)) return;
-    throw new ConflictError('Sample requests for this show are closed', { code: 'WINDOW_CLOSED', closesAt: window.closesAt });
+  async canEditSamples(eventId: string, actor: Actor): Promise<boolean> {
+    const [event, a] = await Promise.all([this.loadEvent(eventId), this.access(eventId, actor)]);
+    return this.canEdit(a, computeSampleWindow(event));
   }
 
-  async getRequest(eventId: string, targetUserId: string, actor: Actor): Promise<SampleRequestView> {
+  private async toView(row: SampleRequestRow, window: SampleWindow, canEdit: boolean): Promise<EventSampleRequestView> {
+    const [contents, users] = await Promise.all([
+      sampleRequestRepository.getContents(row.id),
+      sampleRequestRepository.userRefs([row.submitted_by, row.last_edited_by]),
+    ]);
+    const request: EventSampleRequest = {
+      id: row.id, eventId: row.event_id, status: row.status,
+      submittedAt: row.submitted_at, submittedBy: row.submitted_by ? users.get(row.submitted_by) ?? null : null,
+      lastEditedAt: row.last_edited_at, lastEditedBy: row.last_edited_by ? users.get(row.last_edited_by) ?? null : null,
+      items: contents.items, materials: contents.materials,
+    };
+    return { request, window, canEdit };
+  }
+
+  private async ensureRow(eventId: string, actor: Actor): Promise<SampleRequestRow> {
+    return (await sampleRequestRepository.findByEvent(eventId)) ?? sampleRequestRepository.upsertEventDraft(eventId, actor.id);
+  }
+
+  async getForEvent(eventId: string, actor: Actor): Promise<EventSampleRequestView> {
     const event = await this.loadEvent(eventId);
-    await this.authorizeTarget(eventId, targetUserId, actor);
-    const request = await sampleRequestRepository.upsertDraft(eventId, targetUserId);
-    return { request, window: computeSampleWindow(event) };
-  }
-
-  async saveDraft(eventId: string, targetUserId: string, body: unknown, actor: Actor): Promise<SampleRequestView> {
-    const event = await this.loadEvent(eventId);
-    await this.authorizeTarget(eventId, targetUserId, actor);
+    const a = await this.access(eventId, actor);
+    if (!this.canView(a)) throw new AuthorizationError('You are not on this show');
     const window = computeSampleWindow(event);
-    this.assertOpenOrOverride(window, actor);
-    const payload: SampleRequestPayload = validateSamplePayload(body, await sampleRequestRepository.getCatalog(true));
-    const request = await sampleRequestRepository.upsertDraft(eventId, targetUserId);
-    await sampleRequestRepository.replaceContents(request.id, payload);
-    return { request: { ...request, items: payload.items, materials: payload.materials }, window };
+    const row = await this.ensureRow(eventId, actor);
+    return this.toView(row, window, this.canEdit(a, window));
   }
 
-  async submit(eventId: string, targetUserId: string, actor: Actor): Promise<SampleRequestView> {
+  private async guardEdit(eventId: string, actor: Actor) {
     const event = await this.loadEvent(eventId);
-    await this.authorizeTarget(eventId, targetUserId, actor);
+    const a = await this.access(eventId, actor);
+    if (!this.canView(a)) throw new AuthorizationError('You are not on this show');
     const window = computeSampleWindow(event);
-    this.assertOpenOrOverride(window, actor);
+    if (!a.isOverride && !a.isParticipant) throw new AuthorizationError('Only participants can edit the sample request');
+    if (!a.isOverride && !window.isOpen) {
+      throw new ConflictError('Sample requests for this show are closed', { code: 'WINDOW_CLOSED', closesAt: window.closesAt });
+    }
+    return { event, window, a };
+  }
 
-    const before = await sampleRequestRepository.upsertDraft(eventId, targetUserId);
+  async patchRows(eventId: string, body: unknown, actor: Actor): Promise<EventSampleRequestView> {
+    const { window, a } = await this.guardEdit(eventId, actor);
+    const patch: SampleRequestPatch = validateSamplePatch(body, await sampleRequestRepository.getCatalog(true));
+    const row = await this.ensureRow(eventId, actor);
+    await sampleRequestRepository.applyRows(row.id, actor.id, patch);
+    const fresh = (await sampleRequestRepository.findByEvent(eventId)) ?? row;
+    return this.toView(fresh, window, this.canEdit(a, window));
+  }
+
+  async submit(eventId: string, actor: Actor): Promise<EventSampleRequestView> {
+    const { event, window, a } = await this.guardEdit(eventId, actor);
+    const before = await this.ensureRow(eventId, actor);
     const wasSubmitted = before.status === 'submitted';
-    const row = await sampleRequestRepository.markSubmitted(before.id);
+    const row = await sampleRequestRepository.markSubmitted(before.id, actor.id);
 
-    const pullerId = await sampleRequestRepository.getPullerUserId();
+    const pullerId = a.pullerId;
     if (pullerId) {
-      // The submit is already committed; a failed notification must not fail it.
       try {
-        const who = await this.userName(targetUserId);
+        const who = await this.userName(actor.id);
         await notificationService.notify(pullerId, {
           kind: 'sample_request.submitted',
           title: wasSubmitted ? `Sample request updated · ${event.name}` : `New sample request · ${event.name}`,
-          body: `${who} ${wasSubmitted ? 'updated their' : 'submitted a'} sample request for ${event.name}.`,
+          body: `${who} ${wasSubmitted ? 'updated the' : 'submitted the'} sample request for ${event.name}.`,
           link: { page: 'samples', eventId },
         });
-      } catch (e) {
-        console.error('[SampleRequests] puller notify failed', e);
+      } catch (error) {
+        console.error('[SampleRequests] puller notify failed', error);
       }
     } else {
-      console.warn(`[SampleRequests] No sample puller configured — submit for event ${eventId} by ${targetUserId} not routed`);
+      console.warn(`[SampleRequests] No sample puller configured — submit for event ${eventId} by ${actor.id} not routed`);
     }
-    return { request: { ...before, ...row }, window };
+    return this.toView(row, window, this.canEdit(a, window));
+  }
+
+  async getHistory(eventId: string, actor: Actor): Promise<SampleChangeRow[]> {
+    await this.loadEvent(eventId);
+    const a = await this.access(eventId, actor);
+    if (!this.canView(a)) throw new AuthorizationError('You are not on this show');
+    const row = await sampleRequestRepository.findByEvent(eventId);
+    if (!row) return [];
+    return sampleRequestRepository.listChanges(row.id, 200);
   }
 
   async listMyOpenRequests(userId: string): Promise<OpenSampleRequest[]> {
@@ -104,74 +148,19 @@ class SampleRequestService {
        WHERE ep.user_id = $1 AND e.status <> 'cancelled'`,
       [userId]
     );
-    const mine = new Map((await sampleRequestRepository.findRequestsForUser(userId)).map((r) => [r.event_id, r]));
-    const out: OpenSampleRequest[] = [];
-    for (const e of events.rows) {
-      const w = computeSampleWindow(e);
-      if (!w.isOpen || !w.closesAt) continue;
-      const r = mine.get(e.id);
-      out.push({ eventId: e.id, eventName: e.name, closesAt: w.closesAt, status: r?.status ?? 'none', submittedAt: r?.submitted_at ?? null });
-    }
-    return out.sort((a, b) => a.closesAt.localeCompare(b.closesAt));
+    const open = events.rows.map((e: any) => ({ e, w: computeSampleWindow(e) })).filter(({ w }) => w.isOpen && w.closesAt);
+    const statuses = new Map((await sampleRequestRepository.findStatusByEvents(open.map(({ e }) => e.id))).map((s) => [s.event_id, s]));
+    return open
+      .map(({ e, w }) => {
+        const s = statuses.get(e.id);
+        // An auto-created draft nobody has touched is not "started" for the dashboard.
+        const untouched = !s || (s.status === 'draft' && s.last_edited_at == null);
+        return { eventId: e.id, eventName: e.name, closesAt: w.closesAt as string, status: (untouched || !s ? 'none' : s.status) as OpenSampleRequest['status'], submittedAt: s?.submitted_at ?? null };
+      })
+      .sort((x, y) => x.closesAt.localeCompare(y.closesAt));
   }
 
-  async canViewSummary(actor: Actor): Promise<boolean> {
-    if (canOverrideSampleWindow(actor.role)) return true;
-    return (await sampleRequestRepository.getPullerUserId()) === actor.id;
-  }
-
-  async getEventSummary(eventId: string, actor: Actor): Promise<EventSampleSummary> {
-    if (!(await this.canViewSummary(actor))) throw new AuthorizationError('Only the sample puller or a coordinator can view this summary');
-    const event = await this.loadEvent(eventId);
-    const [catalog, requests, items, materials, pullerUserId] = await Promise.all([
-      sampleRequestRepository.getCatalog(true),
-      sampleRequestRepository.findEventRequests(eventId),
-      sampleRequestRepository.findEventItems(eventId),
-      sampleRequestRepository.findEventMaterials(eventId),
-      sampleRequestRepository.getPullerUserId(),
-    ]);
-    const lineById = new Map(catalog.lines.map((l) => [l.id, l]));
-    const productById = new Map(catalog.products.map((p) => [p.id, p]));
-    const materialById = new Map(catalog.materials.map((m) => [m.id, m]));
-
-    const products = new Map<string, SummaryProduct>();
-    for (const row of items) {
-      const p = productById.get(row.product_id);
-      const l = p ? lineById.get(p.product_line_id) : undefined;
-      if (!p || !l) continue;
-      const entry = products.get(p.id) ?? {
-        productId: p.id, productName: p.name, lineId: l.id, lineName: l.name, brand: l.brand, isActive: p.is_active,
-        singles: 0, displays: 0, emptyDisplays: 0, byUser: [],
-      };
-      entry.singles += row.singles; entry.displays += row.displays; entry.emptyDisplays += row.empty_displays;
-      entry.byUser.push({ userId: row.user_id, name: row.user_name, status: row.status, singles: row.singles, displays: row.displays, emptyDisplays: row.empty_displays });
-      products.set(p.id, entry);
-    }
-
-    const mats = new Map<string, SummaryMaterial>();
-    for (const row of materials) {
-      const m = materialById.get(row.material_id);
-      if (!m) continue;
-      const entry = mats.get(m.id) ?? { materialId: m.id, materialName: m.name, isActive: m.is_active, qty: 0, byUser: [] };
-      entry.qty += row.qty;
-      entry.byUser.push({ userId: row.user_id, name: row.user_name, status: row.status, qty: row.qty, notes: row.notes });
-      mats.set(m.id, entry);
-    }
-
-    const order = (a: SummaryProduct, b: SummaryProduct) => {
-      const la = lineById.get(a.lineId)!, lb = lineById.get(b.lineId)!;
-      return la.brand.localeCompare(lb.brand) || la.position - lb.position || productById.get(a.productId)!.position - productById.get(b.productId)!.position;
-    };
-
-    return {
-      eventId, eventName: event.name, window: computeSampleWindow(event), pullerUserId,
-      participants: requests.map((r) => ({ userId: r.user_id, name: r.user_name, status: r.status ?? 'none', submittedAt: r.submitted_at })),
-      products: [...products.values()].sort(order),
-      materials: [...mats.values()].sort((a, b) => materialById.get(a.materialId)!.position - materialById.get(b.materialId)!.position),
-    };
-  }
-
-  /** Called on event create and participant add. Ledger-first so re-adds never double-notify. */
+  /** Called on event create/update and participant add. Ledger-first so re-adds never double-notify. */
   async announceIfOpen(eventId: string, userIds: string[]): Promise<void> {
     const event = await eventRepository.findById(eventId);
     if (!event) return;
@@ -187,8 +176,8 @@ class SampleRequestService {
       await notificationService.notify(userId, {
         kind: 'sample_request.open',
         title: `Sample request open · ${event.name}`,
-        body: `Tell us which samples you need for ${event.name}. Closes ${fmtClose(window.closesAt)} ET.`,
-        link: { page: 'checklist', eventId },
+        body: `Tell us which samples the team needs for ${event.name}. Closes ${fmtClose(window.closesAt)} ET.`,
+        link: { page: 'samples', eventId },
       }).catch((e) => console.error('[SampleRequests] announce failed', e));
     }
   }

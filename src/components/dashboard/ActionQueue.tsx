@@ -8,7 +8,7 @@
 
 import { CheckCircle } from 'lucide-react';
 import { OpenSampleRequest } from '../../utils/sampleRequestApi';
-import { formatCountdown, isUrgent } from '../checklist/samples/sampleRequestText';
+import { formatCloseDate, formatCountdown, isUrgent } from '../checklist/samples/sampleRequestText';
 
 interface ActionQueueProps {
   canManage: boolean;
@@ -20,9 +20,11 @@ interface ActionQueueProps {
 }
 
 interface QueueItemProps {
+  /** Optional stable React key; falls back to the label. */
+  id?: string;
   label: string;
   action: string;
-  tone: 'amber' | 'violet' | 'blue' | 'red';
+  tone: 'amber' | 'violet' | 'blue' | 'red' | 'stone';
   onClick: () => void;
 }
 
@@ -46,6 +48,11 @@ const toneClasses = {
     wrap: 'border-red-200 bg-red-50 hover:border-red-300',
     label: 'text-red-900',
     action: 'text-red-700',
+  },
+  stone: {
+    wrap: 'border-stone-200 bg-stone-50 hover:border-stone-300',
+    label: 'text-stone-700',
+    action: 'text-stone-500',
   },
 };
 
@@ -103,12 +110,16 @@ export function ActionQueue({
 
   const now = new Date();
   for (const r of sampleRequests ?? []) {
+    const submitted = r.status === 'submitted';
     items.push({
-      label: `Sample request for ${r.eventName} closes in ${formatCountdown(r.closesAt, now)}`,
-      action: r.status === 'draft' ? 'Finish' : 'Start',
-      tone: isUrgent(r.closesAt, now) ? 'red' : 'amber',
+      id: `sample-${r.eventId}`,
+      label: submitted
+        ? `Sample request for ${r.eventName} submitted · edit until ${formatCloseDate(r.closesAt)}`
+        : `Sample request for ${r.eventName} closes in ${formatCountdown(r.closesAt, now)}`,
+      action: submitted ? 'Open' : r.status === 'draft' ? 'Finish' : 'Start',
+      tone: submitted ? 'stone' : isUrgent(r.closesAt, now) ? 'red' : 'amber',
       onClick: () => {
-        window.location.hash = `event=${r.eventId}&tab=my`;
+        window.location.hash = `event=${r.eventId}&tab=samples`;
         onPageChange('checklist');
       },
     });
@@ -127,7 +138,7 @@ export function ActionQueue({
       ) : (
         <div className="space-y-2">
           {items.map(item => (
-            <QueueItem key={item.label} {...item} />
+            <QueueItem key={item.id ?? item.label} {...item} />
           ))}
         </div>
       )}

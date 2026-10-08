@@ -1,10 +1,9 @@
 /**
  * Sample Requests — /api/sample-requests
  *
- * "mine" handlers always target req.user; on-behalf handlers take the user
- * from the path and are gated to admin/coordinator/developer by authorize()
- * AND re-checked in the service. The summary is gated in the service only,
- * because the puller may hold any role.
+ * One shared request per event. Every handler passes req.user as the actor and
+ * the service decides who may view or edit; an unknown event is a 404 from the
+ * service. `/catalog` and `/mine` are registered before `/:eventId`.
  */
 import express, { Response } from 'express';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
@@ -18,7 +17,6 @@ const router = express.Router();
 router.use(authenticateToken);
 
 const CATALOG_ROLES = ['admin', 'developer'];
-const OVERRIDE_ROLES = ['admin', 'coordinator', 'developer'];
 
 const cleanName = (v: unknown): string | null => {
   const s = typeof v === 'string' ? v.trim() : '';
@@ -163,9 +161,9 @@ export async function handleReorder(req: AuthRequest, res: Response): Promise<vo
 }
 
 // ── Requests ──────────────────────────────────────────────────────────────
-/** 400s (and returns false) unless every named path param is a UUID, so a bad id never reaches pg. */
-const hasValidIds = (req: AuthRequest, res: Response, ...keys: Array<'eventId' | 'userId'>): boolean => {
-  if (keys.every((k) => isValidUuid(req.params[k]))) return true;
+/** 400s (and returns false) unless the eventId path param is a UUID, so a bad id never reaches pg. */
+const hasValidIds = (req: AuthRequest, res: Response): boolean => {
+  if (isValidUuid(req.params.eventId)) return true;
   res.status(400).json({ error: 'Invalid id' });
   return false;
 };
@@ -174,43 +172,32 @@ export async function handleListMine(req: AuthRequest, res: Response): Promise<v
   res.json({ requests: await sampleRequestService.listMyOpenRequests(req.user!.id) });
 }
 
-export async function handleAccess(req: AuthRequest, res: Response): Promise<void> {
-  res.json({ canViewSummary: await sampleRequestService.canViewSummary(req.user!) });
+export async function handleEventAccess(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res)) return;
+  // canViewSamples 404s an unknown event; let that propagate rather than answering false.
+  const canView = await sampleRequestService.canViewSamples(req.params.eventId, req.user!);
+  const canEdit = canView ? await sampleRequestService.canEditSamples(req.params.eventId, req.user!) : false;
+  res.json({ canView, canEdit });
 }
 
-export async function handleGetMine(req: AuthRequest, res: Response): Promise<void> {
-  if (!hasValidIds(req, res, 'eventId')) return;
-  res.json(await sampleRequestService.getRequest(req.params.eventId, req.user!.id, req.user!));
+export async function handleGetEvent(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res)) return;
+  res.json(await sampleRequestService.getForEvent(req.params.eventId, req.user!));
 }
 
-export async function handleSaveMine(req: AuthRequest, res: Response): Promise<void> {
-  if (!hasValidIds(req, res, 'eventId')) return;
-  res.json(await sampleRequestService.saveDraft(req.params.eventId, req.user!.id, req.body, req.user!));
+export async function handlePatchEvent(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res)) return;
+  res.json(await sampleRequestService.patchRows(req.params.eventId, req.body, req.user!));
 }
 
-export async function handleSubmitMine(req: AuthRequest, res: Response): Promise<void> {
-  if (!hasValidIds(req, res, 'eventId')) return;
-  res.json(await sampleRequestService.submit(req.params.eventId, req.user!.id, req.user!));
+export async function handleSubmitEvent(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res)) return;
+  res.json(await sampleRequestService.submit(req.params.eventId, req.user!));
 }
 
-export async function handleGetForUser(req: AuthRequest, res: Response): Promise<void> {
-  if (!hasValidIds(req, res, 'eventId', 'userId')) return;
-  res.json(await sampleRequestService.getRequest(req.params.eventId, req.params.userId, req.user!));
-}
-
-export async function handleSaveForUser(req: AuthRequest, res: Response): Promise<void> {
-  if (!hasValidIds(req, res, 'eventId', 'userId')) return;
-  res.json(await sampleRequestService.saveDraft(req.params.eventId, req.params.userId, req.body, req.user!));
-}
-
-export async function handleSubmitForUser(req: AuthRequest, res: Response): Promise<void> {
-  if (!hasValidIds(req, res, 'eventId', 'userId')) return;
-  res.json(await sampleRequestService.submit(req.params.eventId, req.params.userId, req.user!));
-}
-
-export async function handleGetSummary(req: AuthRequest, res: Response): Promise<void> {
-  if (!hasValidIds(req, res, 'eventId')) return;
-  res.json(await sampleRequestService.getEventSummary(req.params.eventId, req.user!));
+export async function handleGetHistory(req: AuthRequest, res: Response): Promise<void> {
+  if (!hasValidIds(req, res)) return;
+  res.json({ changes: await sampleRequestService.getHistory(req.params.eventId, req.user!) });
 }
 
 router.get('/catalog', asyncHandler(handleGetCatalog));
@@ -223,13 +210,10 @@ router.put('/catalog/materials/:id', authorize(...CATALOG_ROLES), asyncHandler(h
 router.put('/catalog/reorder', authorize(...CATALOG_ROLES), asyncHandler(handleReorder));
 
 router.get('/mine', asyncHandler(handleListMine));
-router.get('/access', asyncHandler(handleAccess));
-router.get('/:eventId/mine', asyncHandler(handleGetMine));
-router.put('/:eventId/mine', asyncHandler(handleSaveMine));
-router.post('/:eventId/mine/submit', asyncHandler(handleSubmitMine));
-router.get('/:eventId/summary', asyncHandler(handleGetSummary));
-router.get('/:eventId/users/:userId', authorize(...OVERRIDE_ROLES), asyncHandler(handleGetForUser));
-router.put('/:eventId/users/:userId', authorize(...OVERRIDE_ROLES), asyncHandler(handleSaveForUser));
-router.post('/:eventId/users/:userId/submit', authorize(...OVERRIDE_ROLES), asyncHandler(handleSubmitForUser));
+router.get('/:eventId/access', asyncHandler(handleEventAccess));
+router.get('/:eventId', asyncHandler(handleGetEvent));
+router.patch('/:eventId', asyncHandler(handlePatchEvent));
+router.post('/:eventId/submit', asyncHandler(handleSubmitEvent));
+router.get('/:eventId/history', asyncHandler(handleGetHistory));
 
 export default router;

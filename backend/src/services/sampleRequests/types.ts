@@ -31,18 +31,37 @@ export interface SampleRequestPayload {
 export type SampleRequestStatus = 'draft' | 'submitted';
 
 export interface SampleRequestRow {
-  id: string; event_id: string; user_id: string; status: SampleRequestStatus;
-  submitted_at: string | null; created_at: string; updated_at: string;
+  id: string; event_id: string; created_by: string | null; status: SampleRequestStatus;
+  submitted_at: string | null; submitted_by: string | null;
+  last_edited_at: string | null; last_edited_by: string | null;
+  created_at: string; updated_at: string;
 }
-export interface SampleRequestDetail extends SampleRequestRow {
+
+export interface UserRef { id: string; name: string }
+
+export interface EventSampleRequest {
+  id: string; eventId: string; status: SampleRequestStatus;
+  submittedAt: string | null; submittedBy: UserRef | null;
+  lastEditedAt: string | null; lastEditedBy: UserRef | null;
   items: SampleRequestItemInput[]; materials: SampleRequestMaterialInput[];
 }
 
-export interface SampleWindow {
-  opensAt: string | null; closesAt: string | null; isOpen: boolean;
-}
-export interface SampleRequestView {
-  request: SampleRequestDetail; window: SampleWindow;
+export interface SampleWindow { opensAt: string | null; closesAt: string | null; isOpen: boolean }
+
+export interface EventSampleRequestView { request: EventSampleRequest; window: SampleWindow; canEdit: boolean }
+
+export interface SampleRequestItemPatch { productId: string; singles?: number; displays?: number; emptyDisplays?: number }
+export interface SampleRequestMaterialPatch { materialId: string; qty?: number; notes?: string | null }
+/** Only the fields the client changed, per row. */
+export interface SampleRequestPatch { items: SampleRequestItemPatch[]; materials: SampleRequestMaterialPatch[] }
+
+export type SampleChangeField = 'singles' | 'displays' | 'empty_displays' | 'qty' | 'notes';
+
+export interface SampleChangeRow {
+  id: string; userId: string | null; userName: string | null;
+  kind: 'item' | 'material'; targetId: string; targetName: string;
+  lineName: string | null; brand: SampleBrand | null;
+  field: SampleChangeField; oldValue: string | null; newValue: string | null; changedAt: string;
 }
 
 /** One dashboard action row. */
@@ -51,29 +70,7 @@ export interface OpenSampleRequest {
   status: 'none' | SampleRequestStatus; submittedAt: string | null;
 }
 
-export interface SummaryByUser {
-  userId: string; name: string; status: SampleRequestStatus;
-  singles: number; displays: number; emptyDisplays: number;
-}
-export interface SummaryProduct {
-  productId: string; productName: string; lineId: string; lineName: string; brand: SampleBrand;
-  isActive: boolean; singles: number; displays: number; emptyDisplays: number; byUser: SummaryByUser[];
-}
-export interface SummaryMaterialByUser {
-  userId: string; name: string; status: SampleRequestStatus; qty: number; notes: string | null;
-}
-export interface SummaryMaterial {
-  materialId: string; materialName: string; isActive: boolean; qty: number; byUser: SummaryMaterialByUser[];
-}
-export interface SummaryParticipant {
-  userId: string; name: string; status: 'none' | SampleRequestStatus; submittedAt: string | null;
-}
-export interface EventSampleSummary {
-  eventId: string; eventName: string; window: SampleWindow; pullerUserId: string | null;
-  participants: SummaryParticipant[]; products: SummaryProduct[]; materials: SummaryMaterial[];
-}
-
-/** Roles that may edit any rep's request, including after close. */
+/** Roles that may edit the show's shared request after its window has closed. */
 export const SAMPLE_OVERRIDE_ROLES = ['admin', 'coordinator', 'developer'] as const;
 export const canOverrideSampleWindow = (role: string | undefined): boolean =>
   !!role && (SAMPLE_OVERRIDE_ROLES as readonly string[]).includes(role);

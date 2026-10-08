@@ -3,12 +3,13 @@ import type { Response } from 'express';
 
 vi.mock('../../src/services/sampleRequests/SampleRequestService', () => ({
   sampleRequestService: {
-    getRequest: vi.fn(async () => ({ request: { id: 'r' }, window: { isOpen: true } })),
-    saveDraft: vi.fn(async () => ({ request: { id: 'r' }, window: { isOpen: true } })),
-    submit: vi.fn(async () => ({ request: { id: 'r', status: 'submitted' }, window: { isOpen: true } })),
+    getForEvent: vi.fn(async () => ({ request: { id: 'r' }, window: { isOpen: true }, canEdit: true })),
+    patchRows: vi.fn(async () => ({ request: { id: 'r' }, window: { isOpen: true }, canEdit: true })),
+    submit: vi.fn(async () => ({ request: { id: 'r', status: 'submitted' }, window: { isOpen: true }, canEdit: true })),
+    getHistory: vi.fn(async () => [{ id: 'c-1' }]),
     listMyOpenRequests: vi.fn(async () => [{ eventId: 'ev-1' }]),
-    getEventSummary: vi.fn(async () => ({ eventId: 'ev-1' })),
-    canViewSummary: vi.fn(async () => true),
+    canViewSamples: vi.fn(async () => true),
+    canEditSamples: vi.fn(async () => false),
   },
 }));
 vi.mock('../../src/database/repositories/SampleRequestRepository', () => ({
@@ -27,8 +28,7 @@ vi.mock('../../src/database/repositories/SampleRequestRepository', () => ({
 import router, {
   handleGetCatalog, handleCreateLine, handleUpdateLine, handleCreateProduct, handleUpdateProduct,
   handleCreateMaterial, handleUpdateMaterial, handleReorder,
-  handleListMine, handleGetMine, handleSaveMine, handleSubmitMine, handleGetForUser, handleSaveForUser,
-  handleSubmitForUser, handleGetSummary, handleAccess,
+  handleListMine, handleGetEvent, handlePatchEvent, handleSubmitEvent, handleGetHistory, handleEventAccess,
 } from '../../src/routes/sampleRequests';
 import { sampleRequestService } from '../../src/services/sampleRequests/SampleRequestService';
 import { sampleRequestRepository } from '../../src/database/repositories/SampleRequestRepository';
@@ -41,7 +41,6 @@ function mockRes() {
 const rep = { id: 'u-1', role: 'salesperson' };
 const validUuid = '550e8400-e29b-41d4-a716-446655440000';
 const EV = '6f1c2b1e-3a4d-4c5e-8f90-1a2b3c4d5e6f';
-const U9 = '7a2d3c2f-4b5e-4d6f-9a01-2b3c4d5e6f70';
 
 describe('sample request routes', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -178,74 +177,70 @@ describe('sample request routes', () => {
     expect(sampleRequestRepository.reorder).toHaveBeenCalledWith('products', [id1, id2]);
   });
 
-  it('mine endpoints always target the caller', async () => {
-    await handleGetMine({ user: rep, params: { eventId: EV } } as any, mockRes());
-    expect(sampleRequestService.getRequest).toHaveBeenCalledWith(EV, 'u-1', rep);
-    await handleSaveMine({ user: rep, params: { eventId: EV }, body: { items: [], materials: [] } } as any, mockRes());
-    expect(sampleRequestService.saveDraft).toHaveBeenCalledWith(EV, 'u-1', { items: [], materials: [] }, rep);
-    await handleSubmitMine({ user: rep, params: { eventId: EV } } as any, mockRes());
-    expect(sampleRequestService.submit).toHaveBeenCalledWith(EV, 'u-1', rep);
-  });
-
   it('handleListMine returns { requests }', async () => {
     const res = mockRes();
     await handleListMine({ user: rep } as any, res);
     expect(res.json).toHaveBeenCalledWith({ requests: [{ eventId: 'ev-1' }] });
   });
 
-  it('on-behalf handlers target path user and pass actor', async () => {
-    const admin = { id: 'adm', role: 'admin' };
-
-    await handleGetForUser({ user: admin, params: { eventId: EV, userId: U9 } } as any, mockRes());
-    expect(sampleRequestService.getRequest).toHaveBeenCalledWith(EV, U9, admin);
-
-    await handleSaveForUser({ user: admin, params: { eventId: EV, userId: U9 }, body: { items: [] } } as any, mockRes());
-    expect(sampleRequestService.saveDraft).toHaveBeenCalledWith(EV, U9, { items: [] }, admin);
-
-    await handleSubmitForUser({ user: admin, params: { eventId: EV, userId: U9 } } as any, mockRes());
-    expect(sampleRequestService.submit).toHaveBeenCalledWith(EV, U9, admin);
+  it('get/patch/submit/history pass the event and the actor', async () => {
+    await handleGetEvent({ user: rep, params: { eventId: EV } } as any, mockRes());
+    expect(sampleRequestService.getForEvent).toHaveBeenCalledWith(EV, rep);
+    await handlePatchEvent({ user: rep, params: { eventId: EV }, body: { items: [], materials: [] } } as any, mockRes());
+    expect(sampleRequestService.patchRows).toHaveBeenCalledWith(EV, { items: [], materials: [] }, rep);
+    await handleSubmitEvent({ user: rep, params: { eventId: EV } } as any, mockRes());
+    expect(sampleRequestService.submit).toHaveBeenCalledWith(EV, rep);
+    const res = mockRes();
+    await handleGetHistory({ user: rep, params: { eventId: EV } } as any, res);
+    expect(sampleRequestService.getHistory).toHaveBeenCalledWith(EV, rep);
+    expect(res.json).toHaveBeenCalledWith({ changes: [{ id: 'c-1' }] });
   });
 
-  it('summary and access pass the actor through', async () => {
+  it('access returns both flags', async () => {
     const res = mockRes();
-    await handleGetSummary({ user: rep, params: { eventId: EV } } as any, res);
-    expect(sampleRequestService.getEventSummary).toHaveBeenCalledWith(EV, rep);
-    await handleAccess({ user: rep } as any, res);
-    expect(res.json).toHaveBeenCalledWith({ canViewSummary: true });
+    await handleEventAccess({ user: rep, params: { eventId: EV } } as any, res);
+    expect(res.json).toHaveBeenCalledWith({ canView: true, canEdit: false });
+  });
+
+  it('access skips the edit check when the caller cannot view', async () => {
+    vi.mocked(sampleRequestService.canViewSamples).mockResolvedValueOnce(false);
+    const res = mockRes();
+    await handleEventAccess({ user: rep, params: { eventId: EV } } as any, res);
+    expect(sampleRequestService.canEditSamples).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ canView: false, canEdit: false });
+  });
+
+  it('access lets an unknown-event error propagate instead of answering false', async () => {
+    vi.mocked(sampleRequestService.canViewSamples).mockRejectedValueOnce(new Error('Event not found'));
+    const res = mockRes();
+    await expect(handleEventAccess({ user: rep, params: { eventId: EV } } as any, res)).rejects.toThrow('Event not found');
+    expect(res.json).not.toHaveBeenCalled();
   });
 
   it('400s a non-UUID eventId before calling the service', async () => {
-    const res = mockRes();
-    await handleGetMine({ user: rep, params: { eventId: 'not-a-uuid' } } as any, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid id' });
-    expect(sampleRequestService.getRequest).not.toHaveBeenCalled();
+    for (const h of [handleGetEvent, handlePatchEvent, handleSubmitEvent, handleGetHistory, handleEventAccess]) {
+      const res = mockRes();
+      await h({ user: rep, params: { eventId: 'not-a-uuid' }, body: {} } as any, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid id' });
+    }
+    expect(sampleRequestService.getForEvent).not.toHaveBeenCalled();
+    expect(sampleRequestService.patchRows).not.toHaveBeenCalled();
+    expect(sampleRequestService.submit).not.toHaveBeenCalled();
+    expect(sampleRequestService.getHistory).not.toHaveBeenCalled();
+    expect(sampleRequestService.canViewSamples).not.toHaveBeenCalled();
   });
 
-  it('400s a non-UUID userId on an on-behalf route', async () => {
-    const res = mockRes();
-    await handleSaveForUser({ user: { id: 'adm', role: 'admin' }, params: { eventId: EV, userId: 'u-9' }, body: {} } as any, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid id' });
-    expect(sampleRequestService.saveDraft).not.toHaveBeenCalled();
-  });
-
-  it('router /mine and /access appear before /:eventId paths', () => {
-    const paths: string[] = [];
-    router.stack.forEach((layer: any) => {
-      if (layer.route?.path) {
-        paths.push(layer.route.path);
-      }
-    });
-
-    const mineIndex = paths.indexOf('/mine');
-    const accessIndex = paths.indexOf('/access');
-    const eventIdIndex = paths.findIndex((p: string) => p.includes(':eventId'));
-
-    expect(mineIndex).toBeGreaterThan(-1);
-    expect(accessIndex).toBeGreaterThan(-1);
-    expect(eventIdIndex).toBeGreaterThan(-1);
-    expect(mineIndex).toBeLessThan(eventIdIndex);
-    expect(accessIndex).toBeLessThan(eventIdIndex);
+  it('registers /catalog and /mine before /:eventId, and no per-user or summary routes', () => {
+    const paths: string[] = router.stack.filter((l: any) => l.route).map((l: any) => l.route.path);
+    const firstEvent = paths.findIndex((p) => p.startsWith('/:eventId'));
+    expect(firstEvent).toBeGreaterThan(-1);
+    expect(paths.indexOf('/catalog')).toBeGreaterThan(-1);
+    expect(paths.indexOf('/catalog')).toBeLessThan(firstEvent);
+    expect(paths.indexOf('/mine')).toBeGreaterThan(-1);
+    expect(paths.indexOf('/mine')).toBeLessThan(firstEvent);
+    expect(paths.some((p) => /mine$|users|summary/.test(p) && p !== '/mine')).toBe(false);
+    expect(paths).not.toContain('/access');
+    expect(paths).toEqual(expect.arrayContaining(['/:eventId', '/:eventId/access', '/:eventId/submit', '/:eventId/history']));
   });
 });

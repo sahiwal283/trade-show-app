@@ -19,19 +19,21 @@ describe('SampleRequestReminderService.scan', () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it('reminds unsubmitted participants inside the 48h window, once', async () => {
+  it('reminds every participant inside the 48h window, once, submitted or not', async () => {
     vi.setSystemTime(new Date('2026-10-20T12:00:00Z')); // Oct 22 03:59:59Z − Oct 20 12:00Z = 39h59m ≈ 40h, inside 48h
     vi.mocked(query)
       .mockResolvedValueOnce({ rows: [EVENT] } as any)                                  // candidate events
-      .mockResolvedValueOnce({ rows: [{ user_id: 'u-1' }, { user_id: 'u-2' }] } as any)  // unsubmitted
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u-1' }, { user_id: 'u-2' }] } as any)  // participants
       .mockResolvedValueOnce({ rows: [{ event_id: 'ev-1' }] } as any)                    // claim u-1 ok
       .mockResolvedValueOnce({ rows: [] } as any);                                       // claim u-2 conflict
     await sampleRequestReminderService.scan();
     expect(notificationService.notify).toHaveBeenCalledTimes(1);
     expect(notificationService.notify).toHaveBeenCalledWith('u-1', expect.objectContaining({
-      kind: 'sample_request.closing_48h', link: { page: 'checklist', eventId: 'ev-1' },
+      kind: 'sample_request.closing_48h', link: { page: 'samples', eventId: 'ev-1' },
     }));
-    // Ledger-first: candidates, unsubmitted, then one claim INSERT per participant.
+    const participantsSql = String(vi.mocked(query).mock.calls[1][0]);
+    expect(participantsSql).not.toMatch(/sample_requests|status/);
+    // Ledger-first: candidates, participants, then one claim INSERT per participant.
     const calls = vi.mocked(query).mock.calls;
     expect(calls).toHaveLength(4);
     expect(calls[2][0]).toMatch(/INSERT INTO sample_request_reminders/);
@@ -53,6 +55,22 @@ describe('SampleRequestReminderService.scan', () => {
     vi.mocked(query).mockResolvedValueOnce({ rows: [EVENT] } as any);
     await sampleRequestReminderService.scan();
     expect(notificationService.notify).not.toHaveBeenCalled();
+  });
+
+  it('a failed notify for one participant does not stop the next one', async () => {
+    vi.setSystemTime(new Date('2026-10-20T12:00:00Z'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(query)
+      .mockResolvedValueOnce({ rows: [EVENT] } as any)
+      .mockResolvedValueOnce({ rows: [{ user_id: 'u-1' }, { user_id: 'u-2' }] } as any)
+      .mockResolvedValueOnce({ rows: [{ event_id: 'ev-1' }] } as any)   // claim u-1 ok
+      .mockResolvedValueOnce({ rows: [{ event_id: 'ev-1' }] } as any);  // claim u-2 ok
+    vi.mocked(notificationService.notify).mockRejectedValueOnce(new Error('push down'));
+    await expect(sampleRequestReminderService.scan()).resolves.toBeUndefined();
+    expect(notificationService.notify).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(notificationService.notify).mock.calls.map((c) => c[0])).toEqual(['u-1', 'u-2']);
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('u-1'), expect.any(Error));
+    errorSpy.mockRestore();
   });
 
   it('never throws out of scan', async () => {

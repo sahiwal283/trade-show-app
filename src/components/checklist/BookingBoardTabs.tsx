@@ -8,7 +8,7 @@
 import React from 'react';
 import { boardTabId, boardPanelId } from './bookingText';
 
-export type BoardTabKey = 'booth' | 'flights' | 'hotels' | 'cars' | 'tasks';
+export type BoardTabKey = 'booth' | 'flights' | 'hotels' | 'cars' | 'tasks' | 'samples';
 
 export interface BoardTab {
   key: BoardTabKey;
