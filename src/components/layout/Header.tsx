@@ -171,7 +171,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
               <p className="text-sm font-semibold text-stone-900">{user.name}</p>
               <p className="text-xs text-stone-500 capitalize">{user.role}</p>
             </div>
-            <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-accent-500 rounded-full shadow-brand flex items-center justify-center">
+            <div className="w-9 h-9 bg-gradient-to-br from-brand-500 to-grad-500 rounded-full shadow-brand flex items-center justify-center">
               <span className="text-white font-semibold text-sm">
                 {user.name.charAt(0)}
               </span>
@@ -179,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
           </div>
 
           {/* Mobile: Just avatar */}
-          <div className="md:hidden w-8 h-8 bg-gradient-to-br from-brand-500 to-accent-500 rounded-full flex items-center justify-center">
+          <div className="md:hidden w-8 h-8 bg-gradient-to-br from-brand-500 to-grad-500 rounded-full flex items-center justify-center">
             <span className="text-white font-semibold text-sm">
               {user.name.charAt(0)}
             </span>

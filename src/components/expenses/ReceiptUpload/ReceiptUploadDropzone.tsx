@@ -44,7 +44,7 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
       
       <div className="space-y-4 sm:space-y-6">
         <div className="flex justify-center">
-          <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-accent-500 shadow-brand">
+          <div className="flex h-20 w-20 sm:h-24 sm:w-24 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-grad-500 shadow-brand">
             <Camera className="h-10 w-10 text-white sm:hidden" />
             <Upload className="hidden sm:block w-12 h-12 text-white" />
           </div>
@@ -81,7 +81,7 @@ export const ReceiptUploadDropzone: React.FC<ReceiptUploadDropzoneProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-3 text-left">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-50 text-purple-600 ring-1 ring-inset ring-purple-100">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600 ring-1 ring-inset ring-brand-100">
               <Scan className="w-5 h-5" />
             </div>
             <div>

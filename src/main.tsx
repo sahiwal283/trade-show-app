@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import './theme/theme.css';
 import './index.css';
 
 // Self-heal after deploys: a device holding a stale index.html requests

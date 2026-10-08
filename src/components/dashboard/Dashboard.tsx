@@ -74,6 +74,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onPageChange }) => {
         <InstallPWA />
       </div>
 
+
       {!board.show ? (
         <div className="card">
           <EmptyState

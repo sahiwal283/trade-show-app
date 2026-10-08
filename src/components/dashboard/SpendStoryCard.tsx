@@ -78,7 +78,7 @@ export function SpendStoryCard({
             className={`h-full rounded-full ${
               overBudget
                 ? 'bg-gradient-to-r from-amber-500 to-red-500'
-                : 'bg-gradient-to-r from-brand-600 to-accent-500'
+                : 'bg-gradient-to-r from-brand-600 to-grad-500'
             }`}
             style={{ width: `${Math.min(budgetPct, 100)}%` }}
           />

@@ -87,11 +87,11 @@ export function SpendByDayChart({ points, height = 72 }: SpendByDayChartProps) {
         role="img"
         aria-label="Spend by day"
       >
-        {areaPath && <path d={areaPath} fill="rgba(37, 99, 235, 0.07)" />}
+        {areaPath && <path d={areaPath} className="fill-brand-600/[0.07]" />}
         <path
           d={linePath}
           fill="none"
-          stroke="#2563eb"
+          className="stroke-brand-600"
           strokeWidth={2.5}
           vectorEffect="non-scaling-stroke"
           strokeLinecap="round"
@@ -103,12 +103,12 @@ export function SpendByDayChart({ points, height = 72 }: SpendByDayChartProps) {
               y1={PAD_Y}
               x2={activeCoord.x}
               y2={height - 2}
-              stroke="#d6d3d1"
+              className="stroke-stone-300"
               strokeWidth={1}
               vectorEffect="non-scaling-stroke"
               strokeDasharray="3 3"
             />
-            <circle cx={activeCoord.x} cy={activeCoord.y} r={4} fill="#2563eb" />
+            <circle cx={activeCoord.x} cy={activeCoord.y} r={4} className="fill-brand-600" />
           </>
         )}
       </svg>

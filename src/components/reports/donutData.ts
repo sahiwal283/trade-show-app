@@ -12,15 +12,15 @@ export interface DonutSlice {
 /** Largest slice wears the accent; the rest step down one blue ramp.
  *  Monotonic lightness keeps adjacent slices separable for CVD readers. */
 const RAMP = [
-  '#059669', // accent-600 — the headline slice
-  '#1e40af', // brand-800
-  '#2563eb', // brand-600
-  '#60a5fa', // brand-400
-  '#93c5fd', // brand-300
-  '#bfdbfe', // brand-200
+  'rgb(var(--c-accent-600))', // the headline slice
+  'rgb(var(--c-brand-800))',
+  'rgb(var(--c-brand-600))',
+  'rgb(var(--c-brand-400))',
+  'rgb(var(--c-brand-300))',
+  'rgb(var(--c-brand-200))',
 ];
 /** "Other" is a bucket, not an entity — it reads neutral. */
-const OTHER_COLOR = '#d6d3d1'; // stone-300
+const OTHER_COLOR = 'rgb(var(--c-stone-300))';
 export const OTHER_LABEL = 'Other';
 
 /** Fold a desc-sorted list into ≤ maxSlices slices, tail summed as "Other". */

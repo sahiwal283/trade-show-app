@@ -58,7 +58,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
               <tr key={user.id} className={`hover:bg-stone-50 ${user.is_active === false ? 'bg-stone-50/60 opacity-60' : ''}`}>
                 <td className="px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full flex items-center justify-center">
+                    <div className="w-10 h-10 bg-gradient-to-r from-brand-500 to-grad-600 rounded-full flex items-center justify-center">
                       <span className="text-white font-medium text-sm">
                         {user.name.charAt(0).toUpperCase()}
                       </span>

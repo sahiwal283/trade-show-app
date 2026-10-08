@@ -179,7 +179,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               <div className="space-y-2">
                 {event.participants.map((participant) => (
                   <div key={participant.id} className="flex items-center gap-3 rounded-lg bg-stone-50/80 p-3 ring-1 ring-inset ring-stone-200/70">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-accent-500">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-grad-500">
                       <span className="text-white font-medium">
                         {participant.name.charAt(0).toUpperCase()}
                       </span>
@@ -203,13 +203,13 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
           {!loadingChecklist && checklistData?.booth_map_url && (
             <div>
               <h3 className="mb-2 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-stone-400">
-                <span className="chip-dot bg-purple-500"></span>
+                <span className="chip-dot bg-brand-500"></span>
                 Booth Floor Plan
               </h3>
-              <div className="rounded-lg bg-purple-50 p-4 ring-1 ring-inset ring-purple-200/70">
+              <div className="rounded-lg bg-brand-50 p-4 ring-1 ring-inset ring-brand-200/70">
                 <div className="flex items-center gap-2 mb-3">
-                  <Map className="w-5 h-5 text-purple-600" />
-                  <span className="font-medium text-purple-900">Booth Layout</span>
+                  <Map className="w-5 h-5 text-brand-600" />
+                  <span className="font-medium text-brand-900">Booth Layout</span>
                 </div>
                 <BoothMapImage 
                   boothMapUrl={checklistData.booth_map_url} 

@@ -28,7 +28,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
       <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+            <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center">
               <UserX className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -60,7 +60,7 @@ export const RejectionModal: React.FC<RejectionModalProps> = ({
 
         <div className="mb-4 p-4 bg-stone-50 rounded-lg">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
               <span className="text-white font-medium text-sm">
                 {user.name.charAt(0).toUpperCase()}
               </span>

@@ -59,37 +59,37 @@ export const ExpenseModalDetailsView: React.FC<ExpenseModalDetailsViewProps> = (
           icon={<DollarSign className="w-5 h-5" />}
           label="Amount"
           value={`$${expense.amount.toFixed(2)}`}
-          bgColor="bg-accent-50"
-          iconColor="text-accent-600"
+          bgColor="bg-brand-50"
+          iconColor="text-brand-600"
         />
         <DetailItem
           icon={<FileText className="w-5 h-5" />}
           label="Category"
           value={expense.category}
-          bgColor="bg-purple-50"
-          iconColor="text-purple-600"
+          bgColor="bg-brand-50"
+          iconColor="text-brand-600"
         />
         <DetailItem
           icon={<Receipt className="w-5 h-5" />}
           label="Merchant"
           value={expense.merchant}
-          bgColor="bg-orange-50"
-          iconColor="text-orange-600"
+          bgColor="bg-brand-50"
+          iconColor="text-brand-600"
         />
         <DetailItem
           icon={<CreditCard className="w-5 h-5" />}
           label="Card Used"
           value={expense.cardUsed || 'N/A'}
-          bgColor="bg-indigo-50"
-          iconColor="text-indigo-600"
+          bgColor="bg-brand-50"
+          iconColor="text-brand-600"
         />
         {expense.location && (
           <DetailItem
             icon={<MapPin className="w-5 h-5" />}
             label="Location"
             value={expense.location}
-            bgColor="bg-red-50"
-            iconColor="text-red-600"
+            bgColor="bg-brand-50"
+            iconColor="text-brand-600"
           />
         )}
         {expense.user_name && (
@@ -97,8 +97,8 @@ export const ExpenseModalDetailsView: React.FC<ExpenseModalDetailsViewProps> = (
             icon={<User className="w-5 h-5" />}
             label="Submitted By"
             value={expense.user_name}
-            bgColor="bg-teal-50"
-            iconColor="text-teal-600"
+            bgColor="bg-brand-50"
+            iconColor="text-brand-600"
           />
         )}
       </div>

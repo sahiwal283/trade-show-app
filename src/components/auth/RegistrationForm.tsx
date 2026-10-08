@@ -213,7 +213,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
         <div className="max-w-md w-full">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-gradient-to-r from-brand-500 to-grad-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <CheckCircle className="w-8 h-8 text-white" />
               </div>
               <h2 className="font-display text-2xl font-bold tracking-tight text-stone-900 mb-4">Registration Successful!</h2>
@@ -247,7 +247,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({ onBack }) =>
           </button>
           
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-brand-500 to-grad-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <User className="w-8 h-8 text-white" />
             </div>
             <h1 className="font-display text-2xl font-bold tracking-tight text-stone-900">Create Account</h1>

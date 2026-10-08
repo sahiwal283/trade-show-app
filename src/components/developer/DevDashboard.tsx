@@ -59,7 +59,7 @@ export const DevDashboard: React.FC = () => {
     <div className="space-y-4 md:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-hero-2 to-hero-3 rounded-lg flex items-center justify-center">
             <Code className="w-6 h-6 text-white" />
           </div>
           <div>

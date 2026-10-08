@@ -13,6 +13,7 @@ import { CrmLeadRow, leadGroupName } from './hooks/useCrmLeads';
 import { cleanShowName, fmtMoneyFull as fmt, fmtMoneyExact as fmt2 } from './roiData';
 import { getTodayLocalDateString } from '../../utils/dateUtils';
 import { API_CONFIG, STORAGE_KEYS } from '../../constants/appConstants';
+import { UNASSIGNED_ENTITY_COLOR } from '../../utils/reportUtils';
 
 /** Authenticated binary download (PDF / xlsx) from the summaries API. */
 async function downloadReport(file: string, saveAs: string): Promise<void> {
@@ -301,7 +302,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
             <span
               aria-hidden="true"
               className="h-2 w-2 rounded-sm"
-              style={{ backgroundColor: entityColorMap[c] || '#898781' }}
+              style={{ backgroundColor: entityColorMap[c] || UNASSIGNED_ENTITY_COLOR }}
             />
             {c}
           </button>
@@ -393,7 +394,7 @@ export const ShowComparison: React.FC<ShowComparisonProps> = ({
                                     title={`${c}: ${fmt2(perCompany[c])}`}
                                     style={{
                                       width: `${(perCompany[c] / total) * 100}%`,
-                                      backgroundColor: entityColorMap[c] || '#898781',
+                                      backgroundColor: entityColorMap[c] || UNASSIGNED_ENTITY_COLOR,
                                       marginLeft: i > 0 ? '1px' : undefined,
                                     }}
                                   />

@@ -15,7 +15,7 @@ import { RoiShowGroup, Trend, fmtMoneyCompact, fmtMoneyFull, fmtMult } from './r
 
 const MAX_ROWS_COLLAPSED = 12;
 /** Diverging poles: accent green right (made money), amber left (cost money) */
-const POSITIVE = '#10b981'; // accent-500
+const POSITIVE = 'rgb(var(--c-accent-500))';
 const NEGATIVE = '#f59e0b'; // amber-500
 
 interface NetReturnBarsProps {

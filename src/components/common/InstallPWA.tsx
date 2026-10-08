@@ -91,7 +91,7 @@ export const InstallPWA: React.FC = () => {
           <X className="w-4 h-4" />
         </button>
         <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-lg flex items-center justify-center">
+          <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-r from-brand-500 to-grad-600 rounded-lg flex items-center justify-center">
             <Download className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
