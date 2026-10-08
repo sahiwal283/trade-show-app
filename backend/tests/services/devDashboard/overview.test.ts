@@ -73,6 +73,19 @@ describe('getHealthChecks', () => {
     expect(await statusOf('error-rate')).toMatchObject({ status: 'warn', value: '15.0% of 100 requests' });
   });
 
+  it('labels the error rate with what it leaves out', async () => {
+    routeQueries(query, HEALTHY);
+    expect((await statusOf('error-rate')).label).toBe('API error rate (excluding 401/404/410)');
+  });
+
+  it('leaves 401, 404 and 410 out of the error count, and the dashboard\'s own requests out altogether', async () => {
+    routeQueries(query, HEALTHY);
+    await getHealthChecks();
+    const sql: string = query.mock.calls.find(([text]) => text.includes('devdash:check-error-rate'))![0];
+    expect(sql).toContain('status_code >= 400 AND status_code NOT IN (401, 404, 410)');
+    expect(sql).toContain("endpoint NOT LIKE '/api/dev-dashboard%'");
+  });
+
   it('does not warn on a high error rate from a handful of requests', async () => {
     routeQueries(query, withRoute('check-error-rate', [{ total: 15, errors: 9 }]));
     expect((await statusOf('error-rate')).status).toBe('pass');

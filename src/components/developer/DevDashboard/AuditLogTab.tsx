@@ -106,54 +106,59 @@ export const AuditLogTab: React.FC<{ timeRange: TimeRange }> = ({ timeRange }) =
       </form>
 
       <TabState resource={resource} skeletonRows={6}>
-        {(data) =>
-          data.logs.length === 0 ? (
-            <p className="py-8 text-center text-sm text-stone-500">No audit entries match.</p>
-          ) : (
+        {(data) => {
+          const empty = data.logs.length === 0;
+          const nothingMatches = <p className="py-8 text-center text-sm text-stone-500">No audit entries match.</p>;
+          // An empty first page has nothing to page through. An empty later page
+          // (rows pruned or filtered away since) still needs the way back.
+          if (empty && offset === 0) return nothingMatches;
+          return (
             <>
-              <div className="overflow-x-auto rounded-lg border border-stone-200">
-                <table className="w-full" aria-label="Audit log">
-                  <thead className="bg-stone-50">
-                    <tr>
-                      <th className={TH}>When</th>
-                      <th className={TH}>Person</th>
-                      <th className={TH}>Action</th>
-                      <th className={TH}>Outcome</th>
-                      <th className={TH}>Address</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100">
-                    {data.logs.map((log) => {
-                      const outcome = OUTCOME[log.status] ?? { label: log.status, tone: 'bg-stone-100 text-stone-700' };
-                      return (
-                        <tr key={log.id}>
-                          <td className={`${TD} whitespace-nowrap text-stone-600`}>{formatDateTime(log.createdAt)}</td>
-                          <td className={TD}>
-                            <span className="font-medium text-stone-900">{log.userName ?? 'Not signed in'}</span>
-                            {log.userRole && <span className="ml-2 text-xs text-stone-500">{log.userRole}</span>}
-                          </td>
-                          <td className={TD}>
-                            <span className="mr-2 inline-block rounded bg-stone-100 px-1.5 py-0.5 text-xs font-medium text-stone-700">
-                              {log.method ?? 'Sign-in'}
-                            </span>
-                            <span className="font-mono text-xs text-stone-800 break-all">{log.path ?? log.action}</span>
-                            {log.errorMessage && <p className="mt-0.5 text-xs text-red-700">{log.errorMessage}</p>}
-                          </td>
-                          <td className={TD}>
-                            <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${outcome.tone}`}>
-                              {outcome.label}
-                            </span>
-                          </td>
-                          <td className={`${TD} font-mono text-xs text-stone-600`}>{log.ipAddress ?? '—'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {empty ? nothingMatches : (
+                <div className="overflow-x-auto rounded-lg border border-stone-200">
+                  <table className="w-full" aria-label="Audit log">
+                    <thead className="bg-stone-50">
+                      <tr>
+                        <th className={TH}>When</th>
+                        <th className={TH}>Person</th>
+                        <th className={TH}>Action</th>
+                        <th className={TH}>Outcome</th>
+                        <th className={TH}>Address</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {data.logs.map((log) => {
+                        const outcome = OUTCOME[log.status] ?? { label: log.status, tone: 'bg-stone-100 text-stone-700' };
+                        return (
+                          <tr key={log.id}>
+                            <td className={`${TD} whitespace-nowrap text-stone-600`}>{formatDateTime(log.createdAt)}</td>
+                            <td className={TD}>
+                              <span className="font-medium text-stone-900">{log.userName ?? 'Not signed in'}</span>
+                              {log.userRole && <span className="ml-2 text-xs text-stone-500">{log.userRole}</span>}
+                            </td>
+                            <td className={TD}>
+                              <span className="mr-2 inline-block rounded bg-stone-100 px-1.5 py-0.5 text-xs font-medium text-stone-700">
+                                {log.method ?? 'Sign-in'}
+                              </span>
+                              <span className="font-mono text-xs text-stone-800 break-all">{log.path ?? log.action}</span>
+                              {log.errorMessage && <p className="mt-0.5 text-xs text-red-700">{log.errorMessage}</p>}
+                            </td>
+                            <td className={TD}>
+                              <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-medium ${outcome.tone}`}>
+                                {outcome.label}
+                              </span>
+                            </td>
+                            <td className={`${TD} font-mono text-xs text-stone-600`}>{log.ipAddress ?? '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <p className="text-sm text-stone-600 tabular-nums">
-                  {`${offset + 1}–${offset + data.logs.length} of ${data.total.toLocaleString('en-US')}`}
+                  {`${empty ? '0' : `${offset + 1}–${offset + data.logs.length}`} of ${data.total.toLocaleString('en-US')}`}
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -169,7 +174,7 @@ export const AuditLogTab: React.FC<{ timeRange: TimeRange }> = ({ timeRange }) =
                     type="button"
                     className="btn-secondary"
                     aria-label="Next page"
-                    disabled={offset + PAGE_SIZE >= data.total}
+                    disabled={empty || offset + PAGE_SIZE >= data.total}
                     onClick={() => goTo(offset + PAGE_SIZE)}
                   >
                     Next
@@ -177,8 +182,8 @@ export const AuditLogTab: React.FC<{ timeRange: TimeRange }> = ({ timeRange }) =
                 </div>
               </div>
             </>
-          )
-        }
+          );
+        }}
       </TabState>
     </div>
   );

@@ -15,7 +15,7 @@ export interface ApiAnalytics {
   slowest: Array<{ method: string; endpoint: string; calls: number; avgMs: number; maxMs: number }>;
   recentErrors: Array<{
     id: string; createdAt: string; method: string; endpoint: string; statusCode: number;
-    userName: string | null; errorMessage: string | null;
+    userName: string | null; userAgent: string | null; errorMessage: string | null;
   }>;
 }
 
@@ -86,7 +86,7 @@ export async function getApiAnalytics(range: TimeRange, now: Date = new Date()):
        ORDER BY avg_ms DESC
        LIMIT 10`, [interval]),
     query(`/* devdash:api-recent-errors */
-      SELECT a.id, a.created_at, a.method, a.endpoint, a.status_code, u.name AS user_name, a.error_message
+      SELECT a.id, a.created_at, a.method, a.endpoint, a.status_code, u.name AS user_name, a.user_agent, a.error_message
         FROM api_requests a
         LEFT JOIN users u ON u.id = a.user_id
        WHERE a.created_at > NOW() - $1::interval
@@ -130,6 +130,7 @@ export async function getApiAnalytics(range: TimeRange, now: Date = new Date()):
       endpoint: row.endpoint,
       statusCode: row.status_code,
       userName: row.user_name ?? null,
+      userAgent: row.user_agent ?? null,
       errorMessage: row.error_message ?? null,
     })),
   };

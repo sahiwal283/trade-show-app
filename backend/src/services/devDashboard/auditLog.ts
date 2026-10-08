@@ -95,12 +95,17 @@ export async function getAuditLogs(q: AuditQuery): Promise<AuditLogPage> {
   const count = await query(`/* devdash:audit-count */
     SELECT COUNT(*)::int AS total FROM audit_logs WHERE ${whereSql}`, params);
 
+  // ip_address is INET where the migration created the table, but VARCHAR on a
+  // database whose table predates it, and may then hold text that is not an
+  // address. Reading it as text and cutting at the slash drops INET's "/32"
+  // suffix and can never throw, where a cast to inet fails the whole page.
+  // id breaks ties so rows written in the same instant keep one order across pages.
   const page = await query(`/* devdash:audit-rows */
     SELECT id, created_at, user_name, user_role, action, request_method, request_path,
-           status, host(ip_address::inet) AS ip_address, error_message
+           status, split_part(ip_address::text, '/', 1) AS ip_address, error_message
       FROM audit_logs
      WHERE ${whereSql}
-     ORDER BY created_at DESC
+     ORDER BY created_at DESC, id DESC
      LIMIT $${params.length + 1} OFFSET $${params.length + 2}`, [...params, q.limit, q.offset]);
 
   return {

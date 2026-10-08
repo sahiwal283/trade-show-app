@@ -3,6 +3,7 @@ import { ArrowDown, ArrowUp } from 'lucide-react';
 import type { ApiAnalytics, TimeRange } from './types';
 import { TrendBars } from './TrendBars';
 import { formatDateTime } from './format';
+import { describeUserAgent } from './userAgent';
 
 type Endpoint = ApiAnalytics['endpoints'][number];
 type SortKey = 'calls' | 'avgMs' | 'p95Ms' | 'maxMs' | 'errors';
@@ -41,6 +42,20 @@ export function bucketLabel(start: string, range: TimeRange): string {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   }
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+const RAW_AGENT_MAX = 60;
+
+/**
+ * Who made a failing call: "Chrome · macOS" when the agent is a browser we can
+ * name, otherwise the agent itself (a script or poller says more raw than as
+ * "Other"), cut short. Null when the client sent none.
+ */
+function clientLabel(userAgent: string | null): string | null {
+  if (!userAgent) return null;
+  const { label } = describeUserAgent(userAgent);
+  if (label !== 'Other' && label !== 'Unknown') return label;
+  return userAgent.length > RAW_AGENT_MAX ? `${userAgent.slice(0, RAW_AGENT_MAX)}…` : userAgent;
 }
 
 const Stat: React.FC<{ label: string; value: string; note?: string }> = ({ label, value, note }) => (
@@ -124,7 +139,7 @@ export const ApiTab: React.FC<{ data: ApiAnalytics; timeRange: TimeRange }> = ({
               <tbody className="divide-y divide-stone-100">
                 {endpoints.map((endpoint) => (
                   <tr key={`${endpoint.method} ${endpoint.endpoint}`}>
-                    <td className="px-3 py-2 text-sm font-mono text-xs text-stone-800">{endpoint.endpoint}</td>
+                    <td className="px-3 py-2 font-mono text-xs text-stone-800">{endpoint.endpoint}</td>
                     <td className="px-3 py-2 text-sm"><Method value={endpoint.method} /></td>
                     <td className={`${TD} text-right text-stone-900`}>{endpoint.calls.toLocaleString('en-US')}</td>
                     <td className={`${TD} text-right text-stone-700`}>{`${endpoint.avgMs}ms`}</td>
@@ -170,21 +185,25 @@ export const ApiTab: React.FC<{ data: ApiAnalytics; timeRange: TimeRange }> = ({
             <p className="text-sm text-stone-500">No errors in this range.</p>
           ) : (
             <ul className="divide-y divide-stone-100 max-h-96 overflow-y-auto">
-              {data.recentErrors.map((error) => (
-                <li key={error.id} className="py-2 text-sm">
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    <span className={`font-medium tabular-nums ${error.statusCode >= 500 ? 'text-red-600' : 'text-amber-700'}`}>
-                      {error.statusCode}
-                    </span>
-                    <Method value={error.method} />
-                    <span className="font-mono text-xs text-stone-800 break-all">{error.endpoint}</span>
-                  </div>
-                  <p className="mt-0.5 text-xs text-stone-500">
-                    {`${formatDateTime(error.createdAt)} · ${error.userName ?? 'Not signed in'}`}
-                    {error.errorMessage && <span className="text-stone-700">{` · ${error.errorMessage}`}</span>}
-                  </p>
-                </li>
-              ))}
+              {data.recentErrors.map((error) => {
+                const client = clientLabel(error.userAgent);
+                return (
+                  <li key={error.id} className="py-2 text-sm">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className={`font-medium tabular-nums ${error.statusCode >= 500 ? 'text-red-600' : 'text-amber-700'}`}>
+                        {error.statusCode}
+                      </span>
+                      <Method value={error.method} />
+                      <span className="font-mono text-xs text-stone-800 break-all">{error.endpoint}</span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-stone-500">
+                      {`${formatDateTime(error.createdAt)} · ${error.userName ?? 'Not signed in'}`}
+                      {client && ` · ${client}`}
+                      {error.errorMessage && <span className="text-stone-700">{` · ${error.errorMessage}`}</span>}
+                    </p>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

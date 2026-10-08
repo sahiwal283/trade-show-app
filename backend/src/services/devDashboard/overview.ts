@@ -41,14 +41,17 @@ const plural = (count: number, word: string) => `${count} ${word}${count === 1 ?
 const CHECKS: CheckDefinition[] = [
   {
     id: 'error-rate',
-    label: 'API error rate',
+    label: 'API error rate (excluding 401/404/410)',
     threshold: 'under 10% in the last hour',
+    // 401 has its own check below; 404 and 410 mean a client asked for something
+    // that is not there, which is the client's fault and not a sign the app is ill.
     run: async () => {
       const { rows } = await query(`/* devdash:check-error-rate */
         SELECT COUNT(*)::int AS total,
-               COUNT(*) FILTER (WHERE status_code >= 400)::int AS errors
+               COUNT(*) FILTER (WHERE status_code >= 400 AND status_code NOT IN (401, 404, 410))::int AS errors
           FROM api_requests
-         WHERE created_at > NOW() - INTERVAL '1 hour'`);
+         WHERE created_at > NOW() - INTERVAL '1 hour'
+           AND endpoint NOT LIKE '/api/dev-dashboard%'`);
       const total = rows[0].total;
       const rate = total > 0 ? (rows[0].errors / total) * 100 : 0;
       return {

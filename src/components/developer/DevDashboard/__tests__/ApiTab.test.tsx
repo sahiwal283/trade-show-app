@@ -69,6 +69,35 @@ describe('ApiTab', () => {
     expect(errors[1]).toHaveTextContent('Not signed in');
   });
 
+  it('names the client behind each recent error after the person, and nothing when it sent no user agent', () => {
+    render(<ApiTab data={data} timeRange="24h" />);
+    const errors = within(screen.getByRole('region', { name: 'Recent errors' })).getAllByRole('listitem');
+    expect(errors[0]).toHaveTextContent('Sahil Khatri · Chrome · macOS · Not found');
+    expect(errors[0]).not.toHaveTextContent('Mozilla');
+    expect(errors[1].textContent).toMatch(/· Not signed in$/);
+  });
+
+  it('shows a client it cannot name by its raw user agent, cut to 60 characters', () => {
+    const script = 'python-requests/2.31.0';
+    const long = `internal-poller/${'x'.repeat(80)}`;
+    const recentErrors = [
+      { ...data.recentErrors[0], id: 'r1', userAgent: script },
+      { ...data.recentErrors[0], id: 'r2', userAgent: long },
+    ];
+    render(<ApiTab data={{ ...data, recentErrors }} timeRange="24h" />);
+    const errors = within(screen.getByRole('region', { name: 'Recent errors' })).getAllByRole('listitem');
+    expect(errors[0]).toHaveTextContent(`Sahil Khatri · ${script} · Not found`);
+    expect(errors[1]).toHaveTextContent(`Sahil Khatri · ${long.slice(0, 60)}… · Not found`);
+    expect(errors[1]).not.toHaveTextContent(long.slice(0, 61));
+  });
+
+  it('sets endpoint paths in one text size', () => {
+    render(<ApiTab data={data} timeRange="24h" />);
+    const cell = within(screen.getByRole('table', { name: 'Endpoints' })).getAllByRole('cell')[0];
+    expect(cell).toHaveClass('text-xs');
+    expect(cell).not.toHaveClass('text-sm');
+  });
+
   it('says so when there is no traffic at all', () => {
     const empty: ApiAnalytics = {
       totals: { requests: 0, errors: 0, errorRate: 0, p50Ms: 0, p95Ms: 0 },

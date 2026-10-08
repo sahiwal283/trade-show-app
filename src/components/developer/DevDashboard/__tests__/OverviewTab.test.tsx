@@ -53,6 +53,13 @@ describe('OverviewTab', () => {
     expect(rows[2]).toHaveTextContent('under 10% in the last hour');
   });
 
+  it('writes "Warning" in a shade that passes contrast on white', () => {
+    render(<OverviewTab data={data} />);
+    const warning = within(screen.getByRole('region', { name: 'Health checks' })).getByText('Warning');
+    expect(warning.closest('.text-amber-700')).not.toBeNull();
+    expect(warning.closest('.text-amber-600')).toBeNull();
+  });
+
   it('summarises the checks in one line', () => {
     render(<OverviewTab data={data} />);
     expect(screen.getByText('1 failing, 1 warning, 1 passing')).toBeInTheDocument();

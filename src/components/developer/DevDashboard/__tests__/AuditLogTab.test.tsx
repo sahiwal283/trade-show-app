@@ -105,6 +105,28 @@ describe('AuditLogTab', () => {
     render(<AuditLogTab timeRange="24h" />);
     await waitFor(() => expect(screen.getByText('No audit entries match.')).toBeInTheDocument());
     expect(screen.getByLabelText('Search')).toBeInTheDocument();
+    // Nothing to page through on an empty first page.
+    expect(screen.queryByRole('button', { name: 'Previous page' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Next page' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the way back when a later page turns out to be empty', async () => {
+    // Page two was there when Next was pressed; by the time it loads the rows have gone.
+    getAuditLogs.mockImplementation(async (filters: { offset: number }) =>
+      filters.offset === 0 ? { ...fixture, total: 120 } : { logs: [], total: 50 }
+    );
+    render(<AuditLogTab timeRange="24h" />);
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+    await waitFor(() => expect(screen.getByText('No audit entries match.')).toBeInTheDocument());
+    expect(screen.getByText('0 of 50')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next page' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Previous page' })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Previous page' }));
+    await waitFor(() => expect(rows()).toHaveLength(2));
+    expect(lastFilters().offset).toBe(0);
   });
 
   it('shows the real error when the log cannot be read', async () => {

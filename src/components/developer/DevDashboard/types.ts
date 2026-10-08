@@ -38,7 +38,7 @@ export interface ApiAnalytics {
   slowest: Array<{ method: string; endpoint: string; calls: number; avgMs: number; maxMs: number }>;
   recentErrors: Array<{
     id: string; createdAt: string; method: string; endpoint: string; statusCode: number;
-    userName: string | null; errorMessage: string | null;
+    userName: string | null; userAgent: string | null; errorMessage: string | null;
   }>;
 }
 

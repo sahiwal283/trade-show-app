@@ -8,7 +8,7 @@ const HEADING = 'text-sm font-semibold text-stone-900 mb-3';
 
 const CHECK_STATE: Record<HealthCheck['status'], { label: string; icon: typeof CheckCircle2; tone: string }> = {
   fail: { label: 'Failing', icon: XCircle, tone: 'text-red-600' },
-  warn: { label: 'Warning', icon: AlertTriangle, tone: 'text-amber-600' },
+  warn: { label: 'Warning', icon: AlertTriangle, tone: 'text-amber-700' },
   pass: { label: 'OK', icon: CheckCircle2, tone: 'text-emerald-600' },
 };
 const SEVERITY: HealthCheck['status'][] = ['fail', 'warn', 'pass'];

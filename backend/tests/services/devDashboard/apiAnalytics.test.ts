@@ -22,7 +22,7 @@ const ROWS: Array<[string, any[]]> = [
   ['api-slowest', [{ method: 'GET', endpoint: '/api/expenses', calls: 47, avg_ms: 137.2, max_ms: 349 }]],
   ['api-recent-errors', [{
     id: 'e1', created_at: new Date('2026-10-08T14:02:55.000Z'), method: 'POST', endpoint: '/api/events',
-    status_code: 500, user_name: null, error_message: null,
+    status_code: 500, user_name: null, user_agent: 'curl/8.4.0', error_message: null,
   }]],
 ];
 
@@ -37,6 +37,15 @@ describe('getApiAnalytics', () => {
     const result = await getApiAnalytics('24h', NOW);
     expect(result.totals).toEqual({ requests: 200, errors: 3, errorRate: 1.5, p50Ms: 24, p95Ms: 181 });
     expect(result.endpoints[0]).toMatchObject({ avgMs: 137, p95Ms: 301, maxMs: 349 });
+  });
+
+  it('reports the client behind each recent error, or null when it sent no user agent', async () => {
+    expect((await getApiAnalytics('24h', NOW)).recentErrors[0].userAgent).toBe('curl/8.4.0');
+    const sql: string = query.mock.calls.find(([text]) => text.includes('devdash:api-recent-errors'))![0];
+    expect(sql).toContain('a.user_agent');
+
+    routeQueries(query, ROWS.map(([n, r]) => (n === 'api-recent-errors' ? [n, [{ ...r[0], user_agent: null }]] : [n, r])) as any);
+    expect((await getApiAnalytics('24h', NOW)).recentErrors[0].userAgent).toBeNull();
   });
 
   it('reports a zero error rate when there were no requests', async () => {

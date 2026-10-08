@@ -68,6 +68,73 @@ describe('useDashboardResource', () => {
     expect(result.current.data).toBe('B');
   });
 
+  it('never shows the previous key\'s data, not even on the render where the key changes', async () => {
+    const pending = deferred<string>();
+    const fetchers: Record<string, () => Promise<string>> = { a: () => Promise.resolve('A'), b: () => pending.promise };
+    const seen: Array<{ k: string; data: string | undefined; loading: boolean }> = [];
+    const { result, rerender } = renderHook(
+      ({ k }) => {
+        const resource = useDashboardResource(k, fetchers[k]);
+        seen.push({ k, data: resource.data, loading: resource.loading });
+        return resource;
+      },
+      { initialProps: { k: 'a' } }
+    );
+    await waitFor(() => expect(result.current.data).toBe('A'));
+
+    rerender({ k: 'b' });
+    expect(seen.find((render) => render.k === 'b')).toEqual({ k: 'b', data: undefined, loading: true });
+    expect(seen.filter((render) => render.k === 'b').every((render) => render.data !== 'A')).toBe(true);
+
+    await act(async () => { pending.resolve('B'); });
+    expect(result.current).toMatchObject({ data: 'B', loading: false });
+  });
+
+  it('shows the new key\'s cached value on the very render where the key changes', async () => {
+    const warm = renderHook(() => useDashboardResource('b', () => Promise.resolve('cached B')));
+    await waitFor(() => expect(warm.result.current.data).toBe('cached B'));
+    warm.unmount();
+
+    const pending = deferred<string>();
+    const fetchers: Record<string, () => Promise<string>> = { a: () => Promise.resolve('A'), b: () => pending.promise };
+    const seen: Array<{ k: string; data: string | undefined; loading: boolean }> = [];
+    const { result, rerender } = renderHook(
+      ({ k }) => {
+        const resource = useDashboardResource(k, fetchers[k]);
+        seen.push({ k, data: resource.data, loading: resource.loading });
+        return resource;
+      },
+      { initialProps: { k: 'a' } }
+    );
+    await waitFor(() => expect(result.current.data).toBe('A'));
+
+    rerender({ k: 'b' });
+    expect(seen.find((render) => render.k === 'b')).toEqual({ k: 'b', data: 'cached B', loading: false });
+    await act(async () => { pending.resolve('fresh B'); });
+    expect(result.current.data).toBe('fresh B');
+  });
+
+  it('does not carry one key\'s error over to the next', async () => {
+    const pending = deferred<string>();
+    const fetchers: Record<string, () => Promise<string>> = {
+      a: () => Promise.reject(new Error('a failed')),
+      b: () => pending.promise,
+    };
+    const seen: Array<{ k: string; error: string | null }> = [];
+    const { result, rerender } = renderHook(
+      ({ k }) => {
+        const resource = useDashboardResource(k, fetchers[k]);
+        seen.push({ k, error: resource.error });
+        return resource;
+      },
+      { initialProps: { k: 'a' } }
+    );
+    await waitFor(() => expect(result.current.error).toBe('a failed'));
+    rerender({ k: 'b' });
+    expect(seen.filter((render) => render.k === 'b').every((render) => render.error === null)).toBe(true);
+    await act(async () => { pending.resolve('B'); });
+  });
+
   it('polls while the page is visible and pauses while it is hidden', async () => {
     vi.useFakeTimers();
     const fetcher = vi.fn().mockResolvedValue('x');

@@ -21,7 +21,7 @@
     ]
   },
   "checks": [
-    { "id": "error-rate", "label": "API error rate", "status": "pass", "value": "0.4% of 512 requests", "threshold": "under 10% in the last hour" },
+    { "id": "error-rate", "label": "API error rate (excluding 401/404/410)", "status": "pass", "value": "0.4% of 512 requests", "threshold": "under 10% in the last hour" },
     { "id": "slow-endpoints", "label": "Slow endpoints", "status": "warn", "value": "1 endpoint, slowest /api/expenses at 2400ms", "threshold": "none averaging over 2000ms" },
     { "id": "endpoint-failures", "label": "Repeated server errors", "status": "fail", "value": "POST /api/events failed 6 times", "threshold": "no endpoint with 5 or more 500s in the last hour" }
   ]

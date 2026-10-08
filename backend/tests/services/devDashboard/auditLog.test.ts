@@ -106,6 +106,18 @@ describe('getAuditLogs', () => {
     }
   });
 
+  it('reads the address as text, so a VARCHAR column holding something that is not an IP cannot fail the page', async () => {
+    await getAuditLogs(parseAuditQuery({}));
+    const [rowsSql] = sqlFor('audit-rows');
+    expect(rowsSql).toContain("split_part(ip_address::text, '/', 1) AS ip_address");
+    expect(rowsSql).not.toContain('::inet');
+  });
+
+  it('breaks ties between rows written in the same instant by id, so pages do not overlap', async () => {
+    await getAuditLogs(parseAuditQuery({}));
+    expect(sqlFor('audit-rows')[0]).toMatch(/ORDER BY created_at DESC, id DESC\s+LIMIT/);
+  });
+
   it('lets a query failure reach the caller instead of returning an empty list', async () => {
     routeQueries(query, [['audit-count', new Error('permission denied for table audit_logs')], ['audit-rows', []]]);
     await expect(getAuditLogs(parseAuditQuery({}))).rejects.toThrow('permission denied');

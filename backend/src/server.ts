@@ -32,6 +32,7 @@ import badgeScanRoutes from './routes/badgeScans';
 import notificationRoutes from './routes/notifications';
 import sampleRequestRoutes from './routes/sampleRequests';
 import pageViewRoutes from './routes/pageViews';
+import { retrainingStatusGone } from './routes/retiredEndpoints';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
@@ -126,6 +127,14 @@ app.use('/api/badge-scans', authenticateToken, sessionTracker, badgeScanRoutes);
 app.use('/api/notifications', authenticateToken, sessionTracker, notificationRoutes);
 app.use('/api/sample-requests', authenticateToken, sessionTracker, sampleRequestRoutes);
 app.use('/api/page-views', authenticateToken, sessionTracker, pageViewRoutes);
+
+// Tombstone. Something still calls GET /api/retraining/status once a minute with
+// a developer token, and the route was removed in v2.34.0. Left unmounted the
+// call would be an anonymous 404 and nobody could tell who is making it; behind
+// authenticateToken its api_requests row carries the caller's user and user
+// agent, which the dev dashboard's API tab shows under Recent errors.
+// Delete this route (and routes/retiredEndpoints.ts) once the caller is found and stopped.
+app.get('/api/retraining/status', authenticateToken, sessionTracker, retrainingStatusGone);
 
 // Health check (with database connectivity test) - existing contract
 app.get('/api/health', async (req, res) => {

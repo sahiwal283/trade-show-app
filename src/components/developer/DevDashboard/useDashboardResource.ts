@@ -29,13 +29,21 @@ export interface DashboardResource<T> {
   refresh: () => void;
 }
 
+interface Held<T> {
+  key: string;
+  data: T | undefined;
+  error: string | null;
+}
+
 export function useDashboardResource<T>(
   key: string,
   fetcher: () => Promise<T>,
   options: { pollMs?: number } = {}
 ): DashboardResource<T> {
-  const [data, setData] = useState<T | undefined>(() => cache.get(key) as T | undefined);
-  const [error, setError] = useState<string | null>(null);
+  // What is held belongs to one key. On the render where the key changes the
+  // effect below has not run yet, so the state is still the previous key's;
+  // it is only handed out when its key is the one being asked for.
+  const [held, setHeld] = useState<Held<T>>(() => ({ key, data: cache.get(key) as T | undefined, error: null }));
   const [refreshing, setRefreshing] = useState(false);
 
   // The newest fetcher and key, readable from a request that started earlier.
@@ -52,19 +60,25 @@ export function useDashboardResource<T>(
       cache.set(requestKey, result);
       // A response for a range or tab the user has already left must not win.
       if (currentKey.current !== requestKey) return;
-      setData(result);
-      setError(null);
+      setHeld({ key: requestKey, data: result, error: null });
     } catch (caught) {
       if (currentKey.current !== requestKey) return;
-      setError(caught instanceof Error ? caught.message : 'Failed to load');
+      const message = caught instanceof Error ? caught.message : 'Failed to load';
+      // The last good result for this key stays on screen beside the error.
+      setHeld((current) => ({
+        key: requestKey,
+        data: current.key === requestKey ? current.data : (cache.get(requestKey) as T | undefined),
+        error: message,
+      }));
     } finally {
       if (currentKey.current === requestKey) setRefreshing(false);
     }
   }, [key]);
 
   useEffect(() => {
-    setData(cache.get(key) as T | undefined);
-    setError(null);
+    setHeld((current) =>
+      current.key === key ? current : { key, data: cache.get(key) as T | undefined, error: null }
+    );
     void load();
     openResources.add(load);
     return () => {
@@ -80,6 +94,10 @@ export function useDashboardResource<T>(
     }, pollMs);
     return () => clearInterval(id);
   }, [load, pollMs]);
+
+  const isCurrent = held.key === key;
+  const data = isCurrent ? held.data : (cache.get(key) as T | undefined);
+  const error = isCurrent ? held.error : null;
 
   return { data, loading: data === undefined && error === null, refreshing, error, refresh: load };
 }
