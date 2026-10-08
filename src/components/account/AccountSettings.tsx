@@ -108,7 +108,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({ user, embedded
           <p className="mt-0.5 text-sm text-stone-500">How you appear across the app.</p>
         </div>
         <div className="flex items-center gap-3 px-4 py-4 sm:px-5">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-accent-500 font-display text-base font-semibold text-white">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-grad-500 font-display text-base font-semibold text-white">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0 flex-1">

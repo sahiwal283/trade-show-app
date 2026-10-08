@@ -114,7 +114,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({
             <button
               onClick={handleCameraTap}
               aria-label="Add expense — snap a receipt"
-              className="-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-accent-600 text-white shadow-brand-lg ring-4 ring-stone-50 transition-transform active:scale-95"
+              className="-mt-7 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-brand-600 to-grad-600 text-white shadow-brand-lg ring-4 ring-stone-50 transition-transform active:scale-95"
             >
               <Camera className="h-6 w-6" />
             </button>

@@ -92,7 +92,7 @@ export const EntityBreakdown: React.FC<EntityBreakdownProps> = ({ expenses, even
                 <div className="mb-6">
                   <div className="w-full bg-stone-100 rounded-full h-2 ring-1 ring-inset ring-stone-200/60">
                     <div
-                      className="h-2 rounded-full bg-gradient-to-r from-brand-500 to-accent-500 transition-all duration-500"
+                      className="h-2 rounded-full bg-gradient-to-r from-brand-500 to-grad-500 transition-all duration-500"
                       style={{ width: `${percentage}%` }}
                     ></div>
                   </div>

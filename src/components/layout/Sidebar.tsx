@@ -81,8 +81,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isCollapsed ? 'justify-center' : ''
         } ${
           isActive
-            ? 'bg-brand-50 text-brand-700'
-            : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+            ? 'bg-side-active text-side-active-text'
+            : 'text-side-text hover:bg-side-hover hover:text-side-hover-text'
         }`}
         title={isCollapsed ? item.label : undefined}
         aria-current={isActive ? 'page' : undefined}
@@ -90,11 +90,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {isActive && (
           <span
             aria-hidden="true"
-            className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-brand-500 to-accent-500"
+            className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-gradient-to-b from-side-ind-1 to-side-ind-2"
           />
         )}
         <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${
-          isActive ? 'text-brand-600' : 'text-stone-400 group-hover:text-stone-600'
+          isActive ? 'text-side-active-icon' : 'text-side-muted group-hover:text-side-hover-text'
         }`} />
         {!isCollapsed && (
           <span className={isActive ? 'font-semibold' : ''}>{item.label}</span>
@@ -109,9 +109,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div key={section.label ?? 'main'}>
           {sectionIndex > 0 && (
             isCollapsed ? (
-              <div className="my-3 mx-2 border-t border-stone-100" aria-hidden="true" />
+              <div className="my-3 mx-2 border-t border-side-border" aria-hidden="true" />
             ) : (
-              <p className="px-3 pt-5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-stone-400">
+              <p className="px-3 pt-5 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-side-muted">
                 {section.label}
               </p>
             )
@@ -128,20 +128,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const sidebarFooter = (isCollapsed: boolean) => (
     <div className="px-3 py-3 text-center">
       {!isCollapsed && (
-        <p className="text-[11px] text-stone-400">
+        <p className="text-[11px] text-side-muted">
           Made with{' '}
           <Heart aria-label="love" className="inline h-3 w-3 -mt-0.5 fill-red-500 text-red-500" /> by
           your Haute tech team
         </p>
       )}
-      <p className="mt-1 text-[11px] font-medium tracking-wide text-stone-400">v{APP_VERSION}</p>
+      <p className="mt-1 text-[11px] font-medium tracking-wide text-side-muted">v{APP_VERSION}</p>
     </div>
   );
 
   const userChip = (
-    <div className="rounded-card border border-stone-200/80 bg-gradient-to-br from-brand-50/70 to-accent-50/70 p-3 shadow-elevation-1">
+    <div className="rounded-card border border-stone-200/80 bg-gradient-to-br from-brand-50/70 to-grad-50/70 p-3 shadow-elevation-1">
       <div className="flex items-center gap-3">
-        <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-brand-500 to-accent-500 shadow-brand flex items-center justify-center">
+        <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-brand-500 to-grad-500 shadow-brand flex items-center justify-center">
           <span className="text-white font-semibold text-sm">
             {user.name.charAt(0)}
           </span>
@@ -156,24 +156,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const brandMark = (
     <div className="flex items-center gap-2.5">
-      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-500 to-accent-500 shadow-brand flex items-center justify-center">
+      <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-brand-500 to-grad-500 shadow-brand flex items-center justify-center">
         <Receipt className="w-4 h-4 text-white" />
       </div>
-      <span className="font-display font-bold tracking-tight text-stone-900">Argo</span>
+      <span className="font-display font-bold tracking-tight text-side-strong">Argo</span>
     </div>
   );
 
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className={`hidden lg:flex lg:flex-col fixed left-0 top-0 h-full bg-white border-r border-stone-200/80 transition-all duration-300 z-30 ${
+      <div className={`hidden lg:flex lg:flex-col fixed left-0 top-0 h-full bg-side-bg border-r border-side-border transition-all duration-300 z-30 ${
         collapsed ? 'w-16' : 'w-64'
       }`}>
-        <div className={`flex items-center border-b border-stone-100 p-4 ${collapsed ? 'justify-center' : 'justify-between'}`}>
+        <div className={`flex items-center border-b border-side-border p-4 ${collapsed ? 'justify-center' : 'justify-between'}`}>
           {!collapsed && brandMark}
           <button
             onClick={onToggleCollapse}
-            className="p-1.5 rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+            className="p-1.5 rounded-lg text-side-muted hover:bg-side-hover hover:text-side-hover-text transition-colors"
             title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             <ChevronLeft className={`w-5 h-5 transition-transform ${
@@ -190,14 +190,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Mobile Sidebar (slide-out) */}
-      <div className={`lg:hidden fixed left-0 top-0 h-full bg-white border-r border-stone-200/80 shadow-elevation-3 transition-transform duration-300 z-50 w-64 max-w-[85vw] flex flex-col pt-safe pb-safe ${
+      <div className={`lg:hidden fixed left-0 top-0 h-full bg-side-bg border-r border-side-border shadow-elevation-3 transition-transform duration-300 z-50 w-64 max-w-[85vw] flex flex-col pt-safe pb-safe ${
         mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
-        <div className="flex items-center justify-between p-4 border-b border-stone-100">
+        <div className="flex items-center justify-between p-4 border-b border-side-border">
           {brandMark}
           <button
             onClick={onCloseMobileMenu}
-            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] -mr-2 p-1.5 rounded-lg text-stone-400 hover:bg-stone-100 hover:text-stone-600 transition-colors"
+            className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] -mr-2 p-1.5 rounded-lg text-side-muted hover:bg-side-hover hover:text-side-hover-text transition-colors"
             title="Close menu"
           >
             <X className="w-5 h-5" />
@@ -210,7 +210,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {sidebarFooter(false)}
 
-        <div className="p-3 border-t border-stone-100">
+        <div className="p-3 border-t border-side-border">
           {userChip}
         </div>
       </div>

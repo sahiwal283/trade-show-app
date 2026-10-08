@@ -66,7 +66,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({ slices, centerLabel, ari
             <path
               key={label}
               d={donutSlicePath(100, 100, 90, 58, start, end)}
-              fill={color}
+              style={{ fill: color }}
               stroke="#ffffff"
               strokeWidth={2}
             >

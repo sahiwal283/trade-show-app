@@ -71,11 +71,11 @@
      lg:min-h-0 pins desktop (lg+) back to its original metrics. */
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg
-      bg-gradient-to-r from-brand-600 to-accent-500 px-4 py-2.5
+      bg-gradient-to-r from-brand-600 to-grad-500 px-4 py-2.5
       min-h-[44px] lg:min-h-0
       text-sm font-semibold text-white shadow-brand
       transition-all duration-200
-      hover:from-brand-700 hover:to-accent-600 hover:shadow-brand-lg
+      hover:from-brand-700 hover:to-grad-600 hover:shadow-brand-lg
       active:translate-y-px active:shadow-elevation-1
       focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
       disabled:opacity-50 disabled:pointer-events-none;
@@ -353,7 +353,7 @@
 
     .table-sticky-first thead th:first-child {
       z-index: 3;
-      background-color: #fafaf9;
+      background-color: rgb(var(--c-stone-50));
     }
 
     /* Variant for tables with a leading select-checkbox column (2.5rem wide):
@@ -378,7 +378,7 @@
 
     .table-sticky-2 thead th:nth-child(-n + 2) {
       z-index: 3;
-      background-color: #fafaf9;
+      background-color: rgb(var(--c-stone-50));
     }
   }
 

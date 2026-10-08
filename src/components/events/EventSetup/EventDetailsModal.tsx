@@ -179,7 +179,7 @@ export const EventDetailsModal: React.FC<EventDetailsModalProps> = ({
               <div className="space-y-2">
                 {event.participants.map((participant) => (
                   <div key={participant.id} className="flex items-center gap-3 rounded-lg bg-stone-50/80 p-3 ring-1 ring-inset ring-stone-200/70">
-                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-accent-500">
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-grad-500">
                       <span className="text-white font-medium">
                         {participant.name.charAt(0).toUpperCase()}
                       </span>
