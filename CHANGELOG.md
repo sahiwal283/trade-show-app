@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migration `047_create_page_views.sql`; `POST /api/page-views`; `usePageViewTracking`.
 - `middleware/auditTrail.ts` logs non-GET `/api` requests; `logAuth('token_refresh')` removed.
 - `RetentionJob` (daily): `api_requests` 30d, `page_views` 90d, `audit_logs` 365d, expired sessions. These cleanups existed but were never called.
+- Retention deletes in batches of 5,000 rows with a 100 ms pause between them, at most 400 batches per table per run, so the first run does not issue one DELETE over a year of `api_requests`. What is left over continues the next day.
+- Migration `048_ensure_audit_logs_shape.sql` brings `audit_logs` to the shape the code writes however the table was first created: missing columns added, the status check replaced so it accepts `warning`. `scripts/predeploy-2.34.0.sql` applies 047 and 048 as `postgres`, grants the app's role the dashboard's tables and records both migrations; run it once on production before the backend starts.
+- `GET /api/retraining/status` answers `410 Gone` behind authentication. Something still calls it once a minute; the tombstone makes the caller show up in the API tab. Remove it once the caller is stopped.
+- Recent errors carry `userAgent`, shown after the person's name, so a failing client can be told apart from a person.
+- The Overview's error-rate check ignores the dashboard's own requests and does not count 401, 404 or 410. Sign-in audit rows record the client's address rather than the proxy's.
 - Removed routes: `/api/retraining/*`, `/api/training/*`, `/api/learning/*`, `/api/training/sync/*`, `GET /api/ocr/v2/corrections/stats`, `GET /api/ocr/v2/corrections/export`, `GET /api/ocr/v2/accuracy`, and the old `/api/dev-dashboard/{version,summary,metrics,alerts,page-analytics,ocr-metrics}`.
 - The dashboard no longer pages the Midas expense set.
 

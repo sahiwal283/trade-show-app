@@ -5682,30 +5682,15 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
 Run by the session owner with the user, not by a task subagent: it needs production access and one decision from the user.
 
-- [ ] **Step 1: Find out why production's audit log is empty**
+- [ ] **Step 1: Run the predeploy script on the production database**
 
-Ask the user to run this on CT 2320 as `postgres` against `expense_app_production` and paste the output:
+Nobody can read production before the deploy, so nothing is diagnosed first. Copy `scripts/predeploy-2.34.0.sql` to the database container and run it as `postgres` before deploying the backend:
 
-```sql
-SELECT tableowner FROM pg_tables WHERE tablename = 'audit_logs';
-SELECT has_table_privilege('trade_show_app_prod', 'audit_logs', 'INSERT, SELECT, DELETE') AS can_use;
-SELECT count(*) FROM audit_logs;
-SELECT data_type FROM information_schema.columns WHERE table_name = 'audit_logs' AND column_name = 'ip_address';
+```bash
+su postgres -c "psql -X -v ON_ERROR_STOP=1 -d expense_app_production -f /tmp/predeploy-2.34.0.sql"
 ```
 
-- Table missing: apply `004_create_audit_log.sql` as `postgres`, `GRANT ALL ON audit_logs TO trade_show_app_prod`, and insert its `schema_migrations` row.
-- `can_use` is false: `GRANT SELECT, INSERT, DELETE ON audit_logs TO trade_show_app_prod;` as `postgres`.
-- `can_use` is true and the count is above zero: the old read path was at fault and the new one replaces it; nothing to fix.
-- `can_use` is true and the count is zero: check the backend journal for `Failed to log audit event` before deploying, and fix what it names.
-
-Also confirm the app role can prune the other tables:
-
-```sql
-SELECT has_table_privilege('trade_show_app_prod', 'api_requests', 'DELETE') AS api_requests,
-       has_table_privilege('trade_show_app_prod', 'user_sessions', 'DELETE') AS user_sessions;
-```
-
-Grant `DELETE` as `postgres` on any that is false.
+It creates `page_views` and hands it to the app's role, brings `audit_logs` to the shape the code writes (migration 048), grants the app's role what it needs on `audit_logs`, `api_requests`, `user_sessions` and `page_views`, and records migrations 047 and 048 as applied. It is one transaction, reads no table data, and is safe to run again. It must end with `COMMIT` and exit 0; if it does not, stop and do not deploy.
 
 - [ ] **Step 2: Merge**
 
@@ -5741,7 +5726,8 @@ After the frontend deploy, wait 90 seconds for NPMplus to regenerate its proxy c
 2. On CT 2220, `curl -s localhost:3000/api/health` reports version `2.34.0`.
 3. In the backend journal, `[Retention] Scheduler started` appears and no `[Retention] Cleanup failed` line follows within two minutes.
 4. At `https://argo.booute.duckdns.org`, signed in as a developer: all five tabs load with real values; make one change elsewhere and find it in Audit Log; open a screen and find it in Usage.
-5. API tab → Recent errors, after ten minutes: look for `404` on `/api/retraining/status`. The name on those rows is the account the once-a-minute caller noted in the spec signs in as. For its address and client, ask the user to run on CT 2320: `SELECT ip_address, user_agent, count(*) FROM api_requests WHERE endpoint = '/api/retraining/status' AND created_at > NOW() - INTERVAL '1 hour' GROUP BY 1, 2;` Tell the user what it is.
+5. API tab → Recent errors: the `410` rows on `/api/retraining/status` now show the account and client making the once-a-minute calls; tell the user, and remove the tombstone route once the caller is stopped.
+6. Sign out and in again, then confirm a fresh Audit Log row shows your real address, not the proxy's.
 
 - [ ] **Step 5: Clean up**
 

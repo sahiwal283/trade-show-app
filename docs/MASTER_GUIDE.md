@@ -78,7 +78,6 @@
 ### Sandbox Features
 - ✅ **Event Checklist System** - Flights, hotels, car rentals, booth, shipping
 - ✅ **External OCR Service** - Google Document AI integration (4-8s processing, 95%+ confidence)
-- ✅ **AI Training Pipeline** - OCR corrections → Data Pool → Model Training
 - ✅ **Repository Pattern** - Clean separation of concerns (Routes → Services → Repositories)
 - ✅ **Component Modularization** - Feature-based organization, reusable hooks
 - ✅ **Helper Functions** - 13 backend helpers, organized frontend utilities

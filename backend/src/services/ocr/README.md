@@ -14,7 +14,7 @@ This is a complete rewrite of the receipt OCR system with:
 - **Field inference engine** with confidence scores
 - **Category detection** with keyword matching
 - **LLM-ready framework** for future AI enhancement
-- **User correction tracking** for continuous learning
+- **User correction tracking** for correction capture
 
 ---
 
@@ -115,10 +115,9 @@ Main service that coordinates everything:
 
 ### 4. User Correction System (`UserCorrectionService.ts`)
 
-Tracks user edits for continuous learning:
+Tracks user edits for correction capture:
 - Stores original OCR + inference
 - Records corrected fields
-- Analytics for most-corrected fields
 
 ---
 
@@ -564,7 +563,6 @@ pip3 install -r requirements.txt
 
 - OCR text may contain PII - store securely
 - User corrections are tied to user accounts
-- Only admin/developer can access correction stats
 - Receipt images auto-deleted after X days (TODO)
 - Sanitize OCR text before LLM processing
 
@@ -587,9 +585,8 @@ pip3 install -r requirements.txt
 
 For issues or questions:
 1. Check logs: `backend/logs/ocr-service.log` (if logging configured)
-2. Review correction stats to identify weak areas
-3. Test with Python script directly: `python3 paddleocr_processor.py image.jpg`
-4. Refer to master guide: `docs/AI_MASTER_GUIDE.md`
+2. Test with Python script directly: `python3 paddleocr_processor.py image.jpg`
+3. Refer to master guide: `docs/AI_MASTER_GUIDE.md`
 
 ---
 
