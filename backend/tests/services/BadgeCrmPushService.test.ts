@@ -3,11 +3,20 @@ import axios from 'axios';
 
 vi.mock('axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }));
 vi.mock('../../src/database/repositories/BadgeScanRepository', () => ({
-  badgeScanRepository: { claimPendingByBrand: vi.fn(async () => []), markPushResult: vi.fn(async () => {}) },
+  badgeScanRepository: {
+    claimPendingByBrand: vi.fn(async () => []),
+    markPushResult: vi.fn(async () => {}),
+    claimExhaustedForNotification: vi.fn(async () => []),
+  },
+}));
+vi.mock('../../src/services/notifications', () => ({
+  adminNotifications: { badgeCrmFailed: vi.fn(async () => undefined) },
+  logNotifyError: () => () => undefined,
 }));
 
 import { badgeCrmPushService } from '../../src/services/badge/BadgeCrmPushService';
 import { badgeScanRepository } from '../../src/database/repositories/BadgeScanRepository';
+import { adminNotifications } from '../../src/services/notifications';
 
 const scan = (over = {}) => ({
   id: 'scan-1', brand: 'haute_brands', entity: 'Haute Brands',
@@ -252,5 +261,27 @@ describe('BadgeCrmPushService emailless leads', () => {
       status: 'failed',
       error: expect.stringContaining('MANDATORY_NOT_FOUND'),
     });
+  });
+});
+
+describe('BadgeCrmPushService -> failure notifications', () => {
+  const exhausted = { id: 'scan-9', scanned_by: 'u-1', first_name: 'A', last_name: 'B', company: 'C' };
+
+  it('notifies for each newly exhausted scan after a pass, even an empty one', async () => {
+    vi.mocked(badgeScanRepository.claimExhaustedForNotification).mockResolvedValueOnce([exhausted] as any);
+    await badgeCrmPushService.pushOnce();
+    expect(adminNotifications.badgeCrmFailed).toHaveBeenCalledWith(exhausted);
+  });
+
+  it('a failing claim or notifier never fails the pass', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(badgeScanRepository.claimExhaustedForNotification).mockRejectedValueOnce(new Error('db down'));
+    await expect(badgeCrmPushService.pushOnce()).resolves.toEqual(expect.objectContaining({ attempted: 0 }));
+
+    vi.mocked(badgeScanRepository.claimExhaustedForNotification).mockResolvedValueOnce([exhausted, { ...exhausted, id: 'scan-10' }] as any);
+    vi.mocked(adminNotifications.badgeCrmFailed).mockRejectedValueOnce(new Error('boom'));
+    await expect(badgeCrmPushService.pushOnce()).resolves.toBeDefined();
+    expect(adminNotifications.badgeCrmFailed).toHaveBeenCalledTimes(2);
+    err.mockRestore();
   });
 });

@@ -16,6 +16,7 @@ import axios from 'axios';
 import { badgeScanRepository, BadgeScan } from '../../database/repositories/BadgeScanRepository';
 import { getBrandCrmConfig, configuredBrands, BrandCrmConfig } from './badgeCrmConfig';
 import { getFieldMap, FieldMap } from './badgeCrmFields';
+import { adminNotifications, logNotifyError } from '../notifications';
 
 const ZOHO_ACCOUNTS_TOKEN_URL = 'https://accounts.zoho.com/oauth/v2/token';
 const ZOHO_API_DOMAIN = 'https://www.zohoapis.com';
@@ -65,9 +66,27 @@ export class BadgeCrmPushService {
     }
     this.inFlight = true;
     try {
-      return await this.runPass(summary);
+      const result = await this.runPass(summary);
+      await this.notifyExhausted();
+      return result;
     } finally {
       this.inFlight = false;
+    }
+  }
+
+  /**
+   * Tell each scanner whose lead has now failed for good. Runs after every
+   * pass, including an empty one, so a terminal failure recorded on the
+   * previous tick is still reported. Never throws.
+   */
+  private async notifyExhausted(): Promise<void> {
+    try {
+      const scans = await badgeScanRepository.claimExhaustedForNotification();
+      for (const scan of scans) {
+        await adminNotifications.badgeCrmFailed(scan).catch(logNotifyError('badge.crm_failed'));
+      }
+    } catch (error) {
+      console.error('[BadgeCrmPush] Could not check for failed leads to report:', error);
     }
   }
 

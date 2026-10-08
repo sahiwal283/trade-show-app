@@ -36,3 +36,29 @@ describe('adminNotifications.userPending', () => {
     expect(notifyMany).not.toHaveBeenCalled();
   });
 });
+
+describe('adminNotifications.badgeCrmFailed', () => {
+  beforeEach(() => vi.clearAllMocks());
+  const scan = { id: 's-1', scanned_by: 'u-1', first_name: 'Shamsher', last_name: 'Jessani', company: 'VTA' };
+
+  it('tells the person who scanned it, linking to Leads', async () => {
+    await adminNotifications.badgeCrmFailed(scan);
+    expect(notifyMany).toHaveBeenCalledWith(['u-1'], {
+      kind: 'badge.crm_failed',
+      title: "A badge scan didn't reach the CRM",
+      body: 'Shamsher Jessani (VTA) could not be sent to Zoho CRM after several tries. Open Leads to check it and retry.',
+      link: { page: 'badge-scans' },
+    });
+  });
+
+  it('falls back to "A lead" when the scan has no name', async () => {
+    await adminNotifications.badgeCrmFailed({ ...scan, first_name: null, last_name: ' ', company: null });
+    expect(vi.mocked(notifyMany).mock.calls[0][1].body)
+      .toBe('A lead could not be sent to Zoho CRM after several tries. Open Leads to check it and retry.');
+  });
+
+  it('sends nothing when nobody is recorded as the scanner', async () => {
+    await adminNotifications.badgeCrmFailed({ ...scan, scanned_by: null });
+    expect(notifyMany).not.toHaveBeenCalled();
+  });
+});

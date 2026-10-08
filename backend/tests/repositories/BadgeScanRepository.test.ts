@@ -107,4 +107,24 @@ describe('BadgeScanRepository', () => {
       expect(sql).not.toContain('crm_attempts + 1');
     });
   });
+
+  describe('CRM failure notifications', () => {
+    it('claims exhausted, un-notified scans in one statement and returns them', async () => {
+      vi.mocked(dbQuery).mockResolvedValue(ok([{ id: 'scan-1', scanned_by: 'u-1', first_name: 'A', last_name: 'B', company: 'C' }]));
+      const claimed = await repo.claimExhaustedForNotification();
+      expect(claimed).toHaveLength(1);
+      const sql = vi.mocked(dbQuery).mock.calls[0][0] as string;
+      expect(sql).toMatch(/UPDATE badge_scans\s+SET crm_failure_notified_at = CURRENT_TIMESTAMP/);
+      expect(sql).toContain("crm_status = 'failed'");
+      expect(sql).toContain('crm_attempts >= 5');
+      expect(sql).toContain('crm_failure_notified_at IS NULL');
+      expect(sql).toContain('RETURNING id, scanned_by, first_name, last_name, company');
+    });
+
+    it('a manual retry re-arms the notification', async () => {
+      vi.mocked(dbQuery).mockResolvedValue(ok([row()]));
+      await repo.requeue('scan-1');
+      expect(vi.mocked(dbQuery).mock.calls[0][0] as string).toContain('crm_failure_notified_at = NULL');
+    });
+  });
 });
