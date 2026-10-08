@@ -31,6 +31,8 @@ const PAGE_LINKS = new Map<string, string>([
  */
 export function linkToUrl(link: NotificationLink | null | undefined): string {
   if (!link) return '/';
+  // One expense, by Argo's own id: the hash ExpenseSubmission opens the modal for.
+  if (link.page === 'expense') return link.expenseId ? `/#expense=${link.expenseId}` : '/';
   const forEvent = EVENT_LINKS.get(link.page);
   if (forEvent) return link.eventId ? forEvent(link.eventId) : '/';
   return PAGE_LINKS.get(link.page) ?? '/';

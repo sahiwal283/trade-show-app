@@ -2,7 +2,7 @@ import { apiClient } from './apiClient';
 
 export interface AppNotification {
   id: string; kind: string; title: string; body: string;
-  link: { page: string; eventId?: string } | null; read_at: string | null; created_at: string;
+  link: { page: string; eventId?: string; expenseId?: string } | null; read_at: string | null; created_at: string;
 }
 
 export const notificationsApi = {
