@@ -1,7 +1,7 @@
 /**
  * Every 15 minutes: for each show whose sample window closes within 48h,
  * remind every participant, submitted or not (the request is shared). Ledger-first send-once,
- * same pattern as TravelReminderService. Bell rows are written even when
+ * same pattern as ReminderScheduler. Bell rows are written even when
  * push is not configured, so this scheduler always runs.
  */
 import { query } from '../../config/database';

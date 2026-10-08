@@ -11,7 +11,7 @@
  * env var is absent, EVERYTHING here no-ops with a clear "CRM not connected"
  * state — the scheduler idles and routes report connected: false.
  *
- * Scheduler: same pattern as TravelReminderService — started from server.ts,
+ * Scheduler: same pattern as ReminderScheduler — started from server.ts,
  * one sync shortly after startup, then every 24h. Failures never crash the
  * server; they log and wait for the next pass.
  */
