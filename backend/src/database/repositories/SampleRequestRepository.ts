@@ -6,20 +6,8 @@
 import { query, pool } from '../../config/database';
 import {
   SampleCatalog, SampleProductLine, SampleProduct, SampleMaterial, SampleBrand,
-  SampleRequestRow, SampleRequestDetail, SampleRequestPayload, SampleRequestStatus,
+  SampleRequestRow, SampleRequestPayload, SampleRequestStatus, SampleChangeRow, SampleChangeField, UserRef,
 } from '../../services/sampleRequests/types';
-
-export interface EventItemRow {
-  user_id: string; user_name: string; status: SampleRequestStatus;
-  product_id: string; singles: number; displays: number; empty_displays: number;
-}
-export interface EventMaterialRow {
-  user_id: string; user_name: string; status: SampleRequestStatus;
-  material_id: string; qty: number; notes: string | null;
-}
-export interface EventRequestRow {
-  user_id: string; user_name: string; status: SampleRequestStatus | null; submitted_at: string | null;
-}
 
 const ACTIVE = (includeInactive: boolean) => (includeInactive ? '' : 'WHERE is_active = TRUE');
 
@@ -116,59 +104,99 @@ class SampleRequestRepository {
     }
   }
 
-  // ── Requests ───────────────────────────────────────────────────────────
-  private async attachContents(row: SampleRequestRow): Promise<SampleRequestDetail> {
+  // ── Shared request ─────────────────────────────────────────────────────
+  async findByEvent(eventId: string): Promise<SampleRequestRow | null> {
+    const r = await query(`SELECT * FROM sample_requests WHERE event_id = $1`, [eventId]);
+    return r.rows[0] || null;
+  }
+
+  /** Creates the event's single draft row if missing; otherwise returns it unchanged. */
+  async upsertEventDraft(eventId: string, createdBy: string): Promise<SampleRequestRow> {
+    const r = await query(
+      `INSERT INTO sample_requests (event_id, created_by)
+       VALUES ($1, $2)
+       ON CONFLICT (event_id) DO UPDATE SET updated_at = sample_requests.updated_at
+       RETURNING *`,
+      [eventId, createdBy]
+    );
+    return r.rows[0];
+  }
+
+  async getContents(requestId: string): Promise<{ items: SampleRequestPayload['items']; materials: SampleRequestPayload['materials'] }> {
     const [items, materials] = await Promise.all([
-      query(`SELECT product_id, singles, displays, empty_displays FROM sample_request_items WHERE request_id = $1`, [row.id]),
-      query(`SELECT material_id, qty, notes FROM sample_request_materials WHERE request_id = $1`, [row.id]),
+      query(`SELECT product_id, singles, displays, empty_displays FROM sample_request_items WHERE request_id = $1`, [requestId]),
+      query(`SELECT material_id, qty, notes FROM sample_request_materials WHERE request_id = $1`, [requestId]),
     ]);
     return {
-      ...row,
       items: items.rows.map((i: any) => ({ productId: i.product_id, singles: i.singles, displays: i.displays, emptyDisplays: i.empty_displays })),
       materials: materials.rows.map((m: any) => ({ materialId: m.material_id, qty: m.qty, notes: m.notes })),
     };
   }
 
-  async findRequest(eventId: string, userId: string): Promise<SampleRequestDetail | null> {
-    const r = await query(`SELECT * FROM sample_requests WHERE event_id = $1 AND user_id = $2`, [eventId, userId]);
-    if (!r.rows[0]) return null;
-    return this.attachContents(r.rows[0]);
-  }
-
-  async upsertDraft(eventId: string, userId: string): Promise<SampleRequestDetail> {
-    const r = await query(
-      `INSERT INTO sample_requests (event_id, user_id)
-       VALUES ($1, $2)
-       ON CONFLICT (event_id, user_id) DO UPDATE SET updated_at = sample_requests.updated_at
-       RETURNING *`,
-      [eventId, userId]
-    );
-    return this.attachContents(r.rows[0]);
-  }
-
-  async replaceContents(requestId: string, payload: SampleRequestPayload): Promise<void> {
-    const items = payload.items.filter((i) => i.singles > 0 || i.displays > 0 || i.emptyDisplays > 0);
-    const materials = payload.materials.filter((m) => m.qty > 0 || (m.notes && m.notes.trim().length > 0));
+  /**
+   * Row-level merge. For each row in the patch: lock the current row, upsert
+   * (or delete when everything is zero/blank), and log one change row per
+   * field whose value differs. One transaction, so history matches storage.
+   */
+  async applyRows(requestId: string, userId: string, patch: SampleRequestPayload): Promise<void> {
     const client = await pool.connect();
+    const log = (kind: 'item' | 'material', targetId: string, field: SampleChangeField, oldV: unknown, newV: unknown) =>
+      client.query(
+        `INSERT INTO sample_request_changes (request_id, user_id, kind, target_id, field, old_value, new_value)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [requestId, userId, kind, targetId, field, oldV == null ? null : String(oldV), newV == null ? null : String(newV)]
+      );
     try {
       await client.query('BEGIN');
-      await client.query(`DELETE FROM sample_request_items WHERE request_id = $1`, [requestId]);
-      await client.query(`DELETE FROM sample_request_materials WHERE request_id = $1`, [requestId]);
-      if (items.length > 0) {
-        await client.query(
-          `INSERT INTO sample_request_items (request_id, product_id, singles, displays, empty_displays)
-           SELECT $1::uuid, * FROM UNNEST($2::uuid[], $3::int[], $4::int[], $5::int[])`,
-          [requestId, items.map((i) => i.productId), items.map((i) => i.singles), items.map((i) => i.displays), items.map((i) => i.emptyDisplays)]
+      for (const it of patch.items) {
+        const cur = await client.query(
+          `SELECT singles, displays, empty_displays FROM sample_request_items WHERE request_id = $1 AND product_id = $2 FOR UPDATE`,
+          [requestId, it.productId]
         );
+        const old = cur.rows[0] ?? { singles: 0, displays: 0, empty_displays: 0 };
+        const next = { singles: it.singles, displays: it.displays, empty_displays: it.emptyDisplays };
+        const changed = (Object.keys(next) as Array<keyof typeof next>).filter((k) => old[k] !== next[k]);
+        if (changed.length === 0) continue;
+        if (next.singles === 0 && next.displays === 0 && next.empty_displays === 0) {
+          await client.query(`DELETE FROM sample_request_items WHERE request_id = $1 AND product_id = $2`, [requestId, it.productId]);
+        } else {
+          await client.query(
+            `INSERT INTO sample_request_items (request_id, product_id, singles, displays, empty_displays)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (request_id, product_id) DO UPDATE
+               SET singles = EXCLUDED.singles, displays = EXCLUDED.displays, empty_displays = EXCLUDED.empty_displays`,
+            [requestId, it.productId, next.singles, next.displays, next.empty_displays]
+          );
+        }
+        for (const k of changed) await log('item', it.productId, k, old[k], next[k]);
       }
-      if (materials.length > 0) {
-        await client.query(
-          `INSERT INTO sample_request_materials (request_id, material_id, qty, notes)
-           SELECT $1::uuid, * FROM UNNEST($2::uuid[], $3::int[], $4::text[])`,
-          [requestId, materials.map((m) => m.materialId), materials.map((m) => m.qty), materials.map((m) => m.notes?.trim() || null)]
+      for (const m of patch.materials) {
+        const cur = await client.query(
+          `SELECT qty, notes FROM sample_request_materials WHERE request_id = $1 AND material_id = $2 FOR UPDATE`,
+          [requestId, m.materialId]
         );
+        const old = cur.rows[0] ?? { qty: 0, notes: null };
+        const notes = m.notes && m.notes.trim().length > 0 ? m.notes.trim() : null;
+        const changed: SampleChangeField[] = [];
+        if (old.qty !== m.qty) changed.push('qty');
+        if ((old.notes ?? null) !== notes) changed.push('notes');
+        if (changed.length === 0) continue;
+        if (m.qty === 0 && notes === null) {
+          await client.query(`DELETE FROM sample_request_materials WHERE request_id = $1 AND material_id = $2`, [requestId, m.materialId]);
+        } else {
+          await client.query(
+            `INSERT INTO sample_request_materials (request_id, material_id, qty, notes)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (request_id, material_id) DO UPDATE SET qty = EXCLUDED.qty, notes = EXCLUDED.notes`,
+            [requestId, m.materialId, m.qty, notes]
+          );
+        }
+        for (const k of changed) await log('material', m.materialId, k, k === 'qty' ? old.qty : old.notes, k === 'qty' ? m.qty : notes);
       }
-      await client.query(`UPDATE sample_requests SET updated_at = now() WHERE id = $1`, [requestId]);
+      await client.query(
+        `UPDATE sample_requests SET last_edited_by = $2, last_edited_at = now(), updated_at = now() WHERE id = $1`,
+        [requestId, userId]
+      );
       await client.query('COMMIT');
     } catch (e) {
       await client.query('ROLLBACK');
@@ -178,59 +206,50 @@ class SampleRequestRepository {
     }
   }
 
-  async markSubmitted(requestId: string): Promise<SampleRequestRow> {
+  async markSubmitted(requestId: string, userId: string): Promise<SampleRequestRow> {
     const r = await query(
-      `UPDATE sample_requests SET status = 'submitted', submitted_at = now(), updated_at = now()
+      `UPDATE sample_requests SET status = 'submitted', submitted_at = now(), submitted_by = $2, updated_at = now()
        WHERE id = $1 RETURNING *`,
-      [requestId]
+      [requestId, userId]
     );
     return r.rows[0];
   }
 
-  async findRequestsForUser(userId: string): Promise<Array<{ event_id: string; status: SampleRequestStatus; submitted_at: string | null }>> {
-    const r = await query(`SELECT event_id, status, submitted_at FROM sample_requests WHERE user_id = $1`, [userId]);
-    return r.rows;
-  }
-
-  // ── Event-wide reads (through the roster) ──────────────────────────────
-  async findEventRequests(eventId: string): Promise<EventRequestRow[]> {
+  async findStatusByEvents(eventIds: string[]): Promise<Array<{ event_id: string; status: SampleRequestStatus; submitted_at: string | null }>> {
+    if (eventIds.length === 0) return [];
     const r = await query(
-      `SELECT ep.user_id, u.name AS user_name, sr.status, sr.submitted_at
-       FROM event_participants ep
-       JOIN users u ON u.id = ep.user_id
-       LEFT JOIN sample_requests sr ON sr.event_id = ep.event_id AND sr.user_id = ep.user_id
-       WHERE ep.event_id = $1
-       ORDER BY u.name`,
-      [eventId]
+      `SELECT event_id, status, submitted_at FROM sample_requests WHERE event_id = ANY($1::uuid[])`,
+      [eventIds]
     );
     return r.rows;
   }
 
-  async findEventItems(eventId: string): Promise<EventItemRow[]> {
+  async listChanges(requestId: string, limit = 200): Promise<SampleChangeRow[]> {
     const r = await query(
-      `SELECT sr.user_id, u.name AS user_name, sr.status,
-              i.product_id, i.singles, i.displays, i.empty_displays
-       FROM sample_requests sr
-       JOIN event_participants ep ON ep.event_id = sr.event_id AND ep.user_id = sr.user_id
-       JOIN users u ON u.id = sr.user_id
-       JOIN sample_request_items i ON i.request_id = sr.id
-       WHERE sr.event_id = $1`,
-      [eventId]
+      `SELECT c.id, c.user_id, u.name AS user_name, c.kind, c.target_id, c.field, c.old_value, c.new_value, c.changed_at,
+              COALESCE(p.name, m.name) AS target_name, l.name AS line_name, l.brand
+       FROM sample_request_changes c
+       LEFT JOIN users u ON u.id = c.user_id
+       LEFT JOIN sample_products p ON c.kind = 'item' AND p.id = c.target_id
+       LEFT JOIN sample_product_lines l ON l.id = p.product_line_id
+       LEFT JOIN sample_materials m ON c.kind = 'material' AND m.id = c.target_id
+       WHERE c.request_id = $1
+       ORDER BY c.changed_at DESC
+       LIMIT $2`,
+      [requestId, limit]
     );
-    return r.rows;
+    return r.rows.map((row: any) => ({
+      id: row.id, userId: row.user_id, userName: row.user_name, kind: row.kind, targetId: row.target_id,
+      targetName: row.target_name ?? 'Unknown', lineName: row.line_name ?? null, brand: row.brand ?? null,
+      field: row.field, oldValue: row.old_value, newValue: row.new_value, changedAt: row.changed_at,
+    }));
   }
 
-  async findEventMaterials(eventId: string): Promise<EventMaterialRow[]> {
-    const r = await query(
-      `SELECT sr.user_id, u.name AS user_name, sr.status, m.material_id, m.qty, m.notes
-       FROM sample_requests sr
-       JOIN event_participants ep ON ep.event_id = sr.event_id AND ep.user_id = sr.user_id
-       JOIN users u ON u.id = sr.user_id
-       JOIN sample_request_materials m ON m.request_id = sr.id
-       WHERE sr.event_id = $1`,
-      [eventId]
-    );
-    return r.rows;
+  async userRefs(ids: Array<string | null>): Promise<Map<string, UserRef>> {
+    const wanted = [...new Set(ids.filter((v): v is string => !!v))];
+    if (wanted.length === 0) return new Map();
+    const r = await query(`SELECT id, name FROM users WHERE id = ANY($1::uuid[])`, [wanted]);
+    return new Map(r.rows.map((u: any) => [u.id, { id: u.id, name: u.name }]));
   }
 
   // ── Setting ────────────────────────────────────────────────────────────
