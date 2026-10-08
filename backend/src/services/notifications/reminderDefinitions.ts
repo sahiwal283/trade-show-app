@@ -6,6 +6,7 @@
  * one created after it never gets it late.
  */
 import type { NotifyInput } from '../NotificationService';
+import { SAMPLE_WINDOW_TZ } from '../sampleRequests/sampleRequestWindow';
 
 export interface DueRow { subject_id: string; user_id: string; [key: string]: unknown }
 
@@ -16,21 +17,42 @@ export interface ReminderDefinition {
   build(row: DueRow): NotifyInput;
 }
 
-/** When the trip starts: travel start, or show start if no travel date. */
-const DAYS_UNTIL_EVENT = `(COALESCE(e.travel_start_date, e.show_start_date)::date - CURRENT_DATE)`;
-/** Days since the show closed. */
-const DAYS_SINCE_SHOW = `(CURRENT_DATE - COALESCE(e.show_end_date, e.end_date)::date)`;
+/** Today in the business timezone, not the database session's. */
+const BUSINESS_TODAY = `(now() AT TIME ZONE '${SAMPLE_WINDOW_TZ}')::date`;
+/** Event and expense reminders go out from 9:00 am business time, never overnight. */
+export const EVENT_REMINDER_EARLIEST_HOUR = 9;
 
-function eventDueSql(daysExpr: string, from: number, to: number): string {
+/** When the trip starts: travel start, or show start if no travel date. */
+const DAYS_UNTIL_EVENT = `(COALESCE(e.travel_start_date, e.show_start_date)::date - ${BUSINESS_TODAY})`;
+/** Days since the show closed. */
+const DAYS_SINCE_SHOW = `(${BUSINESS_TODAY} - COALESCE(e.show_end_date, e.end_date)::date)`;
+
+const EVENT_REMINDER_WINDOWS = {
+  'reminder.event_30d': { days: DAYS_UNTIL_EVENT, from: 23, to: 30 },
+  'reminder.event_7d': { days: DAYS_UNTIL_EVENT, from: 0, to: 7 },
+  'reminder.expenses_1d': { days: DAYS_SINCE_SHOW, from: 1, to: 6 },
+  'reminder.expenses_7d': { days: DAYS_SINCE_SHOW, from: 7, to: 13 },
+} as const;
+
+export type EventReminderKind = keyof typeof EVENT_REMINDER_WINDOWS;
+
+/**
+ * The due query for one event or expense reminder. `earliestHour` is the
+ * business-time hour of day from which it may be sent; only tests pass
+ * anything but the default.
+ */
+export function eventDueSql(kind: EventReminderKind, earliestHour: number = EVENT_REMINDER_EARLIEST_HOUR): string {
+  const { days, from, to } = EVENT_REMINDER_WINDOWS[kind];
   return `
     SELECT e.id::text AS subject_id, ep.user_id, e.id AS event_id, e.name AS event_name,
-           ${daysExpr} AS days
+           ${days} AS days
       FROM events e
       JOIN event_participants ep ON ep.event_id = e.id
       JOIN users u ON u.id = ep.user_id
      WHERE e.status <> 'cancelled'
        AND u.is_active
-       AND ${daysExpr} BETWEEN ${from} AND ${to}
+       AND ${days} BETWEEN ${from} AND ${to}
+       AND EXTRACT(HOUR FROM now() AT TIME ZONE '${SAMPLE_WINDOW_TZ}') >= ${Number(earliestHour)}
        AND NOT EXISTS (
          SELECT 1 FROM notification_reminders r
           WHERE r.kind = $1 AND r.subject_id = e.id::text AND r.user_id = ep.user_id
@@ -73,7 +95,7 @@ const confirmationSuffix = (row: DueRow): string =>
 export const REMINDER_DEFINITIONS: ReminderDefinition[] = [
   {
     kind: 'reminder.event_30d',
-    dueSql: eventDueSql(DAYS_UNTIL_EVENT, 23, 30),
+    dueSql: eventDueSql('reminder.event_30d'),
     build: (row) => ({
       kind: 'reminder.event_30d',
       title: `${row.event_name} is ${countdown(row.days)}`,
@@ -83,7 +105,7 @@ export const REMINDER_DEFINITIONS: ReminderDefinition[] = [
   },
   {
     kind: 'reminder.event_7d',
-    dueSql: eventDueSql(DAYS_UNTIL_EVENT, 0, 7),
+    dueSql: eventDueSql('reminder.event_7d'),
     build: (row) => ({
       kind: 'reminder.event_7d',
       title: `${row.event_name} is ${countdown(row.days)}`,
@@ -93,7 +115,7 @@ export const REMINDER_DEFINITIONS: ReminderDefinition[] = [
   },
   {
     kind: 'reminder.expenses_1d',
-    dueSql: eventDueSql(DAYS_SINCE_SHOW, 1, 6),
+    dueSql: eventDueSql('reminder.expenses_1d'),
     build: (row) => ({
       kind: 'reminder.expenses_1d',
       title: `Submit your expenses · ${row.event_name}`,
@@ -103,7 +125,7 @@ export const REMINDER_DEFINITIONS: ReminderDefinition[] = [
   },
   {
     kind: 'reminder.expenses_7d',
-    dueSql: eventDueSql(DAYS_SINCE_SHOW, 7, 13),
+    dueSql: eventDueSql('reminder.expenses_7d'),
     build: (row) => ({
       kind: 'reminder.expenses_7d',
       title: `Reminder: submit your expenses · ${row.event_name}`,

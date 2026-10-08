@@ -1,6 +1,7 @@
 // backend/tests/services/notifications/reminderDefinitions.test.ts
 import { describe, it, expect } from 'vitest';
-import { REMINDER_DEFINITIONS } from '../../../src/services/notifications/reminderDefinitions';
+import { REMINDER_DEFINITIONS, eventDueSql } from '../../../src/services/notifications/reminderDefinitions';
+import { SAMPLE_WINDOW_TZ } from '../../../src/services/sampleRequests/sampleRequestWindow';
 
 const def = (kind: string) => {
   const found = REMINDER_DEFINITIONS.find((d) => d.kind === kind);
@@ -37,6 +38,31 @@ describe('reminder definitions', () => {
     expect(def('reminder.event_7d').dueSql).toContain('BETWEEN 0 AND 7');
     expect(def('reminder.expenses_1d').dueSql).toContain('BETWEEN 1 AND 6');
     expect(def('reminder.expenses_7d').dueSql).toContain('BETWEEN 7 AND 13');
+  });
+
+  it('event and expense reminders count days in the business timezone and wait for 9 am there', () => {
+    expect(SAMPLE_WINDOW_TZ).toBe('America/New_York');
+    const today = "(now() AT TIME ZONE 'America/New_York')::date";
+    const gate = "EXTRACT(HOUR FROM now() AT TIME ZONE 'America/New_York') >= 9";
+    for (const kind of ['reminder.event_30d', 'reminder.event_7d']) {
+      expect(def(kind).dueSql).toContain(`(COALESCE(e.travel_start_date, e.show_start_date)::date - ${today})`);
+    }
+    for (const kind of ['reminder.expenses_1d', 'reminder.expenses_7d']) {
+      expect(def(kind).dueSql).toContain(`(${today} - COALESCE(e.show_end_date, e.end_date)::date)`);
+    }
+    for (const kind of ['reminder.event_30d', 'reminder.event_7d', 'reminder.expenses_1d', 'reminder.expenses_7d']) {
+      expect(def(kind).dueSql).toContain(`AND ${gate}`);
+      expect(def(kind).dueSql).not.toContain('CURRENT_DATE');
+    }
+    for (const kind of ['reminder.flight_checkin_24h', 'reminder.flight_departure_3h']) {
+      expect(def(kind).dueSql).not.toContain('AT TIME ZONE');
+      expect(def(kind).dueSql).not.toContain('EXTRACT(HOUR');
+    }
+  });
+
+  it('the hour gate is the only thing an explicit earliest hour changes', () => {
+    expect(eventDueSql('reminder.event_7d')).toBe(def('reminder.event_7d').dueSql);
+    expect(eventDueSql('reminder.event_7d', 0)).toBe(def('reminder.event_7d').dueSql.replace('>= 9', '>= 0'));
   });
 
   it('counts down in plain words', () => {

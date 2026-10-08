@@ -1,7 +1,7 @@
 // backend/tests/integration/reminder-windows.test.ts
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { pool, query } from '../../src/config/database';
-import { REMINDER_DEFINITIONS } from '../../src/services/notifications/reminderDefinitions';
+import { eventDueSql, EventReminderKind } from '../../src/services/notifications/reminderDefinitions';
 
 /**
  * Real-database proof of the reminder windows. The windows live in SQL, so
@@ -12,16 +12,22 @@ let userId: string;
 let inactiveUserId: string;
 const eventIds = new Map<string, string>();
 
-/** Offsets are days from today. travel = null means "no separate travel date": the column is NOT NULL, so it falls back to the show start. */
-async function mkEvent(tag: string, travel: number | null, showStart: number, showEnd: number, status = 'upcoming') {
+/**
+ * "Today" exactly as the due queries see it, so the fixtures line up with the
+ * windows at any time of day and in any database session timezone.
+ */
+const TODAY = `(now() AT TIME ZONE 'America/New_York')::date`;
+
+/** Offsets are days from today. */
+async function mkEvent(tag: string, travel: number, showStart: number, showEnd: number, status = 'upcoming') {
   const { rows } = await query(
     `INSERT INTO events (name, venue, city, state, start_date, end_date,
                          show_start_date, show_end_date, travel_start_date, travel_end_date, status)
      VALUES ($1, 'v', 'c', 's',
-             CURRENT_DATE + $3::int, CURRENT_DATE + $4::int,
-             CURRENT_DATE + $3::int, CURRENT_DATE + $4::int,
-             CURRENT_DATE + COALESCE($2::int, $3::int),
-             CURRENT_DATE + $4::int, $5)
+             ${TODAY} + $3::int, ${TODAY} + $4::int,
+             ${TODAY} + $3::int, ${TODAY} + $4::int,
+             ${TODAY} + $2::int,
+             ${TODAY} + $4::int, $5)
      RETURNING id`,
     [`${PREFIX}-${tag}`, travel, showStart, showEnd, status]
   );
@@ -29,9 +35,16 @@ async function mkEvent(tag: string, travel: number | null, showStart: number, sh
   await query(`INSERT INTO event_participants (event_id, user_id) VALUES ($1, $2), ($1, $3)`, [rows[0].id, userId, inactiveUserId]);
 }
 
-async function dueTags(kind: string): Promise<string[]> {
-  const def = REMINDER_DEFINITIONS.find((d) => d.kind === kind)!;
-  const { rows } = await query(def.dueSql, [kind]);
+/**
+ * HOUR GATE NEUTRALISED ON PURPOSE: production sends these reminders only
+ * from 9 am Eastern. The windows are tested with earliestHour = 0 (the same
+ * query, gate always open) so this file passes at any time of day; the gate
+ * itself is covered by its own test below.
+ */
+const GATE_OPEN = 0;
+
+async function dueTags(kind: EventReminderKind, earliestHour = GATE_OPEN): Promise<string[]> {
+  const { rows } = await query(eventDueSql(kind, earliestHour), [kind]);
   const byId = new Map([...eventIds].map(([tag, id]) => [id, tag]));
   return rows
     .filter((r: any) => byId.has(r.subject_id))
@@ -50,7 +63,7 @@ beforeAll(async () => {
   // Upcoming shows: travel starts N days out, show runs N+1 .. N+3.
   for (const n of [31, 30, 23, 22, 8, 7, 0]) await mkEvent(`in-${n}`, n, n + 1, n + 3);
   await mkEvent('started-yesterday', -1, 0, 2);
-  await mkEvent('no-travel-date', null, 5, 7);
+  await mkEvent('in-5', 5, 6, 8);
   await mkEvent('cancelled-in-5', 5, 6, 8, 'cancelled');
   await mkEvent('claimed-in-5', 5, 6, 8);
   await query(
@@ -76,8 +89,8 @@ describe('reminder windows (real database)', () => {
     expect(await dueTags('reminder.event_30d')).toEqual(['in-23', 'in-30']);
   });
 
-  it('7-day reminder: days 7 down to 0, show start as the anchor when there is no travel date, never cancelled or already claimed', async () => {
-    expect(await dueTags('reminder.event_7d')).toEqual(['in-0', 'in-7', 'no-travel-date']);
+  it('7-day reminder: days 7 down to 0, never cancelled or already claimed', async () => {
+    expect(await dueTags('reminder.event_7d')).toEqual(['in-0', 'in-5', 'in-7']);
   });
 
   it('first expense reminder: 1 to 6 days after the show ends', async () => {
@@ -86,5 +99,11 @@ describe('reminder windows (real database)', () => {
 
   it('second expense reminder: 7 to 13 days after the show ends', async () => {
     expect(await dueTags('reminder.expenses_7d')).toEqual(['ended-13', 'ended-7']);
+  });
+
+  it('hour gate: nothing is due before the earliest hour (24 never arrives)', async () => {
+    for (const kind of ['reminder.event_30d', 'reminder.event_7d', 'reminder.expenses_1d', 'reminder.expenses_7d'] as const) {
+      expect(await dueTags(kind, 24)).toEqual([]);
+    }
   });
 });
