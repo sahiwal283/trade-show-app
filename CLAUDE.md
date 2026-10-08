@@ -90,10 +90,12 @@ Key service boundaries:
   turns a business card photo into text (`POST /api/badge-scans/card-ocr`);
   `parseCardText.ts` extracts the fields client-side and the photo is never
   stored.
-- **`sampleRequests/`** — Per-rep sample orders. `sampleRequestWindow.ts` is
-  the single source of the open/close rule; `SampleRequestService` owns
-  transitions and the puller notification; `NotificationService` is the one
-  way to write a bell row + push.
+- **`sampleRequests/`** — One shared sample order per show (`UNIQUE
+  (event_id)`). `sampleRequestWindow.ts` is the single source of the
+  open/close rule; `SampleRequestService` owns access, field-level patches,
+  submit and the puller notification; the repository's `applyRows` writes the
+  change log in the same transaction. `NotificationService` is the one way to
+  write a bell row + push.
 
 ### Frontend (`src/`)
 

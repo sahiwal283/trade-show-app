@@ -189,20 +189,21 @@ Routes live at `/api/badge-scans` (list, create, get, patch, retry-push, export)
 
 ## 9. Sample requests
 
-Per-rep product sample orders for a show. `backend/src/services/sampleRequests/`
+One shared sample order per show. `backend/src/services/sampleRequests/`
 owns the rules: `sampleRequestWindow.ts` is the only place that computes the
 open/close window (created_at → 23:59:59 America/New_York on
 `(travel_start_date ?? show_start_date) − 10 days`; never stored);
-`SampleRequestService.ts` owns draft/submit transitions and authorization
-(reps: own request while open; admin/coordinator/developer: anyone, any time;
-puller: read the summary); `SampleRequestReminderService.ts` sends the 48h
-reminder through the `sample_request_reminders` ledger (insert-before-send).
+`SampleRequestService.ts` owns access (participants and override roles edit;
+the puller reads), row-level patches, submit and the puller notification;
+`SampleRequestReminderService.ts` sends one 48h reminder per participant
+through the `sample_request_reminders` ledger (insert-before-send).
+
+`sample_requests` has one row per event (`UNIQUE (event_id)`). A PATCH carries, per row, only the FIELDS the client changed; `SampleRequestRepository.applyRows` locks the request row, merges those fields into the current row, and writes one `sample_request_changes` row per field that changed, all in one transaction, so concurrent edits to the same product both survive and the history is what was stored.
 
 `NotificationService` writes a `notifications` row and a push in one call.
-The header bell reads `/api/notifications/unread` as a third source; expense
-and message notifications are unchanged.
 
-Frontend: `src/components/checklist/samples/` (section, hook, summary tab),
-dashboard rows in `ActionQueue`, catalog editor in
-`admin/AdminSettings/SampleCatalogSection.tsx`. Deep link
-`#event=<id>&tab=my|samples` selects the show and tab on the checklist page.
+Frontend: `src/components/checklist/samples/` — `SamplesPanel` (the form,
+status line, history) driven by `useEventSampleRequest` (dirty-field tracking, one save at a time, stale responses dropped, 30 s / on-focus reconciliation). The panel is a `BookingBoard` tab for
+admins and sits under My Checklist for reps. Deep link
+`#event=<id>&tab=samples` opens it in either place; `tab=my` selects My
+Checklist.
