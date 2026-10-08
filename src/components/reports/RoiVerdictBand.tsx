@@ -52,12 +52,12 @@ export const RoiVerdictBand: React.FC<RoiVerdictBandProps> = ({ model, topInsigh
   return (
     <section
       aria-labelledby="roi-verdict-heading"
-      className="relative overflow-hidden rounded-card bg-gradient-to-br from-brand-700 via-brand-600 to-accent-600 p-4 shadow-brand-lg sm:p-6"
+      className="relative overflow-hidden rounded-card bg-gradient-to-br from-hero-1 via-hero-2 to-hero-3 p-4 shadow-brand-lg sm:p-6"
     >
       {/* Atmosphere: soft glows + faint grid so the canvas isn't flat */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="absolute -right-16 -top-24 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute -bottom-28 -left-10 h-56 w-56 rounded-full bg-accent-300/20 blur-3xl" />
+        <div className="absolute -bottom-28 -left-10 h-56 w-56 rounded-full bg-grad-300/20 blur-3xl" />
         <div className="bg-grid-white absolute inset-0" />
       </div>
 

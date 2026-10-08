@@ -42,6 +42,17 @@
     
     <title>Argo</title>
 
+    <!-- Colour theme: set before first paint so the page never flashes the
+         wrong palette. Keep the key and ids in step with src/theme/themes.ts. -->
+    <script>
+      (function () {
+        var ids = ['current', 'navy-blue', 'navy-teal', 'indigo-slate'];
+        var stored = null;
+        try { stored = localStorage.getItem('argo_theme'); } catch (e) { /* private mode */ }
+        document.documentElement.dataset.theme = ids.indexOf(stored) !== -1 ? stored : 'navy-blue';
+      })();
+    </script>
+
     <!-- Self-hosted fonts: preload both variable files so text renders in the
          final face on first paint (font-display: swap covers slow loads) -->
     <link rel="preload" href="/fonts/inter-var-latin.woff2" as="font" type="font/woff2" crossorigin />

@@ -1,3 +1,9 @@
+const token = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
+const scale = (name) =>
+  Object.fromEntries(
+    [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((step) => [step, token(`${name}-${step}`)]),
+  );
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -7,31 +13,34 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Primary brand blue (existing #2563eb family)
-        brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-        },
-        // Accent green (existing gradient endpoint, emerald family)
-        accent: {
-          50: '#ecfdf5',
-          100: '#d1fae5',
-          200: '#a7f3d0',
-          300: '#6ee7b9',
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
-          700: '#047857',
-          800: '#065f46',
-          900: '#064e3b',
+        // Themed colours: each resolves to a CSS variable from
+        // src/theme/themes.css, so data-theme on <html> recolours the app.
+        brand: scale('brand'),
+        // Success green (also the "done"/"approved" tint)
+        accent: scale('accent'),
+        // Second stop of brand gradients (CTA, avatars, progress bars)
+        grad: scale('grad'),
+        // Neutrals. stone-900 is body text, stone-50 the page background.
+        stone: scale('stone'),
+        gray: scale('gray'),
+        // Legacy blue-* utilities follow the primary colour
+        blue: scale('brand'),
+        // Masthead gradient stops (dashboard hero, report bands, modal headers)
+        hero: { 1: token('hero-1'), 2: token('hero-2'), 3: token('hero-3') },
+        // Sidebar surface and its nav states
+        side: {
+          bg: token('side-bg'),
+          border: token('side-border'),
+          text: token('side-text'),
+          muted: token('side-muted'),
+          strong: token('side-strong'),
+          hover: token('side-hover'),
+          'hover-text': token('side-hover-text'),
+          active: token('side-active'),
+          'active-text': token('side-active-text'),
+          'active-icon': token('side-active-icon'),
+          'ind-1': token('side-ind-1'),
+          'ind-2': token('side-ind-2'),
         },
       },
       fontFamily: {
@@ -77,9 +86,9 @@ export default {
         'elevation-3':
           '0 2px 4px rgba(15, 23, 42, 0.05), 0 12px 32px -8px rgba(15, 23, 42, 0.18)',
         // Colored depth for the gradient brand CTA
-        brand: '0 4px 14px -3px rgba(37, 99, 235, 0.40)',
+        brand: '0 4px 14px -3px rgb(var(--c-brand-600) / 0.40)',
         'brand-lg':
-          '0 2px 4px rgba(37, 99, 235, 0.15), 0 8px 24px -6px rgba(37, 99, 235, 0.45)',
+          '0 2px 4px rgb(var(--c-brand-600) / 0.15), 0 8px 24px -6px rgb(var(--c-brand-600) / 0.45)',
       },
     },
   },

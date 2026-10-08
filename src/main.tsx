@@ -1,7 +1,11 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import './theme/themes.css';
 import './index.css';
+import { applyTheme, getStoredTheme } from './theme/themes';
+
+applyTheme(getStoredTheme());
 
 // Self-heal after deploys: a device holding a stale index.html requests
 // hashed chunks that no longer exist on the server (deploys wipe the web

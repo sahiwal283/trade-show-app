@@ -335,7 +335,7 @@ export const EventFormModal: React.FC<EventFormModalProps> = ({
                   {formData.participants.map((participant) => (
                     <div key={participant.id} className="flex flex-col items-start justify-between gap-3 rounded-lg bg-white p-3 shadow-elevation-1 ring-1 ring-stone-200/70 sm:flex-row sm:items-center sm:gap-0">
                       <div className="flex items-center space-x-3">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-accent-500">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-grad-500">
                           <span className="text-white text-sm font-medium">
                             {participant.name.charAt(0).toUpperCase()}
                           </span>

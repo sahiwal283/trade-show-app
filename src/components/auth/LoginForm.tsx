@@ -131,7 +131,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       {/* Layered background: soft brand washes + faint grid texture (pure CSS) */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0">
         <div className="absolute -top-40 -left-40 h-96 w-96 rounded-full bg-brand-200/40 blur-3xl" />
-        <div className="absolute -bottom-48 -right-32 h-[28rem] w-[28rem] rounded-full bg-accent-200/40 blur-3xl" />
+        <div className="absolute -bottom-48 -right-32 h-[28rem] w-[28rem] rounded-full bg-grad-200/40 blur-3xl" />
         <div
           className="absolute inset-0 opacity-[0.4]"
           style={{
@@ -147,7 +147,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
       <div className="relative max-w-md w-full px-0 py-10">
         <div className="bg-white/95 backdrop-blur rounded-2xl shadow-elevation-3 ring-1 ring-stone-900/5 p-6 sm:p-8 md:p-10">
           <div className="text-center mb-10">
-            <div className="w-14 h-14 bg-gradient-to-br from-brand-500 to-accent-500 rounded-2xl shadow-brand flex items-center justify-center mx-auto mb-5">
+            <div className="w-14 h-14 bg-gradient-to-br from-brand-500 to-grad-500 rounded-2xl shadow-brand flex items-center justify-center mx-auto mb-5">
               <Key className="w-7 h-7 text-white" />
             </div>
             <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-stone-900">Welcome back</h1>
