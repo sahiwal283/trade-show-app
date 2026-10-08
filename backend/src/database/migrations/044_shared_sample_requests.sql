@@ -33,6 +33,18 @@ FROM sample_requests
 WHERE event_id IN (SELECT event_id FROM sample_requests GROUP BY event_id HAVING COUNT(*) > 1)
 ORDER BY event_id, created_at ASC, id ASC;
 
+-- Rows that were actually edited (hold at least one item or material), for
+-- the "last edited" attribution below. Captured BEFORE the sums are written
+-- into the keeper: afterwards the keeper holds every rep's rows, so an
+-- untouched keeper would look edited. v2.30.0 created an empty draft whenever
+-- a rep merely opened the form; those rows must not count as edits.
+CREATE TEMP TABLE sr_edited AS
+SELECT sr.id AS request_id
+FROM sample_requests sr
+JOIN sr_keeper k ON k.event_id = sr.event_id
+WHERE EXISTS (SELECT 1 FROM sample_request_items i WHERE i.request_id = sr.id)
+   OR EXISTS (SELECT 1 FROM sample_request_materials m WHERE m.request_id = sr.id);
+
 -- items: sum per (event, product) into the keeper
 WITH sums AS (
   SELECT k.keeper_id, i.product_id,
@@ -67,11 +79,13 @@ WITH agg AS (
          BOOL_OR(sr.status = 'submitted') AS any_submitted,
          MIN(sr.submitted_at) FILTER (WHERE sr.status = 'submitted') AS first_submitted_at,
          (ARRAY_AGG(sr.user_id ORDER BY sr.submitted_at ASC NULLS LAST, sr.id ASC) FILTER (WHERE sr.status = 'submitted'))[1] AS first_submitter,
-         MAX(sr.updated_at) AS last_updated_at,
-         (ARRAY_AGG(sr.user_id ORDER BY sr.updated_at DESC, sr.id DESC))[1] AS last_editor
-  FROM sample_requests sr JOIN sr_keeper k ON k.event_id = sr.event_id
+         -- only over edited rows; NULL when nobody edited anything
+         MAX(sr.updated_at) FILTER (WHERE e.request_id IS NOT NULL) AS last_updated_at,
+         (ARRAY_AGG(sr.user_id ORDER BY sr.updated_at DESC, sr.id DESC) FILTER (WHERE e.request_id IS NOT NULL))[1] AS last_editor
+  FROM sample_requests sr
+  JOIN sr_keeper k ON k.event_id = sr.event_id   -- sr_keeper holds multi-row events only
+  LEFT JOIN sr_edited e ON e.request_id = sr.id
   GROUP BY k.keeper_id
-  HAVING COUNT(*) > 1            -- single-row events keep their row untouched
 )
 UPDATE sample_requests s
 SET status         = CASE WHEN a.any_submitted THEN 'submitted' ELSE s.status END,
@@ -85,6 +99,7 @@ DELETE FROM sample_requests s
 USING sr_keeper k
 WHERE k.event_id = s.event_id AND s.id <> k.keeper_id;
 
+DROP TABLE sr_edited;
 DROP TABLE sr_keeper;
 
 -- ── 3. Reshape constraints and rename user_id → created_by ───────────────

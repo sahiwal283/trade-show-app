@@ -15,8 +15,9 @@ let c: PoolClient;
 const id = () => randomUUID();
 const U1 = id(), U2 = id();
 const P = id(), Q = id(), LINE = id(), MAT = id();
-const EA = id(), EB = id(), EC = id(), ED = id(), EE = id();
+const EA = id(), EB = id(), EC = id(), ED = id(), EE = id(), EF = id(), EG = id(), EH = id();
 const A1 = id(), A2 = id(), B1 = id(), B2 = id(), C1 = id(), C2 = id(), D1 = id(), E1 = id();
+const F1 = id(), F2 = id(), G1 = id(), G2 = id(), H1 = id(), H2 = id();
 
 const t = (s: string) => `'${s}'::timestamptz`;
 
@@ -78,7 +79,7 @@ beforeAll(async () => {
     CREATE INDEX sample_requests_event_idx ON sample_requests (event_id);
   `);
   await c.query(`INSERT INTO users VALUES ($1,'u1'),($2,'u2')`, [U1, U2]);
-  for (const e of [EA, EB, EC, ED, EE]) await c.query(`INSERT INTO events VALUES ($1,'e')`, [e]);
+  for (const e of [EA, EB, EC, ED, EE, EF, EG, EH]) await c.query(`INSERT INTO events VALUES ($1,'e')`, [e]);
   await c.query(`INSERT INTO sample_product_lines (id, brand, name) VALUES ($1,'haute_brands','L')`, [LINE]);
   await c.query(`INSERT INTO sample_products (id, product_line_id, name) VALUES ($1,$3,'P'),($2,$3,'Q')`, [P, Q, LINE]);
   await c.query(`INSERT INTO sample_materials (id, name) VALUES ($1,'M')`, [MAT]);
@@ -101,6 +102,17 @@ beforeAll(async () => {
   await item(D1, P, 7); await mat(D1, 5, '  padded  ');
   // E: single untouched draft
   await req(E1, EE, U1, 'draft', '2026-01-01T10:00Z', '2026-01-02T10:00Z', null);
+  // F: submitted with items (U1, updated = submitted = t1), then a LATER empty draft (U2, t5)
+  await req(F1, EF, U1, 'submitted', '2026-01-01T09:00Z', '2026-01-01T10:00Z', '2026-01-01T10:00Z');
+  await req(F2, EF, U2, 'draft', '2026-01-05T10:00Z', '2026-01-05T10:00Z', null);
+  await item(F1, P, 2); await mat(F1, 1, 'f');
+  // G: two empty drafts (both reps only opened the form)
+  await req(G1, EG, U1, 'draft', '2026-01-01T10:00Z', '2026-01-02T10:00Z', null);
+  await req(G2, EG, U2, 'draft', '2026-01-03T10:00Z', '2026-01-04T10:00Z', null);
+  // H: the keeper (U1) is an empty draft touched last; the only edited row is U2's
+  await req(H1, EH, U1, 'draft', '2026-01-01T10:00Z', '2026-01-05T10:00Z', null);
+  await req(H2, EH, U2, 'draft', '2026-01-02T10:00Z', '2026-01-03T10:00Z', null);
+  await item(H2, P, 9);
 
   await c.query(fs.readFileSync(path.join(__dirname, '../../src/database/migrations/044_shared_sample_requests.sql'), 'utf8'));
 });
@@ -115,6 +127,7 @@ afterAll(async () => {
   }
 });
 
+const iso = (d: Date | null) => (d ? d.toISOString() : null);
 const reqs = async (ev: string) => (await c.query(`SELECT * FROM sample_requests WHERE event_id = $1`, [ev])).rows;
 const singles = async (rid: string, prod: string) =>
   (await c.query(`SELECT singles FROM sample_request_items WHERE request_id=$1 AND product_id=$2`, [rid, prod])).rows[0]?.singles;
@@ -132,6 +145,7 @@ describe('migration 044 merge', () => {
     expect(r[0].status).toBe('submitted');
     expect(r[0].submitted_by).toBe(U1);
     expect(r[0].last_edited_by).toBe(U2);
+    expect(iso(r[0].last_edited_at)).toBe('2026-01-04T10:00:00.000Z');
   });
 
   it('B: two drafts stay a draft with summed quantities', async () => {
@@ -157,6 +171,8 @@ describe('migration 044 merge', () => {
     expect(await material(D1)).toEqual({ qty: 5, notes: '  padded  ' });
     expect(r[0].submitted_by).toBe(U2);
     expect(r[0].last_edited_by).toBe(U2);
+    expect(iso(r[0].last_edited_at)).toBe('2026-01-02T10:00:00.000Z');
+    expect(iso(r[0].last_edited_at)).toBe(iso(r[0].updated_at));
   });
 
   it('E: untouched single draft gets no attribution', async () => {
@@ -164,6 +180,39 @@ describe('migration 044 merge', () => {
     expect(r).toHaveLength(1);
     expect(r[0].submitted_by).toBeNull();
     expect(r[0].last_edited_by).toBeNull();
+    expect(r[0].last_edited_at).toBeNull();
+  });
+
+  it('F: a later empty draft does not become the last editor of a submitted request', async () => {
+    const r = await reqs(EF);
+    expect(r).toHaveLength(1);
+    expect(r[0].id).toBe(F1);
+    expect(r[0].status).toBe('submitted');
+    expect(r[0].submitted_by).toBe(U1);
+    expect(r[0].last_edited_by).toBe(U1);
+    expect(iso(r[0].last_edited_at)).toBe('2026-01-01T10:00:00.000Z');
+    expect(r[0].last_edited_at.getTime()).toBeLessThanOrEqual(r[0].submitted_at.getTime());
+    expect(await singles(F1, P)).toBe(2);
+    expect(await material(F1)).toEqual({ qty: 1, notes: 'f' });
+  });
+
+  it('G: two empty drafts merge into one draft that nobody edited', async () => {
+    const r = await reqs(EG);
+    expect(r).toHaveLength(1);
+    expect(r[0].id).toBe(G1);
+    expect(r[0].status).toBe('draft');
+    expect(r[0].submitted_by).toBeNull();
+    expect(r[0].last_edited_by).toBeNull();
+    expect(r[0].last_edited_at).toBeNull();
+  });
+
+  it('H: an empty keeper that receives the merged items is not the last editor', async () => {
+    const r = await reqs(EH);
+    expect(r).toHaveLength(1);
+    expect(r[0].id).toBe(H1);
+    expect(await singles(H1, P)).toBe(9);
+    expect(r[0].last_edited_by).toBe(U2);
+    expect(iso(r[0].last_edited_at)).toBe('2026-01-03T10:00:00.000Z');
   });
 
   it('globally: one request per event and UNIQUE (event_id) exists', async () => {
