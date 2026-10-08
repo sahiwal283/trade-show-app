@@ -1,18 +1,41 @@
 // src/components/checklist/samples/useEventSampleRequest.ts
 /**
- * One shared sample request per event. Rows are tracked individually:
- * only dirty rows are PATCHed, and every server response, poll or focus
- * reconciles the rows the user is not touching (dirty or focused rows keep
- * their local values). Carries over v2.30.0 behaviour: offline → read-only
- * and flush on reconnect, 403 → forbidden, 409 → closed, submit flushes first.
+ * One shared sample request per event, edited by several people at once.
+ *
+ * THE CONSUMER MUST KEY ITS COMPONENT BY `eventId` (<Panel key={eventId} />):
+ * the state below is not reset when `eventId` changes.
+ *
+ * Dirty tracking is per FIELD. A field is dirty from the moment it is edited
+ * until a PATCH that carried its latest edit succeeds. A PATCH holds only dirty
+ * fields, and the server merges them into the row, so this client can never
+ * write a value the user did not type. What is shown is always
+ *   dirty field → the local value;  clean field → the last applied server view.
+ *
+ * Ordering, the whole of it:
+ *  - Saves (PATCH, and submit = flush + POST) run one at a time on a single
+ *    promise chain. At most one waiting autosave exists; it sends whatever is
+ *    dirty when its turn comes.
+ *  - Each save snapshots the edit revision of every field it sends. On success
+ *    a field becomes clean only if its revision is unchanged, so an edit made
+ *    while the save was in flight stays dirty and goes out in the next one. On
+ *    failure nothing is cleaned.
+ *  - GETs are never queued behind saves, so they can race them. A GET response
+ *    is dropped if any save is pending when it arrives, or if a save settled
+ *    after it was issued (it may have read the row before that save landed), or
+ *    if a later-issued GET was already applied.
+ *  - Any view older (by request.lastEditedAt) than the newest applied is ignored.
+ *
+ * Also: offline → read-only and flush on reconnect, 403 → forbidden,
+ * 409 WINDOW_CLOSED → closed, a failed save is retried on the next poll tick.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   sampleRequestApi, SampleCatalog, EventSampleRequestView, SampleRequestItem, SampleRequestMaterial, SampleRequestPatch, MAX_SAMPLE_QTY,
 } from '../../../utils/sampleRequestApi';
 
 export type SampleStatus = 'loading' | 'ready' | 'offline' | 'error' | 'forbidden';
 export type ItemField = 'singles' | 'displays' | 'emptyDisplays';
+export type MaterialField = 'qty' | 'notes';
 interface Args { eventId: string; userId: string; role: string }
 
 const AUTOSAVE_MS = 800;
@@ -21,15 +44,54 @@ const OVERRIDE = ['admin', 'coordinator', 'developer'];
 const emptyItem = (productId: string): SampleRequestItem => ({ productId, singles: 0, displays: 0, emptyDisplays: 0 });
 const emptyMaterial = (materialId: string): SampleRequestMaterial => ({ materialId, qty: 0, notes: null });
 const clampQty = (v: number) => Math.min(MAX_SAMPLE_QTY, Math.max(0, Math.floor(v || 0)));
-const isWindowClosed = (e: unknown): boolean =>
-  !!e && typeof e === 'object' && (e as any).statusCode === 409 &&
-  ((e as any).details?.code === 'WINDOW_CLOSED' || (e as any).details?.details?.code === 'WINDOW_CLOSED');
-/** Canonical form of a request's contents (zero rows dropped, notes trimmed) for submitted-vs-current comparison. */
-const contentKey = (its: Iterable<SampleRequestItem>, mts: Iterable<SampleRequestMaterial>) => JSON.stringify({
-  i: [...its].filter((i) => i.singles || i.displays || i.emptyDisplays).sort((a, b) => a.productId.localeCompare(b.productId)),
-  m: [...mts].filter((m) => m.qty || (m.notes && m.notes.trim())).sort((a, b) => a.materialId.localeCompare(b.materialId)).map((m) => ({ ...m, notes: m.notes?.trim() || null })),
-});
-const isForbidden = (e: unknown): boolean => !!e && typeof e === 'object' && (e as any).statusCode === 403;
+const statusOf = (e: unknown): number | undefined => (e as { statusCode?: number } | null)?.statusCode;
+/** The API error keeps the whole response body in `details`; the backend nests its own `details` inside that. */
+const isWindowClosed = (e: unknown): boolean => {
+  const d = (e as { details?: { code?: string; details?: { code?: string } } } | null)?.details;
+  return statusOf(e) === 409 && (d?.code === 'WINDOW_CLOSED' || d?.details?.code === 'WINDOW_CLOSED');
+};
+const time = (iso: string | null): number => (iso ? Date.parse(iso) : -Infinity);
+
+/** Row id → field → revision of that field's latest edit. A field is dirty iff it has an entry. */
+type Dirty<F extends string> = Map<string, Map<F, number>>;
+
+function markDirty<F extends string>(dirty: Dirty<F>, id: string, field: F, rev: number) {
+  const fields = dirty.get(id) ?? new Map<F, number>();
+  fields.set(field, rev);
+  dirty.set(id, fields);
+}
+/** After a successful save: a sent field is clean unless it was edited again (its revision moved on). */
+function markSaved<F extends string>(dirty: Dirty<F>, sent: Dirty<F>) {
+  for (const [id, sentFields] of sent) {
+    const fields = dirty.get(id);
+    if (!fields) continue;
+    for (const [field, rev] of sentFields) if (fields.get(field) === rev) fields.delete(field);
+    if (fields.size === 0) dirty.delete(id);
+  }
+}
+const snapshot = <F extends string>(dirty: Dirty<F>): Dirty<F> => new Map([...dirty].map(([id, fields]) => [id, new Map(fields)]));
+/** Just the dirty fields of each dirty row. */
+function dirtyFields<R, F extends keyof R & string>(dirty: Dirty<F>, local: Map<string, R>, empty: (id: string) => R) {
+  return [...dirty].map(([id, fields]) => {
+    const row = local.get(id) ?? empty(id);
+    const out: Partial<Pick<R, F>> = {};
+    for (const field of fields.keys()) out[field] = row[field];
+    return { id, fields: out };
+  });
+}
+/** The server's rows with this client's dirty fields laid over them. A row the server does not list is zeros. */
+function overlay<R, F extends keyof R & string>(
+  server: R[], idOf: (r: R) => string, empty: (id: string) => R, local: Map<string, R>, dirty: Dirty<F>,
+): Map<string, R> {
+  const next = new Map<string, R>(server.map((r) => [idOf(r), r]));
+  for (const [id, fields] of dirty) {
+    const row = { ...(next.get(id) ?? empty(id)) };
+    const mine = local.get(id) ?? empty(id);
+    for (const field of fields.keys()) row[field] = mine[field];
+    next.set(id, row);
+  }
+  return next;
+}
 
 export function useEventSampleRequest({ eventId, userId, role }: Args) {
   const [status, setStatus] = useState<SampleStatus>('loading');
@@ -37,8 +99,8 @@ export function useEventSampleRequest({ eventId, userId, role }: Args) {
   const [view, setView] = useState<EventSampleRequestView | null>(null);
   const [items, setItems] = useState<Map<string, SampleRequestItem>>(new Map());
   const [materials, setMaterials] = useState<Map<string, SampleRequestMaterial>>(new Map());
-  const [dirtyItems, setDirtyItems] = useState<Set<string>>(new Set());
-  const [dirtyMaterials, setDirtyMaterials] = useState<Set<string>>(new Set());
+  const [dirtyCount, setDirtyCount] = useState(0);
+  const [editTick, setEditTick] = useState(0);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [closed, setClosed] = useState(false);
@@ -46,105 +108,90 @@ export function useEventSampleRequest({ eventId, userId, role }: Args) {
   const [isOffline, setIsOffline] = useState(() => typeof navigator !== 'undefined' && navigator.onLine === false);
   const [error, setError] = useState<string | null>(null);
   const [updatedBy, setUpdatedBy] = useState<{ name: string; at: string } | null>(null);
-  const [submittedKey, setSubmittedKey] = useState<string | null>(null);
 
-  const focused = useRef<Set<string>>(new Set());
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pending = useRef<Promise<boolean> | null>(null);
-  const lastEditedAt = useRef<string | null>(null);
-  // Dirty sets live in refs (synchronously current) and are mirrored to state for rendering, so a
-  // reconcile that runs right after a save or an edit never sees a stale set.
-  const dirtyI = useRef<Set<string>>(new Set());
-  const dirtyM = useRef<Set<string>>(new Set());
-  const latest = useRef({ items, materials, dirtyItems, dirtyMaterials, canEdit: false });
+  // The refs are the truth (always current, also inside async code); state mirrors them for rendering.
+  const local = useRef({ items: new Map<string, SampleRequestItem>(), materials: new Map<string, SampleRequestMaterial>() });
+  const dirty = useRef({ items: new Map() as Dirty<ItemField>, materials: new Map() as Dirty<MaterialField>, rev: 0 });
+  /** The last applied view's identity and stamp; undefined until the initial load is applied. */
+  const applied = useRef<{ id: string; at: string | null } | undefined>(undefined);
+  const chain = useRef<Promise<boolean>>(Promise.resolve(true));   // every save, in order
+  const pendingSaves = useRef(0);                                  // links on the chain that have not settled
+  const waitingFlush = useRef<Promise<boolean> | null>(null);      // the one autosave that has not started yet
+  const getTicket = useRef(0);                                     // number of the latest GET issued
+  const getFloor = useRef(0);                                      // GETs numbered at or below this are stale
+  const submittingRef = useRef(false);
 
   const isOverride = OVERRIDE.includes(role);
-  const serverCanEdit = view?.canEdit ?? false;
-  const canEdit = status === 'ready' && !isOffline && serverCanEdit && (!closed || (isOverride && override));
-  const dirtyCount = dirtyItems.size + dirtyMaterials.size;
-  const snapshotKey = useMemo(() => contentKey(items.values(), materials.values()), [items, materials]);
-  const canSubmit = status === 'ready' && !submitting && canEdit && (submittedKey === null || snapshotKey !== submittedKey);
+  const canEdit = status === 'ready' && !isOffline && (view?.canEdit ?? false) && (!closed || (isOverride && override));
+  const request = view?.request;
+  const unsubmitted = !!request && (request.status !== 'submitted' || time(request.lastEditedAt) > time(request.submittedAt) || dirtyCount > 0);
+  const canSubmit = canEdit && !submitting && unsubmitted;
+  const latest = useRef({ canEdit, canSubmit });
+  latest.current = { canEdit, canSubmit };
 
-  /** Merge a server view into local state, keeping dirty/focused rows. */
-  const reconcile = useCallback((v: EventSampleRequestView) => {
-    const di = dirtyI.current, dm = dirtyM.current;
-    setItems((prev) => {
-      const next = new Map<string, SampleRequestItem>();
-      for (const i of v.request.items) next.set(i.productId, i);
-      for (const [id, local] of prev) if (di.has(id) || focused.current.has(id)) next.set(id, local);
-      return next;
-    });
-    setMaterials((prev) => {
-      const next = new Map<string, SampleRequestMaterial>();
-      for (const m of v.request.materials) next.set(m.materialId, m);
-      for (const [id, local] of prev) if (dm.has(id) || focused.current.has(id)) next.set(id, local);
-      return next;
-    });
+  const syncDirty = useCallback(() => setDirtyCount(dirty.current.items.size + dirty.current.materials.size), []);
+
+  /** Take a server view: clean fields follow it, dirty fields stay local. Views older than the newest applied are ignored. */
+  const applyView = useCallback((v: EventSampleRequestView) => {
+    const prev = applied.current;
+    const at = v.request.lastEditedAt;
+    if (prev && prev.id === v.request.id && time(at) < time(prev.at)) return;
+    applied.current = { id: v.request.id, at };
+    local.current = {
+      items: overlay(v.request.items, (i) => i.productId, emptyItem, local.current.items, dirty.current.items),
+      materials: overlay(v.request.materials, (m) => m.materialId, emptyMaterial, local.current.materials, dirty.current.materials),
+    };
+    setItems(local.current.items); setMaterials(local.current.materials);
     setView(v);
     setClosed(!v.window.isOpen);
-    if (v.request.status === 'submitted' && submittedKey === null) {
-      setSubmittedKey(contentKey(v.request.items, v.request.materials));
-    }
-    const at = v.request.lastEditedAt;
-    if (at && at !== lastEditedAt.current && v.request.lastEditedBy && v.request.lastEditedBy.id !== userId && lastEditedAt.current !== null) {
-      setUpdatedBy({ name: v.request.lastEditedBy.name, at });
-    }
-    lastEditedAt.current = at;
-  }, [userId, submittedKey]);
-
-  latest.current = { items, materials, dirtyItems: dirtyI.current, dirtyMaterials: dirtyM.current, canEdit };
+    const by = v.request.lastEditedBy;
+    // Not on the initial load (prev is undefined), but yes when the previous stamp was null (never edited).
+    if (prev && at && at !== prev.at && by && by.id !== userId) setUpdatedBy({ name: by.name, at });
+  }, [userId]);
 
   const refresh = useCallback(async () => {
-    try { reconcile(await sampleRequestApi.getEvent(eventId)); } catch { /* keep last state */ }
-  }, [eventId, reconcile]);
+    const ticket = ++getTicket.current;
+    try {
+      const v = await sampleRequestApi.getEvent(eventId);
+      if (pendingSaves.current > 0 || ticket <= getFloor.current) return;
+      getFloor.current = ticket;
+      applyView(v);
+    } catch { /* keep the last state; the next poll tries again */ }
+  }, [eventId, applyView]);
 
+  // Initial load
   useEffect(() => {
     let cancelled = false;
-    setStatus('loading');
     (async () => {
       try {
         const [c, v] = await Promise.all([sampleRequestApi.getCatalog(true), sampleRequestApi.getEvent(eventId)]);
         if (cancelled) return;
-        setCatalog(c); reconcile(v); setStatus('ready');
+        setCatalog(c); applyView(v); setStatus('ready');
       } catch (e) {
         if (cancelled) return;
-        setStatus(isForbidden(e) ? 'forbidden' : (typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error'));
+        setStatus(statusOf(e) === 403 ? 'forbidden' : (typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error'));
       }
     })();
     return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load once; the consumer keys the component by eventId
   }, [eventId]);
 
-  // Poll + focus
-  useEffect(() => {
-    if (status !== 'ready') return;
-    const onFocus = () => { void refresh(); };
-    window.addEventListener('focus', onFocus);
-    const id = setInterval(() => { void refresh(); }, POLL_MS);
-    return () => { window.removeEventListener('focus', onFocus); clearInterval(id); };
-  }, [status, refresh]);
+  const buildPatch = useCallback((): SampleRequestPatch => ({
+    items: dirtyFields(dirty.current.items, local.current.items, emptyItem).map(({ id, fields }) => ({ productId: id, ...fields })),
+    materials: dirtyFields(dirty.current.materials, local.current.materials, emptyMaterial).map(({ id, fields }) => ({ materialId: id, ...fields })),
+  }), []);
 
-  const buildPatch = useCallback((): SampleRequestPatch => {
-    const { items: it, materials: mt, dirtyItems: di, dirtyMaterials: dm } = latest.current;
-    return {
-      items: [...di].map((id) => it.get(id) ?? emptyItem(id)),
-      materials: [...dm].map((id) => mt.get(id) ?? emptyMaterial(id)),
-    };
-  }, []);
-
-  const persist = useCallback(async (): Promise<boolean> => {
+  /** One PATCH with everything dirty right now. Resolves false on failure (fields stay dirty); never rejects. */
+  const saveOnce = useCallback(async (): Promise<boolean> => {
     const patch = buildPatch();
     if (patch.items.length === 0 && patch.materials.length === 0) return true;
-    const sentItems = new Set(patch.items.map((i) => i.productId));
-    const sentMaterials = new Set(patch.materials.map((m) => m.materialId));
+    const sent = { items: snapshot(dirty.current.items), materials: snapshot(dirty.current.materials) };
     setSaving(true); setError(null);
     try {
       const v = await sampleRequestApi.patchEvent(eventId, patch);
-      // Rows edited again while in flight stay dirty; the rest are clean now.
-      for (const id of sentItems) if (latest.current.items.get(id) === patch.items.find((i) => i.productId === id)) dirtyI.current.delete(id);
-      for (const id of sentMaterials) if (latest.current.materials.get(id) === patch.materials.find((m) => m.materialId === id)) dirtyM.current.delete(id);
-      setDirtyItems(new Set(dirtyI.current)); setDirtyMaterials(new Set(dirtyM.current));
-      reconcile(v);
+      markSaved(dirty.current.items, sent.items); markSaved(dirty.current.materials, sent.materials);
+      syncDirty();
+      applyView(v);
       return true;
     } catch (e) {
       if (isWindowClosed(e)) setClosed(true);
@@ -153,74 +200,105 @@ export function useEventSampleRequest({ eventId, userId, role }: Args) {
     } finally {
       setSaving(false);
     }
-  }, [buildPatch, eventId, reconcile]);
+  }, [buildPatch, eventId, applyView, syncDirty]);
 
-  // Debounced autosave
+  /** Run `op` after every earlier save. When it settles, every GET issued so far is stale. */
+  const enqueue = useCallback((op: () => Promise<boolean>): Promise<boolean> => {
+    pendingSaves.current += 1;
+    const link = chain.current.then(op).catch(() => false).finally(() => {
+      pendingSaves.current -= 1;
+      getFloor.current = getTicket.current;
+    });
+    chain.current = link;
+    return link;
+  }, []);
+
+  /** Save what is dirty, after any save in flight. Callers that arrive while one is already waiting share it. */
+  const flush = useCallback((): Promise<boolean> => {
+    if (waitingFlush.current) return waitingFlush.current;
+    const p = enqueue(() => { waitingFlush.current = null; return saveOnce(); });
+    waitingFlush.current = p;
+    return p;
+  }, [enqueue, saveOnce]);
+
+  // Debounced autosave. Re-armed only by an edit or by becoming editable (reconnect, override), never by a failure.
   useEffect(() => {
     if (dirtyCount === 0 || !canEdit) return;
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      const p = persist();
-      pending.current = p;
-      void p.finally(() => { if (pending.current === p) pending.current = null; });
-    }, AUTOSAVE_MS);
-    return () => { if (timer.current) clearTimeout(timer.current); };
-  }, [dirtyCount, canEdit, persist, snapshotKey]);
+    const id = setTimeout(() => { void flush(); }, AUTOSAVE_MS);
+    return () => clearTimeout(id);
+  }, [editTick, dirtyCount, canEdit, flush]);
 
-  // Online / offline
+  // Poll + focus, once ready. With unsaved fields the tick retries the save instead (its response is a fresh view).
+  useEffect(() => {
+    if (status !== 'ready') return;
+    const tick = () => {
+      const hasDirty = dirty.current.items.size + dirty.current.materials.size > 0;
+      if (hasDirty && latest.current.canEdit) void flush(); else void refresh();
+    };
+    window.addEventListener('focus', tick);
+    const id = setInterval(tick, POLL_MS);
+    return () => { window.removeEventListener('focus', tick); clearInterval(id); };
+  }, [status, refresh, flush]);
+
+  // Online / offline. Coming back online makes the form editable again, which re-arms the autosave above.
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
-    const goOnline = () => { setIsOffline(false); if (latest.current.dirtyItems.size + latest.current.dirtyMaterials.size > 0) void persist(); };
+    const goOnline = () => setIsOffline(false);
     window.addEventListener('offline', goOffline); window.addEventListener('online', goOnline);
     return () => { window.removeEventListener('offline', goOffline); window.removeEventListener('online', goOnline); };
-  }, [persist]);
+  }, []);
 
-  // Best-effort save on unmount
+  // Best-effort save on unmount: after whatever is in flight, send what is still dirty then.
   useEffect(() => () => {
-    const { dirtyItems: di, dirtyMaterials: dm, canEdit: ce } = latest.current;
-    if (!ce || di.size + dm.size === 0) return;
-    void sampleRequestApi.patchEvent(eventId, buildPatch()).catch(() => undefined);
+    if (!latest.current.canEdit || dirty.current.items.size + dirty.current.materials.size === 0) return;
+    void chain.current.then(() => {
+      const patch = buildPatch();
+      if (patch.items.length + patch.materials.length === 0) return;
+      return sampleRequestApi.patchEvent(eventId, patch).then(() => undefined, () => undefined);
+    });
   }, [eventId, buildPatch]);
 
+  const edited = useCallback(() => { syncDirty(); setEditTick((t) => t + 1); }, [syncDirty]);
+
   const setItem = useCallback((productId: string, field: ItemField, value: number) => {
-    setItems((prev) => { const next = new Map(prev); next.set(productId, { ...(prev.get(productId) ?? emptyItem(productId)), [field]: clampQty(value) }); return next; });
-    dirtyI.current.add(productId); setDirtyItems(new Set(dirtyI.current));
-  }, []);
+    const next = new Map(local.current.items);
+    next.set(productId, { ...(next.get(productId) ?? emptyItem(productId)), [field]: clampQty(value) });
+    local.current.items = next; setItems(next);
+    markDirty(dirty.current.items, productId, field, ++dirty.current.rev);
+    edited();
+  }, [edited]);
 
-  const setMaterial = useCallback((materialId: string, patch: Partial<Pick<SampleRequestMaterial, 'qty' | 'notes'>>) => {
-    setMaterials((prev) => {
-      const next = new Map(prev); const cur = prev.get(materialId) ?? emptyMaterial(materialId);
-      next.set(materialId, { ...cur, ...patch, qty: patch.qty === undefined ? cur.qty : clampQty(patch.qty) });
-      return next;
-    });
-    dirtyM.current.add(materialId); setDirtyMaterials(new Set(dirtyM.current));
-  }, []);
+  const setMaterial = useCallback((materialId: string, patch: Partial<Pick<SampleRequestMaterial, MaterialField>>) => {
+    const row = { ...(local.current.materials.get(materialId) ?? emptyMaterial(materialId)) };
+    if (patch.qty !== undefined) { row.qty = clampQty(patch.qty); markDirty(dirty.current.materials, materialId, 'qty', ++dirty.current.rev); }
+    if (patch.notes !== undefined) { row.notes = patch.notes; markDirty(dirty.current.materials, materialId, 'notes', ++dirty.current.rev); }
+    const next = new Map(local.current.materials).set(materialId, row);
+    local.current.materials = next; setMaterials(next);
+    edited();
+  }, [edited]);
 
-  const markFocused = useCallback((id: string, isFocused: boolean) => {
-    if (isFocused) focused.current.add(id); else focused.current.delete(id);
-  }, []);
-
+  /** After any save in flight: flush what is dirty; only if that worked, submit and take the returned view. */
   const submit = useCallback(async () => {
-    if (!canSubmit) return;
+    if (!latest.current.canSubmit || submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true); setError(null);
-    try {
-      if (timer.current) clearTimeout(timer.current);
-      if (pending.current) await pending.current;
-      if (!(await persist())) { setError('Could not submit: your latest changes did not save.'); return; }
-      const v = await sampleRequestApi.submitEvent(eventId);
-      // Key off what the server holds as submitted, so reconciling the response cannot make it look edited.
-      setSubmittedKey(contentKey(v.request.items, v.request.materials));
-      reconcile(v);
-    } catch (e) {
-      if (isWindowClosed(e)) setClosed(true);
-      else setError('Could not submit. Check your connection and try again.');
-    } finally {
-      setSubmitting(false);
-    }
-  }, [canSubmit, persist, eventId, reconcile]);
+    await enqueue(async () => {
+      if (!(await saveOnce())) { setError('Could not submit: your latest changes did not save.'); return false; }
+      try {
+        applyView(await sampleRequestApi.submitEvent(eventId));
+        return true;
+      } catch (e) {
+        if (isWindowClosed(e)) setClosed(true);
+        else setError('Could not submit. Check your connection and try again.');
+        return false;
+      }
+    });
+    submittingRef.current = false;
+    setSubmitting(false);
+  }, [enqueue, saveOnce, applyView, eventId]);
 
   return {
     status, catalog, view, items, materials, dirtyCount, saving, submitting, closed, override, setOverride,
-    canEdit, canSubmit, isOffline, error, updatedBy, setItem, setMaterial, markFocused, submit, refresh,
+    canEdit, canSubmit, isOffline, error, updatedBy, setItem, setMaterial, submit, refresh,
   };
 }

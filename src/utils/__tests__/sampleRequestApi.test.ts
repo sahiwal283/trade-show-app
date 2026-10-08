@@ -14,8 +14,10 @@ describe('sampleRequestApi', () => {
   it('hits the event-scoped endpoints', async () => {
     await sampleRequestApi.getEvent('ev-1');
     expect(apiClient.get).toHaveBeenCalledWith('/sample-requests/ev-1');
-    await sampleRequestApi.patchEvent('ev-1', { items: [{ productId: 'p', singles: 1, displays: 0, emptyDisplays: 0 }], materials: [] });
-    expect(apiClient.patch).toHaveBeenCalledWith('/sample-requests/ev-1', { items: [{ productId: 'p', singles: 1, displays: 0, emptyDisplays: 0 }], materials: [] });
+    // Field-level patch: a row carries only the fields that changed.
+    const patch = { items: [{ productId: 'p', singles: 1 }], materials: [{ materialId: 'm', notes: null }] };
+    await sampleRequestApi.patchEvent('ev-1', patch);
+    expect(apiClient.patch).toHaveBeenCalledWith('/sample-requests/ev-1', patch);
     await sampleRequestApi.submitEvent('ev-1');
     expect(apiClient.post).toHaveBeenCalledWith('/sample-requests/ev-1/submit');
     await sampleRequestApi.getHistory('ev-1');

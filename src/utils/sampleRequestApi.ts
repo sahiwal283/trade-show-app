@@ -25,7 +25,10 @@ export interface EventSampleRequest {
   items: SampleRequestItem[]; materials: SampleRequestMaterial[];
 }
 export interface EventSampleRequestView { request: EventSampleRequest; window: SampleWindow; canEdit: boolean }
-export type SampleRequestPatch = SampleRequestPayload;
+export interface SampleRequestItemPatch { productId: string; singles?: number; displays?: number; emptyDisplays?: number }
+export interface SampleRequestMaterialPatch { materialId: string; qty?: number; notes?: string | null }
+/** Only the fields the client changed, per row. The server merges them into the current row. */
+export interface SampleRequestPatch { items: SampleRequestItemPatch[]; materials: SampleRequestMaterialPatch[] }
 export type SampleChangeField = 'singles' | 'displays' | 'empty_displays' | 'qty' | 'notes';
 export interface SampleChangeRow {
   id: string; userId: string | null; userName: string | null; kind: 'item' | 'material'; targetId: string; targetName: string;
