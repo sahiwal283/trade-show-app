@@ -6,3 +6,6 @@ export type { EventSnapshot } from './eventRefs';
 
 export { eventNotifications, diffEventDetails } from './eventNotifications';
 export type { DetailChange, AfterUpdateInput } from './eventNotifications';
+
+export { boothNotifications } from './boothNotifications';
+export type { ComponentReport } from './boothNotifications';

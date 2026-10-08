@@ -8,6 +8,7 @@ import { authorize, AuthRequest } from '../middleware/auth';
 import { uploadBoothMap } from '../config/upload';
 import { checklistRepository } from '../database/repositories';
 import { pushService, PushPayload } from '../services/PushService';
+import { boothNotifications, logNotifyError } from '../services/notifications';
 import multer from 'multer';
 import fs from 'fs';
 import { query } from '../config/database';
@@ -195,13 +196,21 @@ router.put('/:checklistId', authorize('admin', 'coordinator', 'developer'), asyn
   try {
     const { checklistId } = req.params;
     const { boothOrdered, boothNotes, electricityOrdered, electricityNotes } = req.body;
+    const id = parseInt(checklistId);
 
-    const checklist = await checklistRepository.updateMainFields(parseInt(checklistId), {
+    // undefined = the read failed; then we cannot tell whether the flag flipped.
+    const before = await checklistRepository.findById(id).catch(() => undefined);
+
+    const checklist = await checklistRepository.updateMainFields(id, {
       boothOrdered,
       boothNotes,
       electricityOrdered,
       electricityNotes
     });
+
+    if (before && !before.booth_ordered && checklist.booth_ordered) {
+      void boothNotifications.ordered(id, req.user?.id).catch(logNotifyError('booth.ordered'));
+    }
 
     res.json(checklist);
   } catch (error) {
@@ -311,6 +320,8 @@ router.post('/:checklistId/booth-map',
       });
 
       console.log(`[Checklist] ✓ Booth map uploaded successfully for checklist ${checklistId}: ${mapUrl}`);
+      void boothNotifications.mapUploaded(checklistIdNum, req.user?.id)
+        .catch(logNotifyError('booth.map_uploaded'));
       res.json({ mapUrl: checklist.booth_map_url });
     } catch (error: any) {
       // Handle specific error types
@@ -652,6 +663,11 @@ router.post('/:checklistId/booth-shipping', authorize('admin', 'coordinator', 'd
       notes,
       shipped: shipped || false
     });
+
+    if (shipping.shipped) {
+      void boothNotifications.shipped(parseInt(checklistId), shipping, req.user?.id)
+        .catch(logNotifyError('booth.shipped'));
+    }
 
     res.json(shipping);
   } catch (error) {
