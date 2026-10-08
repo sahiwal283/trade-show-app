@@ -7,70 +7,11 @@ import express, { Response, NextFunction } from 'express';
 import { authorize, AuthRequest } from '../middleware/auth';
 import { uploadBoothMap } from '../config/upload';
 import { checklistRepository } from '../database/repositories';
-import { pushService, PushPayload } from '../services/PushService';
-import { boothNotifications, logNotifyError } from '../services/notifications';
+import { boothNotifications, travelNotifications, logNotifyError } from '../services/notifications';
 import multer from 'multer';
 import fs from 'fs';
-import { query } from '../config/database';
 
 const router = express.Router();
-
-/**
- * Fire-and-forget push notification for booking confirmations.
- * Never delays or fails the API response.
- */
-const notifyBooking = (userId: string | null | undefined, payload: PushPayload): void => {
-  if (!userId) return;
-  void pushService.sendToUser(userId, payload).catch((error) => {
-    console.error('[Checklist] Failed to send booking notification:', error);
-  });
-};
-
-/**
- * Format a date value for notification bodies (dates come back from pg as Date or string).
- */
-interface ShowRef { id: string; name: string }
-
-/** Resolve the show for a checklist id — used to give notifications context. */
-const getShowByChecklist = async (checklistId: number): Promise<ShowRef | null> => {
-  try {
-    const r = await query(
-      `SELECT e.id, e.name FROM events e JOIN event_checklists c ON c.event_id = e.id WHERE c.id = $1`,
-      [checklistId]
-    );
-    return r.rows[0] || null;
-  } catch (error) {
-    console.error('[Checklist] Failed to resolve show for notification:', error);
-    return null;
-  }
-};
-
-/** Resolve the show from a booking row id (update routes only know the row). */
-const getShowByBookingRow = async (
-  table: 'checklist_flights' | 'checklist_hotels' | 'checklist_car_rentals',
-  rowId: number
-): Promise<ShowRef | null> => {
-  try {
-    const r = await query(
-      `SELECT e.id, e.name FROM events e
-       JOIN event_checklists c ON c.event_id = e.id
-       JOIN ${table} t ON t.checklist_id = c.id
-       WHERE t.id = $1`,
-      [rowId]
-    );
-    return r.rows[0] || null;
-  } catch (error) {
-    console.error('[Checklist] Failed to resolve show for notification:', error);
-    return null;
-  }
-};
-
-const formatNotificationDate = (value?: string | Date | null): string | null => {
-  if (!value) return null;
-  const date = value instanceof Date ? value : new Date(value);
-  if (isNaN(date.getTime())) return null;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-};
 
 // ==========================================
 // CHECKLIST TEMPLATES
@@ -428,14 +369,7 @@ router.post('/:checklistId/flights', authorize('admin', 'coordinator', 'develope
       departureAt: departureAt || null
     });
 
-    if (flight.booked && flight.confirmation_number && flight.attendee_id) {
-      const show = await getShowByChecklist(parseInt(checklistId));
-      notifyBooking(flight.attendee_id, {
-        title: `Flight booked ✈️${show ? ` — ${show.name}` : ''}`,
-        body: `${flight.carrier ? `${flight.carrier} · ` : ''}Confirmation ${flight.confirmation_number}`,
-        url: show ? `/#event=${show.id}` : '/'
-      });
-    }
+    void travelNotifications.flightSaved(null, flight, req.user?.id).catch(logNotifyError('travel.flight'));
 
     res.json(flight);
   } catch (error) {
@@ -449,8 +383,12 @@ router.put('/flights/:flightId', authorize('admin', 'coordinator', 'developer'),
   try {
     const { flightId } = req.params;
     const { carrier, confirmationNumber, notes, booked, departureAt } = req.body;
+    const id = parseInt(flightId);
 
-    const flight = await checklistRepository.updateFlight(parseInt(flightId), {
+    // undefined = the read failed; then there is nothing to compare against.
+    const before = await checklistRepository.getFlightById(id).catch(() => undefined);
+
+    const flight = await checklistRepository.updateFlight(id, {
       carrier,
       confirmation_number: confirmationNumber,
       notes,
@@ -458,13 +396,8 @@ router.put('/flights/:flightId', authorize('admin', 'coordinator', 'developer'),
       departure_at: departureAt || null
     });
 
-    if (flight.booked && flight.confirmation_number && flight.attendee_id) {
-      const show = await getShowByBookingRow('checklist_flights', parseInt(flightId));
-      notifyBooking(flight.attendee_id, {
-        title: `Flight booked ✈️${show ? ` — ${show.name}` : ''}`,
-        body: `${flight.carrier ? `${flight.carrier} · ` : ''}Confirmation ${flight.confirmation_number}`,
-        url: show ? `/#event=${show.id}` : '/'
-      });
+    if (before !== undefined) {
+      void travelNotifications.flightSaved(before, flight, req.user?.id).catch(logNotifyError('travel.flight'));
     }
 
     res.json(flight);
@@ -478,7 +411,12 @@ router.put('/flights/:flightId', authorize('admin', 'coordinator', 'developer'),
 router.delete('/flights/:flightId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { flightId } = req.params;
-    await checklistRepository.deleteFlight(parseInt(flightId));
+    const id = parseInt(flightId);
+    const before = await checklistRepository.getFlightById(id).catch(() => null);
+    await checklistRepository.deleteFlight(id);
+    if (before) {
+      void travelNotifications.flightSaved(before, null, req.user?.id).catch(logNotifyError('travel.flight'));
+    }
     res.json({ success: true });
   } catch (error) {
     console.error('[Checklist] Error deleting flight:', error);
@@ -504,15 +442,7 @@ router.post('/:checklistId/hotels', authorize('admin', 'coordinator', 'developer
       booked: booked || false
     });
 
-    if (hotel.booked && hotel.confirmation_number && hotel.attendee_id) {
-      const checkIn = formatNotificationDate(hotel.check_in_date);
-      const show = await getShowByChecklist(parseInt(checklistId));
-      notifyBooking(hotel.attendee_id, {
-        title: `Hotel booked 🏨${show ? ` — ${show.name}` : ''}`,
-        body: `${hotel.property_name ? `${hotel.property_name} · ` : ''}Confirmation ${hotel.confirmation_number}${checkIn ? ` · Check-in ${checkIn}` : ''}`,
-        url: show ? `/#event=${show.id}` : '/'
-      });
-    }
+    void travelNotifications.hotelSaved(null, hotel, req.user?.id).catch(logNotifyError('travel.hotel'));
 
     res.json(hotel);
   } catch (error) {
@@ -526,8 +456,12 @@ router.put('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer'), a
   try {
     const { hotelId } = req.params;
     const { propertyName, confirmationNumber, checkInDate, checkOutDate, notes, booked } = req.body;
+    const id = parseInt(hotelId);
 
-    const hotel = await checklistRepository.updateHotel(parseInt(hotelId), {
+    // undefined = the read failed; then there is nothing to compare against.
+    const before = await checklistRepository.getHotelById(id).catch(() => undefined);
+
+    const hotel = await checklistRepository.updateHotel(id, {
       property_name: propertyName,
       confirmation_number: confirmationNumber,
       check_in_date: checkInDate,
@@ -536,14 +470,8 @@ router.put('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer'), a
       booked
     });
 
-    if (hotel.booked && hotel.confirmation_number && hotel.attendee_id) {
-      const checkIn = formatNotificationDate(hotel.check_in_date);
-      const show = await getShowByBookingRow('checklist_hotels', parseInt(hotelId));
-      notifyBooking(hotel.attendee_id, {
-        title: `Hotel booked 🏨${show ? ` — ${show.name}` : ''}`,
-        body: `${hotel.property_name ? `${hotel.property_name} · ` : ''}Confirmation ${hotel.confirmation_number}${checkIn ? ` · Check-in ${checkIn}` : ''}`,
-        url: show ? `/#event=${show.id}` : '/'
-      });
+    if (before !== undefined) {
+      void travelNotifications.hotelSaved(before, hotel, req.user?.id).catch(logNotifyError('travel.hotel'));
     }
 
     res.json(hotel);
@@ -557,7 +485,12 @@ router.put('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer'), a
 router.delete('/hotels/:hotelId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { hotelId } = req.params;
-    await checklistRepository.deleteHotel(parseInt(hotelId));
+    const id = parseInt(hotelId);
+    const before = await checklistRepository.getHotelById(id).catch(() => null);
+    await checklistRepository.deleteHotel(id);
+    if (before) {
+      void travelNotifications.hotelSaved(before, null, req.user?.id).catch(logNotifyError('travel.hotel'));
+    }
     res.json({ success: true });
   } catch (error) {
     console.error('[Checklist] Error deleting hotel:', error);
@@ -584,14 +517,7 @@ router.post('/:checklistId/car-rentals', authorize('admin', 'coordinator', 'deve
       assignedToName: assignedToName || null
     });
 
-    if (rental.booked && rental.confirmation_number && rental.assigned_to_id) {
-      const show = await getShowByChecklist(parseInt(checklistId));
-      notifyBooking(rental.assigned_to_id, {
-        title: `Car rental booked 🚗${show ? ` — ${show.name}` : ''}`,
-        body: `${rental.provider ? `${rental.provider} · ` : ''}Confirmation ${rental.confirmation_number}`,
-        url: show ? `/#event=${show.id}` : '/'
-      });
-    }
+    void travelNotifications.carRentalSaved(null, rental, req.user?.id).catch(logNotifyError('travel.car_rental'));
 
     res.json(rental);
   } catch (error) {
@@ -605,8 +531,12 @@ router.put('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'develope
   try {
     const { rentalId } = req.params;
     const { provider, confirmationNumber, pickupDate, returnDate, notes, booked, rentalType, assignedToId, assignedToName } = req.body;
+    const id = parseInt(rentalId);
 
-    const rental = await checklistRepository.updateCarRental(parseInt(rentalId), {
+    // undefined = the read failed; then there is nothing to compare against.
+    const before = await checklistRepository.getCarRentalById(id).catch(() => undefined);
+
+    const rental = await checklistRepository.updateCarRental(id, {
       provider,
       confirmation_number: confirmationNumber,
       pickup_date: pickupDate,
@@ -618,13 +548,8 @@ router.put('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'develope
       assigned_to_name: assignedToName || null
     });
 
-    if (rental.booked && rental.confirmation_number && rental.assigned_to_id) {
-      const show = await getShowByBookingRow('checklist_car_rentals', parseInt(rentalId));
-      notifyBooking(rental.assigned_to_id, {
-        title: `Car rental booked 🚗${show ? ` — ${show.name}` : ''}`,
-        body: `${rental.provider ? `${rental.provider} · ` : ''}Confirmation ${rental.confirmation_number}`,
-        url: show ? `/#event=${show.id}` : '/'
-      });
+    if (before !== undefined) {
+      void travelNotifications.carRentalSaved(before, rental, req.user?.id).catch(logNotifyError('travel.car_rental'));
     }
 
     res.json(rental);
@@ -638,7 +563,12 @@ router.put('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'develope
 router.delete('/car-rentals/:rentalId', authorize('admin', 'coordinator', 'developer'), async (req: AuthRequest, res: Response) => {
   try {
     const { rentalId } = req.params;
-    await checklistRepository.deleteCarRental(parseInt(rentalId));
+    const id = parseInt(rentalId);
+    const before = await checklistRepository.getCarRentalById(id).catch(() => null);
+    await checklistRepository.deleteCarRental(id);
+    if (before) {
+      void travelNotifications.carRentalSaved(before, null, req.user?.id).catch(logNotifyError('travel.car_rental'));
+    }
     res.json({ success: true });
   } catch (error) {
     console.error('[Checklist] Error deleting car rental:', error);

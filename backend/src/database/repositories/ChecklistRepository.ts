@@ -240,6 +240,12 @@ export class ChecklistRepository extends BaseRepository<EventChecklist> {
     return result.rows[0];
   }
 
+  /** One flight row, or null. Used to compare before and after an edit. */
+  async getFlightById(id: number): Promise<ChecklistFlight | null> {
+    const result = await this.executeQuery<ChecklistFlight>(`SELECT * FROM checklist_flights WHERE id = $1`, [id]);
+    return result.rows[0] || null;
+  }
+
   /**
    * Update flight
    */
@@ -325,6 +331,12 @@ export class ChecklistRepository extends BaseRepository<EventChecklist> {
       ]
     );
     return result.rows[0];
+  }
+
+  /** One hotel row, or null. Used to compare before and after an edit. */
+  async getHotelById(id: number): Promise<ChecklistHotel | null> {
+    const result = await this.executeQuery<ChecklistHotel>(`SELECT * FROM checklist_hotels WHERE id = $1`, [id]);
+    return result.rows[0] || null;
   }
 
   /**
@@ -414,6 +426,12 @@ export class ChecklistRepository extends BaseRepository<EventChecklist> {
       ]
     );
     return result.rows[0];
+  }
+
+  /** One car rental row, or null. Used to compare before and after an edit. */
+  async getCarRentalById(id: number): Promise<ChecklistCarRental | null> {
+    const result = await this.executeQuery<ChecklistCarRental>(`SELECT * FROM checklist_car_rentals WHERE id = $1`, [id]);
+    return result.rows[0] || null;
   }
 
   /**

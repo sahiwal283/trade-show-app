@@ -9,3 +9,6 @@ export type { DetailChange, AfterUpdateInput } from './eventNotifications';
 
 export { boothNotifications } from './boothNotifications';
 export type { ComponentReport } from './boothNotifications';
+
+export { travelNotifications, classifyBooking, FLIGHT, HOTEL, CAR_RENTAL } from './travelNotifications';
+export type { BookingRow, BookingEffect, BookingConfig } from './travelNotifications';
