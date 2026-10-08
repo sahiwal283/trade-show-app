@@ -39,7 +39,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
-import { travelReminderService } from './services/TravelReminderService';
+import { reminderScheduler } from './services/notifications';
 import { sampleRequestReminderService } from './services/sampleRequests/SampleRequestReminderService';
 import { expenseMessageScanner } from './services/ExpenseMessageScanner';
 import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
@@ -225,8 +225,9 @@ const startServer = () => {
     console.log(`Version: ${VERSION}`);
     console.log(`Listening on 0.0.0.0:${PORT}`);
 
-    // Flight check-in / departure push reminders (no-op if push not configured)
-    travelReminderService.start();
+    // Scheduled reminders: upcoming shows, post-show expenses, flight check-in
+    // and departure (bell + push; runs even without push)
+    reminderScheduler.start();
 
     // Sample request closing reminders (bell + push; runs even without push)
     sampleRequestReminderService.start();

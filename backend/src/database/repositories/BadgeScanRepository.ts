@@ -57,6 +57,15 @@ export interface BadgeScanFilters {
   q?: string;
 }
 
+/** What the failure notification needs to name a lead. */
+export interface ExhaustedScan {
+  id: string;
+  scanned_by: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  company: string | null;
+}
+
 export interface PushResult {
   status: 'synced' | 'failed';
   crmRecordId?: string;
@@ -121,6 +130,10 @@ export class BadgeScanRepository extends BaseRepository<BadgeScan> {
     const updates = cols
       .filter((c) => !['event_id', 'entity', 'payload_hash', 'client_scan_id', 'notes', 'webhook_status'].includes(c))
       .map((c) => `${c} = EXCLUDED.${c}`);
+
+    // A re-scan that puts the CRM push back in play also re-arms the "failed
+    // for good" notification, or a second terminal failure would go unreported.
+    if (cols.includes('crm_status')) updates.push('crm_failure_notified_at = NULL');
 
     // Always preserve existing notes, even if not explicitly updated.
     // When no note is supplied, COALESCE(NULL, badge_scans.notes) preserves the existing one.
@@ -224,7 +237,8 @@ export class BadgeScanRepository extends BaseRepository<BadgeScan> {
     const result = await this.executeQuery<BadgeScan>(
       `UPDATE badge_scans
           SET crm_status = 'pending', crm_error = NULL, crm_attempts = 0,
-              crm_last_attempt_at = NULL, updated_at = CURRENT_TIMESTAMP
+              crm_last_attempt_at = NULL, crm_failure_notified_at = NULL,
+              updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
         RETURNING *`,
       [id]
@@ -252,6 +266,23 @@ export class BadgeScanRepository extends BaseRepository<BadgeScan> {
         WHERE id = $2`,
       [result.error ?? 'Unknown CRM error', id]
     );
+  }
+
+  /**
+   * Scans that have used every CRM attempt and whose scanner has not been
+   * told yet. Marking and returning happen in one statement, so two passes
+   * can never both pick up the same scan.
+   */
+  async claimExhaustedForNotification(): Promise<ExhaustedScan[]> {
+    const result = await this.executeQuery<ExhaustedScan>(
+      `UPDATE badge_scans
+          SET crm_failure_notified_at = CURRENT_TIMESTAMP
+        WHERE crm_status = 'failed'
+          AND crm_attempts >= ${MAX_CRM_ATTEMPTS}
+          AND crm_failure_notified_at IS NULL
+        RETURNING id, scanned_by, first_name, last_name, company`
+    );
+    return result.rows;
   }
 
   /**

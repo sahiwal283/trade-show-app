@@ -1,0 +1,12 @@
+[
+  { "link": { "page": "checklist", "eventId": "ev-1" }, "url": "/#event=ev-1&tab=my", "page": "checklist", "hash": "event=ev-1&tab=my" },
+  { "link": { "page": "samples", "eventId": "ev-1" }, "url": "/#event=ev-1&tab=samples", "page": "checklist", "hash": "event=ev-1&tab=samples" },
+  { "link": { "page": "expenses", "eventId": "ev-1" }, "url": "/#expenses-event=ev-1", "page": "expenses", "hash": "expenses-event=ev-1" },
+  { "link": { "page": "admin-users" }, "url": "/#users", "page": "settings", "hash": "users" },
+  { "link": { "page": "booth-inventory" }, "url": "/#booths", "page": "booths", "hash": "booths" },
+  { "link": { "page": "badge-scans" }, "url": "/#leads", "page": "leads", "hash": "leads" },
+  { "link": null, "url": "/", "page": null, "hash": null },
+  { "link": { "page": "checklist" }, "url": "/", "page": null, "hash": null },
+  { "link": { "page": "expenses" }, "url": "/", "page": null, "hash": null },
+  { "link": { "page": "constructor" }, "url": "/", "page": null, "hash": null }
+]

@@ -4,6 +4,7 @@ import { User, Expense } from '../../App';
 import { api } from '../../utils/api';
 import { apiClient } from '../../utils/apiClient';
 import { notificationsApi, AppNotification } from '../../utils/notificationsApi';
+import { notificationTarget } from '../../utils/notificationLinks';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { IS_SANDBOX } from '../../constants/appEnv';
 
@@ -95,13 +96,9 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
     setShowNotifications(false);
     setAppNotifications((prev) => prev.filter((x) => x.id !== n.id));
     void notificationsApi.markRead([n.id]).catch(() => undefined);
-    if (n.link?.page === 'checklist' && n.link.eventId) {
-      window.location.hash = `event=${n.link.eventId}&tab=my`;
-      onNavigate?.('checklist');
-    } else if (n.link?.page === 'samples' && n.link.eventId) {
-      window.location.hash = `event=${n.link.eventId}&tab=samples`;
-      onNavigate?.('checklist');
-    }
+    const target = notificationTarget(n.link);
+    if (target.hash) window.location.hash = target.hash;
+    if (target.page) onNavigate?.(target.page);
   };
 
   const markAllAppRead = () => {

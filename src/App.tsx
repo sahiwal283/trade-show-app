@@ -29,6 +29,7 @@ import { offlineDb } from './utils/offlineDb';
 import { clearEncryptionData } from './utils/encryption';
 import { apiClient } from './utils/apiClient';
 import { initialPageFromHash } from './utils/initialPageFromHash';
+import { hashFromPushUrl, PAGE_ONLY_HASHES, PAGE_ROLES } from './utils/notificationLinks';
 
 export type UserRole = 'admin' | 'coordinator' | 'salesperson' | 'accountant' | 'developer' | 'temporary' | 'pending';
 
@@ -114,6 +115,39 @@ function App() {
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0); // Will be set by sessionManager
   const notifications = useNotifications();
+
+  // Deep links that arrive while the app is already open. A tapped push
+  // reaches us as a message from the push service worker; a bell tap on a
+  // page-only link sets a hash that nothing else consumes.
+  useEffect(() => {
+    const applyPageOnlyHash = () => {
+      const hash = window.location.hash;
+      if (!PAGE_ONLY_HASHES.has(hash)) return;
+      setCurrentPage(initialPageFromHash(hash));
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    };
+    const onWorkerMessage = (event: MessageEvent) => {
+      if (event.data?.type !== 'notification-click') return;
+      const hash = hashFromPushUrl(event.data.url);
+      if (!hash) return;
+      setCurrentPage(initialPageFromHash(`#${hash}`));
+      window.location.hash = hash;
+    };
+    applyPageOnlyHash();
+    window.addEventListener('hashchange', applyPageOnlyHash);
+    navigator.serviceWorker?.addEventListener('message', onWorkerMessage);
+    return () => {
+      window.removeEventListener('hashchange', applyPageOnlyHash);
+      navigator.serviceWorker?.removeEventListener('message', onWorkerMessage);
+    };
+  }, []);
+
+  // A deep link never strands someone on a page their role cannot open.
+  useEffect(() => {
+    if (!user) return;
+    const allowed = PAGE_ROLES[currentPage];
+    if (allowed && !allowed.includes(user.role)) setCurrentPage('dashboard');
+  }, [user, currentPage]);
 
   // Several requests can 401 at once when the token expires (parallel
   // dashboard fetches, health checks). Handle expiry exactly once — one

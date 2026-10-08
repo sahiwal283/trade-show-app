@@ -9,6 +9,7 @@ vi.mock('../../src/middleware/auth', () => ({
 vi.mock('../../src/database/repositories', () => ({
   eventRepository: {
     create: vi.fn(async (d: any) => ({ id: 'ev-new', ...d })),
+    findById: vi.fn(async () => ({ id: 'ev-1', name: 'X' })),
     updateWithTransaction: vi.fn(async (id: string, d: any) => ({ id, ...d })),
   },
 }));
@@ -19,6 +20,10 @@ vi.mock('../../src/services/EventParticipantService', () => ({
 }));
 vi.mock('../../src/services/sampleRequests/SampleRequestService', () => ({
   sampleRequestService: { announceIfOpen: vi.fn(async () => undefined) },
+}));
+vi.mock('../../src/services/notifications', () => ({
+  eventNotifications: { added: vi.fn(async () => undefined), afterUpdate: vi.fn(async () => undefined) },
+  logNotifyError: () => () => undefined,
 }));
 
 import { handleCreateEvent, handleAddParticipants, handleUpdateEvent } from '../../src/routes/events';

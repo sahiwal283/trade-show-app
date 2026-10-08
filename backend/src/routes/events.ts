@@ -9,6 +9,7 @@ import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
 import { eventRepository, EventWithParticipants } from '../database/repositories';
 import { processParticipants, removeAllParticipants, getCurrentParticipantIds } from '../services/EventParticipantService';
 import { sampleRequestService } from '../services/sampleRequests/SampleRequestService';
+import { eventNotifications, logNotifyError } from '../services/notifications';
 
 const router = Router();
 
@@ -116,6 +117,8 @@ export async function handleCreateEvent(req: AuthRequest, res: Response) {
     // response path; a notification failure must never fail event creation.
     void sampleRequestService.announceIfOpen(event.id, addedIds).catch((e) =>
       console.error('[Events] sample request announce failed:', e));
+    void eventNotifications.added(event.id, addedIds, req.user?.id)
+      .catch(logNotifyError('event.added'));
 
     // Event created successfully (even if some participants failed)
     res.status(201).json(event);
@@ -135,6 +138,11 @@ export async function handleUpdateEvent(req: AuthRequest, res: Response) {
     const { name, venue, city, state, start_date, end_date, show_start_date, show_end_date, travel_start_date, travel_end_date, budget, status, participant_ids, participants } = req.body;
 
     let newlyAddedIds: string[] = [];
+    let previousIds: string[] | null = null;
+    let rosterIds: string[] | null = null;
+    // Snapshot for change notifications. A failed read only costs the
+    // notification, never the update.
+    const before = await eventRepository.findById(id).catch(() => null);
 
     // Start transaction
     await client.query('BEGIN');
@@ -163,7 +171,8 @@ export async function handleUpdateEvent(req: AuthRequest, res: Response) {
       // never silently drops historical participants.
       const existingIds = new Set(await getCurrentParticipantIds(id, client));
       await removeAllParticipants(id, client);
-      const rosterIds = await processParticipants(id, participants, participant_ids, client, existingIds);
+      previousIds = [...existingIds];
+      rosterIds = await processParticipants(id, participants, participant_ids, client, existingIds);
       newlyAddedIds = rosterIds.filter((uid) => !existingIds.has(uid));
     }
 
@@ -175,6 +184,11 @@ export async function handleUpdateEvent(req: AuthRequest, res: Response) {
     if (newlyAddedIds.length > 0) {
       void sampleRequestService.announceIfOpen(id, newlyAddedIds).catch((e) =>
         console.error('[Events] sample request announce failed:', e));
+    }
+    if (before) {
+      void eventNotifications.afterUpdate({
+        before, after: event, previousIds, rosterIds, actorId: req.user?.id ?? null,
+      }).catch(logNotifyError('event update'));
     }
 
     res.json(convertEventTypes(event));
@@ -218,6 +232,8 @@ export async function handleAddParticipants(req: AuthRequest, res: Response) {
 
     void sampleRequestService.announceIfOpen(id, newlyAddedIds).catch((e) =>
       console.error('[Events] sample request announce failed:', e));
+    void eventNotifications.added(id, newlyAddedIds, req.user?.id)
+      .catch(logNotifyError('event.added'));
 
     res.json({ added: newlyAddedIds });
   } catch (error: any) {

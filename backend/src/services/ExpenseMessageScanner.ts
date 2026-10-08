@@ -7,7 +7,7 @@
  * at-least-once; the UNIQUE constraint on midas_message_id collapses a
  * redelivery into a no-op, so the observable behaviour is effectively-once.
  *
- * Unlike TravelReminderService this does NOT idle when push is unconfigured —
+ * Like ReminderScheduler, this does NOT idle when push is unconfigured —
  * the notification rows drive the in-app bell, and push is the optional half.
  */
 

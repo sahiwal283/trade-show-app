@@ -3,11 +3,20 @@ import axios from 'axios';
 
 vi.mock('axios', () => ({ default: { post: vi.fn(), get: vi.fn() } }));
 vi.mock('../../src/database/repositories/BadgeScanRepository', () => ({
-  badgeScanRepository: { claimPendingByBrand: vi.fn(async () => []), markPushResult: vi.fn(async () => {}) },
+  badgeScanRepository: {
+    claimPendingByBrand: vi.fn(async () => []),
+    markPushResult: vi.fn(async () => {}),
+    claimExhaustedForNotification: vi.fn(async () => []),
+  },
+}));
+vi.mock('../../src/services/notifications', () => ({
+  adminNotifications: { badgeCrmFailed: vi.fn(async () => undefined) },
+  logNotifyError: () => () => undefined,
 }));
 
 import { badgeCrmPushService } from '../../src/services/badge/BadgeCrmPushService';
 import { badgeScanRepository } from '../../src/database/repositories/BadgeScanRepository';
+import { adminNotifications } from '../../src/services/notifications';
 
 const scan = (over = {}) => ({
   id: 'scan-1', brand: 'haute_brands', entity: 'Haute Brands',
@@ -252,5 +261,54 @@ describe('BadgeCrmPushService emailless leads', () => {
       status: 'failed',
       error: expect.stringContaining('MANDATORY_NOT_FOUND'),
     });
+  });
+});
+
+describe('BadgeCrmPushService -> failure notifications', () => {
+  const exhausted = { id: 'scan-9', scanned_by: 'u-1', first_name: 'A', last_name: 'B', company: 'C' };
+  // Notifications start after the pass has returned, so let them run.
+  const flush = () => new Promise((r) => setImmediate(r));
+
+  it('notifies for each newly exhausted scan after a pass, even an empty one', async () => {
+    vi.mocked(badgeScanRepository.claimExhaustedForNotification).mockResolvedValueOnce([exhausted] as any);
+    await badgeCrmPushService.pushOnce();
+    await flush();
+    expect(adminNotifications.badgeCrmFailed).toHaveBeenCalledWith(exhausted);
+  });
+
+  it('a failing claim or notifier never fails the pass', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    vi.mocked(badgeScanRepository.claimExhaustedForNotification).mockRejectedValueOnce(new Error('db down'));
+    await expect(badgeCrmPushService.pushOnce()).resolves.toEqual(expect.objectContaining({ attempted: 0 }));
+    await flush();
+
+    vi.mocked(badgeScanRepository.claimExhaustedForNotification).mockResolvedValueOnce([exhausted, { ...exhausted, id: 'scan-10' }] as any);
+    vi.mocked(adminNotifications.badgeCrmFailed).mockRejectedValueOnce(new Error('boom'));
+    await expect(badgeCrmPushService.pushOnce()).resolves.toBeDefined();
+    await flush();
+    expect(adminNotifications.badgeCrmFailed).toHaveBeenCalledTimes(2);
+    err.mockRestore();
+  });
+
+  it('a notification step that never finishes does not hold the pass or the guard', async () => {
+    // A hung web-push request used to keep pushOnce pending inside the guard,
+    // so every later tick was skipped and no lead reached the CRM again.
+    vi.mocked(badgeScanRepository.claimExhaustedForNotification).mockImplementationOnce(
+      () => new Promise(() => undefined)
+    );
+    await expect(badgeCrmPushService.pushOnce()).resolves.toMatchObject({ attempted: 0 });
+    expect(badgeScanRepository.claimExhaustedForNotification).toHaveBeenCalledTimes(1);
+
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockResolvedValueOnce([scan()]);
+    vi.mocked(axios.post).mockResolvedValueOnce(tokenOk() as any).mockResolvedValueOnce(upsertOk() as any);
+    const next = await badgeCrmPushService.pushOnce();
+    expect(next.synced).toBe(1);
+  });
+
+  it('runs no notification step when the pass throws', async () => {
+    vi.mocked(badgeScanRepository.claimPendingByBrand).mockRejectedValueOnce(new Error('db down'));
+    await expect(badgeCrmPushService.pushOnce()).rejects.toThrow('db down');
+    await flush();
+    expect(badgeScanRepository.claimExhaustedForNotification).not.toHaveBeenCalled();
   });
 });

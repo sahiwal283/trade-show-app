@@ -6,6 +6,7 @@ import { createSession, deleteSession } from '../middleware/sessionTracker';
 import { AuthRequest, getToken, tryVerifyPlatformJwt, authenticateToken } from '../middleware/auth';
 import { logAuth } from '../utils/auditLogger';
 import { userRepository } from '../database/repositories';
+import { adminNotifications, logNotifyError } from '../services/notifications';
 
 const router = Router();
 
@@ -334,6 +335,8 @@ router.post('/register', async (req, res) => {
 
     // Log the new registration
     console.log(`[REGISTRATION] New user registered: ${username} (${email}) from IP: ${clientIp}`);
+    void adminNotifications.userPending({ name: user.name, email: user.email, via: 'registration' })
+      .catch(logNotifyError('admin.user_pending'));
     
     // Log registration to audit log
     await logAuth('login_success', {

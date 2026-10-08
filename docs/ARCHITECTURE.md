@@ -207,3 +207,38 @@ status line, history) driven by `useEventSampleRequest` (dirty-field tracking, o
 admins and sits under My Checklist for reps. Deep link
 `#event=<id>&tab=samples` opens it in either place; `tab=my` selects My
 Checklist.
+
+## 10. Notification catalog
+
+`backend/src/services/notifications/` holds every trigger Argo notifies
+about, one function each:
+
+| File | Triggers |
+|---|---|
+| `eventNotifications.ts` | added, removed, details changed, cancelled |
+| `boothNotifications.ts` | booth ordered, shipped, map uploaded, component reported |
+| `travelNotifications.ts` | flight, hotel and car rental booked, changed, cancelled, reassigned |
+| `adminNotifications.ts` | new user awaiting approval, badge scan failed to reach the CRM |
+| `reminderDefinitions.ts` | show in 30 / 7 days, expenses 1 / 7 days after, flight check-in and departure |
+
+Rules: every trigger goes through `notificationService.notify()` (one bell
+row, one push); the actor and inactive users are never recipients
+(`recipients.ts`); routes call the catalog fire-and-forget after their write
+commits, so a notification failure never fails a request. For edits the
+route hands over the row before and after, and pure functions
+(`diffEventDetails`, `classifyBooking`) decide whether anything is worth
+sending.
+
+`ReminderScheduler` runs every 5 minutes. Each definition is a query for who
+is due inside a window plus the words to send. A `notification_reminders`
+row is claimed before sending, so each reminder fires once per kind, subject
+and user.
+
+A notification's `link` maps to a hash URL in `linkToUrl` (backend, for
+pushes) and to a page and hash in `src/utils/notificationLinks.ts` (frontend,
+for bell taps). `src/utils/__fixtures__/notificationLinks.json` is asserted
+by both. A push tapped while the app is open reaches `App.tsx` as a
+`notification-click` message from `public/push-sw.js`.
+
+The pending-expense bell and the expense-message bell are separate and are
+replaced by the Midas expense notifications spec.

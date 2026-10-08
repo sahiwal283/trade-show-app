@@ -35,6 +35,9 @@ self.addEventListener('notificationclick', function (event) {
       for (var i = 0; i < clientList.length; i++) {
         var client = clientList[i];
         if ('focus' in client) {
+          // The app is already open: tell it where to go, then bring it forward.
+          // App.tsx listens for this and routes exactly as it would on a cold start.
+          client.postMessage({ type: 'notification-click', url: url });
           return client.focus();
         }
       }

@@ -10,7 +10,13 @@ vi.mock('../../src/database/repositories', () => ({
   },
 }));
 
+vi.mock('../../src/services/notifications', () => ({
+  adminNotifications: { userPending: vi.fn(async () => undefined) },
+  logNotifyError: () => () => undefined,
+}));
+
 import { userRepository } from '../../src/database/repositories';
+import { adminNotifications } from '../../src/services/notifications';
 import {
   readOidcEnv,
   isOidcConfigured,
@@ -119,6 +125,23 @@ describe('resolveSsoUser', () => {
     expect(arg.email).toBe('jane@x.com');
     expect(arg.authentikSub).toBe('ak-uuid-1');
     expect(arg.password).toMatch(/^\$2[aby]\$/); // bcrypt hash, not a raw secret
+  });
+
+  it('no match → tells admins a new SSO user is waiting', async () => {
+    vi.mocked(adminNotifications.userPending).mockClear();
+    repo.findByAuthentikSub.mockResolvedValue(null);
+    repo.findByEmailCiWithSso.mockResolvedValue(null);
+    repo.createSsoUser.mockResolvedValue({ id: 'u3', username: 'jane', name: 'Jane Doe', email: 'jane@x.com', role: 'pending' });
+    await resolveSsoUser(CLAIMS);
+    expect(adminNotifications.userPending).toHaveBeenCalledTimes(1);
+    expect(adminNotifications.userPending).toHaveBeenCalledWith({ name: 'Jane Doe', email: 'jane@x.com', via: 'sso' });
+  });
+
+  it('a returning pending SSO user does not notify again', async () => {
+    vi.mocked(adminNotifications.userPending).mockClear();
+    repo.findByAuthentikSub.mockResolvedValue({ id: 'u1', username: 'jane', name: 'Jane', email: 'jane@x.com', role: 'pending', authentik_sub: 'ak-uuid-1' });
+    await resolveSsoUser(CLAIMS);
+    expect(adminNotifications.userPending).not.toHaveBeenCalled();
   });
 
   it('username collision (23505) retries with numeric suffix', async () => {

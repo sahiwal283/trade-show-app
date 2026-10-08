@@ -9,12 +9,29 @@ export interface NotifyInput {
   kind: string; title: string; body: string; link?: NotificationLink | null;
 }
 
-/** Hash deep link understood by App.tsx / the checklist page (Task 10). */
+/** Links that need an event id. Mirrored by src/utils/notificationLinks.ts. */
+const EVENT_LINKS = new Map<string, (eventId: string) => string>([
+  ['checklist', (id) => `/#event=${id}&tab=my`],
+  ['samples', (id) => `/#event=${id}&tab=samples`],
+  ['expenses', (id) => `/#expenses-event=${id}`],
+]);
+
+/** Links that only pick a page. */
+const PAGE_LINKS = new Map<string, string>([
+  ['admin-users', '/#users'],
+  ['booth-inventory', '/#booths'],
+  ['badge-scans', '/#leads'],
+]);
+
+/**
+ * Hash deep link the app understands. The same table lives on the frontend;
+ * src/utils/__fixtures__/notificationLinks.json is asserted by both sides.
+ */
 export function linkToUrl(link: NotificationLink | null | undefined): string {
   if (!link) return '/';
-  if (link.page === 'checklist' && link.eventId) return `/#event=${link.eventId}&tab=my`;
-  if (link.page === 'samples' && link.eventId) return `/#event=${link.eventId}&tab=samples`;
-  return '/';
+  const forEvent = EVENT_LINKS.get(link.page);
+  if (forEvent) return link.eventId ? forEvent(link.eventId) : '/';
+  return PAGE_LINKS.get(link.page) ?? '/';
 }
 
 class NotificationService {

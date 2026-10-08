@@ -18,6 +18,7 @@ import { NotFoundError } from '../../utils/errors';
 import { query as dbQuery } from '../../config/database';
 import { boothMovementService, MovementEntry, MovementEventType } from './BoothMovementService';
 import { BoothMovement } from '../../database/repositories/BoothMovementRepository';
+import { boothNotifications, logNotifyError } from '../notifications';
 
 export interface ReportRequest {
   kind: 'damage' | 'missing';
@@ -327,7 +328,7 @@ export class BoothInventoryService {
   }
 
   async reportComponent(componentId: string, req: ReportRequest): Promise<BoothMovement> {
-    return boothMovementService.withTransaction(async (client) => {
+    const movement = await boothMovementService.withTransaction(async (client) => {
       const { rows } = await client.query(
         `SELECT id, booth_id, condition, current_status, current_location_id
            FROM booth_components WHERE id = $1 FOR UPDATE`,
@@ -368,6 +369,13 @@ export class BoothInventoryService {
         idempotencyKey: boothMovementService.derivedKey(req.idempotencyKey, 'component', componentId),
       }, client);
     });
+
+    // After commit: the people who look after the booths hear about it.
+    void boothNotifications
+      .componentReported({ componentId, kind: req.kind, notes: req.notes ?? null }, req.performedBy)
+      .catch(logNotifyError('booth.component_reported'));
+
+    return movement;
   }
 
   async verifyComponent(

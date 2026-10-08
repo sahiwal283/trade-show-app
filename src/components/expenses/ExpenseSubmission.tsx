@@ -6,6 +6,7 @@ import { ApprovalCards } from './ApprovalCards';
 import { api } from '../../utils/api';
 import { getTodayLocalDateString, formatForDateInput } from '../../utils/dateUtils';
 import { takePendingCapture } from '../../utils/pendingCapture';
+import { eventFilterFromHash } from '../../utils/notificationLinks';
 import { describeMidasWarnings } from '../../utils/midasWarnings';
 import { useExpenses } from './ExpenseSubmission/hooks/useExpenses';
 import { useExpenseFilters } from './ExpenseSubmission/hooks/useExpenseFilters';
@@ -163,9 +164,10 @@ export const ExpenseSubmission: React.FC<ExpenseSubmissionProps> = ({ user }) =>
         if (captured) setPendingReceiptFile(captured);
         setShowReceiptUpload(true);
         history.replaceState(null, '', window.location.pathname + window.location.search);
-      } else if (window.location.hash.startsWith('#event=')) {
-        // Deep link from an event card: land pre-filtered to that show
-        setEventFilter(new URLSearchParams(window.location.hash.slice(1)).get('event') ?? '');
+      } else if (eventFilterFromHash(window.location.hash) !== null) {
+        // Deep link from an event card or an expense reminder: land
+        // pre-filtered to that show
+        setEventFilter(eventFilterFromHash(window.location.hash) ?? '');
         history.replaceState(null, '', window.location.pathname + window.location.search);
       } else if (window.location.hash === '#status=pending') {
         // Deep link from a notification: land on pending approvals
