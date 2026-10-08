@@ -1,0 +1,45 @@
+{
+  "totals": { "views": 186, "uniqueUsers": 5 },
+  "screens": [
+    {
+      "page": "expenses",
+      "views": 92,
+      "uniqueUsers": 5,
+      "daily": [
+        { "day": "2026-10-07", "views": 40 },
+        { "day": "2026-10-08", "views": 52 }
+      ]
+    },
+    {
+      "page": "leads",
+      "views": 31,
+      "uniqueUsers": 2,
+      "daily": [{ "day": "2026-10-08", "views": 31 }]
+    }
+  ],
+  "users": [
+    {
+      "userId": "11111111-1111-4111-8111-111111111111",
+      "name": "Seri Vira",
+      "role": "salesperson",
+      "lastSeen": "2026-10-08T15:20:00.000Z",
+      "views": 64,
+      "mobileViews": 60,
+      "desktopViews": 4,
+      "topPages": [
+        { "page": "expenses", "views": 41 },
+        { "page": "leads", "views": 23 }
+      ]
+    },
+    {
+      "userId": "22222222-2222-4222-8222-222222222222",
+      "name": "Rita Example",
+      "role": "coordinator",
+      "lastSeen": null,
+      "views": 0,
+      "mobileViews": 0,
+      "desktopViews": 0,
+      "topPages": []
+    }
+  ]
+}

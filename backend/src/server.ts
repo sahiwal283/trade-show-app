@@ -19,10 +19,6 @@ import crmLeadsRoutes from './routes/crmLeads';
 import devDashboardRoutes from './routes/devDashboard';
 import quickActionsRoutes from './routes/quickActions';
 import ocrV2Routes from './routes/ocrV2';
-import ocrTrainingRoutes from './routes/ocrTraining';
-import learningAnalyticsRoutes from './routes/learningAnalytics';
-import modelRetrainingRoutes from './routes/modelRetraining';
-import trainingSyncRoutes from './routes/trainingSync';
 import checklistRoutes from './routes/checklist';
 import inventoryLocationRoutes from './routes/inventoryLocations';
 import boothRoutes from './routes/booths';
@@ -35,11 +31,14 @@ import pushRoutes from './routes/push';
 import badgeScanRoutes from './routes/badgeScans';
 import notificationRoutes from './routes/notifications';
 import sampleRequestRoutes from './routes/sampleRequests';
+import pageViewRoutes from './routes/pageViews';
+import { retrainingStatusGone } from './routes/retiredEndpoints';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
+import { auditTrail } from './middleware/auditTrail';
 import { reminderScheduler } from './services/notifications';
 import { sampleRequestReminderService } from './services/sampleRequests/SampleRequestReminderService';
 import { midasEventScanner } from './services/midas/MidasEventScanner';
@@ -47,6 +46,7 @@ import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { leadConversionService } from './services/LeadConversionService';
 import { badgeCrmPushService } from './services/badge/BadgeCrmPushService';
 import { badgeWebhookService } from './services/badge/BadgeWebhookService';
+import { retentionJob } from './services/devDashboard/RetentionJob';
 import { runMigrations } from './database/migrate';
 
 dotenv.config();
@@ -87,6 +87,7 @@ console.log('[Server] CORS configuration:', {
 app.use(express.json());
 app.use(requestLogger);
 app.use(apiRequestLogger); // Log all API requests for analytics
+app.use(auditTrail); // One audit_logs row per write under /api
 
 // Serve uploaded files
 app.use('/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
@@ -113,10 +114,6 @@ app.use('/api/crm-leads', authenticateToken, sessionTracker, crmLeadsRoutes);
 app.use('/api/dev-dashboard', authenticateToken, sessionTracker, devDashboardRoutes);
 app.use('/api/quick-actions', authenticateToken, sessionTracker, quickActionsRoutes);
 app.use('/api/ocr/v2', authenticateToken, sessionTracker, ocrV2Routes);
-app.use('/api/training', authenticateToken, sessionTracker, ocrTrainingRoutes);
-app.use('/api/learning', authenticateToken, sessionTracker, learningAnalyticsRoutes);
-app.use('/api/retraining', authenticateToken, sessionTracker, modelRetrainingRoutes);
-app.use('/api/training/sync', authenticateToken, sessionTracker, trainingSyncRoutes);
 app.use('/api/checklist', authenticateToken, sessionTracker, checklistRoutes);
 app.use('/api/inventory-locations', authenticateToken, sessionTracker, inventoryLocationRoutes);
 app.use('/api/booths', authenticateToken, sessionTracker, boothRoutes);
@@ -129,6 +126,15 @@ app.use('/api/push', authenticateToken, sessionTracker, pushRoutes);
 app.use('/api/badge-scans', authenticateToken, sessionTracker, badgeScanRoutes);
 app.use('/api/notifications', authenticateToken, sessionTracker, notificationRoutes);
 app.use('/api/sample-requests', authenticateToken, sessionTracker, sampleRequestRoutes);
+app.use('/api/page-views', authenticateToken, sessionTracker, pageViewRoutes);
+
+// Tombstone. Something still calls GET /api/retraining/status once a minute with
+// a developer token, and the route was removed in v2.34.0. Left unmounted the
+// call would be an anonymous 404 and nobody could tell who is making it; behind
+// authenticateToken its api_requests row carries the caller's user and user
+// agent, which the dev dashboard's API tab shows under Recent errors.
+// Delete this route (and routes/retiredEndpoints.ts) once the caller is found and stopped.
+app.get('/api/retraining/status', authenticateToken, sessionTracker, retrainingStatusGone);
 
 // Health check (with database connectivity test) - existing contract
 app.get('/api/health', async (req, res) => {
@@ -255,6 +261,9 @@ const startServer = () => {
     // Badge scan → partner webhook retry sweep; idles until a brand has a
     // <BRAND>_SCAN_WEBHOOK_URL configured
     badgeWebhookService.start();
+
+    // Daily cleanup of api_requests, page_views, audit_logs and expired sessions
+    retentionJob.start();
   });
 };
 

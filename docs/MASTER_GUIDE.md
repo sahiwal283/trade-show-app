@@ -78,14 +78,13 @@
 ### Sandbox Features
 - ✅ **Event Checklist System** - Flights, hotels, car rentals, booth, shipping
 - ✅ **External OCR Service** - Google Document AI integration (4-8s processing, 95%+ confidence)
-- ✅ **AI Training Pipeline** - OCR corrections → Data Pool → Model Training
 - ✅ **Repository Pattern** - Clean separation of concerns (Routes → Services → Repositories)
 - ✅ **Component Modularization** - Feature-based organization, reusable hooks
 - ✅ **Helper Functions** - 13 backend helpers, organized frontend utilities
 - ✅ **Type Safety** - No `any` types, proper interfaces throughout
 
 ### What Worked Well
-- ✅ **Helper Function Extraction** - Reduced DevDashboardService complexity significantly
+- ✅ **Helper Function Extraction** - Reduced service complexity significantly
 - ✅ **Repository Pattern** - Improved testability and maintainability
 - ✅ **Component Modularization** - Easier to find and modify features
 - ✅ **Schema Validation** - Prevents deployment disasters
@@ -500,23 +499,6 @@ ORDER BY tc.table_name;
 - **Production Credentials**: `credentials/HAUTE_CREDENTIALS.md`
 - **DO NOT** mix or "unify" these credentials!
 
-### AI Training Pipeline Database Setup
-
-**⚠️ TRAINING PIPELINE REQUIRES SPECIFIC DATABASE TABLES!**
-
-The AI training pipeline requires `ocr_corrections` table to exist.
-
-**Required Database Migrations:**
-- `006_create_ocr_corrections_table.sql` - Creates main corrections table
-- `007_enhance_ocr_corrections_for_cross_environment.sql` - Adds training features
-
-**How to Verify:**
-```bash
-ssh root@192.168.1.190
-pct exec 2600 -- su - postgres -c 'psql -d expense_app -c "\dt"'
-# Should see: ocr_corrections
-```
-
 ### Frontend Deployment Directory
 
 **CRITICAL**: Frontend MUST be deployed to `/var/www/trade-show-app` (NOT `/var/www/html`)
@@ -629,7 +611,7 @@ ssh root@192.168.1.190 "pct exec 2600 -- ls -la /var/www/trade-show-app"
 
 **Available Services:**
 - `ExpenseService` - Expense business logic
-- `DevDashboardService` - Developer dashboard logic
+- `devDashboard/` - Developer dashboard modules, one per tab
 - `ZohoMultiAccountService` - Multi-entity Zoho integration
 - `ZohoBooksService` - Zoho Books API integration
 - `OCRService` - OCR processing orchestration
@@ -1386,17 +1368,13 @@ Authorization: Bearer <token>
 **Complexity Reduction Strategy:**
 
 **What Worked:**
-- ✅ **Helper Function Extraction** - Extracted 13 helper functions from DevDashboardService (368 lines → cleaner service)
+- ✅ **Helper Function Extraction** - Extracted helper functions out of large services
 - ✅ **Utility File Organization** - Frontend utilities organized by domain (date, event, filter, OCR)
 - ✅ **Single Responsibility** - Each helper has one clear purpose
 - ✅ **Reusability** - Helpers can be used across multiple services/components
 - ✅ **Testability** - Pure functions easier to test independently
 
 **Helper Functions Created:**
-
-**Backend (`DevDashboardService.helpers.ts`):**
-- 6 alert functions: `checkErrorRateAlert`, `checkSlowResponseAlert`, `checkStaleSessionsAlert`, `checkEndpointFailureAlert`, `checkTrafficSpikeAlert`, `checkAuthFailuresAlert`
-- 7 utility functions: `parseTimeRange`, `getSystemMemoryMetrics`, `getSystemCPUMetrics`, `formatSessionDuration`, `mapEndpointToPage`, `checkOCRServiceHealth`, `calculateOCRCosts`
 
 **Frontend (`src/utils/`):**
 - `dateUtils.ts` - Date parsing/formatting (prevents timezone bugs)

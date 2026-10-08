@@ -15,7 +15,6 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, ValidationError } from '../utils/errors';
 import { userCorrectionService } from '../services/ocr/UserCorrectionService';
 import { FieldWarningService } from '../services/ocr/FieldWarningService';
-import { query } from '../config/database';
 import { isAllowedReceiptFile } from '../config/upload';
 import {
   checkExternalOcrReady,
@@ -270,52 +269,6 @@ router.post('/corrections', asyncHandler(async (req: AuthRequest, res) => {
 }));
 
 /**
- * GET /api/ocr/v2/corrections/stats
- * 
- * Get correction statistics (admin/developer only)
- */
-router.get('/corrections/stats', asyncHandler(async (req: AuthRequest, res) => {
-  const userRole = req.user?.role;
-  
-  if (userRole !== 'admin' && userRole !== 'developer') {
-    return res.status(403).json({ error: 'Admin or developer access required' });
-  }
-  
-  const stats = await userCorrectionService.getCorrectionStats();
-  
-  res.json({
-    success: true,
-    stats
-  });
-}));
-
-/**
- * GET /api/ocr/v2/corrections/export
- * 
- * Export corrections for ML training (admin/developer only)
- */
-router.get('/corrections/export', asyncHandler(async (req: AuthRequest, res) => {
-  const userRole = req.user?.role;
-  
-  if (userRole !== 'admin' && userRole !== 'developer') {
-    return res.status(403).json({ error: 'Admin or developer access required' });
-  }
-  
-  const { startDate, endDate } = req.query;
-  
-  const corrections = await userCorrectionService.exportCorrectionsForTraining(
-    startDate ? new Date(startDate as string) : undefined,
-    endDate ? new Date(endDate as string) : undefined
-  );
-  
-  res.json({
-    success: true,
-    count: corrections.length,
-    corrections
-  });
-}));
-
-/**
  * GET /api/ocr/v2/config
  * 
  * Get current OCR service configuration (developer only)
@@ -338,105 +291,6 @@ router.get('/config', asyncHandler(async (req: AuthRequest, res) => {
   res.json({
     success: true,
     config
-  });
-}));
-
-/**
- * GET /api/ocr/v2/accuracy
- * 
- * Get historical accuracy metrics for OCR fields (admin/developer only)
- */
-router.get('/accuracy', asyncHandler(async (req: AuthRequest, res) => {
-  const userRole = req.user?.role;
-  
-  if (userRole !== 'admin' && userRole !== 'developer') {
-    return res.status(403).json({ error: 'Admin or developer access required' });
-  }
-  
-  const { field, days } = req.query;
-
-  // Validate days: NaN/negative/huge values previously reached the SQL as-is
-  // (interpolated into the INTERVAL literal) and 500'd. Clamp to 1..365.
-  const parsedDays = parseInt((days as string) || '30', 10);
-  const daysBack = Number.isFinite(parsedDays) ? Math.min(Math.max(parsedDays, 1), 365) : 30;
-
-  // Calculate accuracy based on corrections vs total OCR attempts
-  // Map field names to database columns
-  const fieldMapping: { [key: string]: string } = {
-    'merchant': 'corrected_merchant',
-    'amount': 'corrected_amount',
-    'date': 'corrected_date',
-    'category': 'corrected_category',
-    'cardLastFour': 'corrected_card_last_four'
-  };
-
-  // Validate field: an unknown value produced `undefined IS NOT NULL` SQL.
-  if (field && !fieldMapping[field as string]) {
-    throw new ValidationError(
-      `Invalid field "${field}". Must be one of: ${Object.keys(fieldMapping).join(', ')}`
-    );
-  }
-
-  const fields = field ? [field as string] : ['merchant', 'amount', 'date', 'category', 'cardLastFour'];
-
-  // First, get the total number of OCR correction sessions (unique correction records)
-  const totalCorrectionsResult = await query(
-    `SELECT COUNT(*) as total_sessions
-     FROM ocr_corrections
-     WHERE created_at >= NOW() - ($1::int * INTERVAL '1 day')`,
-    [daysBack]
-  );
-
-  const totalExtractions = parseInt(totalCorrectionsResult.rows[0]?.total_sessions || '0');
-
-  const accuracyData = await Promise.all(
-    fields.map(async (f) => {
-      const dbColumn = fieldMapping[f];
-
-      // Count how many times this field was corrected
-      // (dbColumn is safe to interpolate: validated against fieldMapping above)
-      const correctionResult = await query(
-        `SELECT COUNT(*) as correction_count
-         FROM ocr_corrections
-         WHERE ${dbColumn} IS NOT NULL
-           AND created_at >= NOW() - ($1::int * INTERVAL '1 day')`,
-        [daysBack]
-      );
-      
-      const correctionCount = parseInt(correctionResult.rows[0]?.correction_count || '0');
-      
-      // Accuracy = (total OCR sessions - field corrections) / total sessions * 100
-      // If a field was NOT corrected, we assume it was correct
-      const accuracyRate = totalExtractions > 0
-        ? ((totalExtractions - correctionCount) / totalExtractions) * 100
-        : 100;
-      
-      return {
-        field: f,
-        totalExtractions,
-        correctionCount,
-        accuracyRate,
-        commonIssues: []
-      };
-    })
-  );
-  
-  if (field) {
-    const result = accuracyData[0];
-    return res.json({
-      success: true,
-      daysBack,
-      totalExtractions: result.totalExtractions,
-      correctionCount: result.correctionCount,
-      accuracyRate: result.accuracyRate,
-      commonIssues: result.commonIssues
-    });
-  }
-  
-  res.json({
-    success: true,
-    daysBack,
-    fields: accuracyData
   });
 }));
 

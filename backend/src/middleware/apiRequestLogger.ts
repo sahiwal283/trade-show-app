@@ -6,7 +6,7 @@ import { AuthRequest } from './auth';
  * Normalize endpoint paths to group similar requests
  * e.g., /api/expenses/123 -> /api/expenses/:id
  */
-function normalizeEndpoint(path: string): string {
+export function normalizeEndpoint(path: string): string {
   return path
     // UUID patterns
     .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id')
@@ -16,6 +16,10 @@ function normalizeEndpoint(path: string): string {
     .replace(/(:id\/)+:id/g, ':id');
 }
 
+// Uptime monitors hit these every 30-60 seconds. Logging them buries real
+// traffic in the developer dashboard and tells nobody anything.
+const UNLOGGED_PATHS = new Set(['/health', '/api/health', '/api/meta/version']);
+
 /**
  * Middleware to log API requests for analytics
  * Tracks method, endpoint, response time, status codes, and errors
@@ -23,6 +27,10 @@ function normalizeEndpoint(path: string): string {
  * NOTE: Skips logging for binary responses (PDFs, images, etc.) to avoid interference
  */
 export const apiRequestLogger = (req: AuthRequest, res: Response, next: NextFunction) => {
+  if (UNLOGGED_PATHS.has((req.originalUrl || '').split('?')[0])) {
+    return next();
+  }
+
   // Skip logging for PDF endpoints and other binary responses
   // Check both path and originalUrl to catch PDF endpoints regardless of route mounting
   const pathToCheck = req.path || req.originalUrl || '';

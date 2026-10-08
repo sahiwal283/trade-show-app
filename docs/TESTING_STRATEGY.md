@@ -58,7 +58,7 @@ src/
 
 #### Services (`backend/tests/services/`)
 - **Purpose**: Test business logic in services
-- **Naming**: `{ServiceName}.test.ts` (e.g., `DevDashboardService.test.ts`)
+- **Naming**: `{ServiceName}.test.ts` (e.g., `ExpenseService.test.ts`)
 - **Helper Tests**: Extract helper functions to `{ServiceName}.helpers.test.ts`
 
 #### Repositories (`backend/tests/repositories/`)
@@ -159,8 +159,7 @@ expect(isValidMimeType(file.mimetype)).toBe(true);
    - ✅ `HotelsSection.test.tsx` - All HotelsSection tests
 
 3. **Service Tests**: Separate files for different services
-   - ✅ `DevDashboardService.test.ts` - Service tests
-   - ✅ `DevDashboardService.helpers.test.ts` - Helper function tests
+   - ✅ `devDashboard/*.test.ts` - One test file per dashboard tab module
 
 ---
 
@@ -174,8 +173,7 @@ expect(isValidMimeType(file.mimetype)).toBe(true);
 - `booth-map-upload.test.ts` - Booth map upload ✅ NEW
 
 **Services** (2 files):
-- `DevDashboardService.test.ts` - Main service tests
-- `DevDashboardService.helpers.test.ts` - Helper function tests
+- `devDashboard/*.test.ts` - Developer dashboard tab modules and `RetentionJob`
 
 **Repositories** (2 files):
 - `BaseRepository.test.ts` - Base repository tests

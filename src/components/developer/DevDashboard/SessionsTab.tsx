@@ -1,115 +1,118 @@
-import React from 'react';
-import { Users, Clock, CheckCircle2, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import type { SessionsPayload } from './types';
+import { timeAgo } from './format';
+import { describeUserAgent } from './userAgent';
 
-interface Session {
-  id: string;
-  user_name: string;
-  ip_address: string;
-  user_agent: string;
-  created_at: string;
-  last_activity: string;
-  expires_at: string;
-}
+type SessionUser = SessionsPayload['users'][number];
 
-interface SessionsTabProps {
-  sessions: Session[];
-}
-
-const getActivityStatus = (lastActivity: string) => {
-  const lastActiveTime = new Date(lastActivity).getTime();
-  const now = Date.now();
-  const diffMinutes = (now - lastActiveTime) / 1000 / 60;
-  
-  if (diffMinutes < 5) return { label: 'Active', color: 'text-emerald-600', icon: CheckCircle2 };
-  if (diffMinutes < 30) return { label: 'Idle', color: 'text-yellow-600', icon: Clock };
-  return { label: 'Stale', color: 'text-stone-500', icon: X };
+const STATUS: Record<SessionUser['status'], { label: string; dot: string }> = {
+  active: { label: 'Active', dot: 'bg-emerald-500' },
+  idle: { label: 'Idle', dot: 'bg-amber-500' },
+  away: { label: 'Away', dot: 'bg-stone-400' },
 };
 
-const formatTimeAgo = (timestamp: string) => {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  return `${diffDays}d ago`;
-};
+const TH = 'px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wide text-stone-500';
+const TD = 'px-4 py-3 text-sm';
 
-export const SessionsTab: React.FC<SessionsTabProps> = ({ sessions }) => {
+function summary(users: SessionUser[]): string {
+  const count = (status: SessionUser['status']) => users.filter((u) => u.status === status).length;
+  const people = users.length === 1 ? '1 person' : `${users.length} people`;
+  return `${people} signed in: ${count('active')} active, ${count('idle')} idle, ${count('away')} away`;
+}
+
+export const SessionsTab: React.FC<{ data: SessionsPayload }> = ({ data }) => {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  if (data.users.length === 0) {
+    return <p className="py-8 text-center text-sm text-stone-500">Nobody is signed in.</p>;
+  }
+
+  const toggle = (userId: string) =>
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (!next.delete(userId)) next.add(userId);
+      return next;
+    });
+
   return (
-    <div className="space-y-4">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start space-x-3">
-          <Users className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div>
-            <h4 className="text-sm font-semibold text-blue-900 mb-1">Active User Sessions</h4>
-            <p className="text-sm text-blue-800">
-              Real-time tracking of logged-in users. Sessions show activity status, IP addresses, and browser information.
-              Sessions automatically expire after 30 days of inactivity.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-lg border border-stone-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">User</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">Last Active</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">IP Address</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">Browser</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-stone-600 uppercase">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-200">
-              {sessions.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-stone-500">
-                    No active sessions found
-                  </td>
-                </tr>
-              ) : (
-                sessions.map((session) => {
-                  const status = getActivityStatus(session.last_activity);
-                  const StatusIcon = status.icon;
-                  
-                  return (
-                    <tr key={session.id} className="hover:bg-stone-50">
-                      <td className="px-4 py-3 font-medium text-stone-900">{session.user_name}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center space-x-1">
-                          <StatusIcon className={`w-4 h-4 ${status.color}`} />
-                          <span className={`${status.color} font-medium`}>{status.label}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-stone-700">
-                        {formatTimeAgo(session.last_activity)}
-                      </td>
-                      <td className="px-4 py-3 text-stone-700 font-mono text-xs">
-                        {session.ip_address}
-                      </td>
-                      <td className="px-4 py-3 text-stone-600 text-xs max-w-xs truncate" title={session.user_agent}>
-                        {session.user_agent}
-                      </td>
-                      <td className="px-4 py-3 text-stone-600">
-                        {formatTimeAgo(session.created_at)}
+    <div className="space-y-3">
+      <p className="text-sm text-stone-600">{summary(data.users)}</p>
+      <div className="overflow-x-auto rounded-lg border border-stone-200">
+        <table className="w-full">
+          <thead className="bg-stone-50">
+            <tr>
+              <th className={TH}>Person</th>
+              <th className={TH}>Status</th>
+              <th className={TH}>Last active</th>
+              <th className={TH}>Device</th>
+              <th className={TH}>Address</th>
+              <th className={TH}>Sessions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-stone-100">
+            {data.users.map((user) => {
+              const latest = user.sessions[0];
+              const status = STATUS[user.status];
+              const isOpen = expanded.has(user.userId);
+              const countLabel = user.sessionCount === 1 ? '1 session' : `${user.sessionCount} sessions`;
+              return (
+                <React.Fragment key={user.userId}>
+                  <tr aria-label={user.name}>
+                    <td className={TD}>
+                      <span className="font-medium text-stone-900">{user.name}</span>
+                      <span className="ml-2 text-xs text-stone-500">{user.role}</span>
+                    </td>
+                    <td className={TD}>
+                      <span className="inline-flex items-center gap-1.5 text-stone-800">
+                        <span className={`h-2 w-2 rounded-full ${status.dot}`} aria-hidden="true" />
+                        {status.label}
+                      </span>
+                    </td>
+                    <td className={`${TD} text-stone-700`}>{timeAgo(user.lastActivity)}</td>
+                    <td className={`${TD} text-stone-700`}>{describeUserAgent(latest?.userAgent ?? null).label}</td>
+                    <td className={`${TD} font-mono text-xs text-stone-700`}>{latest?.ipAddress ?? '—'}</td>
+                    <td className={TD}>
+                      {user.sessionCount > 1 ? (
+                        <button
+                          type="button"
+                          onClick={() => toggle(user.userId)}
+                          aria-expanded={isOpen}
+                          aria-label={`Show sessions for ${user.name}`}
+                          className="inline-flex items-center gap-1 text-sm text-blue-700 hover:underline"
+                        >
+                          {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          {countLabel}
+                        </button>
+                      ) : (
+                        <span className="text-stone-700">{countLabel}</span>
+                      )}
+                    </td>
+                  </tr>
+                  {isOpen && (
+                    <tr>
+                      <td colSpan={6} className="bg-stone-50 px-4 py-3">
+                        <ul aria-label={`Sessions for ${user.name}`} className="space-y-1.5">
+                          {user.sessions.map((session) => (
+                            <li key={session.id} className="flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-stone-700">
+                              <span className="font-medium">
+                                {session.userAgent ? describeUserAgent(session.userAgent).label : 'Unknown browser'}
+                              </span>
+                              <span className="font-mono text-xs">{session.ipAddress ?? 'No address recorded'}</span>
+                              <span>{`active ${timeAgo(session.lastActivity)}`}</span>
+                              <span className="text-stone-500">{`signed in ${timeAgo(session.createdAt)}`}</span>
+                            </li>
+                          ))}
+                        </ul>
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 };
-

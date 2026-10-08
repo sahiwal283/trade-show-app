@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.34.0] - 2026-10-08 - Developer dashboard rebuilt
+
+### Changed
+- **The developer dashboard has five tabs that show real numbers:** Overview, API, Usage, Sessions and Audit Log. Each loads on its own, so switching tabs is immediate.
+- **Overview** shows memory, CPU load, disk and database figures that were previously blank, and replaces the Alerts tab with six health checks that show the measured value beside the threshold.
+- **API** adds median and 95th-percentile response times, a requests-over-time strip, a sortable endpoint table and a list of recent errors with who hit them. Monitoring probes are no longer counted.
+- **Sessions** is one row per person instead of one per login, with device and address filled in.
+
+### Added
+- **Usage:** which screens people open, how often, on what device, and who has not used the app.
+- **Audit Log now records every change** made through the app, with who made it, from where, and whether it succeeded. Request contents are never stored.
+
+### Removed
+- **OCR Service and Model Training tabs.** Receipts are read through Midas, so this app could not report on the OCR service, and the training pipeline never trained anything. Corrections you make to scanned receipts are still saved.
+- **Page Views tab**, replaced by Usage.
+
+### Technical
+- One module per tab under `backend/src/services/devDashboard/`; response shapes pinned by `src/utils/__fixtures__/devDashboard/*.json` on both sides.
+- Migration `047_create_page_views.sql`; `POST /api/page-views`; `usePageViewTracking`.
+- `middleware/auditTrail.ts` logs non-GET `/api` requests; `logAuth('token_refresh')` removed.
+- `RetentionJob` (daily): `api_requests` 30d, `page_views` 90d, `audit_logs` 365d, expired sessions. These cleanups existed but were never called.
+- Retention deletes in batches of 5,000 rows with a 100 ms pause between them, at most 400 batches per table per run, so the first run does not issue one DELETE over a year of `api_requests`. What is left over continues the next day.
+- Migration `048_ensure_audit_logs_shape.sql` brings `audit_logs` to the shape the code writes however the table was first created: missing columns added, and any check on `status` replaced, whatever it is named, by one that accepts `warning`. `scripts/predeploy-2.34.0.sql` applies 047 and 048 as `postgres`, grants the app's role the dashboard's tables and records both migrations; run it once on production before the backend starts.
+- `GET /api/retraining/status` answers `410 Gone` behind authentication. Something still calls it once a minute; the tombstone makes the caller show up in the API tab. Remove it once the caller is stopped.
+- Recent errors carry `userAgent`, shown after the person's name, so a failing client can be told apart from a person.
+- The Overview's error-rate check ignores the dashboard's own requests and does not count 401, 404 or 410. Sign-in audit rows record the client's address rather than the proxy's.
+- Removed routes: `/api/retraining/*`, `/api/training/*`, `/api/learning/*`, `/api/training/sync/*`, `GET /api/ocr/v2/corrections/stats`, `GET /api/ocr/v2/corrections/export`, `GET /api/ocr/v2/accuracy`, and the old `/api/dev-dashboard/{version,summary,metrics,alerts,page-analytics,ocr-metrics}`.
+- The dashboard no longer pages the Midas expense set.
+
 ## [2.33.0] - 2026-10-08 - Expense notifications from Midas
 
 ### Added

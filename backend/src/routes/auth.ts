@@ -5,6 +5,7 @@ import { query } from '../config/database';
 import { createSession, deleteSession } from '../middleware/sessionTracker';
 import { AuthRequest, getToken, tryVerifyPlatformJwt, authenticateToken } from '../middleware/auth';
 import { logAuth } from '../utils/auditLogger';
+import { clientIp as auditClientIp } from '../middleware/auditTrail';
 import { userRepository } from '../database/repositories';
 import { adminNotifications, logNotifyError } from '../services/notifications';
 
@@ -129,7 +130,7 @@ router.post('/login', async (req, res) => {
 
     if (result.rows.length === 0) {
       console.log(`[Auth:Login] Request ${requestId} - User not found: ${username}`);
-      await logAuth('login_failed', { username }, req.ip, 'User not found').catch(err => 
+      await logAuth('login_failed', { username }, auditClientIp(req), 'User not found').catch(err => 
         console.error(`[Auth:Login] Failed to log auth failure:`, err)
       );
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -147,7 +148,7 @@ router.post('/login', async (req, res) => {
     if (!validPassword) {
       // Log failed login attempt
       console.log(`[Auth:Login] Request ${requestId} - Invalid password for user: ${username}`);
-      await logAuth('login_failed', { username }, req.ip, 'Invalid password').catch(err => 
+      await logAuth('login_failed', { username }, auditClientIp(req), 'Invalid password').catch(err => 
         console.error(`[Auth:Login] Failed to log auth failure:`, err)
       );
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -156,7 +157,7 @@ router.post('/login', async (req, res) => {
     // Prevent login if the account has been deactivated. Checked after the
     // password so a wrong password still reports generic invalid credentials.
     if (user.is_active === false) {
-      await logAuth('login_failed', { username }, req.ip, 'Account deactivated').catch(err =>
+      await logAuth('login_failed', { username }, auditClientIp(req), 'Account deactivated').catch(err =>
         console.error(`[Auth:Login] Failed to log auth failure:`, err)
       );
       return res.status(403).json({
@@ -193,7 +194,7 @@ router.post('/login', async (req, res) => {
       username: user.username, 
       email: user.email, 
       role: user.role 
-    }, req.ip).catch(err => 
+    }, auditClientIp(req)).catch(err => 
       console.error(`[Auth:Login] Failed to log auth success:`, err)
     );
 
@@ -344,7 +345,7 @@ router.post('/register', async (req, res) => {
       username: user.username,
       email: user.email,
       role: 'pending'
-    }, req.ip);
+    }, auditClientIp(req));
 
     // Return success WITHOUT auto-login (user needs admin to assign role first)
     res.status(201).json({
@@ -389,7 +390,7 @@ router.post('/logout', async (req: AuthRequest, res) => {
         id: req.user.id,
         username: req.user.username,
         role: req.user.role
-      }, req.ip);
+      }, auditClientIp(req));
     }
 
     res.json({ success: true, message: 'Logged out successfully' });
@@ -452,13 +453,6 @@ router.post('/refresh', async (req, res) => {
       } catch (sessionError) {
         console.error('[Auth] Failed to update session on refresh:', sessionError);
       }
-
-      // Log token refresh
-      await logAuth('token_refresh', {
-        id: user.id,
-        username: user.username,
-        role: user.role
-      }, req.ip);
 
       console.log(`[Auth] Token refreshed for user: ${user.username}`);
 

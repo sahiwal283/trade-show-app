@@ -1,155 +1,63 @@
 /**
- * Developer Dashboard Routes
- * Provides system health monitoring, metrics, and analytics for admin/developer roles
+ * Developer dashboard — /api/dev-dashboard
+ * One read endpoint per tab. Each fails on its own: an error goes to the
+ * error handler as a 500 and the other tabs keep working.
  */
-
-import express, { Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
-import { DevDashboardService } from '../services/DevDashboardService';
-import { VersionService, SessionService, OCRMetricsService } from '../services/dashboard';
+import { asyncHandler } from '../utils/errors';
+import { parseTimeRange } from '../services/devDashboard/timeRange';
+import { getOverview } from '../services/devDashboard/overview';
+import { getApiAnalytics } from '../services/devDashboard/apiAnalytics';
+import { getUsage } from '../services/devDashboard/usage';
+import { getSessions } from '../services/devDashboard/sessions';
+import { getAuditLogs, parseAuditQuery } from '../services/devDashboard/auditLog';
 
 const router = express.Router();
 
-// All routes require authentication and admin or developer role
-router.use(authenticateToken);
-router.use((req: AuthRequest, res: Response, next) => {
+export function requireDashboardRole(req: AuthRequest, res: Response, next: NextFunction): void {
   if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'developer')) {
-    return res.status(403).json({ error: 'Admin or developer access required' });
+    res.status(403).json({ error: 'Admin or developer access required' });
+    return;
   }
   next();
-});
+}
 
-// GET /api/dev-dashboard/version
-router.get('/version', async (req: AuthRequest, res: Response) => {
-  try {
-    const versionInfo = await VersionService.getVersionInfo();
-    res.json(versionInfo);
-  } catch (error) {
-    console.error('Version endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch version info' });
-  }
-});
+router.use(authenticateToken);
+router.use(requireDashboardRole);
 
-// GET /api/dev-dashboard/summary
-router.get('/summary', async (req: AuthRequest, res: Response) => {
-  try {
-    const summary = await DevDashboardService.getSummary();
-    res.json(summary);
-  } catch (error) {
-    console.error('Summary endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch summary data' });
-  }
-});
+router.get('/overview', asyncHandler(async (_req: AuthRequest, res: Response) => {
+  res.json(await getOverview());
+}));
 
-// GET /api/dev-dashboard/metrics
-router.get('/metrics', async (req: AuthRequest, res: Response) => {
-  try {
-    const { timeRange = '24h' } = req.query;
-    const metrics = await DevDashboardService.getMetrics(timeRange as string);
-    res.json(metrics);
-  } catch (error) {
-    console.error('Metrics endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch metrics data' });
-  }
-});
+router.get('/api-analytics', asyncHandler(async (req: AuthRequest, res: Response) => {
+  res.json(await getApiAnalytics(parseTimeRange(req.query.timeRange)));
+}));
 
-// GET /api/dev-dashboard/audit-logs
-router.get('/audit-logs', async (req: AuthRequest, res: Response) => {
-  try {
-    const { limit = '50', action, search } = req.query;
-    const logs = await DevDashboardService.getAuditLogs(
-      parseInt(limit as string),
-      action as string,
-      search as string
-    );
-    res.json(logs);
-  } catch (error) {
-    console.error('Audit logs endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch audit logs' });
-  }
-});
+router.get('/usage', asyncHandler(async (req: AuthRequest, res: Response) => {
+  res.json(await getUsage(parseTimeRange(req.query.timeRange)));
+}));
 
-// GET /api/dev-dashboard/sessions
-router.get('/sessions', async (req: AuthRequest, res: Response) => {
-  try {
-    const sessions = await SessionService.getSessions();
-    res.json(sessions);
-  } catch (error) {
-    console.error('Sessions endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch sessions data' });
-  }
-});
+router.get('/sessions', asyncHandler(async (_req: AuthRequest, res: Response) => {
+  res.json(await getSessions());
+}));
 
-// GET /api/dev-dashboard/api-analytics
-router.get('/api-analytics', async (req: AuthRequest, res: Response) => {
-  try {
-    const { timeRange = '24h' } = req.query;
-    const analytics = await DevDashboardService.getAPIAnalytics(timeRange as string);
-    res.json(analytics);
-  } catch (error) {
-    console.error('API analytics endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch API analytics' });
-  }
-});
+router.get('/audit-logs', asyncHandler(async (req: AuthRequest, res: Response) => {
+  res.json(await getAuditLogs(parseAuditQuery(req.query as Record<string, unknown>)));
+}));
 
-// GET /api/dev-dashboard/alerts
-router.get('/alerts', async (req: AuthRequest, res: Response) => {
-  try {
-    const { status = 'active', severity } = req.query;
-    const alerts = await DevDashboardService.getAlerts(
-      status as string,
-      severity as string
-    );
-    res.json(alerts);
-  } catch (error) {
-    console.error('Alerts endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch alerts' });
+// The generic error handler masks err.message outside development. This
+// surface is admin/developer only and exists to show what is broken, so a
+// failing tab reports the real error (e.g. "permission denied for table X").
+export function dashboardErrorHandler(err: unknown, _req: Request, res: Response, next: NextFunction): void {
+  console.error('[DevDashboard]', err);
+  if (res.headersSent) {
+    next(err);
+    return;
   }
-});
+  res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+}
 
-// POST /api/dev-dashboard/alerts/:id/acknowledge
-router.post('/alerts/:id/acknowledge', async (req: AuthRequest, res: Response) => {
-  try {
-    // In a real implementation, you'd store alert acknowledgments
-    res.json({ success: true, message: 'Alert acknowledged' });
-  } catch (error) {
-    console.error('Acknowledge alert error:', error);
-    res.status(500).json({ error: 'Failed to acknowledge alert' });
-  }
-});
-
-// POST /api/dev-dashboard/alerts/:id/resolve
-router.post('/alerts/:id/resolve', async (req: AuthRequest, res: Response) => {
-  try {
-    // In a real implementation, you'd store alert resolutions
-    res.json({ success: true, message: 'Alert resolved' });
-  } catch (error) {
-    console.error('Resolve alert error:', error);
-    res.status(500).json({ error: 'Failed to resolve alert' });
-  }
-});
-
-// GET /api/dev-dashboard/page-analytics
-router.get('/page-analytics', async (req: AuthRequest, res: Response) => {
-  try {
-    const { timeRange = '24h' } = req.query;
-    const analytics = await DevDashboardService.getPageAnalytics(timeRange as string);
-    res.json(analytics);
-  } catch (error) {
-    console.error('Page analytics endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch page analytics' });
-  }
-});
-
-// GET /api/dev-dashboard/ocr-metrics
-router.get('/ocr-metrics', async (req: AuthRequest, res: Response) => {
-  try {
-    const metrics = await OCRMetricsService.getOCRMetrics();
-    res.json(metrics);
-  } catch (error) {
-    console.error('OCR metrics endpoint error:', error);
-    res.status(500).json({ error: 'Failed to fetch OCR metrics' });
-  }
-});
+router.use(dashboardErrorHandler);
 
 export default router;

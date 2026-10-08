@@ -14,7 +14,7 @@ This is a complete rewrite of the receipt OCR system with:
 - **Field inference engine** with confidence scores
 - **Category detection** with keyword matching
 - **LLM-ready framework** for future AI enhancement
-- **User correction tracking** for continuous learning
+- **User correction tracking** for correction capture
 
 ---
 
@@ -115,11 +115,9 @@ Main service that coordinates everything:
 
 ### 4. User Correction System (`UserCorrectionService.ts`)
 
-Tracks user edits for continuous learning:
+Tracks user edits for correction capture:
 - Stores original OCR + inference
 - Records corrected fields
-- Analytics for most-corrected fields
-- Export functionality for ML training
 
 ---
 
@@ -283,27 +281,6 @@ fetch('/api/ocr/v2/corrections', {
     notes: 'OCR misread merchant name'
   })
 });
-```
-
-### Get Correction Statistics
-
-**Endpoint:** `GET /api/ocr/v2/corrections/stats` (Admin/Developer only)
-
-```json
-{
-  "success": true,
-  "stats": {
-    "totalCorrections": 127,
-    "byField": {
-      "merchant": 45,
-      "amount": 32,
-      "date": 28,
-      "category": 15,
-      "cardLastFour": 7
-    },
-    "avgConfidenceWhenCorrected": 0.68
-  }
-}
 ```
 
 ---
@@ -507,22 +484,14 @@ async extractFields(ocrText: string, lowConfidenceFields: string[]) {
 }
 ```
 
-### 2. ML Model Retraining
-
-Use collected corrections to retrain/fine-tune:
-1. Export corrections: `GET /api/ocr/v2/corrections/export`
-2. Format as training dataset
-3. Fine-tune PaddleOCR or custom model
-4. Deploy updated model
-
-### 3. Confidence Calibration
+### 2. Confidence Calibration
 
 Track actual vs predicted confidence:
 - Compare user corrections to confidence scores
 - Calibrate confidence thresholds per field
 - Improve "needsReview" accuracy
 
-### 4. Multi-Page Receipt Support
+### 3. Multi-Page Receipt Support
 
 - Detect multi-page receipts
 - Stitch OCR results
@@ -587,17 +556,6 @@ pip3 install -r requirements.txt
 
 1. Edit patterns in `RuleBasedInferenceEngine.ts`
 2. Test with diverse receipts
-3. Monitor correction stats for accuracy
-
-### Reviewing Corrections
-
-```bash
-# Check what fields users correct most
-curl http://localhost:3000/api/ocr/v2/corrections/stats \
-  -H "Authorization: Bearer DEVELOPER_TOKEN"
-
-# This tells you where to improve inference
-```
 
 ---
 
@@ -605,7 +563,6 @@ curl http://localhost:3000/api/ocr/v2/corrections/stats \
 
 - OCR text may contain PII - store securely
 - User corrections are tied to user accounts
-- Only admin/developer can access correction stats
 - Receipt images auto-deleted after X days (TODO)
 - Sanitize OCR text before LLM processing
 
@@ -628,16 +585,15 @@ curl http://localhost:3000/api/ocr/v2/corrections/stats \
 
 For issues or questions:
 1. Check logs: `backend/logs/ocr-service.log` (if logging configured)
-2. Review correction stats to identify weak areas
-3. Test with Python script directly: `python3 paddleocr_processor.py image.jpg`
-4. Refer to master guide: `docs/AI_MASTER_GUIDE.md`
+2. Test with Python script directly: `python3 paddleocr_processor.py image.jpg`
+3. Refer to master guide: `docs/AI_MASTER_GUIDE.md`
 
 ---
 
 ## 🔄 User Correction Feedback Pipeline (v1.8.0)
 
 ### Overview
-v1.8.0 adds complete user correction capture and cross-environment training dataset generation for continuous learning.
+v1.8.0 adds complete user correction capture.
 
 ### How It Works
 
@@ -657,27 +613,6 @@ v1.8.0 adds complete user correction capture and cross-environment training data
 - Confidence scores
 ```
 
-**3. Cross-Environment Aggregation**
-```typescript
-// CrossEnvironmentSyncService aggregates:
-- Sandbox corrections (testing data)
-- Production corrections (real user data)
-- Filters by quality score
-- Exports to JSONL training datasets
-```
-
-**4. Export Training Data**
-```bash
-# Admin can export corrections for ML training
-POST /api/training/sync/export
-{
-  "minQualityScore": 0.7,
-  "includeSandbox": true,
-  "includeProduction": true,
-  "limit": 10000
-}
-```
-
 ### Database Schema (Migration 007)
 ```sql
 -- Enhanced ocr_corrections table with:
@@ -691,48 +626,9 @@ POST /api/training/sync/export
 - synced_to_training
 ```
 
-### API Endpoints
-```bash
-# Export dataset
-POST /api/training/sync/export
-
-# Get statistics
-GET /api/training/sync/report
-
-# View dataset
-GET /api/training/sync/dataset/:id
-
-# Mark as trained
-POST /api/training/sync/mark-used/:id
-
-# Anonymize
-POST /api/training/sync/anonymize
-```
-
 ### Files
 - `UserCorrectionService.ts` - Stores corrections with metadata
-- `CrossEnvironmentSyncService.ts` - ETL and dataset export
-- `routes/trainingSync.ts` - Admin API endpoints
 - `migrations/007_*.sql` - Enhanced schema
-
-### Usage Example
-```bash
-# Check correction stats
-curl http://sandbox/api/training/sync/report
-
-# Export training dataset
-curl -X POST http://sandbox/api/training/sync/export \
-  -d '{"minQualityScore": 0.7, "limit": 1000}'
-
-# Verify export
-ls /opt/trade-show-app/training_data/dataset_*.jsonl
-```
-
-### Future (v1.9.0)
-- Automated retraining workflows
-- Prompt optimization based on corrections
-- A/B testing of LLM models
-- Real-time accuracy monitoring
 
 ---
 

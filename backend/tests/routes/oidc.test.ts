@@ -19,6 +19,7 @@ vi.mock('../../src/utils/auditLogger', () => ({ logAuth: vi.fn().mockResolvedVal
 import jwt from 'jsonwebtoken';
 import { isOidcConfigured, resolveSsoUser, OIDC_TXN_COOKIE } from '../../src/services/AuthentikOidcService';
 import { createSession } from '../../src/middleware/sessionTracker';
+import { logAuth } from '../../src/utils/auditLogger';
 import { handleStatus, finishCallback, handleCallback } from '../../src/routes/oidc';
 
 function mockRes() {
@@ -61,6 +62,16 @@ describe('finishCallback (post-token-exchange logic)', () => {
     const token = decodeURIComponent(target.split('#sso_token=')[1]);
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
     expect(decoded).toMatchObject({ id: 'u1', username: 'jane', role: 'admin' });
+  });
+
+  it('records the client address the proxy forwarded, not the proxy\'s own', async () => {
+    (resolveSsoUser as any).mockResolvedValue({
+      status: 'ok',
+      user: { id: 'u1', username: 'jane', name: 'Jane', email: 'j@x.com', role: 'admin' },
+    });
+    const proxied: any = { headers: { 'x-real-ip': '203.0.113.9' }, ip: '10.0.0.1', socket: { remoteAddress: '10.0.0.1' } };
+    await finishCallback(proxied, mockRes(), { sub: 's1', email: 'j@x.com' });
+    expect(logAuth).toHaveBeenCalledWith('login_success', expect.objectContaining({ id: 'u1' }), '203.0.113.9');
   });
 
   it('pending → redirects with #sso_error=pending and no session', async () => {

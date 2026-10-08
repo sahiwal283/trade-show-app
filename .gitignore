@@ -87,6 +87,7 @@ Desktop.ini
 *.sql
 !backend/src/database/schema.sql
 !backend/src/database/migrations/*.sql
+!scripts/predeploy-*.sql
 
 # Obsolete version-specific documentation
 *_v[0-9]*.md

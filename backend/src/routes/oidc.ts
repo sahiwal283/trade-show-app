@@ -9,6 +9,7 @@ import * as oidc from 'openid-client';
 import { AuthRequest, getCookieValue } from '../middleware/auth';
 import { createSession } from '../middleware/sessionTracker';
 import { logAuth } from '../utils/auditLogger';
+import { clientIp } from '../middleware/auditTrail';
 import {
   OIDC_TXN_COOKIE,
   SsoClaims,
@@ -91,7 +92,7 @@ export async function finishCallback(req: AuthRequest, res: Response, claims: Ss
   } catch (sessionError) {
     console.error('[OIDC] Failed to create session record:', sessionError);
   }
-  await logAuth('login_success', { id: user.id, username: user.username, email: user.email, role: user.role }, req.ip).catch(
+  await logAuth('login_success', { id: user.id, username: user.username, email: user.email, role: user.role }, clientIp(req)).catch(
     (err) => console.error('[OIDC] Failed to log auth success:', err)
   );
   console.log(`[OIDC] SSO login successful for user: ${user.username}`);

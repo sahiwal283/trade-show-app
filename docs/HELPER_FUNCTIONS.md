@@ -7,96 +7,9 @@
 
 ## 📋 Table of Contents
 
-1. [Backend Helper Functions](#backend-helper-functions)
-2. [Frontend Utility Functions](#frontend-utility-functions)
-3. [When to Use Helpers](#when-to-use-helpers)
-4. [Best Practices](#best-practices)
-
----
-
-## Backend Helper Functions
-
-### DevDashboardService.helpers.ts
-
-**Location:** `backend/src/services/DevDashboardService.helpers.ts`  
-**Purpose:** Extracted helper functions to reduce complexity in DevDashboardService (13 functions)
-
-#### Alert Functions
-
-**1. `checkErrorRateAlert(now: Date): Promise<Alert | null>`**
-- **Purpose:** Detects high error rates in API requests
-- **Threshold:** >10% error rate with >20 requests in last hour
-- **Returns:** Alert object or null
-- **Usage:** Called by DevDashboardService to monitor API health
-
-**2. `checkSlowResponseAlert(now: Date): Promise<Alert | null>`**
-- **Purpose:** Detects slow API endpoints
-- **Threshold:** Average response time >2000ms with ≥5 requests
-- **Returns:** Alert object or null
-- **Usage:** Identifies performance bottlenecks
-
-**3. `checkStaleSessionsAlert(now: Date): Promise<Alert | null>`**
-- **Purpose:** Detects stale user sessions
-- **Threshold:** >10 sessions inactive for 24+ hours
-- **Returns:** Alert object or null
-- **Usage:** Session cleanup recommendations
-
-**4. `checkEndpointFailureAlert(now: Date): Promise<Alert | null>`**
-- **Purpose:** Detects repeatedly failing endpoints
-- **Threshold:** ≥5 failures in last hour (5xx errors)
-- **Returns:** Alert object or null
-- **Usage:** Identifies server-side bugs or outages
-
-**5. `checkTrafficSpikeAlert(now: Date): Promise<Alert | null>`**
-- **Purpose:** Detects unusual traffic spikes
-- **Threshold:** >200% increase with >100 requests
-- **Returns:** Alert object or null
-- **Usage:** DDoS detection and capacity planning
-
-**6. `checkAuthFailuresAlert(now: Date): Promise<Alert | null>`**
-- **Purpose:** Detects high authentication failures
-- **Threshold:** >50 auth failures in last hour
-- **Returns:** Alert object or null
-- **Usage:** Security monitoring
-
-#### Utility Functions
-
-**7. `parseTimeRange(timeRange: string): string`**
-- **Purpose:** Converts time range strings to PostgreSQL intervals
-- **Input:** '7d', '30d', or default
-- **Returns:** PostgreSQL interval string
-- **Usage:** Query time range parsing
-
-**8. `getSystemMemoryMetrics()`**
-- **Purpose:** Gets system memory usage statistics
-- **Returns:** Object with usagePercent, usedGB, totalGB, freeGB
-- **Usage:** System diagnostics
-
-**9. `getSystemCPUMetrics()`**
-- **Purpose:** Gets system CPU statistics
-- **Returns:** Object with loadAverage, cores, model, speed
-- **Usage:** System diagnostics
-
-**10. `formatSessionDuration(avgSessionSeconds: number): string`**
-- **Purpose:** Formats session duration in human-readable format
-- **Input:** Duration in seconds
-- **Returns:** Formatted string (e.g., "5m 30s")
-- **Usage:** Display session metrics
-
-**11. `mapEndpointToPage(endpoint: string): { page: string; path: string }`**
-- **Purpose:** Maps API endpoints to logical page groupings
-- **Returns:** Object with page name and path
-- **Usage:** Analytics and page grouping
-
-**12. `checkOCRServiceHealth(ocrServiceUrl: string)`**
-- **Purpose:** Checks OCR service health and provider status
-- **Returns:** Health and provider information or null
-- **Usage:** External service monitoring
-
-**13. `calculateOCRCosts(googleReceiptsThisMonth: number)`**
-- **Purpose:** Calculates OCR service costs
-- **Returns:** Cost breakdown with free threshold, estimated costs, projections
-- **Usage:** Cost tracking and budgeting
+1. [Frontend Utility Functions](#frontend-utility-functions)
+2. [When to Use Helpers](#when-to-use-helpers)
+3. [Best Practices](#best-practices)
 
 ---
 
@@ -236,13 +149,6 @@
 
 ### 4. File Organization
 
-**Backend:**
-```
-services/
-├── DevDashboardService.ts
-└── DevDashboardService.helpers.ts
-```
-
 **Frontend:**
 ```
 utils/
@@ -255,24 +161,6 @@ utils/
 ---
 
 ## Quick Reference
-
-### Backend Helpers
-
-| Function | Purpose | Location |
-|----------|---------|----------|
-| `checkErrorRateAlert` | Monitor API errors | DevDashboardService.helpers.ts |
-| `checkSlowResponseAlert` | Detect slow endpoints | DevDashboardService.helpers.ts |
-| `checkStaleSessionsAlert` | Find stale sessions | DevDashboardService.helpers.ts |
-| `checkEndpointFailureAlert` | Detect failing endpoints | DevDashboardService.helpers.ts |
-| `checkTrafficSpikeAlert` | Detect traffic spikes | DevDashboardService.helpers.ts |
-| `checkAuthFailuresAlert` | Monitor auth failures | DevDashboardService.helpers.ts |
-| `parseTimeRange` | Parse time ranges | DevDashboardService.helpers.ts |
-| `getSystemMemoryMetrics` | Get memory stats | DevDashboardService.helpers.ts |
-| `getSystemCPUMetrics` | Get CPU stats | DevDashboardService.helpers.ts |
-| `formatSessionDuration` | Format durations | DevDashboardService.helpers.ts |
-| `mapEndpointToPage` | Map endpoints to pages | DevDashboardService.helpers.ts |
-| `checkOCRServiceHealth` | Check OCR health | DevDashboardService.helpers.ts |
-| `calculateOCRCosts` | Calculate OCR costs | DevDashboardService.helpers.ts |
 
 ### Frontend Utilities
 
@@ -289,5 +177,4 @@ utils/
 
 **For detailed usage examples, see:**
 - `src/utils/README.md` - Frontend utilities guide
-- `backend/src/services/DevDashboardService.helpers.ts` - Backend helpers source
 

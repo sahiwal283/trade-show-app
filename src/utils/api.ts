@@ -4,6 +4,9 @@
  */
 
 import { TokenManager, apiClient } from './apiClient';
+import type {
+  Overview, ApiAnalytics, Usage, SessionsPayload, AuditLogPage, AuditFilters, TimeRange,
+} from '../components/developer/DevDashboard/types';
 
 const USE_SERVER = (import.meta.env.VITE_USE_SERVER || 'true') === 'true';
 
@@ -378,17 +381,22 @@ export const api = {
 
   // Developer Dashboard
   devDashboard: {
-    getVersion: () => apiClient.get('/dev-dashboard/version'),
-    getMetrics: (timeRange?: string) => apiClient.get('/dev-dashboard/metrics', { params: { timeRange } }),
-    getAuditLogs: (params?: Record<string, any>) => apiClient.get('/dev-dashboard/audit-logs', { params }),
-    getSessions: () => apiClient.get('/dev-dashboard/sessions'),
-    getApiAnalytics: (timeRange?: string) => apiClient.get('/dev-dashboard/api-analytics', { params: { timeRange } }),
-    getAlerts: (status?: string, severity?: string) => apiClient.get('/dev-dashboard/alerts', { params: { status, severity } }),
-    acknowledgeAlert: (id: string) => apiClient.post(`/dev-dashboard/alerts/${id}/acknowledge`),
-    resolveAlert: (id: string) => apiClient.post(`/dev-dashboard/alerts/${id}/resolve`),
-    getPageAnalytics: (timeRange?: string) => apiClient.get('/dev-dashboard/page-analytics', { params: { timeRange } }),
-    getSummary: () => apiClient.get('/dev-dashboard/summary'),
-    getOcrMetrics: () => apiClient.get('/dev-dashboard/ocr-metrics'),
+    getOverview: () => apiClient.get<Overview>('/dev-dashboard/overview'),
+    getApiAnalytics: (timeRange: TimeRange) =>
+      apiClient.get<ApiAnalytics>('/dev-dashboard/api-analytics', { params: { timeRange } }),
+    getUsage: (timeRange: TimeRange) => apiClient.get<Usage>('/dev-dashboard/usage', { params: { timeRange } }),
+    getSessions: () => apiClient.get<SessionsPayload>('/dev-dashboard/sessions'),
+    getAuditLogs: (filters: AuditFilters) => {
+      // Empty filters are left off the query string rather than sent as "".
+      const params: Record<string, string | number> = {
+        timeRange: filters.timeRange, limit: filters.limit, offset: filters.offset,
+      };
+      if (filters.user) params.user = filters.user;
+      if (filters.method) params.method = filters.method;
+      if (filters.status) params.status = filters.status;
+      if (filters.search) params.search = filters.search;
+      return apiClient.get<AuditLogPage>('/dev-dashboard/audit-logs', { params });
+    },
   },
 
   // Checklist
