@@ -19,7 +19,7 @@ describe('SampleHistory', () => {
     render(<SampleHistory eventId="ev-1" refreshKey="a" />);
     expect(sampleRequestApi.getHistory).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /History/ }));
-    expect(await screen.findByText(/Sameer changed Mango singles 2 → 4/)).toBeInTheDocument();
+    expect(await screen.findByText(/Sameer changed Peelz · Mango singles 2 → 4/)).toBeInTheDocument();
     expect(screen.getByText(/5 min ago/)).toBeInTheDocument();
   });
 

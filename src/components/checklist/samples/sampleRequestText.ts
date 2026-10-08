@@ -51,8 +51,10 @@ const FIELD_LABEL: Record<SampleChangeRow['field'], string> = {
 
 export function describeChange(c: SampleChangeRow): string {
   const who = c.userName ?? 'Someone';
+  // The same product name exists in more than one line, so an item names its line.
+  const target = c.kind === 'item' && c.lineName ? `${c.lineName} · ${c.targetName}` : c.targetName;
   if (c.field === 'notes') {
-    return c.newValue ? `${who} changed ${c.targetName} notes to "${c.newValue}"` : `${who} cleared ${c.targetName} notes`;
+    return c.newValue ? `${who} changed ${target} notes to "${c.newValue}"` : `${who} cleared ${target} notes`;
   }
-  return `${who} changed ${c.targetName} ${FIELD_LABEL[c.field]} ${c.oldValue ?? '0'} → ${c.newValue ?? '0'}`;
+  return `${who} changed ${target} ${FIELD_LABEL[c.field]} ${c.oldValue ?? '0'} → ${c.newValue ?? '0'}`;
 }

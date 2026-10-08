@@ -92,8 +92,19 @@ describe('formatShortDate', () => {
 describe('describeChange', () => {
   const base = { id: 'c', userId: 'u', userName: 'Sameer', kind: 'item' as const, targetId: 'p', targetName: 'Mango', lineName: 'Peelz', brand: 'boomin_brands' as const, changedAt: '' };
   it('describes a quantity change', () => {
-    expect(describeChange({ ...base, field: 'singles', oldValue: '2', newValue: '4' })).toBe('Sameer changed Mango singles 2 → 4');
-    expect(describeChange({ ...base, field: 'empty_displays', oldValue: '0', newValue: '1' })).toBe('Sameer changed Mango empty displays 0 → 1');
+    expect(describeChange({ ...base, field: 'singles', oldValue: '2', newValue: '4' })).toBe('Sameer changed Peelz · Mango singles 2 → 4');
+    expect(describeChange({ ...base, field: 'empty_displays', oldValue: '0', newValue: '1' })).toBe('Sameer changed Peelz · Mango empty displays 0 → 1');
+  });
+  it('tells apart the same product name in two lines', () => {
+    const q = { ...base, targetName: 'Mango Peach', field: 'singles' as const, oldValue: '2', newValue: '4' };
+    expect(describeChange({ ...q, lineName: 'Oh! Mit' })).toBe('Sameer changed Oh! Mit · Mango Peach singles 2 → 4');
+    expect(describeChange({ ...q, lineName: 'HyMIT' })).toBe('Sameer changed HyMIT · Mango Peach singles 2 → 4');
+  });
+  it('a product with no line name renders as before', () => {
+    expect(describeChange({ ...base, lineName: null, field: 'singles', oldValue: null, newValue: '4' })).toBe('Sameer changed Mango singles 0 → 4');
+  });
+  it('a material never shows a line', () => {
+    expect(describeChange({ ...base, kind: 'material', targetName: 'Banner', field: 'qty', oldValue: '1', newValue: '2' })).toBe('Sameer changed Banner qty 1 → 2');
   });
   it('describes notes and a missing user', () => {
     expect(describeChange({ ...base, userName: null, kind: 'material', targetName: 'Banner', lineName: null, brand: null, field: 'notes', oldValue: null, newValue: 'big one' }))
