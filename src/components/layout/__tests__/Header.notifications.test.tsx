@@ -17,6 +17,8 @@ vi.mock('../../../utils/notificationsApi', () => ({
 
 import { Header } from '../Header';
 import { notificationsApi } from '../../../utils/notificationsApi';
+import { api } from '../../../utils/api';
+import { apiClient } from '../../../utils/apiClient';
 
 const user = { id: 'u-1', name: 'Ana', username: 'ana', email: 'a@x.com', role: 'salesperson' as const };
 
@@ -118,5 +120,35 @@ describe('Header general notifications', () => {
     unmount();
     await vi.advanceTimersByTimeAsync(120_000);
     expect(vi.mocked(notificationsApi.listUnread).mock.calls.length).toBe(initial + 1);
+  });
+
+  it('builds the bell from the notification list only: no expense fetch, no message feed', async () => {
+    renderHeader();
+    await waitFor(() => expect(notificationsApi.listUnread).toHaveBeenCalled());
+    expect(api.getExpenses).not.toHaveBeenCalled();
+    expect(apiClient.get).not.toHaveBeenCalled();
+  });
+
+  it.each(['admin', 'developer', 'accountant', 'coordinator'] as const)(
+    'shows no pending-expense section or count to a %s',
+    async (role) => {
+      mockRows([]);
+      vi.mocked(api.getExpenses).mockResolvedValue([{ id: 'e-1', status: 'pending' }] as never);
+      render(<Header user={{ ...user, role } as never} onLogout={vi.fn()} onToggleMobileMenu={vi.fn()} onNavigate={vi.fn()} />);
+      await waitFor(() => expect(notificationsApi.listUnread).toHaveBeenCalled());
+      fireEvent.click(screen.getByRole('button', { name: /Notifications/ }));
+      expect(screen.queryByText(/pending/i)).not.toBeInTheDocument();
+      expect(screen.getByText('No new notifications')).toBeInTheDocument();
+    }
+  );
+
+  it('opens an expense notification on that expense', async () => {
+    mockRows([row({ kind: 'expense.approved', title: 'Expense approved', link: { page: 'expense', expenseId: 'ex-9' } })]);
+    const onNavigate = vi.fn();
+    renderHeader(onNavigate);
+    fireEvent.click(screen.getByRole('button', { name: /Notifications/ }));
+    fireEvent.click(await screen.findByText('Expense approved'));
+    expect(window.location.hash).toBe('#expense=ex-9');
+    expect(onNavigate).toHaveBeenCalledWith('expenses');
   });
 });
