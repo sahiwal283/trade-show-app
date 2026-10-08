@@ -131,6 +131,10 @@ export class BadgeScanRepository extends BaseRepository<BadgeScan> {
       .filter((c) => !['event_id', 'entity', 'payload_hash', 'client_scan_id', 'notes', 'webhook_status'].includes(c))
       .map((c) => `${c} = EXCLUDED.${c}`);
 
+    // A re-scan that puts the CRM push back in play also re-arms the "failed
+    // for good" notification, or a second terminal failure would go unreported.
+    if (cols.includes('crm_status')) updates.push('crm_failure_notified_at = NULL');
+
     // Always preserve existing notes, even if not explicitly updated.
     // When no note is supplied, COALESCE(NULL, badge_scans.notes) preserves the existing one.
     updates.push('notes = COALESCE(EXCLUDED.notes, badge_scans.notes)');

@@ -57,6 +57,26 @@ describe('BadgeScanRepository', () => {
     });
   });
 
+  describe('upsert re-arming the CRM failure notification', () => {
+    it('clears crm_failure_notified_at when the re-scan resets crm_status', async () => {
+      // Otherwise a re-scan puts the lead back to pending, the retried push
+      // fails for good, and the scanner is never told a second time.
+      vi.mocked(dbQuery).mockResolvedValue(ok([row()]));
+      await repo.upsert({
+        event_id: 'ev-1', entity: 'Haute Brands', raw_payload: 'RAW', payload_hash: 'hash-1', crm_status: 'pending',
+      });
+      const sql = vi.mocked(dbQuery).mock.calls[0][0] as string;
+      expect(sql).toContain('crm_status = EXCLUDED.crm_status');
+      expect(sql).toContain('crm_failure_notified_at = NULL');
+    });
+
+    it('leaves crm_failure_notified_at alone when crm_status is not written', async () => {
+      vi.mocked(dbQuery).mockResolvedValue(ok([row()]));
+      await repo.upsert({ event_id: 'ev-1', entity: 'Haute Brands', raw_payload: 'RAW', payload_hash: 'hash-1' });
+      expect(vi.mocked(dbQuery).mock.calls[0][0] as string).not.toContain('crm_failure_notified_at');
+    });
+  });
+
   describe('claimPendingByBrand', () => {
     it('claims pending and retry-eligible scans but never skipped ones', async () => {
       vi.mocked(dbQuery).mockResolvedValue(ok([row()]));
