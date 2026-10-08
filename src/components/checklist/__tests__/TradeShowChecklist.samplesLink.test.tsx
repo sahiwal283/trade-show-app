@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
 
+vi.mock('../../../utils/networkDetection', () => {
+  const networkMonitor = { isOnline: () => true, getState: () => ({ status: 'online', isOnline: true }), addListener: () => () => undefined };
+  return { networkMonitor, default: networkMonitor };
+});
+// The real BoothSection's manifest view fetches on mount; keep it off the network.
+vi.mock('../../../utils/boothApi', () => {
+  const pending = () => new Promise(() => undefined);
+  return { boothApi: { getManifest: pending, listBooths: pending, getExceptions: pending, getPacking: pending } };
+});
 vi.mock('../../../utils/api', () => ({
   api: {
     USE_SERVER: true,

@@ -176,10 +176,12 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
     if (activeTab === 'admin') loadEvents();
   }, [activeTab]);
 
-  // A deep link followed while the page is open. Reps' links are handled by UserChecklist.
   const loadSeq = useRef(0);
+  const selectedIdRef = useRef<string | null>(null);
+  selectedIdRef.current = selectedEventId;
   const eventsRef = useRef(events);
   eventsRef.current = events;
+  // A deep link followed while the page is open. Reps' links are handled by UserChecklist.
   useEffect(() => {
     if (!isPrivilegedUser) return;
     const onHashChange = () => {
@@ -255,6 +257,8 @@ export const TradeShowChecklist: React.FC<TradeShowChecklistProps> = ({ user }) 
   // background=true refreshes data without unmounting the board — this is what
   // preserves unsaved row edits, the expanded row, and the active tab.
   const loadChecklist = async (eventId: string, opts: { background?: boolean } = {}) => {
+    // A background reload for a show that is no longer selected must not supersede the current show's load.
+    if (opts.background && eventId !== selectedIdRef.current) return;
     if (!opts.background) { setLoading(true); setLoadedEventId(null); }
     const myLoad = ++loadSeq.current;
     try {

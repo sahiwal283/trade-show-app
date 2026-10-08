@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 
+vi.mock('../../../../utils/networkDetection', () => {
+  const networkMonitor = { isOnline: () => true, getState: () => ({ status: 'online', isOnline: true }), addListener: () => () => undefined };
+  return { networkMonitor, default: networkMonitor };
+});
 vi.mock('../../../../utils/api', () => ({
   api: {
     USE_SERVER: true,

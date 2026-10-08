@@ -3,6 +3,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 
 let lastPanelProps: any = null;
+vi.mock('../../../utils/networkDetection', () => {
+  const networkMonitor = { isOnline: () => true, getState: () => ({ status: 'online', isOnline: true }), addListener: () => () => undefined };
+  return { networkMonitor, default: networkMonitor };
+});
 vi.mock('../samples/SamplesPanel', () => ({
   SamplesPanel: (p: any) => { lastPanelProps = p; return <div data-testid="samples-panel" data-event={p.eventId} />; },
 }));
@@ -44,5 +48,24 @@ describe('BookingBoard samples tab', () => {
     await act(async () => { await Promise.resolve(); });   // let the board's own status fetch settle first
     act(() => lastPanelProps.onStatusChange('submitted'));
     expect(screen.getByRole('tab', { name: /Samples/ }).textContent).toContain('1/1');
+  });
+
+  it('a panel-reported status is not overwritten by a later-arriving board fetch', async () => {
+    let resolveFetch!: (v: any) => void;
+    vi.mocked(sampleRequestApi.getEvent).mockReturnValueOnce(new Promise((r) => { resolveFetch = r; }) as any);
+    render(<BookingBoard {...props} requestedTab="samples" />);
+    act(() => lastPanelProps.onStatusChange('submitted'));
+    expect(screen.getByRole('tab', { name: /Samples/ }).textContent).toContain('1/1');
+    await act(async () => { resolveFetch({ request: { status: 'draft' }, window: {}, canEdit: true }); await Promise.resolve(); });
+    expect(screen.getByRole('tab', { name: /Samples/ }).textContent).toContain('1/1');
+  });
+
+  it('after switching shows a fresh fetch result is applied again', async () => {
+    const { rerender } = render(<BookingBoard {...props} requestedTab="samples" />);
+    await act(async () => { await Promise.resolve(); });
+    act(() => lastPanelProps.onStatusChange('submitted'));
+    vi.mocked(sampleRequestApi.getEvent).mockResolvedValueOnce({ request: { status: 'submitted' }, window: {}, canEdit: true } as any);
+    rerender(<BookingBoard {...props} event={{ ...event, id: 'ev-2' }} />);
+    await waitFor(() => expect(screen.getByRole('tab', { name: /Samples/ }).textContent).toContain('1/1'));
   });
 });
