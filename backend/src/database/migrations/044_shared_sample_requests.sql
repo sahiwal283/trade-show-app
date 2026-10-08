@@ -9,11 +9,29 @@ ALTER TABLE sample_requests
   ADD COLUMN IF NOT EXISTS last_edited_by UUID REFERENCES users(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS last_edited_at TIMESTAMPTZ;
 
--- ── 2. Merge per-rep rows into one per event ─────────────────────────────
+-- ── 2a. Backfill attribution on single-row events (still refers to user_id) ─
+WITH single_events AS (
+  SELECT event_id FROM sample_requests GROUP BY event_id HAVING COUNT(*) = 1
+)
+UPDATE sample_requests s
+SET submitted_by   = CASE WHEN s.status = 'submitted' THEN s.user_id ELSE s.submitted_by END,
+    last_edited_by = CASE WHEN EXISTS (SELECT 1 FROM sample_request_items i WHERE i.request_id = s.id)
+                           OR EXISTS (SELECT 1 FROM sample_request_materials m WHERE m.request_id = s.id)
+                          THEN s.user_id ELSE s.last_edited_by END,
+    last_edited_at = CASE WHEN EXISTS (SELECT 1 FROM sample_request_items i WHERE i.request_id = s.id)
+                           OR EXISTS (SELECT 1 FROM sample_request_materials m WHERE m.request_id = s.id)
+                          THEN s.updated_at ELSE s.last_edited_at END
+WHERE s.event_id IN (SELECT event_id FROM single_events);
+
+-- ── 2b. Merge per-rep rows into one per event ────────────────────────────
+-- Only events with more than one request are merged; single-row events are
+-- not rewritten.
 -- keeper = earliest created_at per event
 CREATE TEMP TABLE sr_keeper AS
 SELECT DISTINCT ON (event_id) id AS keeper_id, event_id
-FROM sample_requests ORDER BY event_id, created_at ASC, id ASC;
+FROM sample_requests
+WHERE event_id IN (SELECT event_id FROM sample_requests GROUP BY event_id HAVING COUNT(*) > 1)
+ORDER BY event_id, created_at ASC, id ASC;
 
 -- items: sum per (event, product) into the keeper
 WITH sums AS (
@@ -32,7 +50,7 @@ ON CONFLICT (request_id, product_id) DO UPDATE
 -- materials: sum qty; notes = earliest non-blank by request created_at
 WITH sums AS (
   SELECT k.keeper_id, m.material_id, SUM(m.qty)::int AS qty,
-         (ARRAY_AGG(NULLIF(BTRIM(m.notes), '') ORDER BY sr.created_at ASC) FILTER (WHERE NULLIF(BTRIM(m.notes), '') IS NOT NULL))[1] AS notes
+         (ARRAY_AGG(NULLIF(BTRIM(m.notes), '') ORDER BY sr.created_at ASC, sr.id ASC) FILTER (WHERE NULLIF(BTRIM(m.notes), '') IS NOT NULL))[1] AS notes
   FROM sample_request_materials m
   JOIN sample_requests sr ON sr.id = m.request_id
   JOIN sr_keeper k ON k.event_id = sr.event_id
@@ -48,9 +66,9 @@ WITH agg AS (
   SELECT k.keeper_id,
          BOOL_OR(sr.status = 'submitted') AS any_submitted,
          MIN(sr.submitted_at) FILTER (WHERE sr.status = 'submitted') AS first_submitted_at,
-         (ARRAY_AGG(sr.user_id ORDER BY sr.submitted_at ASC NULLS LAST) FILTER (WHERE sr.status = 'submitted'))[1] AS first_submitter,
+         (ARRAY_AGG(sr.user_id ORDER BY sr.submitted_at ASC NULLS LAST, sr.id ASC) FILTER (WHERE sr.status = 'submitted'))[1] AS first_submitter,
          MAX(sr.updated_at) AS last_updated_at,
-         (ARRAY_AGG(sr.user_id ORDER BY sr.updated_at DESC))[1] AS last_editor
+         (ARRAY_AGG(sr.user_id ORDER BY sr.updated_at DESC, sr.id DESC))[1] AS last_editor
   FROM sample_requests sr JOIN sr_keeper k ON k.event_id = sr.event_id
   GROUP BY k.keeper_id
   HAVING COUNT(*) > 1            -- single-row events keep their row untouched
@@ -70,8 +88,8 @@ WHERE k.event_id = s.event_id AND s.id <> k.keeper_id;
 DROP TABLE sr_keeper;
 
 -- ── 3. Reshape constraints and rename user_id → created_by ───────────────
-ALTER TABLE sample_requests DROP CONSTRAINT IF EXISTS sample_requests_event_id_user_id_key;
-ALTER TABLE sample_requests DROP CONSTRAINT IF EXISTS sample_requests_user_id_fkey;
+ALTER TABLE sample_requests DROP CONSTRAINT sample_requests_event_id_user_id_key;
+ALTER TABLE sample_requests DROP CONSTRAINT sample_requests_user_id_fkey;
 ALTER TABLE sample_requests RENAME COLUMN user_id TO created_by;
 ALTER TABLE sample_requests ALTER COLUMN created_by DROP NOT NULL;
 ALTER TABLE sample_requests
