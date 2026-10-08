@@ -627,4 +627,142 @@ describe('useEventSampleRequest', () => {
       add.mockRestore(); remove.mockRestore();
     });
   });
+
+  describe('11: a rejected save is terminal', () => {
+    const REJECTED = 'Your changes were not accepted. Refresh to see the current list.';
+
+    it.each([403, 400])('11: a %i on PATCH sets the error, drops those fields, issues one GET and is not retried', async (statusCode) => {
+      srv.items.set('p-1', item('p-1', 1, 4));
+      const { result } = await ready();
+      api.patchEvent.mockRejectedValueOnce({ statusCode });
+      act(() => result.current.setItem('p-1', 'singles', 3));
+      await advance(DEBOUNCE);
+      expect(api.patchEvent).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(api.getEvent).toHaveBeenCalledTimes(2));   // the load, then exactly one refresh
+      expect(result.current.error).toBe(REJECTED);
+      expect(result.current.dirtyCount).toBe(0);
+      await waitFor(() => expect(result.current.items.get('p-1')).toEqual(item('p-1', 1, 4)));   // server truth again
+      expect(api.getEvent).toHaveBeenCalledTimes(2);
+      await advance(POLL);                                           // the tick polls; it does not re-send the rejected field
+      expect(api.patchEvent).toHaveBeenCalledTimes(1);
+      expect(result.current.error).toBe(REJECTED);
+      expect(result.current.status).toBe('ready');
+    });
+
+    it('11: a 403 on the refresh that follows a rejected save reports forbidden', async () => {
+      const { result } = await ready();
+      api.patchEvent.mockRejectedValueOnce({ statusCode: 403 });
+      api.getEvent.mockRejectedValueOnce({ statusCode: 403 });
+      act(() => result.current.setItem('p-1', 'singles', 3));
+      await advance(DEBOUNCE);
+      await waitFor(() => expect(result.current.status).toBe('forbidden'));
+      expect(result.current.canEdit).toBe(false);
+      await advance(POLL);
+      expect(api.patchEvent).toHaveBeenCalledTimes(1);
+      expect(api.getEvent).toHaveBeenCalledTimes(2);
+    });
+
+    it('11: only the fields of the rejected request are dropped; an edit made during it stays dirty and goes out next', async () => {
+      const { result } = await ready();
+      const gate = held<void>();
+      api.patchEvent.mockImplementationOnce(async () => { await gate.promise; throw { statusCode: 400 }; });
+      act(() => result.current.setItem('p-1', 'singles', 3));
+      await advance(DEBOUNCE);
+      act(() => result.current.setItem('p-2', 'displays', 1));
+      await act(async () => { gate.resolve(); await gate.promise; });
+      await waitFor(() => expect(result.current.saving).toBe(false));
+      expect(result.current.dirtyCount).toBe(1);
+      await advance(DEBOUNCE);
+      expect(patches()[1]).toEqual({ items: [{ productId: 'p-2', displays: 1 }], materials: [] });
+      await waitFor(() => expect(result.current.items.get('p-1')).toBeUndefined());   // the rejected 3 is gone
+      expect(result.current.items.get('p-2')?.displays).toBe(1);
+    });
+
+    it('11: a rejected flush stops submit and keeps the rejection message', async () => {
+      const { result } = await ready();
+      act(() => result.current.setItem('p-1', 'singles', 1));
+      api.patchEvent.mockRejectedValueOnce({ statusCode: 400 });
+      await act(async () => { await result.current.submit(); });
+      expect(api.submitEvent).not.toHaveBeenCalled();
+      expect(result.current.error).toBe(REJECTED);
+      expect(result.current.dirtyCount).toBe(0);
+      await waitFor(() => expect(api.getEvent).toHaveBeenCalledTimes(2));
+    });
+
+    it.each([408, 429, 500, 503])('11: a %i is not a rejection: the fields stay dirty and the next poll tick retries', async (statusCode) => {
+      const { result } = await ready();
+      api.patchEvent.mockRejectedValueOnce({ statusCode });
+      act(() => result.current.setItem('p-1', 'singles', 3));
+      await advance(DEBOUNCE);
+      expect(result.current.error).toMatch(/Could not save/);
+      expect(result.current.dirtyCount).toBe(1);
+      expect(api.getEvent).toHaveBeenCalledTimes(1);
+      await advance(POLL);
+      expect(api.patchEvent).toHaveBeenCalledTimes(2);
+      expect(result.current.dirtyCount).toBe(0);
+    });
+  });
+
+  describe('12: recovering from a failed load', () => {
+    const online = (value: boolean) => vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(value);
+    afterEach(() => vi.restoreAllMocks());
+
+    it('12: a load that failed offline is retried on the online event', async () => {
+      const spy = online(false);
+      api.getEvent.mockRejectedValueOnce(new Error('net'));
+      const { result } = renderHook(() => useEventSampleRequest(args));
+      await waitFor(() => expect(result.current.status).toBe('offline'));
+      spy.mockReturnValue(true);
+      act(() => { window.dispatchEvent(new Event('online')); });
+      await waitFor(() => expect(result.current.status).toBe('ready'));
+      expect(result.current.isOffline).toBe(false);
+      expect(result.current.catalog?.products).toHaveLength(2);
+      expect(result.current.canEdit).toBe(true);
+      expect(api.getCatalog).toHaveBeenCalledTimes(2);
+      expect(api.getEvent).toHaveBeenCalledTimes(2);
+    });
+
+    it('12: a load that failed with an error is retried on the online event too', async () => {
+      api.getCatalog.mockRejectedValueOnce({ statusCode: 500 });
+      const { result } = renderHook(() => useEventSampleRequest(args));
+      await waitFor(() => expect(result.current.status).toBe('error'));
+      act(() => { window.dispatchEvent(new Event('online')); });
+      await waitFor(() => expect(result.current.status).toBe('ready'));
+    });
+
+    it('12: retry() re-runs the load, shows loading meanwhile, and can fail again', async () => {
+      api.getEvent.mockRejectedValueOnce({ statusCode: 500 });
+      const { result } = renderHook(() => useEventSampleRequest(args));
+      await waitFor(() => expect(result.current.status).toBe('error'));
+      const load = held<EventSampleRequestView>();
+      api.getEvent.mockImplementationOnce(() => load.promise);
+      act(() => result.current.retry());
+      expect(result.current.status).toBe('loading');
+      await act(async () => { load.reject({ statusCode: 500 }); await load.promise.catch(() => undefined); });
+      await waitFor(() => expect(result.current.status).toBe('error'));
+      act(() => result.current.retry());
+      await waitFor(() => expect(result.current.status).toBe('ready'));
+      expect(api.getEvent).toHaveBeenCalledTimes(3);
+    });
+
+    it('12: retry() and the online event do nothing once ready or forbidden', async () => {
+      const { result } = await ready();
+      act(() => result.current.retry());
+      act(() => { window.dispatchEvent(new Event('online')); });
+      await flushMicrotasks();
+      expect(result.current.status).toBe('ready');
+      expect(api.getCatalog).toHaveBeenCalledTimes(1);
+      expect(api.getEvent).toHaveBeenCalledTimes(1);
+
+      vi.clearAllMocks();
+      api.getEvent.mockRejectedValueOnce({ statusCode: 403 });
+      const denied = renderHook(() => useEventSampleRequest(args));
+      await waitFor(() => expect(denied.result.current.status).toBe('forbidden'));
+      act(() => denied.result.current.retry());
+      act(() => { window.dispatchEvent(new Event('online')); });
+      await flushMicrotasks();
+      expect(denied.result.current.status).toBe('forbidden');
+      expect(api.getEvent).toHaveBeenCalledTimes(1);
+    });
+  });
 });

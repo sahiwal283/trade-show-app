@@ -26,7 +26,18 @@
  *  - Any view older (by request.lastEditedAt) than the newest applied is ignored.
  *
  * Also: offline → read-only and flush on reconnect, 403 → forbidden,
- * 409 WINDOW_CLOSED → closed, a failed save is retried on the next poll tick.
+ * 409 WINDOW_CLOSED → closed.
+ *
+ * A save that fails:
+ *  - network error, client timeout (408), 429 or 5xx: the fields stay dirty and
+ *    the next poll tick (or the next edit, or reconnecting) sends them again.
+ *  - any other 4xx (400, 403, ...): the server refused these values and would
+ *    refuse them again, so it is terminal. The fields that request carried stop
+ *    being dirty, an error says so, and one GET is issued once the save chain
+ *    is idle so the form shows the server's values (a 403 there → forbidden).
+ *
+ * A failed initial load (`offline` / `error`) is re-run by `retry()`, and by
+ * itself when the browser comes back online.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -50,6 +61,12 @@ const isWindowClosed = (e: unknown): boolean => {
   const d = (e as { details?: { code?: string; details?: { code?: string } } } | null)?.details;
   return statusOf(e) === 409 && (d?.code === 'WINDOW_CLOSED' || d?.details?.code === 'WINDOW_CLOSED');
 };
+/** The server refused the values themselves, so sending them again cannot work. 408 is the client's own timeout. */
+const isRejected = (e: unknown): boolean => {
+  const code = statusOf(e);
+  return code !== undefined && code >= 400 && code < 500 && code !== 408 && code !== 429 && !isWindowClosed(e);
+};
+const REJECTED_MESSAGE = 'Your changes were not accepted. Refresh to see the current list.';
 const time = (iso: string | null): number => (iso ? Date.parse(iso) : -Infinity);
 
 /** Row id → field → revision of that field's latest edit. A field is dirty iff it has an entry. */
@@ -60,7 +77,7 @@ function markDirty<F extends string>(dirty: Dirty<F>, id: string, field: F, rev:
   fields.set(field, rev);
   dirty.set(id, fields);
 }
-/** After a successful save: a sent field is clean unless it was edited again (its revision moved on). */
+/** After a save that succeeded or was rejected for good: a sent field is clean unless it was edited again (its revision moved on). */
 function markSaved<F extends string>(dirty: Dirty<F>, sent: Dirty<F>) {
   for (const [id, sentFields] of sent) {
     const fields = dirty.get(id);
@@ -120,6 +137,11 @@ export function useEventSampleRequest({ eventId, userId, role }: Args) {
   const getTicket = useRef(0);                                     // number of the latest GET issued
   const getFloor = useRef(0);                                      // GETs numbered at or below this are stale
   const submittingRef = useRef(false);
+  const loadTicket = useRef(0);                                    // number of the latest initial load started
+  const statusRef = useRef<SampleStatus>('loading');
+  statusRef.current = status;
+  /** A save was rejected and the GET that restores the server's values has not been issued yet. */
+  const refreshOwed = useRef(false);
 
   const isOverride = OVERRIDE.includes(role);
   const canEdit = status === 'ready' && !isOffline && (view?.canEdit ?? false) && (!closed || (isOverride && override));
@@ -156,32 +178,48 @@ export function useEventSampleRequest({ eventId, userId, role }: Args) {
       if (pendingSaves.current > 0 || ticket <= getFloor.current) return;
       getFloor.current = ticket;
       applyView(v);
-    } catch { /* keep the last state; the next poll tries again */ }
+    } catch (e) {
+      // Access was taken away: stop showing a form. Anything else keeps the last state; the next poll tries again.
+      if (statusOf(e) === 403) setStatus('forbidden');
+    }
   }, [eventId, applyView]);
 
-  // Initial load
+  /** The initial load: catalog + event. Only the latest one started may report; unmounting retires them all. */
+  const load = useCallback(async () => {
+    const ticket = ++loadTicket.current;
+    try {
+      const [c, v] = await Promise.all([sampleRequestApi.getCatalog(true), sampleRequestApi.getEvent(eventId)]);
+      if (ticket !== loadTicket.current) return;
+      setCatalog(c); applyView(v); setStatus('ready');
+    } catch (e) {
+      if (ticket !== loadTicket.current) return;
+      setStatus(statusOf(e) === 403 ? 'forbidden' : (typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error'));
+    }
+  }, [eventId, applyView]);
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [c, v] = await Promise.all([sampleRequestApi.getCatalog(true), sampleRequestApi.getEvent(eventId)]);
-        if (cancelled) return;
-        setCatalog(c); applyView(v); setStatus('ready');
-      } catch (e) {
-        if (cancelled) return;
-        setStatus(statusOf(e) === 403 ? 'forbidden' : (typeof navigator !== 'undefined' && navigator.onLine === false ? 'offline' : 'error'));
-      }
-    })();
-    return () => { cancelled = true; };
+    void load();
+    return () => { loadTicket.current += 1; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once; the consumer keys the component by eventId
   }, [eventId]);
+
+  /** Run the initial load again after it failed. Does nothing in any other state. */
+  const retry = useCallback(() => {
+    if (statusRef.current !== 'offline' && statusRef.current !== 'error') return;
+    statusRef.current = 'loading';
+    setStatus('loading');
+    void load();
+  }, [load]);
 
   const buildPatch = useCallback((): SampleRequestPatch => ({
     items: dirtyFields(dirty.current.items, local.current.items, emptyItem).map(({ id, fields }) => ({ productId: id, ...fields })),
     materials: dirtyFields(dirty.current.materials, local.current.materials, emptyMaterial).map(({ id, fields }) => ({ materialId: id, ...fields })),
   }), []);
 
-  /** One PATCH with everything dirty right now. Resolves false on failure (fields stay dirty); never rejects. */
+  /**
+   * One PATCH with everything dirty right now. Never rejects; resolves false on failure. The fields stay dirty
+   * unless the server rejected them for good, in which case they are dropped and a refresh is owed.
+   */
   const saveOnce = useCallback(async (): Promise<boolean> => {
     const patch = buildPatch();
     if (patch.items.length === 0 && patch.materials.length === 0) return true;
@@ -195,23 +233,32 @@ export function useEventSampleRequest({ eventId, userId, role }: Args) {
       return true;
     } catch (e) {
       if (isWindowClosed(e)) setClosed(true);
-      else setError('Could not save your changes. Check your connection and try again.');
+      else if (isRejected(e)) {
+        markSaved(dirty.current.items, sent.items); markSaved(dirty.current.materials, sent.materials);
+        syncDirty();
+        setError(REJECTED_MESSAGE);
+        refreshOwed.current = true;
+      } else setError('Could not save your changes. Check your connection and try again.');
       return false;
     } finally {
       setSaving(false);
     }
   }, [buildPatch, eventId, applyView, syncDirty]);
 
-  /** Run `op` after every earlier save. When it settles, every GET issued so far is stale. */
+  /**
+   * Run `op` after every earlier save. When it settles, every GET issued so far is stale. The refresh owed after
+   * a rejected save is issued here, once no save is pending: any earlier and its response would be dropped.
+   */
   const enqueue = useCallback((op: () => Promise<boolean>): Promise<boolean> => {
     pendingSaves.current += 1;
     const link = chain.current.then(op).catch(() => false).finally(() => {
       pendingSaves.current -= 1;
       getFloor.current = getTicket.current;
+      if (refreshOwed.current && pendingSaves.current === 0) { refreshOwed.current = false; void refresh(); }
     });
     chain.current = link;
     return link;
-  }, []);
+  }, [refresh]);
 
   /** Save what is dirty, after any save in flight. Callers that arrive while one is already waiting share it. */
   const flush = useCallback((): Promise<boolean> => {
@@ -240,10 +287,13 @@ export function useEventSampleRequest({ eventId, userId, role }: Args) {
     return () => { window.removeEventListener('focus', tick); clearInterval(id); };
   }, [status, refresh, flush]);
 
-  // Online / offline. Coming back online makes the form editable again, which re-arms the autosave above.
+  // Online / offline. Coming back online makes the form editable again, which re-arms the autosave above,
+  // and re-runs an initial load that failed.
+  const retryRef = useRef(retry);
+  retryRef.current = retry;
   useEffect(() => {
     const goOffline = () => setIsOffline(true);
-    const goOnline = () => setIsOffline(false);
+    const goOnline = () => { setIsOffline(false); retryRef.current(); };
     window.addEventListener('offline', goOffline); window.addEventListener('online', goOnline);
     return () => { window.removeEventListener('offline', goOffline); window.removeEventListener('online', goOnline); };
   }, []);
@@ -283,7 +333,11 @@ export function useEventSampleRequest({ eventId, userId, role }: Args) {
     submittingRef.current = true;
     setSubmitting(true); setError(null);
     await enqueue(async () => {
-      if (!(await saveOnce())) { setError('Could not submit: your latest changes did not save.'); return false; }
+      if (!(await saveOnce())) {
+        // A rejected save has already said why; do not replace its message.
+        if (!refreshOwed.current) setError('Could not submit: your latest changes did not save.');
+        return false;
+      }
       try {
         applyView(await sampleRequestApi.submitEvent(eventId));
         return true;
@@ -299,6 +353,6 @@ export function useEventSampleRequest({ eventId, userId, role }: Args) {
 
   return {
     status, catalog, view, items, materials, dirtyCount, saving, submitting, closed, override, setOverride,
-    canEdit, canSubmit, isOffline, error, updatedBy, setItem, setMaterial, submit, refresh,
+    canEdit, canSubmit, isOffline, error, updatedBy, setItem, setMaterial, submit, refresh, retry,
   };
 }
