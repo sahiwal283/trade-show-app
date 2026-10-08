@@ -48,7 +48,9 @@ export interface EventSampleRequest {
 
 export interface SampleWindow { opensAt: string | null; closesAt: string | null; isOpen: boolean }
 
-export interface EventSampleRequestView { request: EventSampleRequest; window: SampleWindow; canEdit: boolean }
+/** Show details for the printed pull sheet. Dates are YYYY-MM-DD. */
+export interface SampleEventInfo { name: string; venue: string | null; city: string | null; state: string | null; showStartDate: string | null; showEndDate: string | null }
+export interface EventSampleRequestView { request: EventSampleRequest; window: SampleWindow; canEdit: boolean; isPuller: boolean; event: SampleEventInfo }
 
 export interface SampleRequestItemPatch { productId: string; singles?: number; displays?: number; emptyDisplays?: number }
 export interface SampleRequestMaterialPatch { materialId: string; qty?: number; notes?: string | null }

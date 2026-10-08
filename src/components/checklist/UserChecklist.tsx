@@ -16,6 +16,7 @@ import { ItineraryCard } from './ItineraryCard';
 import { SamplesPanel } from './samples/SamplesPanel';
 import { sampleRequestApi } from '../../utils/sampleRequestApi';
 import { joinSummary, formatDateRange } from './bookingText';
+import { orderShows, pullerShows, nextUpcomingShow, showLabel } from './showOrder';
 
 interface UserChecklistProps {
   user: User;
@@ -72,9 +73,11 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
         const mine = allEvents.filter(event =>
           (event.participants || []).some(p => p.id === user.id)
         );
+        // The puller works ahead of each show: upcoming shows only, opening on the next one.
         const visible = puller
-          ? [...mine, ...allEvents.filter(event => !mine.includes(event))]
-          : mine.length > 0 ? mine : allEvents;
+          ? pullerShows(allEvents, user.id)
+          : orderShows(mine.length > 0 ? mine : allEvents);
+        const first = (puller && nextUpcomingShow(visible)) || visible[0];
 
         setEvents(visible);
         const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -82,8 +85,8 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
         const owned = !!linkedId && ownsLink(params.get('tab'), embedded);
         if (owned && visible.some((e) => e.id === linkedId)) {
           setSelectedEventId(linkedId);
-        } else if (visible.length > 0) {
-          setSelectedEventId(visible[0].id);
+        } else if (first) {
+          setSelectedEventId(first.id);
         }
         // An owned link is consumed whether or not it resolved.
         if (owned) history.replaceState(null, '', window.location.pathname + window.location.search);
@@ -206,11 +209,11 @@ export const UserChecklist: React.FC<UserChecklistProps> = ({ user, embedded = f
             <select
               value={selectedEventId || ''}
               onChange={(e) => setSelectedEventId(e.target.value)}
-              className="w-full max-w-full cursor-pointer rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-medium text-stone-600 shadow-elevation-1 transition-colors hover:border-stone-300 focus-visible:ring-2 focus-visible:ring-brand-500 sm:w-auto sm:text-xs"
+              className="w-full max-w-full cursor-pointer truncate rounded-full border border-stone-200 bg-white py-2 pl-4 pr-9 text-base font-medium text-stone-700 shadow-elevation-1 transition-colors hover:border-stone-300 focus-visible:ring-2 focus-visible:ring-brand-500 sm:w-auto sm:max-w-sm sm:text-sm"
             >
               {events.map(event => (
                 <option key={event.id} value={event.id}>
-                  {event.name} - {new Date(event.startDate).toLocaleDateString()}
+                  {showLabel(event)}
                 </option>
               ))}
             </select>

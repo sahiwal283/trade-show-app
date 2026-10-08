@@ -1,12 +1,9 @@
 import React from 'react';
-import { SampleProduct, SampleProductLine, SampleRequestItem } from '../../../utils/sampleRequestApi';
+import { SampleRequestItem } from '../../../utils/sampleRequestApi';
+import type { ProductGroup } from './sampleGroups';
+import { isRequested } from './sampleGroups';
 import type { ItemField } from './useEventSampleRequest';
 import { QtyInput } from './QtyInput';
-
-export interface ProductGroup {
-  line: SampleProductLine;
-  products: SampleProduct[];           // active ones, plus retired ones already on the request
-}
 
 interface Props {
   /** One brand's product lines. They share a single column grid, so quantities line up down the whole brand. */
@@ -52,7 +49,7 @@ export const ProductTable: React.FC<Props> = ({ groups, items, disabled, onChang
         {products.map((p) => {
           const row = items.get(p.id);
           const retired = !p.is_active || !line.is_active;
-          const requested = !!row && (row.singles > 0 || row.displays > 0 || row.emptyDisplays > 0);
+          const requested = isRequested(row);
           return (
             <tr key={p.id} className="group">
               <td className={`rounded-l-lg py-1 pr-2 align-middle leading-snug transition-colors lg:group-hover:bg-stone-50 ${

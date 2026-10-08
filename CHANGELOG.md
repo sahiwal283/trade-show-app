@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.31.2] - 2026-10-08 - Printable sample pull sheet
+
+### Added
+- **Print form** on the sample request, for the sample puller (and admins, coordinators and developers). It prints the request as it stands on one letter page: show name, venue and dates, who submitted and last edited it, totals, every product and supply with its quantities and notes, a tick box beside each requested line, and sign-off lines (pulled by, checked by, boxes, received at show). The page is meant to travel with the box.
+- The sheet says so when the request is still a draft, was edited after its last submission, or the form is still open, so a list that can still change is not pulled as final.
+
+### Changed
+- **The sample puller's show list** now holds only shows that have not started yet, soonest first, and opens on the next upcoming show. Finished shows and shows already under way are left out (a live show the puller is attending stays, for their itinerary).
+- The My Checklist show switcher lists current and upcoming shows first, then past ones newest first, and labels each as "Name · Jun 27, 2026".
+- `GET /api/sample-requests/:eventId` (and the patch/submit responses) now also return `isPuller` and the show's name, venue and dates.
+
 ## [2.31.1] - 2026-10-08 - Sample request form polish
 
 ### Changed

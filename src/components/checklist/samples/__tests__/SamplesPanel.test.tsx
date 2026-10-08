@@ -81,6 +81,71 @@ describe('SamplesPanel', () => {
     expect(screen.queryByText('All changes saved')).not.toBeInTheDocument();
   });
 
+  describe('print form', () => {
+    const printBtn = () => screen.queryByRole('button', { name: 'Print form' });
+    const sheet = () => document.body.querySelector('.sample-print-sheet');
+
+    it('is offered to the puller and to override roles, not to other attendees', () => {
+      const { unmount } = render(<SamplesPanel eventId="ev-1" userId="rep" role="salesperson" />);
+      expect(printBtn()).not.toBeInTheDocument();
+      unmount();
+      hook.view.isPuller = true;
+      const second = render(<SamplesPanel eventId="ev-1" userId="puller" role="salesperson" />);
+      expect(printBtn()).toBeInTheDocument();
+      second.unmount();
+      hook.view.isPuller = false;
+      render(<SamplesPanel eventId="ev-1" userId="admin" role="admin" />);
+      expect(printBtn()).toBeInTheDocument();
+    });
+
+    it('stays available to the puller after the form has closed', () => {
+      hook.view.isPuller = true; hook.view.canEdit = false; hook.canEdit = false; hook.closed = true;
+      hook.view.window = { opensAt: null, closesAt: '2020-01-01T05:00:00Z', isOpen: false };
+      render(<SamplesPanel eventId="ev-1" userId="puller" role="salesperson" />);
+      expect(printBtn()).toBeInTheDocument();
+    });
+
+    it('prints the request as it stands: show, status, every product, quantities, notes and tick boxes for requested lines', () => {
+      hook.view.isPuller = true;
+      hook.view.event = { name: 'MJBizCon', venue: 'LVCC', city: 'Las Vegas', state: 'NV', showStartDate: '2026-12-01', showEndDate: '2026-12-03' };
+      hook.view.request = { ...hook.view.request, status: 'submitted', submittedAt: '2026-10-14T15:00:00Z', submittedBy: { id: 'u', name: 'Rita' }, lastEditedAt: '2026-10-14T14:00:00Z', lastEditedBy: { id: 'u', name: 'Rita' } };
+      hook.items = new Map([['p-1', { productId: 'p-1', singles: 24, displays: 2, emptyDisplays: 0 }]]);
+      hook.materials = new Map([['m-1', { materialId: 'm-1', qty: 3, notes: '2 large' }]]);
+      let captured = '';
+      const print = vi.fn(() => { captured = sheet()?.textContent ?? ''; expect(document.body.classList.contains('printing-sample-sheet')).toBe(true); });
+      vi.stubGlobal('print', print);
+      render(<SamplesPanel eventId="ev-1" userId="puller" role="salesperson" />);
+      expect(sheet()).toBeNull();
+
+      fireEvent.click(printBtn()!);
+      expect(print).toHaveBeenCalledTimes(1);
+      for (const text of ['MJBizCon', 'LVCC · Las Vegas, NV', 'Dec 1, 2026 – Dec 3, 2026', 'Submitted by Rita', 'Mango', 'Blue Razz', 'Banner', '2 large', '1 product · 24 singles · 2 displays · 0 empty displays', 'Pulled by']) {
+        expect(captured).toContain(text);
+      }
+      const mangoRow = [...sheet()!.querySelectorAll('tr')].find((r) => r.textContent?.startsWith('Mango'))!;
+      expect([...mangoRow.querySelectorAll('td')].map((c) => c.textContent)).toEqual(['Mango', '24', '2', '', '']);
+      expect(mangoRow.querySelector('td:last-child span')).not.toBeNull();        // a box to tick
+      const blueRow = [...sheet()!.querySelectorAll('tr')].find((r) => r.textContent?.startsWith('Blue Razz'))!;
+      expect(blueRow.querySelector('td:last-child span')).toBeNull();             // nothing requested, nothing to tick
+
+      fireEvent(window, new Event('afterprint'));
+      expect(sheet()).toBeNull();
+      expect(document.body.classList.contains('printing-sample-sheet')).toBe(false);
+      vi.unstubAllGlobals();
+    });
+
+    it('marks a draft on the sheet so an unsubmitted list is not pulled by mistake', () => {
+      hook.view.isPuller = true;
+      let captured = '';
+      vi.stubGlobal('print', vi.fn(() => { captured = sheet()?.textContent ?? ''; }));
+      render(<SamplesPanel eventId="ev-1" userId="puller" role="salesperson" />);
+      fireEvent.click(printBtn()!);
+      expect(captured).toContain('DRAFT: this request has not been submitted');
+      fireEvent(window, new Event('afterprint'));
+      vi.unstubAllGlobals();
+    });
+  });
+
   it('is view-only for someone who cannot edit while the window is open', () => {
     hook.view.canEdit = false; hook.canEdit = false; hook.canSubmit = false;
     render(<SamplesPanel eventId="ev-1" userId="puller" role="salesperson" />);

@@ -23,7 +23,9 @@ export interface EventSampleRequest {
   lastEditedAt: string | null; lastEditedBy: UserRef | null;
   items: SampleRequestItem[]; materials: SampleRequestMaterial[];
 }
-export interface EventSampleRequestView { request: EventSampleRequest; window: SampleWindow; canEdit: boolean }
+/** Show details for the printed pull sheet. Dates are YYYY-MM-DD. Optional: an older backend omits them. */
+export interface SampleEventInfo { name: string; venue: string | null; city: string | null; state: string | null; showStartDate: string | null; showEndDate: string | null }
+export interface EventSampleRequestView { request: EventSampleRequest; window: SampleWindow; canEdit: boolean; isPuller?: boolean; event?: SampleEventInfo }
 export interface SampleRequestItemPatch { productId: string; singles?: number; displays?: number; emptyDisplays?: number }
 export interface SampleRequestMaterialPatch { materialId: string; qty?: number; notes?: string | null }
 /** Only the fields the client changed, per row. The server merges them into the current row. */

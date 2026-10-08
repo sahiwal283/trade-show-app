@@ -5,11 +5,13 @@
  * field-level; a puller off the roster sees it read-only. History below.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Package, AlertCircle, WifiOff, Clock, Lock, Eye, Check, Loader2, RefreshCw, CircleDashed } from 'lucide-react';
+import { flushSync } from 'react-dom';
+import { Package, AlertCircle, WifiOff, Clock, Lock, Eye, Check, Loader2, RefreshCw, CircleDashed, Printer } from 'lucide-react';
 import { SAMPLE_BRAND_LABELS, SAMPLE_BRAND_ORDER } from '../../../utils/sampleRequestApi';
 import { useEventSampleRequest } from './useEventSampleRequest';
 import { ProductTable } from './ProductTable';
-import type { ProductGroup } from './ProductTable';
+import { brandGroups, visibleMaterials, isRequested } from './sampleGroups';
+import { SamplePrintSheet, printSampleSheet } from './SamplePrintSheet';
 import { MaterialsTable } from './MaterialsTable';
 import { SampleHistory } from './SampleHistory';
 import { formatCountdown, isUrgent, formatCloseDate, formatRelative, formatShortDate } from './sampleRequestText';
@@ -74,6 +76,9 @@ const Skeleton: React.FC = () => (
 export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusChange }) => {
   const s = useEventSampleRequest({ eventId, userId, role });
   const [now, setNow] = useState(() => new Date());
+  // The pull sheet is mounted only for the duration of a print, so it is in the DOM before the dialog opens.
+  const [printing, setPrinting] = useState(false);
+  const handlePrint = () => { flushSync(() => setPrinting(true)); printSampleSheet(() => setPrinting(false)); };
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 60_000); return () => clearInterval(t); }, []);
 
   const req = s.view?.request ?? null;
@@ -131,11 +136,13 @@ export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusC
 
   // What is on the request right now, for the summary strip and the per-section counts.
   const itemRows = [...s.items.values()];
-  const requestedIds = new Set(itemRows.filter((i) => i.singles > 0 || i.displays > 0 || i.emptyDisplays > 0).map((i) => i.productId));
+  const requestedIds = new Set(itemRows.filter(isRequested).map((i) => i.productId));
   const totals = itemRows.reduce((t, i) => ({ singles: t.singles + i.singles, displays: t.displays + i.displays, empty: t.empty + i.emptyDisplays }),
     { singles: 0, displays: 0, empty: 0 });
   const suppliesRequested = [...s.materials.values()].filter((m) => m.qty > 0).length;
   const urgent = !!closesAt && isUrgent(closesAt, now);
+  // The paper pull sheet is for whoever fulfils the order: the configured puller, and the roles that run the show.
+  const canPrint = s.status === 'ready' && !!catalog && !!req && (s.view?.isPuller === true || isOverride);
 
   return (
     <section aria-label="Sample request" className="p-4 md:p-6">
@@ -157,13 +164,23 @@ export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusC
             {statusLine && <p className="mt-1 text-xs text-stone-500">{statusLine}</p>}
           </div>
         </div>
-        {req && closesAt && !closed && (
-          <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 ${urgent ? 'border-red-200 bg-red-50' : 'border-stone-200 bg-stone-50'}`}>
-            <Clock aria-hidden="true" className={`h-4 w-4 shrink-0 ${urgent ? 'text-red-600' : 'text-stone-500'}`} />
-            <div className="leading-tight">
-              <p className={`text-sm font-semibold tabular-nums ${urgent ? 'text-red-700' : 'text-stone-900'}`}>Closes in {formatCountdown(closesAt, now)}</p>
-              <p className={`text-xs ${urgent ? 'text-red-700' : 'text-stone-500'}`}>{formatCloseDate(closesAt)}</p>
-            </div>
+        {req && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            {closesAt && !closed && (
+              <div className={`flex items-center gap-2.5 rounded-xl border px-3 py-2 ${urgent ? 'border-red-200 bg-red-50' : 'border-stone-200 bg-stone-50'}`}>
+                <Clock aria-hidden="true" className={`h-4 w-4 shrink-0 ${urgent ? 'text-red-600' : 'text-stone-500'}`} />
+                <div className="leading-tight">
+                  <p className={`text-sm font-semibold tabular-nums ${urgent ? 'text-red-700' : 'text-stone-900'}`}>Closes in {formatCountdown(closesAt, now)}</p>
+                  <p className={`text-xs ${urgent ? 'text-red-700' : 'text-stone-500'}`}>{formatCloseDate(closesAt)}</p>
+                </div>
+              </div>
+            )}
+            {canPrint && (
+              <button type="button" onClick={handlePrint} className="btn-secondary">
+                <Printer aria-hidden="true" className="h-4 w-4" />
+                Print form
+              </button>
+            )}
           </div>
         )}
       </header>
@@ -218,17 +235,7 @@ export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusC
           {/* Two columns at lg: brand one with supplies beneath it, brand two alongside. One column, in reading order, below that. */}
           <div className="grid gap-x-10 gap-y-8 lg:grid-cols-2 lg:grid-rows-[auto_1fr]">
             {SAMPLE_BRAND_ORDER.map((brand, idx) => {
-              const onRequest = (lineId: string) => catalog.products.some((p) => p.product_line_id === lineId && s.items.has(p.id));
-              const groups: ProductGroup[] = catalog.lines
-                .filter((l) => l.brand === brand && (l.is_active || onRequest(l.id)))
-                .sort((a, b) => a.position - b.position)
-                .map((line) => ({
-                  line,
-                  products: catalog.products
-                    .filter((p) => p.product_line_id === line.id && ((p.is_active && line.is_active) || s.items.has(p.id)))
-                    .sort((a, b) => a.position - b.position),
-                }))
-                .filter((g) => g.products.length > 0);
+              const groups = brandGroups(catalog, s.items, brand);
               const count = groups.reduce((n, g) => n + g.products.filter((p) => requestedIds.has(p.id)).length, 0);
               return (
                 <div key={brand} className={idx === 0 ? 'lg:col-start-1 lg:row-start-1' : 'lg:col-start-2 lg:row-span-2 lg:row-start-1'}>
@@ -241,7 +248,7 @@ export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusC
             <div className="lg:col-start-1 lg:row-start-2">
               <SectionHeader title="Marketing &amp; booth supplies" count={suppliesRequested} noun="item" />
               <MaterialsTable
-                materials={catalog.materials.filter((m) => m.is_active || s.materials.has(m.id)).sort((a, b) => a.position - b.position)}
+                materials={visibleMaterials(catalog, s.materials)}
                 values={s.materials} disabled={!canEdit} onChange={s.setMaterial} />
             </div>
           </div>
@@ -258,6 +265,10 @@ export const SamplesPanel: React.FC<Props> = ({ eventId, userId, role, onStatusC
           )}
 
           <SampleHistory eventId={eventId} refreshKey={req?.lastEditedAt ?? null} />
+          {printing && canPrint && req && (
+            <SamplePrintSheet catalog={catalog} request={req} event={s.view?.event} items={s.items} materials={s.materials}
+              openUntil={closed ? null : closesAt} />
+          )}
         </>
       )}
       </div>
