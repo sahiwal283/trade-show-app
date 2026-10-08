@@ -4,6 +4,9 @@
  */
 
 import { TokenManager, apiClient } from './apiClient';
+import type {
+  Overview, ApiAnalytics, Usage, SessionsPayload, AuditLogPage, AuditFilters, TimeRange,
+} from '../components/developer/DevDashboard/types';
 
 const USE_SERVER = (import.meta.env.VITE_USE_SERVER || 'true') === 'true';
 
@@ -389,6 +392,22 @@ export const api = {
     getPageAnalytics: (timeRange?: string) => apiClient.get('/dev-dashboard/page-analytics', { params: { timeRange } }),
     getSummary: () => apiClient.get('/dev-dashboard/summary'),
     getOcrMetrics: () => apiClient.get('/dev-dashboard/ocr-metrics'),
+    getOverview: () => apiClient.get<Overview>('/dev-dashboard/overview'),
+    getApiAnalyticsV2: (timeRange: TimeRange) =>
+      apiClient.get<ApiAnalytics>('/dev-dashboard/api-analytics', { params: { timeRange } }),
+    getUsage: (timeRange: TimeRange) => apiClient.get<Usage>('/dev-dashboard/usage', { params: { timeRange } }),
+    getSessionsV2: () => apiClient.get<SessionsPayload>('/dev-dashboard/sessions'),
+    getAuditLogPage: (filters: AuditFilters) => {
+      // Empty filters are left off the query string rather than sent as "".
+      const params: Record<string, string | number> = {
+        timeRange: filters.timeRange, limit: filters.limit, offset: filters.offset,
+      };
+      if (filters.user) params.user = filters.user;
+      if (filters.method) params.method = filters.method;
+      if (filters.status) params.status = filters.status;
+      if (filters.search) params.search = filters.search;
+      return apiClient.get<AuditLogPage>('/dev-dashboard/audit-logs', { params });
+    },
   },
 
   // Checklist
