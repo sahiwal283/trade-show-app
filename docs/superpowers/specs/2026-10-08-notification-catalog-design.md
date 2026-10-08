@@ -123,6 +123,10 @@ Recipients are everyone on the event at the moment the reminder fires.
 - A window, not a deadline, is what stops late sends: an event created 10
   days out never enters the 30-day window and only gets the 7-day reminder.
 - Cancelled events are skipped by all event and expense reminders.
+- Day counts for event and expense reminders use the America/New_York
+  calendar day, and those reminders are held until 9:00 am Eastern on the
+  day they become due. Flight reminders are tied to the departure time and
+  are not gated.
 - Flight reminders go to the flight's attendee only, and now write a bell
   row and run whether or not push is configured.
 
@@ -134,8 +138,18 @@ Recipients are everyone on the event at the moment the reminder fires.
 | `booth.component_reported` | `BoothInventoryService.reportComponent` commits a `damage` or `missing` report | Users with role `admin` or `coordinator` | `booth-inventory` |
 | `badge.crm_failed` | A badge scan's CRM push fails for good: `crm_status = 'failed'` and `crm_attempts` has reached `MAX_CRM_ATTEMPTS` (including terminal failures, which jump straight there) | The scan's `scanned_by` user, if set | `badge-scans` |
 
-`badge.crm_failed` is sent once per scan. A manual retry that resets the scan
-and fails for good again notifies again.
+`badge.crm_failed` is sent once per scan. A manual retry or a re-scan that
+resets the scan and fails for good again notifies again.
+
+`admin.user_pending` is coalesced: a recipient who still has an unread
+`admin.user_pending` notification is not sent another, and the registrant's
+name and email are collapsed to one line and truncated (60 and 80
+characters). Registration is unauthenticated, so this notification must not
+be a way to push arbitrary text to admins.
+
+`booth.shipped` also fires when an existing shipment is edited from not
+shipped to shipped (`PUT /checklist/booth-shipping/:id`, added in this
+release because the frontend's mark-shipped toggle already called it).
 
 ## Architecture
 

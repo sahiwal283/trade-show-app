@@ -12,9 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Event notifications.** You are told when you are added to or removed from a show, when its dates, venue or city change (with the old and new value), and when it is cancelled.
 - **Booth notifications.** Everyone on a show is told when the booth is ordered, when it ships (with carrier and tracking number) and when the booth map is uploaded.
-- **Upcoming-show reminders** about 30 days and 7 days before travel starts.
-- **Submit-your-expenses reminders** the day after a show ends and again a week later, to everyone who attended.
-- **New user awaiting approval.** Admins and developers are told when someone registers or signs in with SSO for the first time and needs a role.
+- **Upcoming-show reminders** about 30 days and 7 days before travel starts, sent from 9:00 am Eastern on the day they are due.
+- **Submit-your-expenses reminders** the day after a show ends and again a week later, to everyone who attended, also from 9:00 am Eastern.
+- **New user awaiting approval.** Admins and developers are told when someone registers or signs in with SSO for the first time and needs a role. While that notification is unread, further sign-ups do not send another one; the Users tab lists everyone waiting.
 - **Booth component reported.** Admins and coordinators are told when a booth inventory piece is reported damaged or missing.
 - **Badge scan failed.** The person who scanned a badge is told when the lead could not be sent to Zoho CRM after every retry.
 
@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Flight check-in and departure reminders now appear in the bell** and no longer depend on push being configured.
 - Tapping a push notification while Argo is already open now takes you to the right page. Before, it only brought the window forward.
 - Whoever makes a change is no longer notified about their own change.
+
+### Fixed
+- **Marking an existing booth shipment as shipped now saves.** The toggle called a backend route that did not exist, so it failed silently; the route is added, and it is also what sends the "booth shipped" notification.
+- A badge that is re-scanned after its CRM push had failed for good now tells the scanner again if the retry also fails.
+- Web push requests time out after 10 seconds, so one stuck push can no longer hold up the badge-to-CRM lead worker or the reminder scheduler.
 
 ### Technical
 - New `backend/src/services/notifications/` catalog: one function per trigger. `ReminderScheduler` replaces `TravelReminderService`.
