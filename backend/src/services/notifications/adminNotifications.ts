@@ -2,6 +2,7 @@
  * Notifications about the app itself rather than a show: an account waiting
  * for a role, and a badge scan that could not reach the CRM.
  */
+import { query } from '../../config/database';
 import { usersWithRole, activeUsers } from './recipients';
 import type { ExhaustedScan } from '../../database/repositories/BadgeScanRepository';
 import { notifyMany } from './notifyMany';
@@ -9,16 +10,46 @@ import { textKey } from './values';
 
 export interface PendingUser { name: string; email?: string | null; via: 'registration' | 'sso' }
 
+const PENDING_NAME_MAX = 60;
+const PENDING_EMAIL_MAX = 80;
+
+/**
+ * Registration is unauthenticated, so the name and email are whatever a
+ * stranger typed: one line, no control characters, and a bounded length.
+ */
+function sanitise(value: string | null | undefined, max: number): string {
+  const clean = String(value ?? '').replace(/[\s\u0000-\u001f\u007f]+/g, ' ').trim();
+  return clean.length > max ? `${clean.slice(0, max)}…` : clean;
+}
+
+/**
+ * Whoever already has an unread "awaiting approval" notification is not sent
+ * another: a burst of registrations costs each admin one notification until
+ * they read it, and the Users tab lists everyone who is waiting anyway.
+ */
+async function withoutUnreadPending(recipients: string[]): Promise<string[]> {
+  const r = await query(
+    `SELECT DISTINCT user_id FROM notifications
+      WHERE user_id = ANY($1::uuid[]) AND kind = 'admin.user_pending' AND read_at IS NULL`,
+    [recipients]
+  );
+  const waiting = new Set(r.rows.map((row: { user_id: string }) => row.user_id));
+  return recipients.filter((id) => !waiting.has(id));
+}
+
 export const adminNotifications = {
   async userPending(user: PendingUser): Promise<void> {
-    const recipients = await usersWithRole(['admin', 'developer']);
+    const everyone = await usersWithRole(['admin', 'developer']);
+    if (everyone.length === 0) return;
+    const recipients = await withoutUnreadPending(everyone);
     if (recipients.length === 0) return;
-    const email = textKey(user.email);
+    const name = sanitise(user.name, PENDING_NAME_MAX) || 'Someone';
+    const email = sanitise(user.email, PENDING_EMAIL_MAX);
     const how = user.via === 'sso' ? 'signed in with SSO for the first time' : 'registered';
     await notifyMany(recipients, {
       kind: 'admin.user_pending',
       title: 'New user awaiting approval',
-      body: `${user.name}${email ? ` (${email})` : ''} ${how} and needs a role before they can use Argo.`,
+      body: `${name}${email ? ` (${email})` : ''} ${how} and needs a role before they can use Argo.`,
       link: { page: 'admin-users' },
     });
   },
