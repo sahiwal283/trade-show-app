@@ -453,13 +453,6 @@ router.post('/refresh', async (req, res) => {
         console.error('[Auth] Failed to update session on refresh:', sessionError);
       }
 
-      // Log token refresh
-      await logAuth('token_refresh', {
-        id: user.id,
-        username: user.username,
-        role: user.role
-      }, req.ip);
-
       console.log(`[Auth] Token refreshed for user: ${user.username}`);
 
       res.json({ token: newToken });

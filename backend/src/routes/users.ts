@@ -6,7 +6,7 @@
 import { Router, Response } from 'express';
 import bcrypt from 'bcrypt';
 import { authenticateToken, authorize, AuthRequest } from '../middleware/auth';
-import { userRepository, auditLogRepository } from '../database/repositories';
+import { userRepository } from '../database/repositories';
 
 const router = Router();
 
@@ -134,22 +134,6 @@ export const handleSetUserActive = async (req: AuthRequest, res: Response) => {
     }
 
     const user = await userRepository.setActive(id, isActive);
-
-    await auditLogRepository.create({
-      userId: req.user?.id,
-      userName: req.user?.username,
-      userRole: req.user?.role,
-      action: isActive ? 'user_activated' : 'user_deactivated',
-      entityType: 'user',
-      entityId: id,
-      ipAddress: req.ip,
-      requestMethod: req.method,
-      requestPath: req.originalUrl,
-      changes: { is_active: isActive, target_username: target.username },
-    }).catch((error) => {
-      // Audit is bookkeeping; never fail the state change on it.
-      console.error('Failed to write user activation audit log:', error);
-    });
 
     res.json(user);
   } catch (error: any) {

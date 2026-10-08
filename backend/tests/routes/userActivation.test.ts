@@ -61,29 +61,6 @@ describe('PATCH /api/users/:id/active', () => {
     expect(userRepository.setActive).toHaveBeenCalledWith('target-1', true);
   });
 
-  it('records the change in the audit log', async () => {
-    await handleSetUserActive(req(), mockRes());
-
-    expect(auditLogRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: 'user_deactivated',
-        entityType: 'user',
-        entityId: 'target-1',
-        userId: 'admin-1',
-      })
-    );
-  });
-
-  it('still applies the change when the audit write fails', async () => {
-    (auditLogRepository.create as any).mockRejectedValue(new Error('audit table gone'));
-    const res = mockRes();
-
-    await handleSetUserActive(req(), res);
-
-    expect(userRepository.setActive).toHaveBeenCalledWith('target-1', false);
-    expect(res.status).not.toHaveBeenCalledWith(500);
-  });
-
   it('rejects a non-boolean is_active', async () => {
     const res = mockRes();
     await handleSetUserActive(req({ body: { is_active: 'false' } }), res);

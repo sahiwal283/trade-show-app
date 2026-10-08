@@ -37,6 +37,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
+import { auditTrail } from './middleware/auditTrail';
 import { reminderScheduler } from './services/notifications';
 import { sampleRequestReminderService } from './services/sampleRequests/SampleRequestReminderService';
 import { midasEventScanner } from './services/midas/MidasEventScanner';
@@ -84,6 +85,7 @@ console.log('[Server] CORS configuration:', {
 app.use(express.json());
 app.use(requestLogger);
 app.use(apiRequestLogger); // Log all API requests for analytics
+app.use(auditTrail); // One audit_logs row per write under /api
 
 // Serve uploaded files
 app.use('/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));

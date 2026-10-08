@@ -52,51 +52,10 @@ export async function logAudit(entry: AuditLogEntry): Promise<void> {
 }
 
 /**
- * Express middleware to automatically log API requests
- */
-export function auditMiddleware(action: string, entityType?: string) {
-  return async (req: any, res: any, next: any) => {
-    // Store original send function
-    const originalSend = res.send;
-    
-    // Override send to capture response
-    res.send = function (data: any) {
-      // Determine status based on HTTP status code
-      let status: 'success' | 'failure' | 'warning' = 'success';
-      if (res.statusCode >= 400) {
-        status = res.statusCode >= 500 ? 'failure' : 'warning';
-      }
-      
-      // Log the audit event
-      logAudit({
-        userId: req.user?.id,
-        userName: req.user?.username,
-        userEmail: req.user?.email,
-        userRole: req.user?.role,
-        action,
-        entityType,
-        entityId: req.params?.id || req.body?.id,
-        status,
-        ipAddress: req.ip || req.connection.remoteAddress,
-        userAgent: req.headers['user-agent'],
-        requestMethod: req.method,
-        requestPath: req.originalUrl || req.url,
-        changes: req.body,
-      }).catch(err => console.error('Audit middleware error:', err));
-      
-      // Call original send
-      return originalSend.call(this, data);
-    };
-    
-    next();
-  };
-}
-
-/**
  * Log authentication events
  */
 export async function logAuth(
-  action: 'login_success' | 'login_failed' | 'logout' | 'token_refresh' | 'unauthorized_access',
+  action: 'login_success' | 'login_failed' | 'logout' | 'unauthorized_access',
   user: { id?: string; username?: string; email?: string; role?: string } | null,
   ipAddress?: string,
   errorMessage?: string
