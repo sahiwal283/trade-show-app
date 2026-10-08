@@ -40,4 +40,16 @@ describe('NotificationService.notify', () => {
     await notificationService.notify('u-1', { kind: 'x', title: 'T', body: 'B' });
     expect(pushService.sendToUser).toHaveBeenCalledWith('u-1', expect.objectContaining({ url: '/' }));
   });
+
+  it('passes the dedupe key to the repository as the event id', async () => {
+    await notificationService.notify('u-1', { kind: 'expense.approved', title: 'T', body: 'B', dedupeKey: 'evt-1' });
+    expect(notificationRepository.insert).toHaveBeenCalledWith(expect.objectContaining({ source_event_id: 'evt-1' }));
+  });
+
+  it('sends no push and returns null when the event was already stored', async () => {
+    vi.mocked(notificationRepository.insert).mockResolvedValueOnce(null as never);
+    const row = await notificationService.notify('u-1', { kind: 'expense.approved', title: 'T', body: 'B', dedupeKey: 'evt-1' });
+    expect(row).toBeNull();
+    expect(pushService.sendToUser).not.toHaveBeenCalled();
+  });
 });

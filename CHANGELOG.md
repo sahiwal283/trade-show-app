@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.33.0] - 2026-10-08 - Expense notifications from Midas
+
+### Added
+- **You are told what happened to your expense.** A notification in the bell, and a push, when your expense is approved, rejected (with the accountant's note), when more information is requested, when your reimbursement is paid, and when an expense you submitted is still missing a receipt, category or payment method.
+- **Messages and mentions from the accountant** now arrive in the same list, usually within seconds. Opening the expense's conversation clears them, and you can reply there as before.
+
+### Changed
+- **The bell is one list.** The separate "messages" section is gone; message notifications that were still unread are carried over.
+- **The "pending expenses" list in the bell is gone for everyone**, including admins, developers, coordinators and accountants. Accountants are told about expenses that need review in Midas (Midas v1.21.0).
+
+### Technical
+- Argo pulls Midas's event feed (`GET /ext/events`) with `MidasEventScanner`, which replaces `ExpenseMessageScanner`. Midas pings `POST /api/midas/events-ping` (HMAC-signed, env `MIDAS_EVENTS_PING_SECRET`) to trigger an immediate pull; the 2-minute timer remains as the fallback.
+- Migration `046_midas_event_notifications.sql`: `notifications.source_event_id` (unique) makes each event exactly-once; unread rows from `expense_message_notifications` are copied into `notifications`. The old table is left in place, unused.
+- Removed `GET /api/expense-messages/unread`. `POST /api/expenses/:id/messages/read` now clears the caller's conversation notifications for that expense.
+- A malformed feed event is skipped and logged; a failed notification write leaves the cursor in place and is retried. Text from Midas is clipped before it is stored or pushed.
+- An event that the database rejects as invalid data is skipped and logged, so it cannot block the feed.
+- Requires Midas v1.21.0 with events enabled for Argo's connection and the `events:read` permission.
+
 ## [2.32.0] - 2026-10-08 - Notifications for events, booths, travel and reminders
 
 ### Added

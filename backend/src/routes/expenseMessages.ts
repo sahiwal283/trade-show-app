@@ -1,6 +1,5 @@
 /**
- * Expense message thread routes. Mounted twice — under /api/expenses for the
- * thread itself and standalone for the unread feed the bell polls.
+ * Expense message thread routes, mounted under /api/expenses.
  */
 
 import { Router } from 'express';
@@ -95,21 +94,6 @@ router.post('/:id/messages/read', async (req: AuthRequest, res: Response) => {
     res.json({ updated });
   } catch (error) {
     fail(res, error);
-  }
-});
-
-export const unreadRouter = Router();
-
-unreadRouter.get('/unread', async (req: AuthRequest, res: Response) => {
-  // The bell polls this on every mount; an unconfigured deployment should get
-  // an empty list, not an error banner.
-  if (!isMessagingEnabled()) return res.json({ notifications: [] });
-  try {
-    const notifications = await expenseMessageService.unreadForUser(await actorFrom(req));
-    res.json({ notifications });
-  } catch (error) {
-    console.error('[ExpenseMessages] unread failed', error);
-    res.json({ notifications: [] });
   }
 });
 

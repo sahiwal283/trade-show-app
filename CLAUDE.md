@@ -105,6 +105,11 @@ Key service boundaries:
   ledger. Link → URL lives in `linkToUrl` and is mirrored by
   `src/utils/notificationLinks.ts`; both are asserted against
   `src/utils/__fixtures__/notificationLinks.json`.
+  `expenseNotifications` turns Midas feed events into notifications;
+  `services/midas/MidasEventScanner.ts` pulls `GET /ext/events` (cursor in
+  `midas_message_sync_state`, key `trade_show:events`) and
+  `routes/midasPing.ts` lets Midas trigger a pull. `notifications.source_event_id`
+  is the dedupe key, so a re-read page never notifies twice.
 
 ### Frontend (`src/`)
 

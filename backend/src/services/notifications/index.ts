@@ -19,3 +19,5 @@ export type { PendingUser } from './adminNotifications';
 export { ReminderScheduler, reminderScheduler } from './ReminderScheduler';
 export { REMINDER_DEFINITIONS } from './reminderDefinitions';
 export type { ReminderDefinition, DueRow } from './reminderDefinitions';
+
+export { expenseNotifications, CONVERSATION_KINDS } from './expenseNotifications';

@@ -25,6 +25,10 @@ const PAGE_TARGETS = new Map<string, NotificationTarget>([
 
 export function notificationTarget(link: AppNotification['link']): NotificationTarget {
   if (!link) return NOWHERE;
+  // One expense, by its id: ExpenseSubmission opens the modal for `#expense=<id>`.
+  if (link.page === 'expense') {
+    return link.expenseId ? { page: 'expenses', hash: `expense=${link.expenseId}` } : NOWHERE;
+  }
   const forEvent = EVENT_TARGETS.get(link.page);
   if (forEvent) return link.eventId ? forEvent(link.eventId) : NOWHERE;
   return PAGE_TARGETS.get(link.page) ?? NOWHERE;

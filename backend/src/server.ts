@@ -6,11 +6,12 @@ import { join } from 'path';
 import { initializeUploadDirectories } from './config/upload';
 import authRoutes from './routes/auth';
 import oidcRoutes from './routes/oidc';
+import midasPingRoutes from './routes/midasPing';
 import userRoutes from './routes/users';
 import roleRoutes from './routes/roles';
 import eventRoutes from './routes/events';
 import expenseRoutes from './routes/expenses';
-import expenseMessageRoutes, { unreadRouter as expenseMessageUnreadRoutes } from './routes/expenseMessages';
+import expenseMessageRoutes from './routes/expenseMessages';
 import settingsRoutes from './routes/settings';
 import picklistRoutes from './routes/picklists';
 import showSummariesRoutes from './routes/showSummaries';
@@ -41,7 +42,7 @@ import { sessionTracker } from './middleware/sessionTracker';
 import { apiRequestLogger } from './middleware/apiRequestLogger';
 import { reminderScheduler } from './services/notifications';
 import { sampleRequestReminderService } from './services/sampleRequests/SampleRequestReminderService';
-import { expenseMessageScanner } from './services/ExpenseMessageScanner';
+import { midasEventScanner } from './services/midas/MidasEventScanner';
 import { zohoCrmLeadsService } from './services/ZohoCrmLeadsService';
 import { leadConversionService } from './services/LeadConversionService';
 import { badgeCrmPushService } from './services/badge/BadgeCrmPushService';
@@ -95,6 +96,9 @@ app.use('/api/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/oidc', oidcRoutes);
 
+// Server-to-server ping from Midas (signed; no session). See routes/midasPing.ts.
+app.use('/api/midas', midasPingRoutes);
+
 // Authenticated routes with session tracking
 // Session tracking updates last_activity on every API request for real-time monitoring
 app.use('/api/users', authenticateToken, sessionTracker, userRoutes);
@@ -102,7 +106,6 @@ app.use('/api/roles', authenticateToken, sessionTracker, roleRoutes);
 app.use('/api/events', authenticateToken, sessionTracker, eventRoutes);
 app.use('/api/expenses', authenticateToken, sessionTracker, expenseRoutes);
 app.use('/api/expenses', authenticateToken, sessionTracker, expenseMessageRoutes);
-app.use('/api/expense-messages', authenticateToken, sessionTracker, expenseMessageUnreadRoutes);
 app.use('/api/settings', authenticateToken, sessionTracker, settingsRoutes);
 app.use('/api/picklists', authenticateToken, sessionTracker, picklistRoutes);
 app.use('/api/show-summaries', sessionTracker, showSummariesRoutes);
@@ -232,9 +235,10 @@ const startServer = () => {
     // Sample request closing reminders (bell + push; runs even without push)
     sampleRequestReminderService.start();
 
-    // Poll Midas for new expense messages and notify owners (idles unless
-    // EXPENSE_MESSAGING_ENABLED=true)
-    expenseMessageScanner.start();
+    // Pull Midas's event feed and notify expense owners (idles unless
+    // EXPENSE_MESSAGING_ENABLED=true); Midas pings /api/midas/events-ping to
+    // make this immediate
+    midasEventScanner.start();
 
     // Zoho CRM lead sync — daily; idles until ZOHO_CRM_REFRESH_TOKEN is set
     zohoCrmLeadsService.startScheduler();

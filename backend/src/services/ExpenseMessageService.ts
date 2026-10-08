@@ -15,7 +15,8 @@
 
 import { getMidasClient, getExpenseBackend, getMidasMode } from './midas';
 import { getExpenseStore } from './expenseStore';
-import { markThreadRead, listUnread } from '../database/repositories/ExpenseMessageNotificationRepository';
+import { notificationRepository } from '../database/repositories/NotificationRepository';
+import { CONVERSATION_KINDS } from './notifications/expenseNotifications';
 import type { ExpenseActor } from './expenseStore/ExpenseStore';
 import type { MidasMessageDto } from './midas/MidasTypes';
 
@@ -104,13 +105,14 @@ export class ExpenseMessageService {
     );
   }
 
+  /**
+   * The user opened this expense's conversation: clear their message,
+   * mention and info-request notifications for it. Scoped to the caller's
+   * own notifications, so it needs no access check against the expense and
+   * no call to Midas.
+   */
   async markRead(expenseId: string, actor: ExpenseActor): Promise<number> {
-    const midasId = await this.resolveMidasId(expenseId, actor);
-    return markThreadRead(actor.id, midasId);
-  }
-
-  async unreadForUser(actor: ExpenseActor) {
-    return listUnread(actor.id);
+    return notificationRepository.markReadForExpense(actor.id, expenseId, CONVERSATION_KINDS);
   }
 }
 

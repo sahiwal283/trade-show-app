@@ -7,6 +7,8 @@ import { pushService } from './PushService';
 
 export interface NotifyInput {
   kind: string; title: string; body: string; link?: NotificationLink | null;
+  /** Id of the external event this stands for; a second notify with the same key is a no-op. */
+  dedupeKey?: string;
 }
 
 /** Links that need an event id. Mirrored by src/utils/notificationLinks.ts. */
@@ -29,16 +31,21 @@ const PAGE_LINKS = new Map<string, string>([
  */
 export function linkToUrl(link: NotificationLink | null | undefined): string {
   if (!link) return '/';
+  // One expense, by Argo's own id: the hash ExpenseSubmission opens the modal for.
+  if (link.page === 'expense') return link.expenseId ? `/#expense=${link.expenseId}` : '/';
   const forEvent = EVENT_LINKS.get(link.page);
   if (forEvent) return link.eventId ? forEvent(link.eventId) : '/';
   return PAGE_LINKS.get(link.page) ?? '/';
 }
 
 class NotificationService {
-  async notify(userId: string, input: NotifyInput): Promise<NotificationRow> {
+  /** Null means this event was already delivered (see dedupeKey): nothing was written or pushed. */
+  async notify(userId: string, input: NotifyInput): Promise<NotificationRow | null> {
     const row = await notificationRepository.insert({
       user_id: userId, kind: input.kind, title: input.title, body: input.body, link: input.link ?? null,
+      source_event_id: input.dedupeKey ?? null,
     });
+    if (!row) return null;
     try {
       await pushService.sendToUser(userId, { title: input.title, body: input.body, url: linkToUrl(input.link) });
     } catch (error) {

@@ -363,6 +363,37 @@ export interface MidasMessageFeedResult {
   nextCursor: string | null;
 }
 
+/** A row from Ext GET /events: something Midas would have told the submitter, handed to us instead. */
+export interface MidasFeedEvent {
+  seq: number;
+  /** Stable and unique; the dedupe key for the notification we write. */
+  id: string;
+  /** approved | rejected | action_required | message | mention | reimbursement_paid | expense_incomplete (others must be ignored). */
+  type: string;
+  createdAt: string;
+  /** Our own user id for the submitter. */
+  externalUserId: string;
+  expense: {
+    id: string;
+    /** Our own expense id. */
+    sourceRefId: string | null;
+    merchant: string;
+    amount: string | number;
+    status: string;
+  };
+  senderName?: string;
+  excerpt?: string;
+  messageId?: string;
+  requestType?: string;
+  note?: string;
+  missing?: string[];
+}
+
+export interface MidasEventFeedResult {
+  events: MidasFeedEvent[];
+  nextCursor: string | null;
+}
+
 export interface MidasPostMessageInput {
   body: string;
   requestType?: string | null;

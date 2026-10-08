@@ -1,8 +1,6 @@
 import React from 'react';
 import { Bell, Search, LogOut, Menu } from 'lucide-react';
-import { User, Expense } from '../../App';
-import { api } from '../../utils/api';
-import { apiClient } from '../../utils/apiClient';
+import { User } from '../../App';
 import { notificationsApi, AppNotification } from '../../utils/notificationsApi';
 import { notificationTarget } from '../../utils/notificationLinks';
 import { useEscapeKey } from '../../hooks/useEscapeKey';
@@ -18,63 +16,9 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMenu, onNavigate }) => {
   const [showNotifications, setShowNotifications] = React.useState(false);
-  const [hasViewedNotifications, setHasViewedNotifications] = React.useState(false);
-  
-  // Check for unread notifications
-  const [notifications, setNotifications] = React.useState<any[]>([]);
-  const [previousNotificationCount, setPreviousNotificationCount] = React.useState(0);
-  const [unreadMessages, setUnreadMessages] = React.useState<any[]>([]);
 
-  React.useEffect(() => {
-    (async () => {
-      if (api.USE_SERVER) {
-        try {
-          const ex = await api.getExpenses();
-          const pending = (ex || []).filter((e: Expense) => e.status === 'pending' && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator'));
-          setNotifications(pending);
-          
-          // Reset viewed flag if new notifications arrive
-          if (pending.length > previousNotificationCount) {
-            setHasViewedNotifications(false);
-          }
-          setPreviousNotificationCount(pending.length);
-        } catch {
-          setNotifications([]);
-        }
-      } else {
-        const expenses = JSON.parse(localStorage.getItem('tradeshow_expenses') || '[]');
-        const pendingExpenses = expenses.filter((e: Expense) => e.status === 'pending' && (user.role === 'admin' || user.role === 'developer' || user.role === 'accountant' || user.role === 'coordinator'));
-        setNotifications(pendingExpenses);
-        
-        // Reset viewed flag if new notifications arrive
-        if (pendingExpenses.length > previousNotificationCount) {
-          setHasViewedNotifications(false);
-        }
-        setPreviousNotificationCount(pendingExpenses.length);
-      }
-    })();
-  }, [user.role, previousNotificationCount]);
-
-  // Message notifications are real rows with persisted read state, unlike the
-  // derived pending-expense list above. Salespeople see the bell for the first
-  // time because of this.
-  React.useEffect(() => {
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await apiClient.get<{ notifications: any[] }>('/expense-messages/unread');
-        if (!cancelled) setUnreadMessages(res.notifications || []);
-      } catch {
-        if (!cancelled) setUnreadMessages([]);
-      }
-    };
-    void load();
-    const timer = setInterval(load, 60_000);
-    return () => { cancelled = true; clearInterval(timer); };
-  }, []);
-
-  // General notifications table (e.g. sample request open/closing). Same
-  // polling pattern as the message rows above.
+  // General notifications table (sample requests, expense events from
+  // Midas, ...), polled every minute.
   const [appNotifications, setAppNotifications] = React.useState<AppNotification[]>([]);
   React.useEffect(() => {
     let cancelled = false;
@@ -109,15 +53,10 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
   // Escape closes the notifications panel
   useEscapeKey(() => setShowNotifications(false), showNotifications);
 
-  const hasUnreadNotifications =
-    appNotifications.length > 0 || unreadMessages.length > 0 || (notifications.length > 0 && !hasViewedNotifications);
+  const hasUnreadNotifications = appNotifications.length > 0;
 
   const handleNotificationClick = () => {
     setShowNotifications(!showNotifications);
-    if (!showNotifications) {
-      // Mark as viewed when opening the panel
-      setHasViewedNotifications(true);
-    }
   };
 
   // z-40 keeps the header (and its overflowing notification panel) above
@@ -189,24 +128,25 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
                     the bell (header z-40 keeps this above the dashboard hero).
                     Avoid fixed here — header backdrop-blur makes fixed
                     descendants position against the header, not the viewport. */}
-                <div className="fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-50 max-h-[min(24rem,calc(100vh-5rem))] overflow-hidden rounded-card bg-white shadow-elevation-3 ring-1 ring-stone-900/5 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
-                  <div className="px-4 py-3 border-b border-stone-100 flex items-center justify-between">
+                <div className="fixed inset-x-3 top-[calc(3.75rem+env(safe-area-inset-top))] z-50 flex flex-col max-h-[min(24rem,calc(100vh-5rem))] overflow-hidden rounded-card bg-white shadow-elevation-3 ring-1 ring-stone-900/5 sm:absolute sm:inset-x-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
+                  <div className="px-4 py-3 border-b border-stone-100">
                     <h3 className="font-display font-semibold tracking-tight text-stone-900">Notifications</h3>
-                    {notifications.length > 0 && (
-                      <span className="chip px-2 py-0.5 text-[11px] bg-amber-50 text-amber-800 ring-amber-200/70">
-                        <span className="chip-dot bg-amber-500" />
-                        {notifications.length} pending
-                      </span>
-                    )}
                   </div>
                   {appNotifications.length > 0 && (
-                    <div className="border-b border-stone-100">
-                      <div className="flex items-center justify-end px-4 pt-2">
-                        <button type="button" onClick={markAllAppRead} className="text-[11px] font-semibold text-brand-700 hover:underline">
-                          Mark all read
-                        </button>
+                    <div className="flex items-center justify-end border-b border-stone-100 px-4 py-1.5">
+                      <button type="button" onClick={markAllAppRead} className="text-[11px] font-semibold text-brand-700 hover:underline">
+                        Mark all read
+                      </button>
+                    </div>
+                  )}
+                  <div data-testid="notifications-scroll" className="min-h-0 flex-1 max-h-96 overflow-y-auto">
+                    {appNotifications.length === 0 ? (
+                      <div className="px-4 py-10 text-center">
+                        <p className="text-sm font-medium text-stone-600">You're all caught up!</p>
+                        <p className="text-xs text-stone-400 mt-1">No new notifications</p>
                       </div>
-                      {appNotifications.map((n) => (
+                    ) : (
+                      appNotifications.map((n) => (
                         <button
                           key={n.id}
                           type="button"
@@ -217,73 +157,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, onToggleMobileMe
                           <p className="mt-0.5 line-clamp-2 text-sm text-stone-600">{n.body}</p>
                           <p className="mt-1 text-[11px] text-stone-400">{new Date(n.created_at).toLocaleString()}</p>
                         </button>
-                      ))}
-                    </div>
-                  )}
-                  {unreadMessages.length > 0 && (
-                    <div className="border-b border-stone-100">
-                      {unreadMessages.map((n) => (
-                        <button
-                          key={n.id}
-                          type="button"
-                          onClick={() => {
-                            setShowNotifications(false);
-                            // Same deep link the push notification uses (Task 11).
-                            // expense_ref_id is the expense's PUBLIC id; without
-                            // it there is nothing that could resolve, so land on
-                            // Expenses without a hash rather than one the
-                            // #expense= handler will just clear and ignore.
-                            if (n.expense_ref_id) {
-                              window.location.hash = `expense=${n.expense_ref_id}`;
-                            }
-                            onNavigate?.('expenses');
-                          }}
-                          className="block w-full px-4 py-3 text-left hover:bg-stone-50"
-                        >
-                          <p className="text-sm font-semibold text-stone-900">
-                            {n.request_type ? 'Action required' : 'New message'} · {n.sender_name}
-                          </p>
-                          <p className="mt-0.5 line-clamp-2 text-sm text-stone-600">
-                            {n.body_snippet}
-                          </p>
-                          <p className="mt-1 text-[11px] text-stone-400">
-                            {new Date(n.message_created_at).toLocaleString()}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.length > 0 ? (
-                      notifications.map((expense: Expense, index: number) => (
-                        <button
-                          key={index}
-                          onClick={() => {
-                            setShowNotifications(false);
-                            // Land on Expenses pre-filtered to pending approvals
-                            window.location.hash = 'status=pending';
-                            onNavigate?.('expenses');
-                          }}
-                          className="block w-full px-4 py-3 text-left transition-colors hover:bg-stone-50 focus-visible:bg-stone-50 border-b border-stone-50"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="min-w-0 flex-1 text-sm font-medium text-stone-900 truncate">
-                              {expense.merchant}
-                            </p>
-                            <p className="shrink-0 text-sm font-semibold tabular-nums text-stone-900">
-                              ${expense.amount}
-                            </p>
-                          </div>
-                          <p className="mt-0.5 truncate text-xs text-stone-500">
-                            Pending expense approval · tap to review
-                          </p>
-                        </button>
                       ))
-                    ) : (
-                      <div className="px-4 py-10 text-center">
-                        <p className="text-sm font-medium text-stone-600">You're all caught up!</p>
-                        <p className="text-xs text-stone-400 mt-1">No new notifications</p>
-                      </div>
                     )}
                   </div>
                 </div>

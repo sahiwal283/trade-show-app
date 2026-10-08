@@ -54,7 +54,7 @@ Key service boundaries (`backend/src/services/`):
 - **`services/midas/`** (`MidasClient.ts`, `MockMidasClient.ts`, `statusMaps.ts`, `paymentMethodMap.ts`) — typed client for the external Midas API, plus the `EXPENSE_BACKEND` / `MIDAS_MODE` / `PICKLIST_SOURCE` env resolution used across the rest of the backend.
 - **`services/expenseStore/`** — `ExpenseStore` is the interface that lets the rest of the backend read/write expenses without knowing which system of record is active; `LocalExpenseStore` and `MidasExpenseStore` implement it, `DualExpenseStore` fans out to both during migration, and `getExpenseStore()` picks one per `EXPENSE_BACKEND`. The local `expenses` table is frozen (no longer written) once a deployment cuts over to Midas.
 - **`services/picklists/PicklistService.ts`** — resolves category/card/entity picklists; `PICKLIST_SOURCE` (`auto` | `midas` | `settings`) decides the source, where `auto` means "Midas iff `EXPENSE_BACKEND=midas`".
-- **`ExpenseMessageScanner.ts`** — a pull-based poller, because Midas has no outbound webhook infrastructure. It polls for new expense messages and turns them into in-app notifications; delivery is at-least-once, collapsed to effectively-once by a unique constraint on the Midas message id.
+- **`midas/MidasEventScanner.ts`** — pulls Midas's event feed (`GET /ext/events`), ordered by sequence number. The scanner's cursor is the sequence number of the last event it delivered. Midas hands every submitter-facing notification on an Argo expense to Argo instead of delivering it itself; each event becomes one notification through `notifications/expenseNotifications.ts`. Delivery is at-least-once from the feed and exactly-once in the bell, because the event id is a unique key on the notification row. Midas also pings `/api/midas/events-ping` (signed) so the pull happens at once; the 2-minute timer covers a lost ping.
 - **`AuthentikOidcService.ts`** — OIDC login against Authentik; env-gated (dormant unless all four `AUTHENTIK_*`/`OIDC_REDIRECT_URI` vars are set), which doubles as the rollback switch.
 - **`services/booth/`** (`BoothInventoryService.ts`, `BoothManifestService.ts`, `BoothMovementService.ts`, `BoothPackingService.ts`) — booth catalog, storage/manifest tracking, and the packing checklist, including idempotent replay of movement events keyed by a derived idempotency key.
 - **`PushService.ts`** — Web Push notifications (VAPID); reports disabled and no-ops silently when VAPID keys are absent, so push is optional infrastructure everywhere it's called.
@@ -71,7 +71,7 @@ sequenceDiagram
     participant ES as ExpenseStore (Midas)
     participant Midas as Midas
     participant Acct as Accountant (in Midas)
-    participant Scan as ExpenseMessageScanner
+    participant Scan as MidasEventScanner
     participant Push as PushService
 
     U->>FE: Upload receipt, fill form
@@ -88,8 +88,8 @@ sequenceDiagram
 
     Acct->>Midas: Review expense, post message to thread
     loop every MIDAS_MESSAGE_SCAN_INTERVAL_MS
-        Scan->>Midas: poll for new messages
-        Midas-->>Scan: message batch
+        Scan->>Midas: GET /ext/events?since=<seq>
+        Midas-->>Scan: event batch
         Scan->>Scan: persist notifications, advance cursor
         Scan->>Push: notify submitter
     end
@@ -219,6 +219,7 @@ about, one function each:
 | `boothNotifications.ts` | booth ordered, shipped, map uploaded, component reported |
 | `travelNotifications.ts` | flight, hotel and car rental booked, changed, cancelled, reassigned |
 | `adminNotifications.ts` | new user awaiting approval, badge scan failed to reach the CRM |
+| `expenseNotifications.ts` | approved, rejected, info requested, message, mention, reimbursement paid, missing details (from Midas events) |
 | `reminderDefinitions.ts` | show in 30 / 7 days, expenses 1 / 7 days after, flight check-in and departure |
 
 Rules: every trigger goes through `notificationService.notify()` (one bell
@@ -240,5 +241,4 @@ for bell taps). `src/utils/__fixtures__/notificationLinks.json` is asserted
 by both. A push tapped while the app is open reaches `App.tsx` as a
 `notification-click` message from `public/push-sw.js`.
 
-The pending-expense bell and the expense-message bell are separate and are
-replaced by the Midas expense notifications spec.
+The bell has one source: the `notifications` table.

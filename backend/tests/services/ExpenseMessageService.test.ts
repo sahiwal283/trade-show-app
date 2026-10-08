@@ -6,14 +6,13 @@ vi.mock('../../src/services/midas', () => ({
   getMidasMode: vi.fn(() => 'live'),
 }));
 vi.mock('../../src/services/expenseStore', () => ({ getExpenseStore: vi.fn() }));
-vi.mock('../../src/database/repositories/ExpenseMessageNotificationRepository', () => ({
-  markThreadRead: vi.fn().mockResolvedValue(1),
-  listUnread: vi.fn().mockResolvedValue([]),
+vi.mock('../../src/database/repositories/NotificationRepository', () => ({
+  notificationRepository: { markReadForExpense: vi.fn(async () => 3) },
 }));
 
 import { getMidasClient } from '../../src/services/midas';
 import { getExpenseStore } from '../../src/services/expenseStore';
-import { markThreadRead } from '../../src/database/repositories/ExpenseMessageNotificationRepository';
+import { notificationRepository } from '../../src/database/repositories/NotificationRepository';
 import { ExpenseMessageService } from '../../src/services/ExpenseMessageService';
 
 const salesperson = { id: 'u1', email: 'u@x.com', name: 'U', role: 'salesperson', username: 'u' };
@@ -96,9 +95,18 @@ describe('ExpenseMessageService', () => {
     expect(thread.map((m) => m.isMine)).toEqual([false, true]);
   });
 
-  it('marks the thread read against the Midas expense id', async () => {
-    await service.markRead('ts-1', salesperson as any);
-    expect(markThreadRead).toHaveBeenCalledWith('u1', 'midas-1');
+  describe('markRead', () => {
+    it('marks the caller\'s conversation notifications for that expense read, without calling Midas', async () => {
+      const actor = { id: 'u-1', email: 'a@x.com', name: 'Ana', role: 'salesperson', username: 'ana' };
+      const updated = await service.markRead('ex-1', actor as never);
+      expect(updated).toBe(3);
+      expect(notificationRepository.markReadForExpense).toHaveBeenCalledWith(
+        'u-1', 'ex-1', ['expense.message', 'expense.mention', 'expense.info_requested']
+      );
+      expect(store.getById).not.toHaveBeenCalled();
+      expect(client.listExpenseMessages).not.toHaveBeenCalled();
+      expect(client.postExpenseMessage).not.toHaveBeenCalled();
+    });
   });
 
   it('strips sender.email from the returned thread', async () => {
