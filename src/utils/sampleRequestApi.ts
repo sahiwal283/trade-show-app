@@ -17,18 +17,21 @@ export interface SampleRequestPayload { items: SampleRequestItem[]; materials: S
 
 export type SampleRequestStatus = 'draft' | 'submitted';
 export interface SampleWindow { opensAt: string | null; closesAt: string | null; isOpen: boolean }
-export interface SampleRequestView {
-  request: { id: string; event_id: string; user_id: string; status: SampleRequestStatus; submitted_at: string | null; items: SampleRequestItem[]; materials: SampleRequestMaterial[] };
-  window: SampleWindow;
+export interface UserRef { id: string; name: string }
+export interface EventSampleRequest {
+  id: string; eventId: string; status: SampleRequestStatus;
+  submittedAt: string | null; submittedBy: UserRef | null;
+  lastEditedAt: string | null; lastEditedBy: UserRef | null;
+  items: SampleRequestItem[]; materials: SampleRequestMaterial[];
+}
+export interface EventSampleRequestView { request: EventSampleRequest; window: SampleWindow; canEdit: boolean }
+export type SampleRequestPatch = SampleRequestPayload;
+export type SampleChangeField = 'singles' | 'displays' | 'empty_displays' | 'qty' | 'notes';
+export interface SampleChangeRow {
+  id: string; userId: string | null; userName: string | null; kind: 'item' | 'material'; targetId: string; targetName: string;
+  lineName: string | null; brand: SampleBrand | null; field: SampleChangeField; oldValue: string | null; newValue: string | null; changedAt: string;
 }
 export interface OpenSampleRequest { eventId: string; eventName: string; closesAt: string; status: 'none' | SampleRequestStatus; submittedAt: string | null }
-
-export interface SummaryByUser { userId: string; name: string; status: SampleRequestStatus; singles: number; displays: number; emptyDisplays: number }
-export interface SummaryProduct { productId: string; productName: string; lineId: string; lineName: string; brand: SampleBrand; isActive: boolean; singles: number; displays: number; emptyDisplays: number; byUser: SummaryByUser[] }
-export interface SummaryMaterialByUser { userId: string; name: string; status: SampleRequestStatus; qty: number; notes: string | null }
-export interface SummaryMaterial { materialId: string; materialName: string; isActive: boolean; qty: number; byUser: SummaryMaterialByUser[] }
-export interface SummaryParticipant { userId: string; name: string; status: 'none' | SampleRequestStatus; submittedAt: string | null }
-export interface EventSampleSummary { eventId: string; eventName: string; window: SampleWindow; pullerUserId: string | null; participants: SummaryParticipant[]; products: SummaryProduct[]; materials: SummaryMaterial[] }
 
 const base = '/sample-requests';
 
@@ -36,14 +39,11 @@ export const sampleRequestApi = {
   getCatalog: (includeInactive = false) =>
     apiClient.get<SampleCatalog>(includeInactive ? `${base}/catalog?includeInactive=1` : `${base}/catalog`),
   listMine: () => apiClient.get<{ requests: OpenSampleRequest[] }>(`${base}/mine`),
-  getAccess: () => apiClient.get<{ canViewSummary: boolean }>(`${base}/access`),
-  getMine: (eventId: string) => apiClient.get<SampleRequestView>(`${base}/${eventId}/mine`),
-  saveMine: (eventId: string, payload: SampleRequestPayload) => apiClient.put<SampleRequestView>(`${base}/${eventId}/mine`, payload),
-  submitMine: (eventId: string) => apiClient.post<SampleRequestView>(`${base}/${eventId}/mine/submit`),
-  getForUser: (eventId: string, userId: string) => apiClient.get<SampleRequestView>(`${base}/${eventId}/users/${userId}`),
-  saveForUser: (eventId: string, userId: string, payload: SampleRequestPayload) => apiClient.put<SampleRequestView>(`${base}/${eventId}/users/${userId}`, payload),
-  submitForUser: (eventId: string, userId: string) => apiClient.post<SampleRequestView>(`${base}/${eventId}/users/${userId}/submit`),
-  getSummary: (eventId: string) => apiClient.get<EventSampleSummary>(`${base}/${eventId}/summary`),
+  getEventAccess: (eventId: string) => apiClient.get<{ canView: boolean; canEdit: boolean }>(`${base}/${eventId}/access`),
+  getEvent: (eventId: string) => apiClient.get<EventSampleRequestView>(`${base}/${eventId}`),
+  patchEvent: (eventId: string, patch: SampleRequestPatch) => apiClient.patch<EventSampleRequestView>(`${base}/${eventId}`, patch),
+  submitEvent: (eventId: string) => apiClient.post<EventSampleRequestView>(`${base}/${eventId}/submit`),
+  getHistory: (eventId: string) => apiClient.get<{ changes: SampleChangeRow[] }>(`${base}/${eventId}/history`),
 
   createLine: (brand: SampleBrand, name: string) => apiClient.post<SampleProductLine>(`${base}/catalog/lines`, { brand, name }),
   updateLine: (id: string, patch: { name?: string; isActive?: boolean }) => apiClient.put<SampleProductLine>(`${base}/catalog/lines/${id}`, patch),
