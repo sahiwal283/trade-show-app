@@ -22,6 +22,7 @@ import { SyncStatusBar } from './components/common/SyncStatusBar';
 import { PicklistProvider } from './contexts/PicklistContext';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 import { useAuth } from './hooks/useAuth';
+import { usePageViewTracking } from './hooks/usePageViewTracking';
 import { sessionManager } from './utils/sessionManager';
 import { syncManager } from './utils/syncManager';
 import { networkMonitor } from './utils/networkDetection';
@@ -115,6 +116,7 @@ function App() {
   const [showInactivityWarning, setShowInactivityWarning] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(0); // Will be set by sessionManager
   const notifications = useNotifications();
+  usePageViewTracking(currentPage, user?.id);
 
   // Deep links that arrive while the app is already open. A tapped push
   // reaches us as a message from the push service worker; a bell tap on a
