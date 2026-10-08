@@ -202,6 +202,12 @@ through the `sample_request_reminders` ledger (insert-before-send).
 
 `NotificationService` writes a `notifications` row and a push in one call.
 
+Frontend: `src/components/checklist/samples/` — `SamplesPanel` (the form,
+status line, history) driven by `useEventSampleRequest` (dirty-field tracking, one save at a time, stale responses dropped, 30 s / on-focus reconciliation). The panel is a `BookingBoard` tab for
+admins and sits under My Checklist for reps. Deep link
+`#event=<id>&tab=samples` opens it in either place; `tab=my` selects My
+Checklist.
+
 ## 10. Notification catalog
 
 `backend/src/services/notifications/` holds every trigger Argo notifies
@@ -236,9 +242,3 @@ by both. A push tapped while the app is open reaches `App.tsx` as a
 
 The pending-expense bell and the expense-message bell are separate and are
 replaced by the Midas expense notifications spec.
-
-Frontend: `src/components/checklist/samples/` — `SamplesPanel` (the form,
-status line, history) driven by `useEventSampleRequest` (dirty-field tracking, one save at a time, stale responses dropped, 30 s / on-focus reconciliation). The panel is a `BookingBoard` tab for
-admins and sits under My Checklist for reps. Deep link
-`#event=<id>&tab=samples` opens it in either place; `tab=my` selects My
-Checklist.
