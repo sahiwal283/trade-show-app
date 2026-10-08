@@ -1,17 +1,17 @@
-/** Open sample requests the signed-in user has not submitted yet. */
+/** Open sample requests for the signed-in user's shows, submitted or not. */
 import { useEffect, useState } from 'react';
 import { api } from '../../../utils/api';
 import { sampleRequestApi, OpenSampleRequest } from '../../../utils/sampleRequestApi';
 
-export function useSampleRequestActions(): { pending: OpenSampleRequest[] } {
-  const [pending, setPending] = useState<OpenSampleRequest[]>([]);
+export function useSampleRequestActions(): { requests: OpenSampleRequest[] } {
+  const [requests, setRequests] = useState<OpenSampleRequest[]>([]);
   useEffect(() => {
     let mounted = true;
     if (!api.USE_SERVER) return;
     sampleRequestApi.listMine()
-      .then((r) => { if (mounted) setPending((r.requests || []).filter((x) => x.status !== 'submitted')); })
+      .then((r) => { if (mounted) setRequests(r.requests || []); })
       .catch((e) => console.error('[Dashboard] sample requests failed:', e));
     return () => { mounted = false; };
   }, []);
-  return { pending };
+  return { requests };
 }
