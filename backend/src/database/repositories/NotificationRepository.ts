@@ -4,7 +4,10 @@
  */
 import { query } from '../../config/database';
 
-export interface NotificationLink { page: string; eventId?: string }
+export type NotificationPage =
+  | 'checklist' | 'samples' | 'expenses' | 'admin-users' | 'booth-inventory' | 'badge-scans';
+
+export interface NotificationLink { page: NotificationPage | string; eventId?: string }
 
 export interface NotificationRow {
   id: string; user_id: string; kind: string; title: string; body: string;
