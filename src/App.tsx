@@ -480,7 +480,7 @@ function App() {
               {currentPage === 'account' && <AdminSettings user={user} initialTab="account" />}
               {currentPage === 'reports' && <Reports user={user} />}
               {currentPage === 'settings' && <AdminSettings user={user} />}
-              {currentPage === 'devdashboard' && user.role === 'developer' && <DevDashboard user={user} />}
+              {currentPage === 'devdashboard' && user.role === 'developer' && <DevDashboard />}
             </div>
           </Suspense>
         </main>

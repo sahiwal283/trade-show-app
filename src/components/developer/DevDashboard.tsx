@@ -1,265 +1,123 @@
-import React, { useState, useEffect } from 'react';
-import { RefreshCw, Code } from 'lucide-react';
-import { User } from '../../App';
+import React, { useState } from 'react';
+import { RefreshCw, Code, BarChart3, Zap, Monitor, Users, Activity, LucideIcon } from 'lucide-react';
 import { api } from '../../utils/api';
-import { AppError } from '../../types/types';
-import { DashboardSummaryCards } from './DevDashboard/DashboardSummaryCards';
-import { DashboardTabNavigation } from './DevDashboard/DashboardTabNavigation';
-import { MetricsTab } from './DevDashboard/MetricsTab';
-import { OcrTab } from './DevDashboard/OcrTab';
-import { AuditLogsTab } from './DevDashboard/AuditLogsTab';
-import { ApiAnalyticsTab } from './DevDashboard/ApiAnalyticsTab';
-import { AlertsTab } from './DevDashboard/AlertsTab';
-import { PageAnalyticsTab } from './DevDashboard/PageAnalyticsTab';
+import type { TimeRange } from './DevDashboard/types';
+import { useDashboardResource, refreshOpenResources } from './DevDashboard/useDashboardResource';
+import { TabState } from './DevDashboard/TabState';
+import { OverviewTab } from './DevDashboard/OverviewTab';
+import { ApiTab } from './DevDashboard/ApiTab';
+import { UsageTab } from './DevDashboard/UsageTab';
+import { SessionsTab } from './DevDashboard/SessionsTab';
+import { AuditLogTab } from './DevDashboard/AuditLogTab';
 
-interface DevDashboardProps {
-  user: User;
-}
+type TabId = 'overview' | 'api' | 'usage' | 'sessions' | 'audit';
 
-export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
-  const [activeTab, setActiveTab] = useState<string>('overview');
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [timeRange, setTimeRange] = useState('24h');
-  
-  // Data states
-  const [summary, setSummary] = useState<any>(null);
-  const [metrics, setMetrics] = useState<any>(null);
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [apiAnalytics, setApiAnalytics] = useState<any>(null);
-  const [alerts, setAlerts] = useState<any[]>([]);
-  const [pageAnalytics, setPageAnalytics] = useState<any>(null);
-  const [versionInfo, setVersionInfo] = useState<any>(null);
-  const [ocrMetrics, setOcrMetrics] = useState<any>(null);
-  
-  // Filters
-  const [auditSearchTerm, setAuditSearchTerm] = useState('');
-  const [auditAction, setAuditAction] = useState('all');
-  const [alertStatus, setAlertStatus] = useState('active');
+const TABS: Array<{ id: TabId; label: string; icon: LucideIcon; ranged: boolean }> = [
+  { id: 'overview', label: 'Overview', icon: BarChart3, ranged: false },
+  { id: 'api', label: 'API', icon: Zap, ranged: true },
+  { id: 'usage', label: 'Usage', icon: Monitor, ranged: true },
+  { id: 'sessions', label: 'Sessions', icon: Users, ranged: false },
+  { id: 'audit', label: 'Audit Log', icon: Activity, ranged: true },
+];
 
-  useEffect(() => {
-    loadDashboardData();
-    const interval = setInterval(() => {
-      if (activeTab === 'overview' || activeTab === 'metrics' || activeTab === 'sessions') {
-        loadDashboardData(true);
-      }
-    }, 30000); // Refresh every 30s
+const RANGES: Array<{ value: TimeRange; label: string }> = [
+  { value: '1h', label: 'Last hour' },
+  { value: '24h', label: 'Last 24 hours' },
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last 30 days' },
+];
 
-    return () => clearInterval(interval);
-  }, [activeTab, timeRange]);
+const POLL_MS = 30_000;
 
-  const loadDashboardData = async (silent = false, includeTabData = true) => {
-    if (!silent) setLoading(true);
-    else setRefreshing(true);
+// Each pane owns its data, so a tab that is not open loads nothing.
+const OverviewPane: React.FC = () => {
+  const resource = useDashboardResource('overview', api.devDashboard.getOverview, { pollMs: POLL_MS });
+  return <TabState resource={resource}>{(data) => <OverviewTab data={data} />}</TabState>;
+};
 
-    try {
-      // Always load core dashboard data (summary, metrics, version, OCR)
-      const [summaryData, metricsData, versionData, ocrData] = await Promise.all([
-        api.devDashboard.getSummary(),
-        api.devDashboard.getMetrics(timeRange),
-        api.devDashboard.getVersion(),
-        api.devDashboard.getOcrMetrics().catch(() => null), // Graceful fallback if OCR service unavailable
-      ]);
+const ApiPane: React.FC<{ timeRange: TimeRange }> = ({ timeRange }) => {
+  const resource = useDashboardResource(`api:${timeRange}`, () => api.devDashboard.getApiAnalytics(timeRange), { pollMs: POLL_MS });
+  return <TabState resource={resource}>{(data) => <ApiTab data={data} timeRange={timeRange} />}</TabState>;
+};
 
-      setSummary(summaryData);
-      setMetrics(metricsData);
-      setVersionInfo(versionData);
-      setOcrMetrics(ocrData);
+const UsagePane: React.FC<{ timeRange: TimeRange }> = ({ timeRange }) => {
+  const resource = useDashboardResource(`usage:${timeRange}`, () => api.devDashboard.getUsage(timeRange), { pollMs: POLL_MS });
+  return <TabState resource={resource}>{(data) => <UsageTab data={data} />}</TabState>;
+};
 
-      // Only load tab-specific data on initial load or explicit refresh
-      if (includeTabData) {
-        await loadTabData(activeTab);
-      }
-    } catch (error) {
-      const appError = error as AppError;
-      console.error('Failed to load dashboard data:', appError);
-      console.error('Error details:', {
-        message: appError?.message,
-        response: error?.response?.data,
-        status: error?.response?.status
-      });
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+const SessionsPane: React.FC = () => {
+  const resource = useDashboardResource('sessions', api.devDashboard.getSessions, { pollMs: POLL_MS });
+  return <TabState resource={resource}>{(data) => <SessionsTab data={data} />}</TabState>;
+};
 
-  const formatUptime = (seconds: number) => {
-    const days = Math.floor(seconds / 86400);
-    const hours = Math.floor((seconds % 86400) / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${days}d ${hours}h ${minutes}m`;
-  };
-
-  const handleTabChange = (tabId: string) => {
-    setActiveTab(tabId);
-    // Only load tab-specific data, not everything
-    loadTabData(tabId);
-  };
-
-  const loadTabData = async (tabId: string) => {
-    try {
-      if (tabId === 'logs') {
-        const logsData = await api.devDashboard.getAuditLogs({
-          limit: 50,
-          action: auditAction !== 'all' ? auditAction : undefined,
-          search: auditSearchTerm || undefined,
-        });
-        setAuditLogs(logsData.logs || []);
-      } else if (tabId === 'sessions') {
-        const sessionsData = await api.devDashboard.getSessions();
-        setSessions(sessionsData.sessions || []);
-      } else if (tabId === 'api') {
-        const analyticsData = await api.devDashboard.getApiAnalytics(timeRange);
-        setApiAnalytics(analyticsData);
-      } else if (tabId === 'alerts') {
-        const alertsData = await api.devDashboard.getAlerts(alertStatus);
-        setAlerts(alertsData.alerts || []);
-      } else if (tabId === 'analytics') {
-        const pageData = await api.devDashboard.getPageAnalytics(timeRange);
-        setPageAnalytics(pageData);
-      }
-      // overview, metrics, ocr, training tabs use data already loaded
-    } catch (error) {
-      const appError = error as AppError;
-      console.error('Failed to load tab data:', appError);
-    }
-  };
-
-  const handleAlertStatusChange = async (status: string) => {
-    setAlertStatus(status);
-    // Only reload alerts, not entire dashboard
-    try {
-      const alertsData = await api.devDashboard.getAlerts(status);
-      setAlerts(alertsData.alerts || []);
-    } catch (error) {
-      console.error('Failed to load alerts:', error);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <RefreshCw className="w-12 h-12 animate-spin mx-auto text-blue-500" />
-          <p className="mt-4 text-stone-600">Loading Developer Dashboard...</p>
-        </div>
-      </div>
-    );
-  }
+export const DevDashboard: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
+  const ranged = TABS.find((tab) => tab.id === activeTab)!.ranged;
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div>
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-              <Code className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-stone-900">Developer Dashboard</h1>
-              <p className="text-sm text-stone-600">System health, logs, and analytics</p>
-            </div>
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+            <Code className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-stone-900">Developer Dashboard</h1>
+            <p className="text-sm text-stone-600">Health, API traffic, usage, sessions and the audit trail</p>
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <select
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value)}
-            className="px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 text-sm"
-          >
-            <option value="1h">Last Hour</option>
-            <option value="24h">Last 24 Hours</option>
-            <option value="7d">Last 7 Days</option>
-            <option value="30d">Last 30 Days</option>
-          </select>
-          <button
-            onClick={() => loadDashboardData()}
-            disabled={refreshing}
-            className="btn-primary"
-          >
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+          {ranged && (
+            <select
+              aria-label="Time range"
+              value={timeRange}
+              onChange={(event) => setTimeRange(event.target.value as TimeRange)}
+              className="px-3 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-brand-500 text-sm"
+            >
+              {RANGES.map((range) => (
+                <option key={range.value} value={range.value}>{range.label}</option>
+              ))}
+            </select>
+          )}
+          <button type="button" onClick={refreshOpenResources} className="btn-primary">
+            <RefreshCw className="w-4 h-4" aria-hidden="true" />
             <span>Refresh</span>
           </button>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      {summary && <DashboardSummaryCards summary={summary} />}
-
-      {/* Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-stone-200 overflow-hidden">
-        <DashboardTabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+        <div className="overflow-x-auto px-4 pt-4 md:px-6 md:pt-6">
+          <div className="seg-track" role="tablist" aria-label="Dashboard sections">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const selected = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`devdash-tab-${tab.id}`}
+                  aria-selected={selected}
+                  aria-controls="devdash-panel"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`seg-tab ${selected ? 'seg-tab-active' : 'seg-tab-idle'}`}
+                >
+                  <Icon className="w-4 h-4" aria-hidden="true" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-        {/* Tab Content */}
-        <div className="p-4 md:p-6">
-          {activeTab === 'overview' && !versionInfo && !metrics && !loading && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <div className="flex items-start gap-3">
-                <div className="flex-shrink-0">
-                  <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-red-900">Failed to Load Dashboard Data</h3>
-                  <p className="mt-1 text-sm text-red-700">
-                    Unable to fetch dashboard metrics. Please check your permissions and try refreshing the page.
-                  </p>
-                  <button
-                    onClick={() => loadDashboardData()}
-                    className="btn-primary mt-3"
-                  >
-                    Retry
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          {activeTab === 'overview' && <p className="text-sm text-stone-500">Overview is being rebuilt.</p>}
-
-          {activeTab === 'ocr' && (
-            <div>
-              <OcrTab ocrMetrics={ocrMetrics} />
-            </div>
-          )}
-
-
-          {activeTab === 'metrics' && metrics && (
-            <MetricsTab metrics={metrics} formatUptime={formatUptime} />
-          )}
-
-          {activeTab === 'logs' && (
-            <AuditLogsTab
-              auditLogs={auditLogs}
-              auditSearchTerm={auditSearchTerm}
-              auditAction={auditAction}
-              onSearchChange={setAuditSearchTerm}
-              onActionChange={setAuditAction}
-              onApplyFilters={() => loadTabData('logs')}
-            />
-          )}
-
-          {activeTab === 'sessions' && <p className="text-sm text-stone-500">Sessions is being rebuilt.</p>}
-
-          {activeTab === 'api' && apiAnalytics && (
-            <ApiAnalyticsTab apiAnalytics={apiAnalytics} timeRange={timeRange} />
-          )}
-
-          {activeTab === 'alerts' && (
-            <AlertsTab
-              alerts={alerts}
-              alertStatus={alertStatus}
-              onStatusChange={handleAlertStatusChange}
-            />
-          )}
-
-          {activeTab === 'analytics' && pageAnalytics && (
-            <PageAnalyticsTab pageAnalytics={pageAnalytics} />
-          )}
+        <div id="devdash-panel" role="tabpanel" aria-labelledby={`devdash-tab-${activeTab}`} className="p-4 md:p-6">
+          {activeTab === 'overview' && <OverviewPane />}
+          {activeTab === 'api' && <ApiPane timeRange={timeRange} />}
+          {activeTab === 'usage' && <UsagePane timeRange={timeRange} />}
+          {activeTab === 'sessions' && <SessionsPane />}
+          {activeTab === 'audit' && <AuditLogTab timeRange={timeRange} />}
         </div>
       </div>
     </div>
