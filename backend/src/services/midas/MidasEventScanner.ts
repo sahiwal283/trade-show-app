@@ -1,4 +1,3 @@
-// backend/src/services/midas/MidasEventScanner.ts
 /**
  * Pulls Midas's event feed and turns each event into an Argo notification.
  *
@@ -23,12 +22,17 @@ const STARTUP_DELAY_MS = 20_000;
 /** Guards against an unbounded loop if a cursor ever fails to advance. */
 const MAX_PAGES = 50;
 
+function positiveInt(raw: string | undefined, fallback: number): number {
+  const n = parseInt(raw ?? '', 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
 function intervalMs(): number {
-  return parseInt(process.env.MIDAS_MESSAGE_SCAN_INTERVAL_MS || '120000', 10);
+  return positiveInt(process.env.MIDAS_MESSAGE_SCAN_INTERVAL_MS, 120000);
 }
 
 function pageSize(): number {
-  return parseInt(process.env.MIDAS_MESSAGE_SCAN_PAGE_SIZE || '100', 10);
+  return positiveInt(process.env.MIDAS_MESSAGE_SCAN_PAGE_SIZE, 100);
 }
 
 export class MidasEventScanner {
@@ -40,7 +44,7 @@ export class MidasEventScanner {
   start(): void {
     if (this.timer) return;
     if (!isMessagingEnabled()) {
-      console.log('[MidasEvents] Messaging not enabled — scanner idle');
+      console.log('[MidasEvents] Expense messaging not enabled — event scanner idle');
       return;
     }
     setTimeout(() => void this.scan(), STARTUP_DELAY_MS);
@@ -57,6 +61,7 @@ export class MidasEventScanner {
 
   /** Midas says there is something new. Never overlaps a running scan. */
   trigger(): void {
+    if (!isMessagingEnabled()) return;
     if (this.running) {
       this.rerun = true;
       return;
@@ -66,6 +71,7 @@ export class MidasEventScanner {
 
   /** One sweep to the end of the feed. Never throws. */
   async scan(): Promise<void> {
+    if (!isMessagingEnabled()) return;
     if (this.running) return;
     this.running = true;
     try {
@@ -81,13 +87,23 @@ export class MidasEventScanner {
         // tick re-reads this page and the dedupe key absorbs the repeats.
         // 'skipped' events are decided, not deferred, so the cursor passes them.
         for (const event of result.events) {
-          await expenseNotifications.deliver(event);
+          try {
+            await expenseNotifications.deliver(event);
+          } catch (error) {
+            console.error(`[MidasEvents] Delivery failed at seq ${event.seq} (${event.id}); will retry:`, error);
+            return;
+          }
         }
 
-        if (result.nextCursor) {
-          await setCursor(CURSOR_KEY, result.nextCursor);
-          cursor = result.nextCursor;
+        // The cursor comes from what was delivered, never from the feed's
+        // nextCursor, so a bad feed cannot move it backwards or skip events.
+        const lastSeq = Number(result.events[result.events.length - 1].seq);
+        if (!Number.isFinite(lastSeq) || !(lastSeq > Number(cursor))) {
+          console.error(`[MidasEvents] Feed did not advance past cursor ${cursor} (last seq ${lastSeq}) — stopping this scan`);
+          return;
         }
+        cursor = String(lastSeq);
+        await setCursor(CURSOR_KEY, cursor);
         if (result.events.length < size) return;
       }
       console.warn(`[MidasEvents] Stopped after ${MAX_PAGES} pages with more available`);

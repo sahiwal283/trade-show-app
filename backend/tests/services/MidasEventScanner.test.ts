@@ -1,8 +1,8 @@
-// backend/tests/services/MidasEventScanner.test.ts
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 vi.mock('../../src/services/midas', () => ({ getMidasClient: vi.fn() }));
 vi.mock('../../src/services/ExpenseMessageService', () => ({ isMessagingEnabled: vi.fn(() => true) }));
+import { isMessagingEnabled } from '../../src/services/ExpenseMessageService';
 vi.mock('../../src/database/repositories/ExpenseMessageNotificationRepository', () => ({
   getCursor: vi.fn(async () => '40'),
   setCursor: vi.fn(async () => undefined),
@@ -24,11 +24,17 @@ describe('MidasEventScanner.scan', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(getMidasClient).mockReturnValue({ listEventsSince } as never);
+    vi.mocked(isMessagingEnabled).mockReturnValue(true);
+    vi.mocked(getCursor).mockResolvedValue('40');
     process.env.MIDAS_MESSAGE_SCAN_PAGE_SIZE = '2';
   });
 
+  afterEach(() => {
+    delete process.env.MIDAS_MESSAGE_SCAN_PAGE_SIZE;
+  });
+
   it('delivers a page in order, then moves the cursor', async () => {
-    listEventsSince.mockResolvedValueOnce({ events: [event(41)], nextCursor: '41' });
+    listEventsSince.mockResolvedValueOnce({ events: [event(41)], nextCursor: '9999' });
     await new MidasEventScanner().scan();
     expect(getCursor).toHaveBeenCalledWith(KEY);
     expect(listEventsSince).toHaveBeenCalledWith('40', 2);
@@ -36,6 +42,47 @@ describe('MidasEventScanner.scan', () => {
     expect(setCursor).toHaveBeenCalledWith(KEY, '41');
     expect(vi.mocked(expenseNotifications.deliver).mock.invocationCallOrder[0])
       .toBeLessThan(vi.mocked(setCursor).mock.invocationCallOrder[0]);
+  });
+
+  it('a full page whose last seq does not pass the cursor is not re-requested', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    listEventsSince.mockResolvedValue({ events: [event(39), event(40)], nextCursor: '41' });
+    await new MidasEventScanner().scan();
+    expect(listEventsSince).toHaveBeenCalledTimes(1);
+    expect(setCursor).not.toHaveBeenCalled();
+    expect(err).toHaveBeenCalled();
+    err.mockRestore();
+  });
+
+  it('never moves the cursor backwards', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    listEventsSince.mockResolvedValueOnce({ events: [event(10)], nextCursor: '99' });
+    await new MidasEventScanner().scan();
+    expect(setCursor).not.toHaveBeenCalled();
+    err.mockRestore();
+  });
+
+  it('does nothing when messaging is not enabled, on scan or trigger', async () => {
+    vi.mocked(isMessagingEnabled).mockReturnValue(false);
+    const scanner = new MidasEventScanner();
+    await scanner.scan();
+    scanner.trigger();
+    await new Promise((r) => setImmediate(r));
+    expect(getMidasClient).not.toHaveBeenCalled();
+    expect(listEventsSince).not.toHaveBeenCalled();
+    vi.mocked(isMessagingEnabled).mockReturnValue(true);
+    listEventsSince.mockResolvedValue({ events: [], nextCursor: null });
+    await scanner.scan();
+    await new Promise((r) => setImmediate(r));
+    expect(listEventsSince).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not throw when the cursor write fails', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    listEventsSince.mockResolvedValueOnce({ events: [event(41)], nextCursor: '41' });
+    vi.mocked(setCursor).mockRejectedValueOnce(new Error('db down'));
+    await expect(new MidasEventScanner().scan()).resolves.toBeUndefined();
+    err.mockRestore();
   });
 
   it('starts from 0 when it has never run', async () => {
@@ -56,7 +103,7 @@ describe('MidasEventScanner.scan', () => {
   });
 
   it('a skipped event does not hold up the feed', async () => {
-    listEventsSince.mockResolvedValueOnce({ events: [event(41), event(42)], nextCursor: '42' })
+    listEventsSince.mockResolvedValueOnce({ events: [event(41), event(42)], nextCursor: null })
       .mockResolvedValueOnce({ events: [], nextCursor: null });
     vi.mocked(expenseNotifications.deliver).mockResolvedValueOnce('skipped');
     await new MidasEventScanner().scan();
@@ -66,10 +113,14 @@ describe('MidasEventScanner.scan', () => {
 
   it('leaves the cursor alone when delivery fails, so the page is retried', async () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-    listEventsSince.mockResolvedValueOnce({ events: [event(41), event(42)], nextCursor: '42' });
+    listEventsSince.mockResolvedValueOnce({ events: [event(41), event(42), event(43)], nextCursor: '43' });
     vi.mocked(expenseNotifications.deliver).mockResolvedValueOnce('sent').mockRejectedValueOnce(new Error('db down'));
     await expect(new MidasEventScanner().scan()).resolves.toBeUndefined();
     expect(setCursor).not.toHaveBeenCalled();
+    expect(expenseNotifications.deliver).toHaveBeenCalledTimes(2);
+    expect(expenseNotifications.deliver).toHaveBeenCalledWith(event(41));
+    expect(expenseNotifications.deliver).not.toHaveBeenCalledWith(event(43));
+    expect(err.mock.calls[0][0]).toContain('seq 42');
     err.mockRestore();
   });
 
