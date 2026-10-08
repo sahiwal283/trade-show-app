@@ -35,6 +35,18 @@ function pageSize(): number {
   return positiveInt(process.env.MIDAS_MESSAGE_SCAN_PAGE_SIZE, 100);
 }
 
+/** The highest seq among a page's well-formed events, or null when none has one. */
+function highestSeqOf(events: unknown[]): number | null {
+  let highest: number | null = null;
+  for (const event of events) {
+    if (!event || typeof event !== 'object') continue;
+    const seq = (event as { seq?: unknown }).seq;
+    if (typeof seq !== 'number' || !Number.isFinite(seq)) continue;
+    if (highest === null || seq > highest) highest = seq;
+  }
+  return highest;
+}
+
 export class MidasEventScanner {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
@@ -90,19 +102,23 @@ export class MidasEventScanner {
           try {
             await expenseNotifications.deliver(event);
           } catch (error) {
-            console.error(`[MidasEvents] Delivery failed at seq ${event.seq} (${event.id}); will retry:`, error);
+            // The event may be anything the feed sent, so it is not trusted to be an object here.
+            const { seq, id } = (event ?? {}) as { seq?: unknown; id?: unknown };
+            console.error(`[MidasEvents] Delivery failed at seq ${String(seq)} (${String(id)}); will retry:`, error);
             return;
           }
         }
 
         // The cursor comes from what was delivered, never from the feed's
         // nextCursor, so a bad feed cannot move it backwards or skip events.
-        const lastSeq = Number(result.events[result.events.length - 1].seq);
-        if (!Number.isFinite(lastSeq) || !(lastSeq > Number(cursor))) {
-          console.error(`[MidasEvents] Feed did not advance past cursor ${cursor} (last seq ${lastSeq}) — stopping this scan`);
+        // It is the highest seq on the page, not the last element's, so a
+        // malformed element at the end cannot pin the scanner to this page.
+        const highestSeq = highestSeqOf(result.events);
+        if (highestSeq === null || !(highestSeq > Number(cursor))) {
+          console.error(`[MidasEvents] Feed did not advance past cursor ${cursor} (highest seq ${highestSeq}) — stopping this scan`);
           return;
         }
-        cursor = String(lastSeq);
+        cursor = String(highestSeq);
         await setCursor(CURSOR_KEY, cursor);
         if (result.events.length < size) return;
       }

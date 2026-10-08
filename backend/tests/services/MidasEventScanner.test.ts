@@ -111,6 +111,52 @@ describe('MidasEventScanner.scan', () => {
     expect(setCursor).toHaveBeenCalledWith(KEY, '42');
   });
 
+  it('a malformed last element does not stall the feed: the cursor comes from the highest seq on the page', async () => {
+    listEventsSince.mockResolvedValueOnce({ events: [event(41), null], nextCursor: null })
+      .mockResolvedValueOnce({ events: [], nextCursor: null });
+    vi.mocked(expenseNotifications.deliver).mockResolvedValueOnce('sent').mockResolvedValueOnce('skipped');
+    await expect(new MidasEventScanner().scan()).resolves.toBeUndefined();
+    expect(expenseNotifications.deliver).toHaveBeenNthCalledWith(1, event(41));
+    expect(expenseNotifications.deliver).toHaveBeenNthCalledWith(2, null);
+    expect(setCursor).toHaveBeenCalledTimes(1);
+    expect(setCursor).toHaveBeenCalledWith(KEY, '41');
+  });
+
+  it('a last element with a non-numeric seq does not stall the feed', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    listEventsSince.mockResolvedValueOnce({ events: [event(41), { seq: 'x', id: 'bad', type: 'approved' }], nextCursor: null })
+      .mockResolvedValueOnce({ events: [], nextCursor: null });
+    await new MidasEventScanner().scan();
+    expect(expenseNotifications.deliver).toHaveBeenCalledTimes(2);
+    expect(setCursor).toHaveBeenCalledTimes(1);
+    expect(setCursor).toHaveBeenCalledWith(KEY, '41');
+    expect(err).not.toHaveBeenCalled();
+    err.mockRestore();
+  });
+
+  it('a page of only malformed elements stops the scan without moving the cursor', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    listEventsSince.mockResolvedValue({ events: [null, { seq: 'x', id: 'bad', type: 'approved' }], nextCursor: '99' });
+    vi.mocked(expenseNotifications.deliver).mockResolvedValueOnce('skipped').mockResolvedValueOnce('skipped');
+    await expect(new MidasEventScanner().scan()).resolves.toBeUndefined();
+    expect(listEventsSince).toHaveBeenCalledTimes(1);
+    expect(setCursor).not.toHaveBeenCalled();
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(err.mock.calls[0][0]).toContain('did not advance past cursor 40');
+    err.mockRestore();
+  });
+
+  it('a delivery failure on a malformed element is logged without throwing, and the page is retried', async () => {
+    const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    listEventsSince.mockResolvedValueOnce({ events: [null, event(41)], nextCursor: null });
+    vi.mocked(expenseNotifications.deliver).mockRejectedValueOnce(new Error('db down'));
+    await expect(new MidasEventScanner().scan()).resolves.toBeUndefined();
+    expect(setCursor).not.toHaveBeenCalled();
+    expect(err).toHaveBeenCalledTimes(1);
+    expect(err.mock.calls[0][0]).toContain('Delivery failed');
+    err.mockRestore();
+  });
+
   it('leaves the cursor alone when delivery fails, so the page is retried', async () => {
     const err = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     listEventsSince.mockResolvedValueOnce({ events: [event(41), event(42), event(43)], nextCursor: '43' });
