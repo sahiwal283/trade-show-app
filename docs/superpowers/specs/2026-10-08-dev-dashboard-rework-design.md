@@ -152,9 +152,10 @@ finish, for `POST`, `PUT`, `PATCH`, `DELETE` under `/api`, it writes one
 - `ip_address`, `user_agent`
 - `error_message` for failures, taken from the JSON error body
 
-No request body is stored. Skipped paths: `/api/auth/refresh`,
-`/api/page-views`, `/api/push/*`, `/api/midas/*`. The write is
-fire-and-forget and can never fail a request.
+No request body is stored. Skipped paths: `/api/auth/*` (login and logout
+are written by `logAuth`, so logging them here would duplicate them, and
+refresh is noise), `/api/page-views`, `/api/push/*`, `/api/midas/*`. The
+write is fire-and-forget and can never fail a request.
 
 Existing explicit writers stay: `logAuth` for login success, login failure and
 logout (these carry the reason a login failed). `logAuth('token_refresh')` is
