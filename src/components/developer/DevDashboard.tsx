@@ -5,11 +5,9 @@ import { api } from '../../utils/api';
 import { AppError } from '../../types/types';
 import { DashboardSummaryCards } from './DevDashboard/DashboardSummaryCards';
 import { DashboardTabNavigation } from './DevDashboard/DashboardTabNavigation';
-import { OverviewTab } from './DevDashboard/OverviewTab';
 import { MetricsTab } from './DevDashboard/MetricsTab';
 import { OcrTab } from './DevDashboard/OcrTab';
 import { AuditLogsTab } from './DevDashboard/AuditLogsTab';
-import { SessionsTab } from './DevDashboard/SessionsTab';
 import { ApiAnalyticsTab } from './DevDashboard/ApiAnalyticsTab';
 import { AlertsTab } from './DevDashboard/AlertsTab';
 import { PageAnalyticsTab } from './DevDashboard/PageAnalyticsTab';
@@ -92,14 +90,6 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     return `${days}d ${hours}h ${minutes}m`;
-  };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const handleTabChange = (tabId: string) => {
@@ -229,14 +219,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
             </div>
           )}
           
-          {activeTab === 'overview' && versionInfo && metrics && (
-            <OverviewTab
-              versionInfo={versionInfo}
-              metrics={metrics}
-              formatUptime={formatUptime}
-              formatBytes={formatBytes}
-            />
-          )}
+          {activeTab === 'overview' && <p className="text-sm text-stone-500">Overview is being rebuilt.</p>}
 
           {activeTab === 'ocr' && (
             <div>
@@ -260,7 +243,7 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
             />
           )}
 
-          {activeTab === 'sessions' && <SessionsTab sessions={sessions} />}
+          {activeTab === 'sessions' && <p className="text-sm text-stone-500">Sessions is being rebuilt.</p>}
 
           {activeTab === 'api' && apiAnalytics && (
             <ApiAnalyticsTab apiAnalytics={apiAnalytics} timeRange={timeRange} />
