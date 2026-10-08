@@ -72,6 +72,16 @@ describe('SampleRequestService (shared request)', () => {
       expect((await sampleRequestService.getForEvent('ev-2', rep)).canEdit).toBe(false);
       expect((await sampleRequestService.getForEvent('ev-2', admin)).canEdit).toBe(true);
     });
+    it('the view names the show and flags only the puller, for the printed pull sheet', async () => {
+      const forPuller = await sampleRequestService.getForEvent('ev-1', puller);
+      expect(forPuller.isPuller).toBe(true);
+      expect(forPuller.event.name).toBe(OPEN_EVENT.name);
+      expect((await sampleRequestService.getForEvent('ev-1', rep)).isPuller).toBe(false);
+      expect((await sampleRequestService.getForEvent('ev-1', admin)).isPuller).toBe(false);
+      const afterPatch = await sampleRequestService.patchRows('ev-1', { items: [], materials: [] }, rep);
+      expect(afterPatch.event.name).toBe(OPEN_EVENT.name);
+      expect(afterPatch.isPuller).toBe(false);
+    });
     it('canViewSamples and canEditSamples 404 an unknown event', async () => {
       await expect(sampleRequestService.canViewSamples('nope', rep)).rejects.toMatchObject({ statusCode: 404 });
       await expect(sampleRequestService.canEditSamples('nope', rep)).rejects.toMatchObject({ statusCode: 404 });

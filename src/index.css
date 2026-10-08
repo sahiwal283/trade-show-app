@@ -396,3 +396,47 @@
     }
   }
 }
+
+/* ===== Sample request pull sheet =====
+   Hidden on screen. printSampleSheet() tags <body> while the print dialog is up: the app is
+   swapped out and only the sheet prints. Other printing in the app is unaffected. */
+.sample-print-sheet {
+  display: none;
+}
+
+@media print {
+  body.printing-sample-sheet {
+    background: #fff !important;
+  }
+  body.printing-sample-sheet > *:not(.sample-print-sheet) {
+    display: none !important;
+  }
+  body.printing-sample-sheet > .sample-print-sheet {
+    display: block;
+    page: sample-sheet;
+  }
+  /* The small-screen table rules above (padding, nowrap, type size) also match a narrow printed page. */
+  .sample-print-sheet table {
+    font-size: 9pt;
+    line-height: 1.2;
+  }
+  .sample-print-sheet table th,
+  .sample-print-sheet table td {
+    padding: 2.5pt 3pt !important;
+    white-space: normal;
+  }
+  .sample-print-sheet table thead th {
+    font-size: 7pt;
+    white-space: nowrap;
+    padding: 0 1pt 1.5pt !important;
+  }
+  .sample-print-sheet table th[scope='rowgroup'] {
+    font-size: 7.5pt;
+    padding: 4pt 3pt 1pt !important;
+  }
+}
+
+@page sample-sheet {
+  size: letter portrait;
+  margin: 10mm;
+}

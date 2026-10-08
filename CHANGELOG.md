@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.31.2] - 2026-10-08 - Printable sample pull sheet
+
+### Added
+- **Print form** on the sample request, for the sample puller (and admins, coordinators and developers). It prints the request as it stands on one letter page: show name, venue and dates, who submitted and last edited it, totals, every product and supply with its quantities and notes, a tick box beside each requested line, and sign-off lines (pulled by, checked by, boxes, received at show). The page is meant to travel with the box.
+- The sheet says so when the request is still a draft, was edited after its last submission, or the form is still open, so a list that can still change is not pulled as final.
+
+### Changed
+- `GET /api/sample-requests/:eventId` (and the patch/submit responses) now also return `isPuller` and the show's name, venue and dates.
+
 ## [2.31.1] - 2026-10-08 - Sample request form polish
 
 ### Changed

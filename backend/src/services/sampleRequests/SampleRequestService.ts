@@ -22,6 +22,13 @@ export interface Actor { id: string; role: string }
 const fmtClose = (iso: string | null): string =>
   iso ? new Date(iso).toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'n/a';
 
+/** The event columns the view reports. Dates arrive from pg as Date or string. */
+interface SampleEventRow {
+  name: string; venue?: string | null; city?: string | null; state?: string | null;
+  start_date?: string | Date | null; end_date?: string | Date | null;
+  show_start_date?: string | Date | null; show_end_date?: string | Date | null;
+}
+
 interface Access { isParticipant: boolean; isOverride: boolean; isPuller: boolean; pullerId: string | null }
 
 class SampleRequestService {
@@ -59,7 +66,8 @@ class SampleRequestService {
     return this.canEdit(a, computeSampleWindow(event));
   }
 
-  private async toView(row: SampleRequestRow, window: SampleWindow, canEdit: boolean): Promise<EventSampleRequestView> {
+  /** The show details and puller flag ride along so the puller's screen can print a self-describing pull sheet. */
+  private async toView(row: SampleRequestRow, window: SampleWindow, canEdit: boolean, a: Access, event: SampleEventRow): Promise<EventSampleRequestView> {
     const [contents, users] = await Promise.all([
       sampleRequestRepository.getContents(row.id),
       sampleRequestRepository.userRefs([row.submitted_by, row.last_edited_by]),
@@ -70,7 +78,14 @@ class SampleRequestService {
       lastEditedAt: row.last_edited_at, lastEditedBy: row.last_edited_by ? users.get(row.last_edited_by) ?? null : null,
       items: contents.items, materials: contents.materials,
     };
-    return { request, window, canEdit };
+    const day = (d: string | Date | null | undefined) => (d ? (d instanceof Date ? d.toISOString() : String(d)).slice(0, 10) : null);
+    return {
+      request, window, canEdit, isPuller: a.isPuller,
+      event: {
+        name: event.name, venue: event.venue ?? null, city: event.city ?? null, state: event.state ?? null,
+        showStartDate: day(event.show_start_date || event.start_date), showEndDate: day(event.show_end_date || event.end_date),
+      },
+    };
   }
 
   private async ensureRow(eventId: string, actor: Actor): Promise<SampleRequestRow> {
@@ -83,7 +98,7 @@ class SampleRequestService {
     if (!this.canView(a)) throw new AuthorizationError('You are not on this show');
     const window = computeSampleWindow(event);
     const row = await this.ensureRow(eventId, actor);
-    return this.toView(row, window, this.canEdit(a, window));
+    return this.toView(row, window, this.canEdit(a, window), a, event);
   }
 
   private async guardEdit(eventId: string, actor: Actor) {
@@ -99,12 +114,12 @@ class SampleRequestService {
   }
 
   async patchRows(eventId: string, body: unknown, actor: Actor): Promise<EventSampleRequestView> {
-    const { window, a } = await this.guardEdit(eventId, actor);
+    const { event, window, a } = await this.guardEdit(eventId, actor);
     const patch: SampleRequestPatch = validateSamplePatch(body, await sampleRequestRepository.getCatalog(true));
     const row = await this.ensureRow(eventId, actor);
     await sampleRequestRepository.applyRows(row.id, actor.id, patch);
     const fresh = (await sampleRequestRepository.findByEvent(eventId)) ?? row;
-    return this.toView(fresh, window, this.canEdit(a, window));
+    return this.toView(fresh, window, this.canEdit(a, window), a, event);
   }
 
   async submit(eventId: string, actor: Actor): Promise<EventSampleRequestView> {
@@ -129,7 +144,7 @@ class SampleRequestService {
     } else {
       console.warn(`[SampleRequests] No sample puller configured — submit for event ${eventId} by ${actor.id} not routed`);
     }
-    return this.toView(row, window, this.canEdit(a, window));
+    return this.toView(row, window, this.canEdit(a, window), a, event);
   }
 
   async getHistory(eventId: string, actor: Actor): Promise<SampleChangeRow[]> {
