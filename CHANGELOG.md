@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Migration `046_midas_event_notifications.sql`: `notifications.source_event_id` (unique) makes each event exactly-once; unread rows from `expense_message_notifications` are copied into `notifications`. The old table is left in place, unused.
 - Removed `GET /api/expense-messages/unread`. `POST /api/expenses/:id/messages/read` now clears the caller's conversation notifications for that expense.
 - A malformed feed event is skipped and logged; a failed notification write leaves the cursor in place and is retried. Text from Midas is clipped before it is stored or pushed.
+- An event that the database rejects as invalid data is skipped and logged, so it cannot block the feed.
 - Requires Midas v1.21.0 with events enabled for Argo's connection and the `events:read` permission.
 
 ## [2.32.0] - 2026-10-08 - Notifications for events, booths, travel and reminders

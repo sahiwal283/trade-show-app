@@ -12,10 +12,16 @@ import type { MidasFeedEvent } from '../midas/MidasTypes';
 /** Kinds that are about the conversation; opening the thread marks them read. */
 export const CONVERSATION_KINDS = ['expense.message', 'expense.mention', 'expense.info_requested'];
 
-/** "12.5" | 12.5 → "$12.50"; falls back to the raw value when not numeric. */
-function money(amount: string | number): string {
-  const n = typeof amount === 'number' ? amount : Number(amount);
-  return Number.isFinite(n) ? `$${n.toFixed(2)}` : `$${amount}`;
+/**
+ * "12.5" | 12.5 → "$12.50". A value that is not a number is shown as sent,
+ * clipped to 20 characters; no amount at all gives '' so the sentence can
+ * leave it out.
+ */
+function money(amount: unknown): string {
+  if (typeof amount === 'number') return Number.isFinite(amount) ? `$${amount.toFixed(2)}` : '';
+  if (typeof amount !== 'string' || !amount.trim()) return '';
+  const n = Number(amount);
+  return Number.isFinite(n) ? `$${n.toFixed(2)}` : `$${clip(amount, 19)}`;
 }
 
 /** Collapse whitespace and cut to `max` characters (with a trailing …); the text comes from another system. */
@@ -33,7 +39,7 @@ function wordingFor(event: MidasFeedEvent): Wording | null {
   const amount = money(event.expense.amount);
   const merchant = clip(event.expense.merchant, 80);
   const sender = event.senderName ? clip(event.senderName, 80) : '';
-  const at = `${amount} expense at ${merchant}`;
+  const at = `${amount ? `${amount} ` : ''}expense at ${merchant}`;
   const quote = event.excerpt ? `: "${clip(event.excerpt, 200)}"` : '';
   const note = event.note ? clip(event.note, 300) : '';
 
@@ -63,7 +69,7 @@ function wordingFor(event: MidasFeedEvent): Wording | null {
     case 'reimbursement_paid':
       return {
         kind: 'expense.reimbursement_paid', title: 'Reimbursement paid',
-        body: `Your ${amount} reimbursement for ${merchant} was marked paid.`,
+        body: `Your ${amount ? `${amount} ` : ''}reimbursement for ${merchant} was marked paid.`,
       };
     case 'expense_incomplete': {
       const missing = (Array.isArray(event.missing) ? event.missing : [])
@@ -83,7 +89,9 @@ export const expenseNotifications = {
   fromMidasEvent(event: MidasFeedEvent): NotifyInput | null {
     const wording = wordingFor(event);
     if (!wording) return null;
-    const refId = event.expense.sourceRefId;
+    // Argo's public id for an expense is its source reference, or the Midas
+    // id when it has none (see expenseStore/midasAdapter.ts).
+    const refId = event.expense.sourceRefId || event.expense.id;
     return {
       ...wording,
       link: typeof refId === 'string' && refId ? { page: 'expense', expenseId: refId } : null,
@@ -96,7 +104,9 @@ export const expenseNotifications = {
    * 'skipped' is a decision, not a failure: an event we cannot or should not
    * deliver, including a malformed one, must not hold up the feed. Throws
    * only when the database does (the notification insert is not swallowed),
-   * so the scanner retries the page and the event is never lost.
+   * so the scanner retries the page and the event is never lost. The one
+   * database error that is a decision is a write Postgres rejects as invalid
+   * data: it would fail the same way on every retry and block the feed.
    */
   async deliver(event: MidasFeedEvent): Promise<'sent' | 'skipped'> {
     const e = event as unknown as Record<string, unknown> | null;
@@ -124,7 +134,16 @@ export const expenseNotifications = {
       console.log(`[MidasEvents] No active Argo user ${event.externalUserId} for event ${event.id} — skipped`);
       return 'skipped';
     }
-    await notificationService.notify(recipients[0], { ...input, dedupeKey: event.id });
+    try {
+      await notificationService.notify(recipients[0], { ...input, dedupeKey: event.id });
+    } catch (error) {
+      // Class 22 is Postgres's "data exception" (invalid text, value too long,
+      // invalid byte sequence). Anything else, an outage included, is retried.
+      const code = (error as { code?: unknown } | null)?.code;
+      if (typeof code !== 'string' || !code.startsWith('22')) throw error;
+      console.log(`[MidasEvents] Event ${event.id} could not be stored (${code}) — skipped`);
+      return 'skipped';
+    }
     return 'sent';
   },
 };
