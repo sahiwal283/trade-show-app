@@ -230,10 +230,10 @@ class SampleRequestRepository {
     return r.rows[0];
   }
 
-  async findStatusByEvents(eventIds: string[]): Promise<Array<{ event_id: string; status: SampleRequestStatus; submitted_at: string | null }>> {
+  async findStatusByEvents(eventIds: string[]): Promise<Array<{ event_id: string; status: SampleRequestStatus; submitted_at: string | null; last_edited_at: string | null }>> {
     if (eventIds.length === 0) return [];
     const r = await query(
-      `SELECT event_id, status, submitted_at FROM sample_requests WHERE event_id = ANY($1::uuid[])`,
+      `SELECT event_id, status, submitted_at, last_edited_at FROM sample_requests WHERE event_id = ANY($1::uuid[])`,
       [eventIds]
     );
     return r.rows;

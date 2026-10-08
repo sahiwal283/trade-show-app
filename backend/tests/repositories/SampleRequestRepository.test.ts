@@ -145,6 +145,7 @@ describe('SampleRequestRepository reads', () => {
   it('findStatusByEvents takes an id array', async () => {
     vi.mocked(query).mockResolvedValueOnce({ rows: [] } as any);
     await sampleRequestRepository.findStatusByEvents(['ev-1', 'ev-2']);
+    expect(vi.mocked(query).mock.calls[0][0]).toMatch(/SELECT event_id, status, submitted_at, last_edited_at FROM sample_requests/);
     expect(vi.mocked(query).mock.calls[0][1]).toEqual([['ev-1', 'ev-2']]);
   });
 

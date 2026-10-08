@@ -1,5 +1,4 @@
-// backend/tests/services/SampleRequestService.test.ts
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const OPEN_EVENT = { id: 'ev-1', name: 'Expo', created_at: '2026-10-01T00:00:00Z', travel_start_date: '2026-10-30', show_start_date: '2026-11-01' };
 const CLOSED_EVENT = { id: 'ev-2', name: 'Soon', created_at: '2026-10-01T00:00:00Z', travel_start_date: '2026-10-09', show_start_date: '2026-10-10' };
@@ -53,8 +52,12 @@ const puller = { id: 'puller-1', role: 'salesperson' };
 const admin = { id: 'adm', role: 'admin' };
 const patch = { items: [{ productId: 'p-1', singles: 3, displays: 0, emptyDisplays: 0 }], materials: [] };
 
+let consoleSpies: Array<{ mockRestore: () => void }> = [];
+
 describe('SampleRequestService (shared request)', () => {
   beforeEach(() => { vi.clearAllMocks(); vi.useFakeTimers(); vi.setSystemTime(NOW); });
+  // Only console spies are restored; restoreAllMocks would also wipe the module mocks' implementations.
+  afterEach(() => { consoleSpies.forEach((x) => x.mockRestore()); consoleSpies = []; vi.useRealTimers(); });
 
   describe('access', () => {
     it('participant, override role and puller can view; stranger cannot', async () => {
@@ -69,8 +72,23 @@ describe('SampleRequestService (shared request)', () => {
       expect((await sampleRequestService.getForEvent('ev-2', rep)).canEdit).toBe(false);
       expect((await sampleRequestService.getForEvent('ev-2', admin)).canEdit).toBe(true);
     });
-    it('getForEvent 403s a stranger and 404s an unknown event', async () => {
+    it('canViewSamples and canEditSamples 404 an unknown event', async () => {
+      await expect(sampleRequestService.canViewSamples('nope', rep)).rejects.toMatchObject({ statusCode: 404 });
+      await expect(sampleRequestService.canEditSamples('nope', rep)).rejects.toMatchObject({ statusCode: 404 });
+    });
+    it('canEditSamples matrix', async () => {
+      expect(await sampleRequestService.canEditSamples('ev-1', rep)).toBe(true);
+      expect(await sampleRequestService.canEditSamples('ev-2', rep)).toBe(false);
+      expect(await sampleRequestService.canEditSamples('ev-2', admin)).toBe(true);
+      expect(await sampleRequestService.canEditSamples('ev-1', puller)).toBe(false);
+      expect(await sampleRequestService.canEditSamples('ev-1', stranger)).toBe(false);
+    });
+    it('getForEvent 403s a stranger without touching the request row', async () => {
       await expect(sampleRequestService.getForEvent('ev-1', stranger)).rejects.toMatchObject({ statusCode: 403 });
+      expect(sampleRequestRepository.findByEvent).not.toHaveBeenCalled();
+      expect(sampleRequestRepository.upsertEventDraft).not.toHaveBeenCalled();
+    });
+    it('getForEvent 404s an unknown event', async () => {
       await expect(sampleRequestService.getForEvent('nope', rep)).rejects.toMatchObject({ statusCode: 404 });
     });
   });
@@ -92,7 +110,7 @@ describe('SampleRequestService (shared request)', () => {
       await sampleRequestService.patchRows('ev-1', patch, rep);
       expect(sampleRequestRepository.applyRows).toHaveBeenCalledWith('req-1', 'u-1', patch);
     });
-    it('accepts a retired product already on the request', async () => {
+    it('accepts an inactive catalog product', async () => {
       await sampleRequestService.patchRows('ev-1', { items: [{ productId: 'p-old', singles: 1, displays: 0, emptyDisplays: 0 }], materials: [] }, rep);
       expect(sampleRequestRepository.applyRows).toHaveBeenCalled();
     });
@@ -110,7 +128,7 @@ describe('SampleRequestService (shared request)', () => {
       await expect(sampleRequestService.patchRows('ev-1', patch, puller)).rejects.toMatchObject({ statusCode: 403 });
       await expect(sampleRequestService.patchRows('ev-1', patch, stranger)).rejects.toMatchObject({ statusCode: 403 });
     });
-    it('two participants patching the same row in turn both persist', async () => {
+    it('each patch is applied as its own actor', async () => {
       await sampleRequestService.patchRows('ev-1', patch, rep);
       await sampleRequestService.patchRows('ev-1', { items: [{ productId: 'p-1', singles: 5, displays: 0, emptyDisplays: 0 }], materials: [] }, otherRep);
       expect(vi.mocked(sampleRequestRepository.applyRows).mock.calls.map((c) => c[1])).toEqual(['u-1', 'u-3']);
@@ -136,17 +154,81 @@ describe('SampleRequestService (shared request)', () => {
     it('survives a failing notification and a missing puller', async () => {
       const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      consoleSpies.push(errSpy, warnSpy);
       vi.mocked(notificationService.notify).mockRejectedValueOnce(new Error('boom'));
       await expect(sampleRequestService.submit('ev-1', rep)).resolves.toMatchObject({ request: { status: 'submitted' } });
       expect(errSpy).toHaveBeenCalled();
       vi.mocked(sampleRequestRepository.getPullerUserId).mockResolvedValueOnce(null);
       await expect(sampleRequestService.submit('ev-1', rep)).resolves.toBeTruthy();
       expect(warnSpy).toHaveBeenCalled();
-      errSpy.mockRestore(); warnSpy.mockRestore();
     });
     it('409s a participant after close', async () => {
       await expect(sampleRequestService.submit('ev-2', rep)).rejects.toMatchObject({ statusCode: 409 });
       expect(sampleRequestRepository.markSubmitted).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('write guards', () => {
+    const closed = { statusCode: 409, context: { code: 'WINDOW_CLOSED', closesAt: expect.any(String) } };
+    const noWrites = () => {
+      expect(sampleRequestRepository.upsertEventDraft).not.toHaveBeenCalled();
+      expect(sampleRequestRepository.applyRows).not.toHaveBeenCalled();
+      expect(sampleRequestRepository.markSubmitted).not.toHaveBeenCalled();
+    };
+    const badPatch = { items: [{ productId: 'zzz', singles: 1, displays: 0, emptyDisplays: 0 }], materials: [] };
+
+    it('409 carries WINDOW_CLOSED context for patchRows and submit', async () => {
+      await expect(sampleRequestService.patchRows('ev-2', patch, rep)).rejects.toMatchObject(closed);
+      await expect(sampleRequestService.submit('ev-2', rep)).rejects.toMatchObject(closed);
+    });
+    it('patchRows with no request row writes nothing on 400, 409 and 403', async () => {
+      vi.mocked(sampleRequestRepository.findByEvent).mockResolvedValue(null);
+      try {
+        await expect(sampleRequestService.patchRows('ev-1', badPatch, rep)).rejects.toMatchObject({ statusCode: 400 });
+        await expect(sampleRequestService.patchRows('ev-2', patch, rep)).rejects.toMatchObject({ statusCode: 409 });
+        await expect(sampleRequestService.patchRows('ev-1', patch, stranger)).rejects.toMatchObject({ statusCode: 403 });
+        await expect(sampleRequestService.patchRows('ev-1', patch, puller)).rejects.toMatchObject({ statusCode: 403 });
+        noWrites();
+      } finally {
+        vi.mocked(sampleRequestRepository.findByEvent).mockImplementation(async () => row() as any);
+      }
+    });
+    it('submit with no request row writes nothing on 409 and 403', async () => {
+      vi.mocked(sampleRequestRepository.findByEvent).mockResolvedValue(null);
+      try {
+        await expect(sampleRequestService.submit('ev-2', rep)).rejects.toMatchObject({ statusCode: 409 });
+        await expect(sampleRequestService.submit('ev-1', stranger)).rejects.toMatchObject({ statusCode: 403 });
+        await expect(sampleRequestService.submit('ev-1', puller)).rejects.toMatchObject({ statusCode: 403 });
+        noWrites();
+      } finally {
+        vi.mocked(sampleRequestRepository.findByEvent).mockImplementation(async () => row() as any);
+      }
+    });
+    it('off-roster puller gets 403 (not 409) after close', async () => {
+      await expect(sampleRequestService.patchRows('ev-2', patch, puller)).rejects.toMatchObject({ statusCode: 403 });
+      await expect(sampleRequestService.submit('ev-2', puller)).rejects.toMatchObject({ statusCode: 403 });
+    });
+    it('puller on the roster patches while open and gets 409 after close', async () => {
+      vi.mocked(sampleRequestRepository.getPullerUserId).mockResolvedValueOnce('u-1');
+      await sampleRequestService.patchRows('ev-1', patch, rep);
+      expect(sampleRequestRepository.applyRows).toHaveBeenCalledTimes(1);
+      vi.mocked(sampleRequestRepository.getPullerUserId).mockResolvedValueOnce('u-1');
+      await expect(sampleRequestService.patchRows('ev-2', patch, rep)).rejects.toMatchObject({ statusCode: 409 });
+    });
+    it('puller who is also an admin patches after close', async () => {
+      vi.mocked(sampleRequestRepository.getPullerUserId).mockResolvedValueOnce('adm');
+      await sampleRequestService.patchRows('ev-2', patch, admin);
+      expect(sampleRequestRepository.applyRows).toHaveBeenCalledTimes(1);
+    });
+    it('404s an unknown event on patchRows, submit and getHistory', async () => {
+      await expect(sampleRequestService.patchRows('nope', patch, rep)).rejects.toMatchObject({ statusCode: 404 });
+      await expect(sampleRequestService.submit('nope', rep)).rejects.toMatchObject({ statusCode: 404 });
+      await expect(sampleRequestService.getHistory('nope', rep)).rejects.toMatchObject({ statusCode: 404 });
+    });
+    it('still notifies when the submitter is the puller', async () => {
+      vi.mocked(sampleRequestRepository.getPullerUserId).mockResolvedValueOnce('u-1');
+      await sampleRequestService.submit('ev-1', rep);
+      expect(notificationService.notify).toHaveBeenCalledWith('u-1', expect.objectContaining({ kind: 'sample_request.submitted' }));
     });
   });
 
@@ -164,9 +246,20 @@ describe('SampleRequestService (shared request)', () => {
   describe('listMyOpenRequests', () => {
     it('returns open shows with the event status, including submitted ones', async () => {
       vi.mocked(query).mockResolvedValueOnce({ rows: [OPEN_EVENT, CLOSED_EVENT] } as any);
-      vi.mocked(sampleRequestRepository.findStatusByEvents).mockResolvedValueOnce([{ event_id: 'ev-1', status: 'submitted', submitted_at: '2026-10-06T00:00:00Z' }]);
+      vi.mocked(sampleRequestRepository.findStatusByEvents).mockResolvedValueOnce([{ event_id: 'ev-1', status: 'submitted', submitted_at: '2026-10-06T00:00:00Z', last_edited_at: null }]);
       const rows = await sampleRequestService.listMyOpenRequests('u-1');
       expect(rows).toEqual([{ eventId: 'ev-1', eventName: 'Expo', closesAt: '2026-10-21T03:59:59.000Z', status: 'submitted', submittedAt: '2026-10-06T00:00:00Z' }]);
+    });
+    it('maps untouched draft to none, edited draft to draft, submitted to submitted', async () => {
+      const mk = (id: string) => ({ ...OPEN_EVENT, id, name: id });
+      vi.mocked(query).mockResolvedValueOnce({ rows: [mk('a'), mk('b'), mk('c')] } as any);
+      vi.mocked(sampleRequestRepository.findStatusByEvents).mockResolvedValueOnce([
+        { event_id: 'a', status: 'draft', submitted_at: null, last_edited_at: null },
+        { event_id: 'b', status: 'draft', submitted_at: null, last_edited_at: '2026-10-07T14:00:00Z' },
+        { event_id: 'c', status: 'submitted', submitted_at: '2026-10-06T00:00:00Z', last_edited_at: null },
+      ]);
+      const rows = await sampleRequestService.listMyOpenRequests('u-1');
+      expect(Object.fromEntries(rows.map((r) => [r.eventId, r.status]))).toEqual({ a: 'none', b: 'draft', c: 'submitted' });
     });
     it('reports none when no request row exists', async () => {
       vi.mocked(query).mockResolvedValueOnce({ rows: [OPEN_EVENT] } as any);
@@ -175,6 +268,17 @@ describe('SampleRequestService (shared request)', () => {
   });
 
   describe('announceIfOpen', () => {
+    it('notifies each user once, keyed by the ledger', async () => {
+      vi.mocked(query).mockResolvedValueOnce({ rows: [{ event_id: 'ev-1' }] } as any).mockResolvedValueOnce({ rows: [] } as any);
+      await sampleRequestService.announceIfOpen('ev-1', ['u-1', 'u-3']);
+      expect(notificationService.notify).toHaveBeenCalledTimes(1);
+      expect(notificationService.notify).toHaveBeenCalledWith('u-1', expect.anything());
+    });
+    it('does nothing when the window is closed', async () => {
+      await sampleRequestService.announceIfOpen('ev-2', ['u-1']);
+      expect(query).not.toHaveBeenCalled();
+      expect(notificationService.notify).not.toHaveBeenCalled();
+    });
     it('links to the samples view', async () => {
       vi.mocked(query).mockResolvedValueOnce({ rows: [{ event_id: 'ev-1' }] } as any);
       await sampleRequestService.announceIfOpen('ev-1', ['u-1']);

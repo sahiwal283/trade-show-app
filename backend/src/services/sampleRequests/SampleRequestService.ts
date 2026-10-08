@@ -1,7 +1,7 @@
 /**
  * One shared sample request per event, owned by the event's roster.
- *  - any participant edits (and submits) while the window is open; override roles any time
- *  - the puller (app_settings) can read but not write unless also on the roster
+ *  - any participant edits (and submits) while the window is open; override roles (admin/coordinator/developer) any time, even after close
+ *  - the puller (app_settings) can read but not write unless also on the roster or an override role
  *  - the puller is notified on submit and re-submit only. Row patches are silent.
  */
 import { query } from '../../config/database';
@@ -50,6 +50,7 @@ class SampleRequestService {
   }
 
   async canViewSamples(eventId: string, actor: Actor): Promise<boolean> {
+    await this.loadEvent(eventId);
     return this.canView(await this.access(eventId, actor));
   }
 
@@ -152,7 +153,9 @@ class SampleRequestService {
     return open
       .map(({ e, w }) => {
         const s = statuses.get(e.id);
-        return { eventId: e.id, eventName: e.name, closesAt: w.closesAt as string, status: (s?.status ?? 'none') as OpenSampleRequest['status'], submittedAt: s?.submitted_at ?? null };
+        // An auto-created draft nobody has touched is not "started" for the dashboard.
+        const untouched = !s || (s.status === 'draft' && s.last_edited_at == null);
+        return { eventId: e.id, eventName: e.name, closesAt: w.closesAt as string, status: (untouched || !s ? 'none' : s.status) as OpenSampleRequest['status'], submittedAt: s?.submitted_at ?? null };
       })
       .sort((x, y) => x.closesAt.localeCompare(y.closesAt));
   }
