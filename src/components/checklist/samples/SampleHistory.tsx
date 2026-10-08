@@ -5,7 +5,7 @@
  * never affects editing.
  */
 import React, { useEffect, useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, History } from 'lucide-react';
 import { sampleRequestApi } from '../../../utils/sampleRequestApi';
 import type { SampleChangeRow } from '../../../utils/sampleRequestApi';
 import { describeChange, formatRelative } from './sampleRequestText';
@@ -27,22 +27,23 @@ export const SampleHistory: React.FC<Props> = ({ eventId, refreshKey }) => {
   }, [open, eventId, refreshKey]);
 
   return (
-    <div className="rounded-xl border border-stone-100 p-3 md:p-4">
+    <div>
       <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
-        className="inline-flex items-center gap-1 font-display font-semibold text-stone-900">
-        {open ? <ChevronDown aria-hidden="true" className="h-4 w-4" /> : <ChevronRight aria-hidden="true" className="h-4 w-4" />}
+        className="-mx-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 hover:text-stone-900 lg:min-h-0 lg:py-1.5">
+        <History aria-hidden="true" className="h-4 w-4 text-stone-500" />
         History
+        <ChevronDown aria-hidden="true" className={`h-4 w-4 text-stone-500 transition-transform duration-200 motion-reduce:transition-none ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
-        failed ? <p className="mt-2 text-sm text-stone-500">History unavailable.</p>
-        : changes === null ? <p className="mt-2 text-sm text-stone-500">Loading history…</p>
-        : changes.length === 0 ? <p className="mt-2 text-sm text-stone-500">No changes yet.</p>
+        failed ? <p className="mt-2 text-sm text-stone-600">History unavailable.</p>
+        : changes === null ? <p className="mt-2 text-sm text-stone-600">Loading history…</p>
+        : changes.length === 0 ? <p className="mt-2 text-sm text-stone-600">No changes yet.</p>
         : (
           <ul className="mt-2 divide-y divide-stone-100 text-sm">
             {changes.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-baseline justify-between gap-2 py-1.5">
-                <span className="text-stone-700">{describeChange(c)}</span>
-                <span className="text-[11px] text-stone-400">{formatRelative(c.changedAt)}</span>
+              <li key={c.id} className="flex items-baseline justify-between gap-4 py-2">
+                <span className="min-w-0 leading-snug text-stone-700">{describeChange(c)}</span>
+                <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-stone-500">{formatRelative(c.changedAt)}</span>
               </li>
             ))}
           </ul>

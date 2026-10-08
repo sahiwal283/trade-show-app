@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.31.1] - 2026-10-08 - Sample request form polish
+
+### Changed
+- **Sample request form redesigned.** Each brand is one aligned grid with the column header shown once. Empty cells are quiet and requested quantities are tinted, so the order reads at a glance.
+- A totals strip (products, singles, displays, empty displays) and a per-section "requested" count.
+- Marketing & booth supplies sit under Haute Brands on desktop; phones keep the original order.
+- The save status and Submit button stay visible in a sticky bar while scrolling.
+- Quantity cells are 44px tall on phones and tablets, select their value on focus, and no longer show number spinners.
+- Read-only viewers (the sample puller, or anyone after the deadline) see plain figures instead of disabled boxes.
+- Loading skeleton, consistent notices, darker label text for contrast.
+
+Frontend only: no API, schema or behaviour change.
+
 ## [2.31.0] - 2026-10-08 - One shared sample request per show
 
 ### Changed

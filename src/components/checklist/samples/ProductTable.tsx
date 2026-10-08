@@ -1,59 +1,75 @@
 import React from 'react';
-import { SampleProduct, SampleRequestItem, MAX_SAMPLE_QTY } from '../../../utils/sampleRequestApi';
+import { SampleProduct, SampleProductLine, SampleRequestItem } from '../../../utils/sampleRequestApi';
 import type { ItemField } from './useEventSampleRequest';
+import { QtyInput } from './QtyInput';
+
+export interface ProductGroup {
+  line: SampleProductLine;
+  products: SampleProduct[];           // active ones, plus retired ones already on the request
+}
 
 interface Props {
-  lineName: string;
-  /** False when the whole line is retired: every row it still shows is then labelled, whatever the product's own flag. */
-  lineActive?: boolean;
-  products: SampleProduct[];           // active ones, plus retired ones already on the request
+  /** One brand's product lines. They share a single column grid, so quantities line up down the whole brand. */
+  groups: ProductGroup[];
   items: Map<string, SampleRequestItem>;
   disabled: boolean;
   onChange: (productId: string, field: ItemField, value: number) => void;
 }
 
-const COLS: Array<{ field: ItemField; label: string }> = [
-  { field: 'singles', label: 'Singles' },
-  { field: 'displays', label: 'Displays' },
-  { field: 'emptyDisplays', label: 'Empty displays' },
+const COLS: Array<{ field: ItemField; label: string; short: string }> = [
+  { field: 'singles', label: 'Singles', short: 'Singles' },
+  { field: 'displays', label: 'Displays', short: 'Displays' },
+  { field: 'emptyDisplays', label: 'Empty displays', short: 'Empty' },
 ];
 
-export const ProductTable: React.FC<Props> = ({ lineName, lineActive = true, products, items, disabled, onChange }) => (
-  <div>
-    <h5 className="micro-label mb-2">{lineName}</h5>
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="text-[11px] uppercase tracking-wide text-stone-400">
-          <th className="pb-1 text-left font-semibold">Item</th>
-          {COLS.map((c) => <th key={c.field} className="pb-1 text-right font-semibold">{c.label}</th>)}
+export const QTY_COL = 'w-[3.75rem] sm:w-[4.75rem]';
+export const HEAD_CELL = 'pb-2 align-bottom text-[10px] leading-tight font-semibold uppercase tracking-wide text-stone-500 sm:text-[11px] sm:tracking-wider';
+
+export const ProductTable: React.FC<Props> = ({ groups, items, disabled, onChange }) => (
+  <table className="w-full table-fixed border-separate border-spacing-0 text-sm">
+    <colgroup>
+      <col />
+      {COLS.map((c) => <col key={c.field} className={QTY_COL} />)}
+    </colgroup>
+    <thead>
+      <tr>
+        <th scope="col" className={`${HEAD_CELL} text-left`}>Item</th>
+        {COLS.map((c) => (
+          <th key={c.field} scope="col" abbr={c.label} className={`${HEAD_CELL} px-1 text-center`}>
+            <span className="sm:hidden">{c.short}</span>
+            <span className="hidden sm:inline">{c.label}</span>
+          </th>
+        ))}
+      </tr>
+    </thead>
+    {groups.map(({ line, products }) => (
+      <tbody key={line.id} className="[&>tr:last-child>td]:pb-3">
+        <tr>
+          <th colSpan={COLS.length + 1} scope="rowgroup" className="border-t border-stone-200 pb-1 pt-4 text-left">
+            <h5 className="text-xs font-semibold uppercase tracking-wider text-stone-500">{line.name}</h5>
+          </th>
         </tr>
-      </thead>
-      <tbody>
         {products.map((p) => {
           const row = items.get(p.id);
-          const retired = !p.is_active || !lineActive;
+          const retired = !p.is_active || !line.is_active;
+          const requested = !!row && (row.singles > 0 || row.displays > 0 || row.emptyDisplays > 0);
           return (
-            <tr key={p.id} className={`border-t border-stone-100 ${retired ? 'text-stone-400' : ''}`}>
-              <td className="py-1.5 pr-2">
+            <tr key={p.id} className="group">
+              <td className={`rounded-l-lg py-1 pr-2 align-middle leading-snug transition-colors lg:group-hover:bg-stone-50 ${
+                retired ? 'text-stone-500' : requested ? 'font-medium text-stone-900' : 'text-stone-600'}`}>
                 {p.name}
-                {retired && <span className="ml-2 text-[11px] italic">no longer offered</span>}
+                {retired && <span className="ml-2 whitespace-nowrap text-xs font-normal text-stone-500">no longer offered</span>}
               </td>
-              {COLS.map((c) => (
-                <td key={c.field} className="py-1 text-right">
-                  <input
-                    type="number" inputMode="numeric" min={0} max={MAX_SAMPLE_QTY} step={1}
-                    aria-label={`${p.name} ${c.label.toLowerCase()}`}
-                    value={row?.[c.field] ?? 0}
-                    disabled={disabled}
-                    onChange={(e) => onChange(p.id, c.field, parseInt(e.target.value, 10) || 0)}
-                    className="w-16 rounded-lg border border-stone-200 px-2 py-1 text-right tabular-nums focus-visible:ring-2 focus-visible:ring-brand-500 disabled:bg-stone-50 disabled:text-stone-400"
-                  />
+              {COLS.map((c, i) => (
+                <td key={c.field} className={`px-1 py-1 align-middle transition-colors lg:group-hover:bg-stone-50 ${i === COLS.length - 1 ? 'rounded-r-lg' : ''}`}>
+                  <QtyInput label={`${p.name} ${c.label.toLowerCase()}`} value={row?.[c.field] ?? 0} disabled={disabled}
+                    onChange={(v) => onChange(p.id, c.field, v)} />
                 </td>
               ))}
             </tr>
           );
         })}
       </tbody>
-    </table>
-  </div>
+    ))}
+  </table>
 );
