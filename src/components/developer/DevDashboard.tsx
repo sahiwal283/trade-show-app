@@ -8,7 +8,6 @@ import { DashboardTabNavigation } from './DevDashboard/DashboardTabNavigation';
 import { OverviewTab } from './DevDashboard/OverviewTab';
 import { MetricsTab } from './DevDashboard/MetricsTab';
 import { OcrTab } from './DevDashboard/OcrTab';
-import { ModelTrainingTab } from './DevDashboard/ModelTrainingTab';
 import { AuditLogsTab } from './DevDashboard/AuditLogsTab';
 import { SessionsTab } from './DevDashboard/SessionsTab';
 import { ApiAnalyticsTab } from './DevDashboard/ApiAnalyticsTab';
@@ -245,7 +244,6 @@ export const DevDashboard: React.FC<DevDashboardProps> = ({ user }) => {
             </div>
           )}
 
-          {activeTab === 'training' && <ModelTrainingTab user={user} />}
 
           {activeTab === 'metrics' && metrics && (
             <MetricsTab metrics={metrics} formatUptime={formatUptime} />

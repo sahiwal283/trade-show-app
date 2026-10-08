@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Cpu, Brain, Activity, Users, Zap, AlertTriangle, Scan, Monitor, LucideIcon } from 'lucide-react';
+import { BarChart3, Cpu, Activity, Users, Zap, AlertTriangle, Scan, Monitor, LucideIcon } from 'lucide-react';
 
 interface Tab {
   id: string;
@@ -16,7 +16,6 @@ const tabs: Tab[] = [
   { id: 'overview', label: 'Overview', icon: BarChart3 },
   { id: 'metrics', label: 'Metrics', icon: Cpu },
   { id: 'ocr', label: 'OCR Service', icon: Scan },
-  { id: 'training', label: 'Model Training', icon: Brain },
   { id: 'logs', label: 'Audit Logs', icon: Activity },
   { id: 'sessions', label: 'Sessions', icon: Users },
   { id: 'api', label: 'API Analytics', icon: Zap },
