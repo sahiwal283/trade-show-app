@@ -11,6 +11,7 @@ import * as oidc from 'openid-client';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { userRepository } from '../database/repositories';
+import { adminNotifications, logNotifyError } from './notifications';
 
 export interface OidcEnv {
   issuer?: string;
@@ -145,6 +146,8 @@ export async function resolveSsoUser(claims: SsoClaims): Promise<SsoResolution> 
     try {
       await userRepository.createSsoUser({ username, name, email, password: unusable, authentikSub: claims.sub });
       console.log(`[OIDC] auto-provisioned pending user "${username}" (${email})`);
+      void adminNotifications.userPending({ name, email, via: 'sso' })
+        .catch(logNotifyError('admin.user_pending'));
       return { status: 'pending' };
     } catch (error: any) {
       // Only retry on the username uniqueness constraint; some drivers omit

@@ -12,3 +12,6 @@ export type { ComponentReport } from './boothNotifications';
 
 export { travelNotifications, classifyBooking, FLIGHT, HOTEL, CAR_RENTAL } from './travelNotifications';
 export type { BookingRow, BookingEffect, BookingConfig } from './travelNotifications';
+
+export { adminNotifications } from './adminNotifications';
+export type { PendingUser } from './adminNotifications';
