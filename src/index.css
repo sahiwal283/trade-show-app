@@ -152,6 +152,35 @@
     @apply text-stone-500 hover:bg-stone-50 hover:text-stone-800;
   }
 
+  /* ===== Quantity cell (sample request tables) =====
+     Empty cells stay quiet (a pale placeholder zero); a cell holding a quantity is
+     tinted so the requested rows read at a glance. 44px tall for touch below lg.
+     Read-only cells drop the box entirely and read as plain table figures. */
+  .qty-input {
+    @apply block h-11 w-full rounded-lg border border-stone-200 bg-white px-1
+      text-center text-base tabular-nums text-stone-900 placeholder-stone-300
+      transition-colors duration-150
+      hover:border-stone-300
+      focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15 focus:ring-offset-0
+      sm:text-sm lg:h-9;
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+  .qty-input::-webkit-inner-spin-button,
+  .qty-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  .qty-input-filled {
+    @apply border-brand-200 bg-brand-50 font-semibold;
+  }
+  .qty-input:disabled {
+    @apply cursor-default border-transparent bg-transparent text-stone-700 placeholder-stone-300;
+  }
+  .qty-input-filled:disabled {
+    @apply bg-stone-100 text-stone-900;
+  }
+
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full font-medium whitespace-nowrap
       ring-1 ring-inset;
