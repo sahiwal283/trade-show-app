@@ -6,6 +6,7 @@ import { join } from 'path';
 import { initializeUploadDirectories } from './config/upload';
 import authRoutes from './routes/auth';
 import oidcRoutes from './routes/oidc';
+import midasPingRoutes from './routes/midasPing';
 import userRoutes from './routes/users';
 import roleRoutes from './routes/roles';
 import eventRoutes from './routes/events';
@@ -94,6 +95,9 @@ app.use('/api/uploads', express.static(process.env.UPLOAD_DIR || 'uploads'));
 // Routes - Auth routes FIRST (no authentication required)
 app.use('/api/auth', authRoutes);
 app.use('/api/auth/oidc', oidcRoutes);
+
+// Server-to-server ping from Midas (signed; no session). See routes/midasPing.ts.
+app.use('/api/midas', midasPingRoutes);
 
 // Authenticated routes with session tracking
 // Session tracking updates last_activity on every API request for real-time monitoring
