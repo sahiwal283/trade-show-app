@@ -229,3 +229,29 @@ Frontend (Vitest + Testing Library):
 
 - Per-rep requests (removed), catalog reorder UI, offline sync queue,
   notification retention, re-announcing when a date move reopens a window.
+
+## Implementation rulings (2026-10-08)
+
+Decisions taken during implementation that refine this spec. Where they
+differ from the text above, these are what shipped.
+
+- **Field-level saves, not row-level.** A PATCH row carries only the fields
+  the user changed; the server merges them into the current row under a lock
+  on the request. Two people editing different columns of the same product
+  both keep their numbers. The focus guard was dropped: a field being typed is
+  dirty immediately, and clean fields take the server's value.
+- **Ordering.** One save in flight at a time; a refresh that started before or
+  during a save is discarded; a failed save retries on the next poll, edit or
+  reconnect; a save the server rejects (400/403) is not retried and the form
+  refreshes.
+- **Resubmit** is available whenever the request has edits newer than its last
+  submission, derived from the server view, so every client agrees.
+- **Dashboard status.** A draft nobody has edited reports as "not started"
+  (Start), so opening the form does not change everyone's dashboard row.
+- **Migration 044.** Single-request shows are left untouched and backfilled
+  with who submitted and last edited; constraint drops are strict so a name
+  mismatch aborts the migration.
+- **Links.** Sample notifications open the Samples view. A link to a show that
+  no longer resolves is dropped rather than opening another show.
+- **Read-only viewers** see no Submit button; unsaved or rejected changes stay
+  visible with a "These changes were not saved." line.
