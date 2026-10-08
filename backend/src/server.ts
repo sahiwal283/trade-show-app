@@ -31,6 +31,7 @@ import pushRoutes from './routes/push';
 import badgeScanRoutes from './routes/badgeScans';
 import notificationRoutes from './routes/notifications';
 import sampleRequestRoutes from './routes/sampleRequests';
+import pageViewRoutes from './routes/pageViews';
 import { requestLogger, errorLogger } from './middleware/logger';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
@@ -121,6 +122,7 @@ app.use('/api/push', authenticateToken, sessionTracker, pushRoutes);
 app.use('/api/badge-scans', authenticateToken, sessionTracker, badgeScanRoutes);
 app.use('/api/notifications', authenticateToken, sessionTracker, notificationRoutes);
 app.use('/api/sample-requests', authenticateToken, sessionTracker, sampleRequestRoutes);
+app.use('/api/page-views', authenticateToken, sessionTracker, pageViewRoutes);
 
 // Health check (with database connectivity test) - existing contract
 app.get('/api/health', async (req, res) => {

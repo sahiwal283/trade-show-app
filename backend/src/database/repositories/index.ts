@@ -65,3 +65,6 @@ export type { BoothAttachment, AttachmentEntityType } from './BoothAttachmentRep
 export { badgeScanRepository, BadgeScanRepository } from './BadgeScanRepository';
 export type { BadgeScan, BadgeScanFilters, PushResult } from './BadgeScanRepository';
 
+
+export { pageViewRepository, PageViewRepository } from './PageViewRepository';
+export type { PageViewDevice } from './PageViewRepository';
