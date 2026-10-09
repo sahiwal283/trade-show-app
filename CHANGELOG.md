@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.35.1] - 2026-10-09 - Retraining errors gone from the developer dashboard
+
+### Fixed
+- **The developer dashboard's Recent errors no longer fills with one failure a minute.** Automation Center was still checking on model retraining, which was removed in 2.34.0. It has stopped (Automation Center 1.4.1).
+
+### Technical
+- Removed the temporary 410 route for `GET /api/retraining/status` (`routes/retiredEndpoints.ts`) now that the caller is identified. Deploy after Automation Center 1.4.1 is live, or the calls become anonymous 404s.
+
 ## [2.35.0] - 2026-10-08 - Executive Navy + Electric Blue
 
 ### Changed
